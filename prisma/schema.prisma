@@ -1,0 +1,327 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum RoleType {
+  GUEST
+  CUSTOMER
+  VERIFIED_COMPANION
+  ADMIN
+  SUPER_ADMIN
+  MODERATOR
+  SUPPORT_TEAM
+  VERIFICATION_TEAM
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum DocumentType {
+  GOVERNMENT_ID
+  PASSPORT
+  DRIVING_LICENSE
+  SELFIE_LIVE
+  ADDRESS_PROOF
+  BANK_VERIFICATION
+  POLICE_CLEARANCE
+}
+
+enum BookingStatus {
+  PENDING_APPROVAL
+  ACCEPTED
+  REJECTED
+  ESCROW_LOCKED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum PaymentMethod {
+  STRIPE
+  RAZORPAY
+  WALLET
+  UPI
+  CREDIT_CARD
+}
+
+enum EscrowStatus {
+  HELD
+  RELEASED_TO_COMPANION
+  REFUNDED_TO_USER
+  PARTIAL_REFUND
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model User {
+  id                String               @id @default(uuid())
+  email             String               @unique
+  phone             String?              @unique
+  passwordHash      String
+  fullName          String
+  role              RoleType             @default(CUSTOMER)
+  isEmailVerified   Boolean              @default(false)
+  isPhoneVerified   Boolean              @default(false)
+  is2FAEnabled      Boolean              @default(false)
+  twoFASecret       String?
+  avatar            String?
+  accountFrozen     Boolean              @default(false)
+  riskScore         Float                @default(0.0)
+  riskLevel         RiskLevel            @default(LOW)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  // Relationships
+  profile           CompanionProfile?
+  kycDocuments      VerificationDocument[]
+  bookingsAsUser    Booking[]            @relation("UserBookings")
+  bookingsAsCompanion Booking[]          @relation("CompanionBookings")
+  wallet            Wallet?
+  reviewsWritten    Review[]             @relation("ReviewAuthor")
+  reviewsReceived   Review[]             @relation("ReviewTarget")
+  sentMessages      ChatMessage[]        @relation("SentMessages")
+  receivedMessages  ChatMessage[]        @relation("ReceivedMessages")
+  emergencyContacts EmergencyContact[]
+  sosAlerts         PanicAlert[]
+  reportsFiled      IncidentReport[]     @relation("Reporter")
+  reportsAgainst    IncidentReport[]     @relation("ReportedUser")
+  auditLogs         AuditLog[]
+  sessions          UserSession[]
+
+  @@index([email, phone])
+}
+
+model CompanionProfile {
+  id                String               @id @default(uuid())
+  userId            String               @unique
+  user              User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  bio               String
+  age               Int
+  gender            String
+  city              String
+  country           String
+  latitude          Float?
+  longitude         Float?
+  
+  languages         String[]
+  skills            String[]
+  categories        String[]             // e.g. Event Companion, Shopping, Travel, Study, Elderly Support
+  photos            String[]
+  
+  hourlyRate        Float
+  dailyRate         Float?
+  weeklyRate        Float?
+  monthlyRate       Float?
+  
+  availability      Json                 // Time slot JSON matrix
+  isAvailableNow    Boolean              @default(true)
+  verificationBadge Boolean              @default(false)
+  
+  ratingAvg         Float                @default(5.0)
+  ratingCount       Int                  @default(0)
+  completedBookings Int                  @default(0)
+  responseTimeMin   Int                  @default(15)
+  
+  education         String?
+  experienceYears   Int                  @default(1)
+  
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  @@index([city, category, ratingAvg])
+}
+
+model VerificationDocument {
+  id                String               @id @default(uuid())
+  userId            String
+  user              User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              DocumentType
+  documentUrl       String
+  selfieMatchScore  Float?
+  status            VerificationStatus   @default(PENDING)
+  rejectionReason   String?
+  verifiedByUserId  String?
+  expiresAt         DateTime?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  @@index([userId, status])
+}
+
+model Booking {
+  id                String               @id @default(uuid())
+  bookingNumber     String               @unique @default(cuid())
+  userId            String
+  user              User                 @relation("UserBookings", fields: [userId], references: [id])
+  companionId       String
+  companion         User                 @relation("CompanionBookings", fields: [companionId], references: [id])
+  
+  category          String
+  startTime         DateTime
+  endTime           DateTime
+  durationHours     Float
+  locationAddress   String
+  specialNotes      String?
+  
+  hourlyRate        Float
+  baseAmount        Float
+  escrowFee         Float
+  platformFee       Float
+  totalAmount       Float
+  
+  status            BookingStatus        @default(PENDING_APPROVAL)
+  isInstantBooking  Boolean              @default(false)
+  
+  payment           Payment?
+  review            Review?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  @@index([userId, companionId, status])
+}
+
+model Wallet {
+  id                String               @id @default(uuid())
+  userId            String               @unique
+  user              User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balance           Float                @default(0.0)
+  escrowBalance     Float                @default(0.0)
+  currency          String               @default("USD")
+  transactions      Transaction[]
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+}
+
+model Transaction {
+  id                String               @id @default(uuid())
+  walletId          String
+  wallet            Wallet               @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  amount            Float
+  type              String               // DEPOSIT, WITHDRAWAL, ESCROW_HOLD, ESCROW_RELEASE, REFUND
+  referenceId       String?
+  description       String
+  status            String               @default("SUCCESS")
+  createdAt         DateTime             @default(now())
+}
+
+model Payment {
+  id                String               @id @default(uuid())
+  bookingId         String               @unique
+  booking           Booking              @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  provider          PaymentMethod
+  transactionRef    String               @unique
+  amount            Float
+  currency          String               @default("USD")
+  escrowStatus      EscrowStatus         @default(HELD)
+  payoutDate        DateTime?
+  createdAt         DateTime             @default(now())
+}
+
+model Review {
+  id                String               @id @default(uuid())
+  bookingId         String               @unique
+  booking           Booking              @relation(fields: [bookingId], references: [id])
+  authorId          String
+  author            User                 @relation("ReviewAuthor", fields: [authorId], references: [id])
+  targetId          String
+  target            User                 @relation("ReviewTarget", fields: [targetId], references: [id])
+  
+  rating            Int
+  comment           String
+  photos            String[]
+  helpfulVotes      Int                  @default(0)
+  isFakeFlagged     Boolean              @default(false)
+  sentimentScore    Float                @default(1.0)
+  createdAt         DateTime             @default(now())
+}
+
+model ChatMessage {
+  id                String               @id @default(uuid())
+  senderId          String
+  sender            User                 @relation("SentMessages", fields: [senderId], references: [id])
+  receiverId        String
+  receiver          User                 @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  
+  content           String
+  mediaUrl          String?
+  mediaType         String?              // TEXT, IMAGE, VOICE_NOTE, LOCATION
+  isRead            Boolean              @default(false)
+  encrypted         Boolean              @default(true)
+  createdAt         DateTime             @default(now())
+
+  @@index([senderId, receiverId])
+}
+
+model PanicAlert {
+  id                String               @id @default(uuid())
+  userId            String
+  user              User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  latitude          Float
+  longitude         Float
+  address           String
+  resolved          Boolean              @default(false)
+  resolvedAt        DateTime?
+  createdAt         DateTime             @default(now())
+}
+
+model EmergencyContact {
+  id                String               @id @default(uuid())
+  userId            String
+  user              User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contactName       String
+  relationship      String
+  phone             String
+  email             String?
+  createdAt         DateTime             @default(now())
+}
+
+model IncidentReport {
+  id                String               @id @default(uuid())
+  reporterId        String
+  reporter          User                 @relation("Reporter", fields: [reporterId], references: [id])
+  reportedUserId    String
+  reportedUser      User                 @relation("ReportedUser", fields: [reportedUserId], references: [id])
+  reason            String
+  details           String
+  status            String               @default("OPEN") // OPEN, INVESTIGATING, RESOLVED, DISMISSED
+  createdAt         DateTime             @default(now())
+}
+
+model AuditLog {
+  id                String               @id @default(uuid())
+  userId            String?
+  user              User?                @relation(fields: [userId], references: [id])
+  action            String
+  ipAddress         String?
+  userAgent         String?
+  payload           Json?
+  createdAt         DateTime             @default(now())
+}
+
+model UserSession {
+  id                String               @id @default(uuid())
+  userId            String
+  user              User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokenHash  String               @unique
+  device            String
+  ipAddress         String
+  lastActive        DateTime             @default(now())
+  expiresAt         DateTime
+  createdAt         DateTime             @default(now())
+}

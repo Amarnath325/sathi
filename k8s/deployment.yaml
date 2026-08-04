@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: companion-connect-app
+  namespace: production
+  labels:
+    app: companion-connect
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: companion-connect
+  template:
+    metadata:
+      labels:
+        app: companion-connect
+    spec:
+      containers:
+      - name: companion-connect
+        image: 123456789012.dkr.ecr.us-east-1.amazonaws.com/companion-connect:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: REDIS_URL
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+          limits:
+            cpu: "2000m"
+            memory: "2048Mi"
+        readinessProbe:
+          httpGet:
+            path: /api/auth
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /api/auth
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: companion-connect-service
+  namespace: production
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 3000
+  selector:
+    app: companion-connect
