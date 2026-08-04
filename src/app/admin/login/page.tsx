@@ -47,7 +47,7 @@ export default function AdminLoginPage() {
       setSuccessMessage(data.message);
 
       setTimeout(() => {
-        router.push('/admin');
+        router.push('/admin/dashboard');
       }, 1000);
 
     } catch (err) {
