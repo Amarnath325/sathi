@@ -183,12 +183,6 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <a
-            href="/admin/login"
-            className="px-3.5 py-2 rounded-xl bg-purple-600/20 border border-purple-500/40 text-purple-300 hover:bg-purple-600 hover:text-white transition-all text-xs font-semibold flex items-center gap-1.5 shadow-sm"
-          >
-            <Lock className="w-3.5 h-3.5 text-purple-400" /> Admin Auth Portal
-          </a>
           <button 
             onClick={() => triggerNotify('All dynamic state persistence re-synced.')}
             className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-300 hover:text-white transition-colors flex items-center gap-1.5"

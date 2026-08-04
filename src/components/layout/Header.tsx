@@ -84,41 +84,10 @@ export function Header({ currentRole, onRoleChange, onTriggerSos }: HeaderProps)
               <ShieldAlert className="w-4 h-4 text-rose-400" />
               Safety Center
             </Link>
-
-            {(currentRole === 'ADMIN' || currentRole === 'SUPER_ADMIN') && (
-              <Link href="/admin" className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg bg-indigo-950/80 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-900/90 transition-colors">
-                <LayoutDashboard className="w-3.5 h-3.5" />
-                Admin Console
-              </Link>
-            )}
           </nav>
 
-          {/* Header Controls (Role Selector + Emergency SOS + Notifications + Profile) */}
+          {/* Header Controls (Emergency SOS + Notifications + Profile) */}
           <div className="hidden lg:flex items-center gap-4">
-            
-            {/* Role Switcher Demo Dropdown */}
-            <div className="relative group">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs font-medium text-slate-300 cursor-pointer hover:border-slate-600">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>Role: <strong className="text-white">{currentRole}</strong></span>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-              </div>
-              
-              <div className="absolute right-0 mt-2 w-52 glass-panel rounded-2xl p-2 hidden group-hover:block border border-slate-700 shadow-2xl z-50">
-                <p className="px-3 py-1.5 text-[10px] uppercase font-bold text-slate-400 tracking-wider">Switch Active Persona</p>
-                {(['CUSTOMER', 'VERIFIED_COMPANION', 'ADMIN', 'GUEST'] as RoleType[]).map((r) => (
-                  <button
-                    key={r}
-                    onClick={() => onRoleChange(r)}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all ${
-                      currentRole === r ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800'
-                    }`}
-                  >
-                    {r.replace('_', ' ')}
-                  </button>
-                ))}
-              </div>
-            </div>
 
             {/* Notifications Popover */}
             <div className="relative">
@@ -195,7 +164,6 @@ export function Header({ currentRole, onRoleChange, onTriggerSos }: HeaderProps)
           <Link href="/chat" className="block text-sm font-medium text-slate-200 py-2">Chat & Messages</Link>
           <Link href="/wallet" className="block text-sm font-medium text-slate-200 py-2">Escrow Wallet</Link>
           <Link href="/safety" className="block text-sm font-medium text-slate-200 py-2">Safety & SOS</Link>
-          <Link href="/admin" className="block text-sm font-medium text-indigo-400 py-2">Admin Console</Link>
         </div>
       )}
     </header>
