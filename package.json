@@ -37,7 +37,7 @@
     "framer-motion": "^11.11.9",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.453.0",
-    "next": "15.1.7",
+    "next": "^15.2.0",
     "next-themes": "^0.3.0",
     "react": "^19.0.0-rc-6938d2c408-20241028",
     "react-dom": "^19.0.0-rc-6938d2c408-20241028",
