@@ -50,7 +50,9 @@ import {
   Layers,
   Database,
   BarChart3,
-  Terminal
+  Terminal,
+  Menu,
+  X
 } from 'lucide-react';
 
 import { useAdminStore } from '@/lib/adminStore';
@@ -116,6 +118,7 @@ export default function AdminDashboardPage() {
 
   const [activeTab, setActiveTab] = useState<ERPModuleTab>('users');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [notification, setNotification] = useState<string | null>(null);
 
@@ -266,12 +269,12 @@ export default function AdminDashboardPage() {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex overflow-hidden font-sans">
       
       {/* ========================================== */}
-      {/* 🟢 ENTERPRISE LEFT SIDEBAR NAV BAR         */}
+      {/* 🟢 ENTERPRISE LEFT SIDEBAR (DESKTOP)       */}
       {/* ========================================== */}
       <aside 
-        className={`${
+        className={`hidden lg:flex ${
           sidebarCollapsed ? 'w-20' : 'w-72'
-        } bg-slate-900/90 border-r border-slate-800/80 backdrop-blur-xl flex flex-col justify-between transition-all duration-300 relative z-30 shrink-0 select-none`}
+        } bg-slate-900/90 border-r border-slate-800/80 backdrop-blur-xl flex-col justify-between transition-all duration-300 relative z-30 shrink-0 select-none`}
       >
         <div>
           {/* Logo Header */}
@@ -373,28 +376,108 @@ export default function AdminDashboardPage() {
       </aside>
 
       {/* ========================================== */}
+      {/* 📱 MOBILE SIDEBAR DRAWER OVERLAY          */}
+      {/* ========================================== */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex lg:hidden">
+          <div className="w-80 bg-slate-900 border-r border-slate-800 h-full flex flex-col justify-between p-5 overflow-y-auto shadow-2xl">
+            <div>
+              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center">
+                    <ShieldCheck className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white">Sathi ERP</h3>
+                    <p className="text-[10px] font-mono text-purple-400">Enterprise Mobile Menu</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setMobileMenuOpen(false)} 
+                  className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="py-4 space-y-6">
+                {sidebarGroups.map((group, idx) => (
+                  <div key={idx} className="space-y-1.5">
+                    <h3 className="px-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest font-mono">
+                      {group.groupTitle}
+                    </h3>
+                    {group.items.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = activeTab === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            setActiveTab(item.id);
+                            setMobileMenuOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold ${
+                            isActive ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <Icon className="w-4 h-4" />
+                            <span>{item.label}</span>
+                          </div>
+                          {item.badge && (
+                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${item.badgeColor || 'bg-slate-800 text-slate-300'}`}>
+                              {item.badge}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
+              <div className="text-xs text-slate-300 font-bold">{adminUser?.fullName || 'Super Admin'}</div>
+              <button onClick={handleLogout} className="p-2 rounded-xl bg-rose-500/20 text-rose-300">
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+          <div className="flex-1" onClick={() => setMobileMenuOpen(false)} />
+        </div>
+      )}
+
+      {/* ========================================== */}
       {/* 🟦 MAIN ERP DASHBOARD CONTENT AREA        */}
       {/* ========================================== */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-950">
         
         {/* Top ERP Header Navigation Bar */}
-        <header className="h-20 border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md px-8 flex items-center justify-between shrink-0">
+        <header className="h-20 border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md px-4 sm:px-8 flex items-center justify-between shrink-0">
           
-          {/* Breadcrumb & Module Title */}
+          {/* Left: Mobile Menu Trigger & Breadcrumb */}
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="lg:hidden p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
             <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
-              <span>ERP Command</span>
-              <span>/</span>
+              <span className="hidden sm:inline">ERP Command</span>
+              <span className="hidden sm:inline">/</span>
               <span className="text-purple-400 font-bold capitalize">{activeTab}</span>
             </div>
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold flex items-center gap-1">
+            <span className="hidden sm:flex px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
               Live Sync Active
             </span>
           </div>
 
           {/* Top Bar Actions & Search */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             
             {/* Search Bar */}
             <div className="relative hidden md:block">
@@ -404,26 +487,26 @@ export default function AdminDashboardPage() {
                 placeholder="Search companions, bookings..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-64 bg-slate-950/80 border border-slate-800 focus:border-purple-500 rounded-xl py-2 pl-9 pr-4 text-xs text-white placeholder-slate-500 outline-none transition-all"
+                className="w-48 lg:w-64 bg-slate-950/80 border border-slate-800 focus:border-purple-500 rounded-xl py-2 pl-9 pr-4 text-xs text-white placeholder-slate-500 outline-none transition-all"
               />
             </div>
 
             {/* Sync Button */}
             <button 
               onClick={() => triggerNotify('All dynamic store parameters re-synced.')}
-              className="px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-300 hover:text-white hover:border-slate-700 transition-all flex items-center gap-2 shadow-sm"
+              className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-300 hover:text-white hover:border-slate-700 transition-all flex items-center gap-2 shadow-sm"
             >
               <RefreshCw className="w-3.5 h-3.5 text-purple-400" />
-              <span>Sync ERP State</span>
+              <span className="hidden sm:inline">Sync ERP State</span>
             </button>
 
             {/* Logout Button */}
             <button
               onClick={handleLogout}
-              className="px-3.5 py-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 hover:bg-rose-600 hover:text-white text-xs font-semibold transition-all flex items-center gap-1.5"
+              className="px-3 py-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 hover:bg-rose-600 hover:text-white text-xs font-semibold transition-all flex items-center gap-1.5"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span>Logout</span>
+              <span className="hidden sm:inline">Logout</span>
             </button>
           </div>
 
@@ -431,14 +514,14 @@ export default function AdminDashboardPage() {
 
         {/* Dynamic Notification Banner */}
         {notification && (
-          <div className="mx-8 mt-4 p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-3 animate-fade-in shadow-lg">
+          <div className="mx-4 sm:mx-8 mt-4 p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-3 animate-fade-in shadow-lg">
             <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
             <span>{notification}</span>
           </div>
         )}
 
         {/* ERP Main Scrollable Workspace */}
-        <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-6 sm:space-y-8 custom-scrollbar">
 
           {/* MODULE 1: USER DIRECTORY & FULL CRUD */}
           {activeTab === 'users' && (
