@@ -416,12 +416,22 @@ export function UserManagementModule() {
     setFormCity('');
   };
 
-  const handleEditSubmit = (e: React.FormEvent) => {
+  const handleOpenEdit = (user: DetailedUserRecord) => {
+    setEditingUser(user);
+    setEditName(user.name);
+    setEditEmail(user.email);
+    setEditRole(user.role as any);
+    setEditStatus(user.status);
+    setEditRate(String(user.hourlyRate || 75));
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUser) return;
 
     updateCompanion(editingUser.id, {
       name: editName,
+      email: editEmail,
       hourlyRate: Number(editRate) || 75
     });
 
@@ -429,6 +439,21 @@ export function UserManagementModule() {
       setSuspendedIds([...suspendedIds, editingUser.id]);
     } else if (editStatus === 'ACTIVE') {
       setSuspendedIds(suspendedIds.filter(id => id !== editingUser.id));
+    }
+
+    try {
+      await fetch(`/api/admin/users/${editingUser.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: editName,
+          email: editEmail,
+          role: editRole,
+          hourlyRate: editRate
+        })
+      });
+    } catch (err) {
+      // API fallback
     }
 
     triggerToast(`Updated profile & permissions for ${editName}!`);
@@ -689,6 +714,13 @@ export function UserManagementModule() {
                             </button>
 
                             <button
+                              onClick={() => handleOpenEdit(user)}
+                              className="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-purple-600/20 text-purple-300 hover:text-white border border-slate-800 font-bold"
+                            >
+                              Edit Profile
+                            </button>
+
+                            <button
                               onClick={() => handleToggleSuspend(user)}
                               className={`px-3 py-1.5 rounded-xl font-bold border ${
                                 suspendedIds.includes(user.id) || user.status === 'SUSPENDED'
@@ -827,6 +859,106 @@ export function UserManagementModule() {
                   className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold shadow-lg shadow-purple-600/25"
                 >
                   Create User Record
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* ✏️ MODAL 4: EDIT USER DETAILS                             */}
+      {/* ========================================================= */}
+      {editingUser && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-lg shadow-2xl space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Edit2 className="w-5 h-5 text-purple-400" /> Edit User Record #{editingUser.id}
+              </h3>
+              <button onClick={() => setEditingUser(null)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 mb-1 font-semibold">Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white outline-none focus:border-purple-500 font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 mb-1 font-semibold">Email Address *</label>
+                  <input
+                    type="email"
+                    required
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white outline-none focus:border-purple-500 font-semibold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 mb-1 font-semibold">Account Role</label>
+                  <select
+                    value={editRole}
+                    onChange={(e) => setEditRole(e.target.value as any)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white outline-none focus:border-purple-500 font-semibold"
+                  >
+                    <option value="CUSTOMER">Customer (Booker)</option>
+                    <option value="VERIFIED_COMPANION">Verified Companion</option>
+                    <option value="ADMIN">System Admin</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-400 mb-1 font-semibold">Account Status</label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value as any)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white outline-none focus:border-purple-500 font-semibold"
+                  >
+                    <option value="ACTIVE">Active</option>
+                    <option value="PENDING">Pending KYC</option>
+                    <option value="RESTRICTED">Restricted</option>
+                    <option value="SUSPENDED">Suspended</option>
+                    <option value="BANNED">Banned</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 mb-1 font-semibold">Hourly Rate ($/hr)</label>
+                  <input
+                    type="number"
+                    value={editRate}
+                    onChange={(e) => setEditRate(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white outline-none focus:border-purple-500 font-semibold"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingUser(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-semibold hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold shadow-lg shadow-purple-600/25"
+                >
+                  Save Profile Changes
                 </button>
               </div>
             </form>
