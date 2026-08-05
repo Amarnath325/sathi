@@ -1,28 +1,20 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-
     const user = await prisma.user.findUnique({
       where: { id },
       include: {
         profile: true,
         kycDocuments: true,
-        wallet: {
-          include: {
-            transactions: { take: 10, orderBy: { createdAt: 'desc' } }
-          }
-        },
-        bookingsAsUser: { take: 5, orderBy: { createdAt: 'desc' } },
-        bookingsAsCompanion: { take: 5, orderBy: { createdAt: 'desc' } },
-        reportsAgainst: true,
-        emergencyContacts: true,
-        sessions: { take: 5, orderBy: { lastActive: 'desc' } },
+        sessions: true,
       }
     });
 
@@ -49,60 +41,43 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-
-    const {
-      fullName,
-      email,
-      phone,
-      role,
-      riskLevel,
-      riskScore,
-      city,
-      country,
-      hourlyRate,
-      bio
-    } = body;
+    const { fullName, phone, role, riskLevel, accountFrozen, bio, city, country, hourlyRate } = body;
 
     const updatedUser = await prisma.user.update({
       where: { id },
       data: {
-        fullName: fullName || undefined,
-        email: email || undefined,
-        phone: phone || undefined,
-        role: role ? (role as any) : undefined,
-        riskLevel: riskLevel ? (riskLevel as any) : undefined,
-        riskScore: riskScore !== undefined ? Number(riskScore) : undefined,
-        profile: (city || country || hourlyRate || bio)
-          ? {
-              upsert: {
-                create: {
-                  bio: bio || 'Companion Profile',
-                  age: 25,
-                  gender: 'Other',
-                  city: city || 'New York',
-                  country: country || 'USA',
-                  hourlyRate: Number(hourlyRate) || 75,
-                  categories: ['Event Companion'],
-                  availability: {},
-                },
-                update: {
-                  city: city || undefined,
-                  country: country || undefined,
-                  hourlyRate: hourlyRate !== undefined ? Number(hourlyRate) : undefined,
-                  bio: bio || undefined,
-                }
-              }
+        fullName,
+        phone,
+        role,
+        riskLevel,
+        accountFrozen,
+        profile: {
+          upsert: {
+            create: {
+              bio: bio || '',
+              age: 26,
+              gender: 'Other',
+              city: city || 'New York',
+              country: country || 'USA',
+              hourlyRate: Number(hourlyRate) || 75,
+              categories: ['General'],
+              availability: {},
+            },
+            update: {
+              bio,
+              city,
+              country,
+              hourlyRate: hourlyRate !== undefined ? Number(hourlyRate) : undefined,
             }
-          : undefined
+          }
+        }
       },
-      include: {
-        profile: true
-      }
+      include: { profile: true }
     });
 
     return NextResponse.json({
       success: true,
-      message: `User ${updatedUser.fullName} updated successfully`,
+      message: 'User updated successfully',
       data: updatedUser
     });
   } catch (error: any) {
@@ -119,14 +94,11 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-
-    await prisma.user.delete({
-      where: { id }
-    });
+    await prisma.user.delete({ where: { id } });
 
     return NextResponse.json({
       success: true,
-      message: `User #${id} permanently deleted`
+      message: 'User deleted permanently'
     });
   } catch (error: any) {
     return NextResponse.json(

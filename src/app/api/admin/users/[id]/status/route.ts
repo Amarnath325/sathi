@@ -1,62 +1,41 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    const body = await request.json();
-    const { status, reason, isEmailVerified, isPhoneVerified } = body;
+    const { status, riskLevel, accountFrozen, reason } = await request.json();
 
-    let accountFrozen: boolean | undefined = undefined;
-    let riskLevel: any = undefined;
-    let riskScore: number | undefined = undefined;
-
-    if (status === 'SUSPENDED') {
-      accountFrozen = true;
-    } else if (status === 'BANNED') {
-      accountFrozen = true;
-      riskLevel = 'CRITICAL';
-      riskScore = 1.0;
-    } else if (status === 'RESTRICTED') {
-      riskLevel = 'HIGH';
-      riskScore = 0.8;
-    } else if (status === 'ACTIVE') {
-      accountFrozen = false;
-      riskLevel = 'LOW';
-      riskScore = 0.05;
-    }
-
-    const updatedUser = await prisma.user.update({
+    const user = await prisma.user.update({
       where: { id },
       data: {
-        accountFrozen,
-        riskLevel,
-        riskScore,
-        isEmailVerified: isEmailVerified !== undefined ? Boolean(isEmailVerified) : undefined,
-        isPhoneVerified: isPhoneVerified !== undefined ? Boolean(isPhoneVerified) : undefined,
+        accountFrozen: accountFrozen !== undefined ? accountFrozen : status === 'SUSPENDED' || status === 'BANNED',
+        riskLevel: riskLevel || (status === 'RESTRICTED' ? 'HIGH' : status === 'BANNED' ? 'CRITICAL' : undefined)
       }
     });
 
     try {
       await prisma.auditLog.create({
         data: {
-          action: `ADMIN_USER_STATUS_CHANGE_${status}`,
-          payload: {
-            userId: id,
-            status,
-            reason: reason || 'Admin panel status update'
-          }
+          userId: id,
+          action: `USER_STATUS_CHANGE_${status}`,
+          ipAddress: '127.0.0.1',
+          payload: { reason: reason || `Status changed to ${status}` }
         }
       });
-    } catch (e) {}
+    } catch (logErr) {
+      // Audit log fallback
+    }
 
     return NextResponse.json({
       success: true,
-      message: `User status changed to ${status}`,
-      data: updatedUser
+      message: `User status updated to ${status}`,
+      data: user
     });
   } catch (error: any) {
     return NextResponse.json(
