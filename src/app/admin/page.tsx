@@ -68,6 +68,7 @@ import { useCrudStore, DynamicCompanionItem } from '@/lib/crudStore';
 import { UniversalCrudToolbar } from '@/components/common/UniversalCrudToolbar';
 import { MOCK_BOOKINGS, MOCK_KYC_QUEUE, MOCK_PANIC_ALERTS, MOCK_REVIEWS, MOCK_MESSAGES } from '@/lib/mockData';
 import { UserManagementModule } from '@/components/admin/UserManagementModule';
+import { KycVerificationModule } from '@/components/admin/KycVerificationModule';
 
 
 export type ERPModuleTab = 
@@ -636,42 +637,7 @@ export default function AdminDashboardPage() {
           {/* ==================================================== */}
           {/* MODULE 3: 🪪 VERIFICATION & KYC                      */}
           {/* ==================================================== */}
-          {activeTab === 'verification' && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                {['verification-dashboard', 'pending', 'approved', 'rejected', 'expired', 'history'].map((s) => (
-                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
-                    {s.replace('-', ' ')}
-                  </button>
-                ))}
-              </div>
-
-              <div className="rounded-3xl bg-slate-900 border border-slate-800 p-6 space-y-4">
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <UserCheck className="w-5 h-5 text-amber-400" /> Pending KYC Verification Queue
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {MOCK_KYC_QUEUE.map((doc) => (
-                    <div key={doc.id} className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono font-bold text-purple-400 text-xs">{doc.type}</span>
-                        <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold">{doc.status}</span>
-                      </div>
-                      <img src={doc.fileUrl} alt="ID Document" className="w-full h-36 rounded-xl object-cover border border-slate-800" />
-                      <div className="flex items-center justify-between text-xs text-slate-400">
-                        <span>Liveness: {(doc.livenessScore! * 100).toFixed(0)}%</span>
-                        <span>Face Match: {(doc.selfieMatchScore! * 100).toFixed(0)}%</span>
-                      </div>
-                      <div className="flex gap-2 pt-2">
-                        <button onClick={() => triggerNotify(`Document #${doc.id} Approved!`)} className="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs">Approve KYC</button>
-                        <button onClick={() => triggerNotify(`Document #${doc.id} Rejected.`)} className="flex-1 py-2 rounded-xl bg-rose-600/20 text-rose-300 border border-rose-500/30 font-bold text-xs">Reject</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+          {activeTab === 'verification' && <KycVerificationModule />}
 
           {/* ==================================================== */}
           {/* MODULE 4: 🤝 COMPANION MANAGEMENT                    */}
