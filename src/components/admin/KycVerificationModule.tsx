@@ -400,26 +400,26 @@ export function KycVerificationModule() {
         </div>
       </div>
 
-      {/* 📋 KYC DOCUMENT CARDS GRID (COMPACT & RESPONSIVE IMAGES) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+      {/* 📋 KYC DOCUMENT CARDS GRID (COMPACT 8-PER-ROW & RESPONSIVE FOR MOBILE/TABLET) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 2xl:grid-cols-8 gap-2.5">
         {displayedDocs.length === 0 ? (
-          <div className="col-span-2 p-12 text-center bg-slate-900 border border-slate-800 rounded-3xl text-slate-500 font-medium">
+          <div className="col-span-full p-12 text-center bg-slate-900 border border-slate-800 rounded-3xl text-slate-500 font-medium">
             No KYC verification documents found in {activeSubFilter.toUpperCase()} view.
           </div>
         ) : (
           displayedDocs.map((doc) => (
-            <div key={doc.id} className="p-4 sm:p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-3 shadow-xl hover:border-slate-700 transition-all">
+            <div key={doc.id} className="p-2 sm:p-2.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2 shadow-md hover:border-slate-700 transition-all flex flex-col justify-between">
               
-              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
-                <div>
-                  <h4 className="font-bold text-white text-sm flex items-center gap-1.5">
-                    {doc.userName}
-                    {doc.status === 'APPROVED' && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5 gap-1">
+                <div className="min-w-0">
+                  <h4 className="font-bold text-white text-[11px] flex items-center gap-1 truncate">
+                    <span className="truncate">{doc.userName}</span>
+                    {doc.status === 'APPROVED' && <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />}
                   </h4>
-                  <p className="text-[10px] text-slate-400 font-mono">{doc.userEmail} • #{doc.id}</p>
+                  <p className="text-[8px] text-slate-400 font-mono truncate">{doc.userEmail}</p>
                 </div>
 
-                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${
+                <span className={`px-1.5 py-0.5 rounded-full text-[8px] font-extrabold border shrink-0 ${
                   doc.status === 'APPROVED'
                     ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
                     : doc.status === 'REJECTED'
@@ -432,57 +432,57 @@ export function KycVerificationModule() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="p-2 rounded-xl bg-slate-950 border border-slate-800/80 space-y-0.5">
-                  <span className="text-[9px] text-slate-500 font-mono uppercase">Document Type</span>
-                  <p className="font-bold text-purple-400 truncate text-[11px]">{doc.type.replace(/_/g, ' ')}</p>
+              <div className="grid grid-cols-2 gap-1 text-[9px]">
+                <div className="p-1 rounded-lg bg-slate-950 border border-slate-800/80 min-w-0">
+                  <span className="text-[7px] text-slate-500 font-mono uppercase block truncate">Doc Type</span>
+                  <p className="font-bold text-purple-400 truncate text-[9px]">{doc.type.replace(/_/g, ' ')}</p>
                 </div>
-                <div className="p-2 rounded-xl bg-slate-950 border border-slate-800/80 space-y-0.5">
-                  <span className="text-[9px] text-slate-500 font-mono uppercase">ID Number</span>
-                  <p className="font-mono font-bold text-white truncate text-[11px]">{doc.documentNumber}</p>
+                <div className="p-1 rounded-lg bg-slate-950 border border-slate-800/80 min-w-0">
+                  <span className="text-[7px] text-slate-500 font-mono uppercase block truncate">ID Number</span>
+                  <p className="font-mono font-bold text-white truncate text-[9px]">{doc.documentNumber}</p>
                 </div>
               </div>
 
               {/* Document Photo Preview (Clean Proportions & 100% Uncropped) */}
-              <div className="relative rounded-2xl overflow-hidden border border-slate-800/80 group h-40 sm:h-44 bg-slate-950 flex items-center justify-center p-1.5 shadow-inner">
+              <div className="relative rounded-lg overflow-hidden border border-slate-800/80 group h-20 sm:h-24 bg-slate-950 flex items-center justify-center p-0.5 shadow-inner">
                 <img
                   src={doc.fileUrl}
                   alt="KYC Document"
-                  className="w-full h-full object-contain rounded-xl group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-full object-contain rounded group-hover:scale-105 transition-transform duration-300"
                 />
                 
                 {/* User Live Selfie Overlay Badge */}
-                <div className="absolute bottom-2.5 left-2.5 bg-slate-950/90 backdrop-blur-md px-2 py-1 rounded-xl border border-slate-800 flex items-center gap-2 shadow-lg">
-                  <img src={doc.selfieUrl} className="w-6 h-6 rounded-lg object-cover border border-purple-500/30" />
-                  <div className="text-[9px]">
+                <div className="absolute bottom-1 left-1 bg-slate-950/90 backdrop-blur-md px-1 py-0.5 rounded border border-slate-800 flex items-center gap-1 shadow-lg">
+                  <img src={doc.selfieUrl} className="w-3.5 h-3.5 rounded object-cover border border-purple-500/30" />
+                  <div className="text-[7px]">
                     <p className="font-bold text-white leading-tight">Live Selfie</p>
-                    <p className="text-emerald-400 font-mono font-bold leading-tight">100% Match</p>
+                    <p className="text-emerald-400 font-mono font-bold leading-tight">100%</p>
                   </div>
                 </div>
 
                 <button
                   onClick={() => setInspectingDoc(doc)}
-                  className="absolute top-2.5 right-2.5 px-2 py-1 rounded-xl bg-slate-950/90 hover:bg-purple-600 text-white transition-all border border-slate-800 flex items-center gap-1 text-[10px] font-bold shadow-lg"
+                  className="absolute top-1 right-1 px-1 py-0.5 rounded bg-slate-950/90 hover:bg-purple-600 text-white transition-all border border-slate-800 flex items-center gap-0.5 text-[8px] font-bold shadow-lg"
                 >
-                  <Eye className="w-3.5 h-3.5 text-purple-400" /> Inspect
+                  <Eye className="w-2.5 h-2.5 text-purple-400" /> View
                 </button>
               </div>
 
               {doc.rejectionReason && (
-                <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[11px] flex items-center gap-2">
-                  <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                  <span>Reason: "{doc.rejectionReason}"</span>
+                <div className="p-1 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[8px] flex items-center gap-1">
+                  <AlertTriangle className="w-2.5 h-2.5 text-rose-400 shrink-0" />
+                  <span className="truncate">{doc.rejectionReason}</span>
                 </div>
               )}
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-2 pt-1 text-xs">
+              <div className="flex items-center justify-end gap-1 pt-0.5">
                 {doc.status !== 'APPROVED' && (
                   <button
                     onClick={() => handleApprove(doc)}
-                    className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1 text-[11px] shadow-md shadow-emerald-600/20"
+                    className="flex-1 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center justify-center gap-0.5 text-[9px] shadow-md shadow-emerald-600/20"
                   >
-                    <Check className="w-3.5 h-3.5" /> Approve KYC
+                    <Check className="w-2.5 h-2.5" /> Approve
                   </button>
                 )}
 
@@ -492,13 +492,12 @@ export function KycVerificationModule() {
                       setRejectingDoc(doc);
                       setRejectReason('Blurry document photo or text unreadable');
                     }}
-                    className="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-rose-600/20 text-rose-400 border border-slate-800 font-bold flex items-center gap-1 text-[11px]"
+                    className="flex-1 py-1 rounded-lg bg-slate-950 hover:bg-rose-600/20 text-rose-400 border border-slate-800 font-bold flex items-center justify-center gap-0.5 text-[9px]"
                   >
-                    <X className="w-3.5 h-3.5" /> Reject
+                    <X className="w-2.5 h-2.5" /> Reject
                   </button>
                 )}
               </div>
-
             </div>
           ))
         )}
