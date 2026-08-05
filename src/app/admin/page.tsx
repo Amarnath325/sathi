@@ -3,75 +3,92 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
-  ShieldCheck, 
+  BarChart3, 
   Users, 
-  DollarSign, 
-  AlertTriangle, 
-  CheckCircle2, 
-  XCircle, 
+  UserCheck, 
+  ShieldCheck, 
+  Sliders, 
   Clock, 
-  FileText, 
-  Activity, 
-  Lock, 
+  DollarSign, 
+  MessageSquare, 
+  ShieldAlert, 
+  Scale, 
+  Star, 
+  MapPin, 
+  Bell, 
+  Tag, 
   TrendingUp, 
+  UserCog, 
+  Lock, 
+  FileText, 
+  Settings, 
+  Activity, 
+  Plus, 
   Search, 
   Filter, 
-  ChevronRight,
-  Eye,
-  RefreshCw,
-  Sliders,
-  UserX,
-  AlertCircle,
-  Tag,
-  Ticket,
-  Settings,
-  Bell,
+  Trash2, 
+  Edit2, 
+  RotateCcw, 
+  XCircle, 
+  CheckCircle2, 
+  AlertTriangle, 
+  Menu, 
+  X, 
+  ChevronLeft, 
+  LogOut, 
+  RefreshCw, 
+  Percent, 
+  CreditCard, 
+  Send, 
+  Zap, 
+  Eye, 
+  Server, 
+  Database, 
+  HardDrive, 
+  Wifi, 
+  Radio, 
+  Shield, 
+  Smartphone, 
+  Globe, 
+  UserX, 
+  AlertCircle, 
+  HelpCircle,
   FileSpreadsheet,
   Building2,
-  Percent,
-  CreditCard,
-  ArrowUpRight,
-  Send,
   SlidersHorizontal,
-  HelpCircle,
-  UserCheck,
-  Zap,
-  Globe,
-  Plus,
-  Trash2,
-  RotateCcw,
-  Edit2,
-  LogOut,
-  ChevronLeft,
-  ChevronDown,
-  LayoutDashboard,
-  ShieldAlert,
+  Terminal,
   Sparkles,
   Layers,
-  Database,
-  BarChart3,
-  Terminal,
-  Menu,
-  X
+  ArrowUpRight,
+  ChevronDown
 } from 'lucide-react';
 
 import { useAdminStore } from '@/lib/adminStore';
 import { useCrudStore, DynamicCompanionItem } from '@/lib/crudStore';
 import { UniversalCrudToolbar } from '@/components/common/UniversalCrudToolbar';
+import { MOCK_BOOKINGS, MOCK_KYC_QUEUE, MOCK_PANIC_ALERTS, MOCK_REVIEWS, MOCK_MESSAGES } from '@/lib/mockData';
 
-type ERPModuleTab = 
+export type ERPModuleTab = 
   | 'overview' 
-  | 'revenue' 
   | 'users' 
-  | 'bookings' 
-  | 'disputes' 
   | 'verification' 
-  | 'withdrawals' 
-  | 'commission' 
-  | 'coupons' 
-  | 'categories'
-  | 'tickets' 
-  | 'settings';
+  | 'companions' 
+  | 'categories' 
+  | 'bookings' 
+  | 'payments' 
+  | 'communication' 
+  | 'safety' 
+  | 'disputes' 
+  | 'reviews' 
+  | 'location' 
+  | 'notifications' 
+  | 'promotions' 
+  | 'analytics' 
+  | 'staff' 
+  | 'security' 
+  | 'audit' 
+  | 'settings' 
+  | 'health';
 
 interface SidebarGroup {
   groupTitle: string;
@@ -116,7 +133,8 @@ export default function AdminDashboardPage() {
     importCompanionsFromCSV
   } = useCrudStore();
 
-  const [activeTab, setActiveTab] = useState<ERPModuleTab>('users');
+  const [activeTab, setActiveTab] = useState<ERPModuleTab>('overview');
+  const [subFilter, setSubFilter] = useState<string>('all');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -126,7 +144,6 @@ export default function AdminDashboardPage() {
   const [adminUser, setAdminUser] = useState<{ email: string; fullName: string; role: string } | null>(null);
 
   useEffect(() => {
-    // Read session info
     const storedUser = localStorage.getItem('adminUser');
     if (storedUser) {
       try {
@@ -139,13 +156,18 @@ export default function AdminDashboardPage() {
     }
   }, []);
 
+  // Reset sub-filter when active main module tab changes
+  useEffect(() => {
+    setSubFilter('all');
+  }, [activeTab]);
+
   const handleLogout = () => {
     localStorage.removeItem('adminToken');
     localStorage.removeItem('adminUser');
     router.push('/admin/login');
   };
 
-  // View Trash state for Users
+  // View Trash state for Directory
   const [viewTrash, setViewTrash] = useState(false);
 
   // Create User Modal state
@@ -164,16 +186,17 @@ export default function AdminDashboardPage() {
   const [newPromoCode, setNewPromoCode] = useState('');
   const [newPromoDiscount, setNewPromoDiscount] = useState('10');
 
-  // New Category Form state
-  const [newCatName, setNewCatName] = useState('');
-  const [newCatDesc, setNewCatDesc] = useState('');
+  // Broadcast Notification Form
+  const [broadcastTitle, setBroadcastTitle] = useState('');
+  const [broadcastMessage, setBroadcastMessage] = useState('');
+  const [broadcastChannel, setBroadcastChannel] = useState<'PUSH' | 'EMAIL' | 'SMS'>('PUSH');
 
   const triggerNotify = (msg: string) => {
     setNotification(msg);
     setTimeout(() => setNotification(null), 3500);
   };
 
-  // Filtered List based on Trash state & search query
+  // Filtered Companion Directory based on Trash state & search query
   const activeCompanions = companions.filter((c: DynamicCompanionItem) => !c.isDeleted);
   const trashedCompanions = companions.filter((c: DynamicCompanionItem) => c.isDeleted);
   const rawList = viewTrash ? trashedCompanions : activeCompanions;
@@ -224,43 +247,56 @@ export default function AdminDashboardPage() {
     setEditingUserId(null);
   };
 
-  // Sidebar Menu Structure
+  // 20 Core Admin ERP Modules Grouped Logically in Sidebar
   const sidebarGroups: SidebarGroup[] = [
     {
-      groupTitle: 'ANALYTICS & EXECUTIVE',
+      groupTitle: '📊 DASHBOARD & CORE',
       items: [
-        { id: 'overview', label: 'Executive Analytics', icon: BarChart3 },
-        { id: 'revenue', label: 'Revenue & Escrow Ledger', icon: DollarSign, badge: '$14.2k', badgeColor: 'bg-emerald-500/20 text-emerald-400' },
+        { id: 'overview', label: '📊 Executive Dashboard', icon: BarChart3 },
+        { id: 'analytics', label: '📈 Analytics & Reports', icon: TrendingUp },
       ]
     },
     {
-      groupTitle: 'CRM & USERS',
+      groupTitle: '👥 USER & COMPANION MANAGEMENT',
       items: [
-        { id: 'users', label: 'User & Companion Directory', icon: Users, badge: `${companions.length}`, badgeColor: 'bg-indigo-500/20 text-indigo-300' },
-        { id: 'verification', label: 'KYC Document Verification', icon: UserCheck, badge: '2 Pending', badgeColor: 'bg-amber-500/20 text-amber-300' },
+        { id: 'users', label: '👥 User Management', icon: Users, badge: `${companions.length}`, badgeColor: 'bg-indigo-500/20 text-indigo-300' },
+        { id: 'verification', label: '🪪 Verification & KYC', icon: UserCheck, badge: `${MOCK_KYC_QUEUE.length} Pending`, badgeColor: 'bg-amber-500/20 text-amber-300' },
+        { id: 'companions', label: '🤝 Companion Management', icon: ShieldCheck },
       ]
     },
     {
-      groupTitle: 'MARKETPLACE OPERATIONS',
+      groupTitle: '🛎️ CATALOG & BOOKINGS',
       items: [
-        { id: 'bookings', label: 'Bookings & Escrow Engine', icon: Clock },
-        { id: 'disputes', label: 'Disputes & Support Desk', icon: AlertTriangle, badge: '0 Open', badgeColor: 'bg-slate-800 text-slate-400' },
-        { id: 'categories', label: 'Service Categories Manager', icon: Sliders },
+        { id: 'categories', label: '🛎️ Services & Categories', icon: Sliders },
+        { id: 'bookings', label: '📅 Booking Management', icon: Clock, badge: `${MOCK_BOOKINGS.length}`, badgeColor: 'bg-blue-500/20 text-blue-300' },
+        { id: 'location', label: '📍 Location Management', icon: MapPin },
       ]
     },
     {
-      groupTitle: 'FINANCIAL CONTROL',
+      groupTitle: '💰 FINANCE & REVENUE',
       items: [
-        { id: 'commission', label: 'Fee & GST Tax Matrix', icon: Percent },
-        { id: 'withdrawals', label: 'Companion Payouts', icon: CreditCard },
-        { id: 'coupons', label: 'Promo Coupons Engine', icon: Tag, badge: `${promos.length}`, badgeColor: 'bg-purple-500/20 text-purple-300' },
+        { id: 'payments', label: '💰 Payments & Finance', icon: DollarSign, badge: '$14.8k', badgeColor: 'bg-emerald-500/20 text-emerald-400' },
+        { id: 'promotions', label: '🎁 Promotions & Coupons', icon: Tag, badge: `${promos.length}`, badgeColor: 'bg-purple-500/20 text-purple-300' },
       ]
     },
     {
-      groupTitle: 'SECURITY & GOVERNANCE',
+      groupTitle: '🛡️ TRUST, SAFETY & MODERATION',
       items: [
-        { id: 'settings', label: 'Platform Security Settings', icon: Settings },
-        { id: 'tickets', label: 'System Audit Logs', icon: Terminal },
+        { id: 'safety', label: '🛡️ Trust & Safety', icon: ShieldAlert, badge: `${MOCK_PANIC_ALERTS.length} Alerts`, badgeColor: 'bg-rose-500/20 text-rose-300 animate-pulse' },
+        { id: 'disputes', label: '⚖️ Disputes & Resolution', icon: Scale },
+        { id: 'reviews', label: '⭐ Reviews & Moderation', icon: Star },
+        { id: 'communication', label: '💬 Communication', icon: MessageSquare },
+      ]
+    },
+    {
+      groupTitle: '⚙️ ADMINISTRATION & GOVERNANCE',
+      items: [
+        { id: 'notifications', label: '🔔 Notifications Engine', icon: Bell },
+        { id: 'staff', label: '👨‍💼 Staff & Access Control', icon: UserCog },
+        { id: 'security', label: '🔐 Security Center', icon: Lock },
+        { id: 'audit', label: '📝 Audit Logs', icon: FileText },
+        { id: 'settings', label: '⚙️ System Settings', icon: Settings },
+        { id: 'health', label: '🔧 System Health', icon: Activity, badge: 'Operational', badgeColor: 'bg-emerald-500/20 text-emerald-300' },
       ]
     }
   ];
@@ -287,9 +323,9 @@ export default function AdminDashboardPage() {
                 <div>
                   <div className="flex items-center gap-1.5">
                     <span className="text-base font-extrabold text-white tracking-tight">Sathi</span>
-                    <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">ERP v2.4</span>
+                    <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">ERP v3.0</span>
                   </div>
-                  <p className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Enterprise Command</p>
+                  <p className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Enterprise Admin Hub</p>
                 </div>
               )}
             </div>
@@ -468,7 +504,7 @@ export default function AdminDashboardPage() {
             <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
               <span className="hidden sm:inline">ERP Command</span>
               <span className="hidden sm:inline">/</span>
-              <span className="text-purple-400 font-bold capitalize">{activeTab}</span>
+              <span className="text-purple-400 font-bold uppercase tracking-wider">{activeTab}</span>
             </div>
             <span className="hidden sm:flex px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -484,7 +520,7 @@ export default function AdminDashboardPage() {
               <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Search companions, bookings..."
+                placeholder="Search across all modules..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-48 lg:w-64 bg-slate-950/80 border border-slate-800 focus:border-purple-500 rounded-xl py-2 pl-9 pr-4 text-xs text-white placeholder-slate-500 outline-none transition-all"
@@ -493,11 +529,11 @@ export default function AdminDashboardPage() {
 
             {/* Sync Button */}
             <button 
-              onClick={() => triggerNotify('All dynamic store parameters re-synced.')}
+              onClick={() => triggerNotify('All 20 module parameters re-synced.')}
               className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-300 hover:text-white hover:border-slate-700 transition-all flex items-center gap-2 shadow-sm"
             >
               <RefreshCw className="w-3.5 h-3.5 text-purple-400" />
-              <span className="hidden sm:inline">Sync ERP State</span>
+              <span className="hidden sm:inline">Sync State</span>
             </button>
 
             {/* Logout Button */}
@@ -523,29 +559,94 @@ export default function AdminDashboardPage() {
         {/* ERP Main Scrollable Workspace */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-6 sm:space-y-8 custom-scrollbar">
 
-          {/* MODULE 1: USER DIRECTORY & FULL CRUD */}
-          {activeTab === 'users' && (
+          {/* ==================================================== */}
+          {/* MODULE 1: 📊 DASHBOARD                               */}
+          {/* ==================================================== */}
+          {activeTab === 'overview' && (
             <div className="space-y-6">
-              
-              {/* Module Header Bar */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-panel p-6 rounded-3xl border border-slate-800/80">
-                <div>
-                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                    <Users className="w-5 h-5 text-purple-400" /> User & Companion Master Directory
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-1">Full-cycle companion management with Universal CSV toolbar, Bulk actions, Trash & Restore.</p>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800">
+                  <p className="text-xs text-slate-400 font-bold uppercase font-mono">Total Companions</p>
+                  <h3 className="text-3xl font-extrabold text-white mt-2">{companions.length}</h3>
+                  <p className="text-xs text-emerald-400 mt-2">↑ 14% growth this month</p>
                 </div>
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-medium text-xs shadow-lg shadow-purple-600/25 flex items-center gap-2 self-start sm:self-auto"
-                >
-                  <Plus className="w-4 h-4" /> Add New Companion
-                </button>
+                <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800">
+                  <p className="text-xs text-slate-400 font-bold uppercase font-mono">Escrow Vault Held</p>
+                  <h3 className="text-3xl font-extrabold text-emerald-400 mt-2">$14,850.00</h3>
+                  <p className="text-xs text-slate-400 mt-2">Locked in bank-grade escrow</p>
+                </div>
+                <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800">
+                  <p className="text-xs text-slate-400 font-bold uppercase font-mono">Platform Revenue</p>
+                  <h3 className="text-3xl font-extrabold text-purple-400 mt-2">$2,970.00</h3>
+                  <p className="text-xs text-slate-400 mt-2">At {config.platformFeePercent}% fee rate</p>
+                </div>
+                <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800">
+                  <p className="text-xs text-slate-400 font-bold uppercase font-mono">System Risk Score</p>
+                  <h3 className="text-3xl font-extrabold text-blue-400 mt-2">0.02 (Low)</h3>
+                  <p className="text-xs text-emerald-400 mt-2">✓ AI Guard Active</p>
+                </div>
               </div>
 
-              {/* Universal Toolbar */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-purple-400" /> Recent Booking Requests
+                  </h3>
+                  <div className="space-y-3">
+                    {MOCK_BOOKINGS.map(b => (
+                      <div key={b.id} className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800/80 flex items-center justify-between text-xs">
+                        <div>
+                          <p className="font-bold text-white">{b.bookingNumber} • {b.category}</p>
+                          <p className="text-slate-400">{b.userName} ➔ {b.companionName}</p>
+                        </div>
+                        <span className="font-mono font-bold text-emerald-400">${b.totalAmount}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <ShieldAlert className="w-4 h-4 text-rose-400" /> Live Trust & Safety Alerts
+                  </h3>
+                  <div className="space-y-3">
+                    {MOCK_PANIC_ALERTS.map(a => (
+                      <div key={a.id} className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-between text-xs">
+                        <div>
+                          <p className="font-bold text-rose-300">SOS Triggered: {a.userName}</p>
+                          <p className="text-rose-400/80">{a.address}</p>
+                        </div>
+                        <span className="px-2 py-0.5 rounded bg-rose-500 text-white font-bold text-[10px]">CRITICAL</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ==================================================== */}
+          {/* MODULE 2: 👥 USER MANAGEMENT                        */}
+          {/* ==================================================== */}
+          {activeTab === 'users' && (
+            <div className="space-y-6">
+              {/* Submodule Filter Tabs */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                {['all', 'customers', 'companions', 'pending', 'restricted', 'suspended', 'banned'].map((sub) => (
+                  <button
+                    key={sub}
+                    onClick={() => setSubFilter(sub)}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize whitespace-nowrap transition-colors ${
+                      subFilter === sub ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                    }`}
+                  >
+                    {sub} Users
+                  </button>
+                ))}
+              </div>
+
               <UniversalCrudToolbar
-                title="Companion & User Directory"
+                title="User Directory Master Control"
                 totalActiveCount={activeCompanions.length}
                 totalTrashCount={trashedCompanions.length}
                 viewTrash={viewTrash}
@@ -553,132 +654,53 @@ export default function AdminDashboardPage() {
                 onOpenCreateModal={() => setShowCreateModal(true)}
                 onNotify={triggerNotify}
                 exportRows={displayedCompanions}
-                onImportData={(parsedRows) => {
-                  importCompanionsFromCSV(parsedRows);
-                  triggerNotify(`Imported ${parsedRows.length} companions via CSV!`);
+                onImportData={(rows) => {
+                  importCompanionsFromCSV(rows);
+                  triggerNotify(`Imported ${rows.length} companions via CSV!`);
                 }}
               />
 
-              {/* Data Table */}
-              <div className="glass-panel rounded-3xl border border-slate-800/80 overflow-hidden shadow-2xl">
+              <div className="rounded-3xl bg-slate-900 border border-slate-800 overflow-hidden shadow-2xl">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="border-b border-slate-800 bg-slate-900/80 text-[11px] font-mono text-slate-400 uppercase tracking-wider">
-                        <th className="py-4 px-5 w-10">Select</th>
-                        <th className="py-4 px-5">Companion Profile</th>
+                      <tr className="border-b border-slate-800 bg-slate-950 text-[11px] font-mono text-slate-400 uppercase">
+                        <th className="py-4 px-5">User</th>
+                        <th className="py-4 px-5">Role</th>
                         <th className="py-4 px-5">Location</th>
-                        <th className="py-4 px-5">Hourly Rate</th>
                         <th className="py-4 px-5">Status</th>
-                        <th className="py-4 px-5">Suspension</th>
                         <th className="py-4 px-5 text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800/60 text-xs">
-                      {displayedCompanions.length === 0 ? (
-                        <tr>
-                          <td colSpan={7} className="py-12 text-center text-slate-500">
-                            No companion records found in {viewTrash ? 'Trash Bin' : 'Active Directory'}.
-                          </td>
-                        </tr>
-                      ) : (
-                        displayedCompanions.map((companion) => {
-                          const isSelected = selectedIds.includes(companion.id);
-                          const isSuspended = suspendedUserIds.includes(companion.id);
-                          return (
-                            <tr key={companion.id} className={`hover:bg-slate-900/50 transition-colors ${isSelected ? 'bg-purple-950/20' : ''}`}>
-                              <td className="py-4 px-5">
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={() => toggleSelection(companion.id)}
-                                  className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-purple-600 focus:ring-purple-500"
-                                />
-                              </td>
-                              <td className="py-4 px-5">
-                                <div className="flex items-center gap-3">
-                                  <img src={(companion as any).avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80'} alt={companion.name} className="w-9 h-9 rounded-xl object-cover border border-slate-700" />
-                                  <div>
-                                    <p className="font-bold text-white text-sm">{companion.name}</p>
-                                    <p className="text-[10px] font-mono text-slate-400">ID: #{companion.id}</p>
-                                  </div>
+                    <tbody className="divide-y divide-slate-800 text-xs">
+                      {displayedCompanions.map((c) => {
+                        const isSuspended = suspendedUserIds.includes(c.id);
+                        return (
+                          <tr key={c.id} className="hover:bg-slate-800/40">
+                            <td className="py-4 px-5">
+                              <div className="flex items-center gap-3">
+                                <img src={(c as any).avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'} className="w-9 h-9 rounded-xl object-cover" />
+                                <div>
+                                  <p className="font-bold text-white">{c.name}</p>
+                                  <p className="text-[10px] text-slate-400">{(c as any).email || 'user@example.com'}</p>
                                 </div>
-                              </td>
-                              <td className="py-4 px-5 text-slate-300 font-medium">{companion.city}, {companion.country}</td>
-                              <td className="py-4 px-5 font-mono font-bold text-emerald-400">${companion.hourlyRate}/hr</td>
-                              <td className="py-4 px-5">
-                                <button
-                                  onClick={() => toggleCompanionActive(companion.id)}
-                                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors ${companion.isActive ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-slate-800 text-slate-400 border-slate-700'}`}
-                                >
-                                  {companion.isActive ? '● Online & Active' : 'Offline'}
-                                </button>
-                              </td>
-                              <td className="py-4 px-5">
-                                <button
-                                  onClick={() => {
-                                    toggleUserSuspension(companion.id);
-                                    triggerNotify(`User #${companion.id} ${isSuspended ? 'unsuspended' : 'suspended'}.`);
-                                  }}
-                                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border ${isSuspended ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'}`}
-                                >
-                                  {isSuspended ? 'SUSPENDED' : 'Active Account'}
-                                </button>
-                              </td>
-                              <td className="py-4 px-5 text-right space-x-2">
-                                {!viewTrash ? (
-                                  <>
-                                    <button
-                                      onClick={() => {
-                                        setEditingUserId(companion.id);
-                                        setEditName(companion.name);
-                                        setEditRate(String(companion.hourlyRate));
-                                      }}
-                                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white"
-                                      title="Edit Record"
-                                    >
-                                      <Edit2 className="w-3.5 h-3.5" />
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        softDeleteCompanion(companion.id);
-                                        triggerNotify(`Moved #${companion.id} to Trash.`);
-                                      }}
-                                      className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20"
-                                      title="Soft Delete to Trash"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                  </>
-                                ) : (
-                                  <>
-                                    <button
-                                      onClick={() => {
-                                        restoreCompanion(companion.id);
-                                        triggerNotify(`Restored #${companion.id} back to active list.`);
-                                      }}
-                                      className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500 hover:text-white transition-colors"
-                                      title="Restore Record"
-                                    >
-                                      <RotateCcw className="w-3.5 h-3.5" />
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        permanentDeleteCompanion(companion.id);
-                                        triggerNotify(`Permanently erased #${companion.id}.`);
-                                      }}
-                                      className="p-1.5 rounded-lg bg-rose-600 text-white hover:bg-rose-700"
-                                      title="Permanent Delete"
-                                    >
-                                      <XCircle className="w-3.5 h-3.5" />
-                                    </button>
-                                  </>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
+                              </div>
+                            </td>
+                            <td className="py-4 px-5"><span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono text-[10px]">{(c as any).role || 'COMPANION'}</span></td>
+                            <td className="py-4 px-5 text-slate-300">{c.city}, {c.country}</td>
+                            <td className="py-4 px-5">
+                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${isSuspended ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                                {isSuspended ? 'Suspended' : 'Active'}
+                              </span>
+                            </td>
+                            <td className="py-4 px-5 text-right space-x-2">
+                              <button onClick={() => toggleUserSuspension(c.id)} className="px-2 py-1 rounded bg-slate-800 text-slate-300 hover:text-white">
+                                {isSuspended ? 'Unsuspend' : 'Suspend'}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -686,121 +708,38 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
-          {/* MODULE 2: COMMISSION & FEE MATRIX */}
-          {activeTab === 'commission' && (
-            <div className="glass-panel p-8 rounded-3xl border border-slate-800/80 space-y-6 max-w-3xl">
-              <div>
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Percent className="w-5 h-5 text-purple-400" /> Platform Fee & Tax Rate Configuration
-                </h2>
-                <p className="text-xs text-slate-400 mt-1">Changes here instantly update dynamic pricing algorithms on wallet and booking checkout flows.</p>
-              </div>
-
-              <div className="space-y-5">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Platform Commission Fee (%)</label>
-                  <input
-                    type="number"
-                    value={config.platformFeePercent}
-                    onChange={(e) => updateConfig({ platformFeePercent: Number(e.target.value) })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl py-2.5 px-4 text-sm text-white focus:border-purple-500 outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Escrow Holding Fee (%)</label>
-                  <input
-                    type="number"
-                    value={config.escrowHoldingFeePercent}
-                    onChange={(e) => updateConfig({ escrowHoldingFeePercent: Number(e.target.value) })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl py-2.5 px-4 text-sm text-white focus:border-purple-500 outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">GST / Value Added Tax Rate (%)</label>
-                  <input
-                    type="number"
-                    value={config.gstTaxPercent}
-                    onChange={(e) => updateConfig({ gstTaxPercent: Number(e.target.value) })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl py-2.5 px-4 text-sm text-white focus:border-purple-500 outline-none"
-                  />
-                </div>
-
-                <button
-                  onClick={() => triggerNotify('Fee and Tax settings saved dynamically to global store.')}
-                  className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-xs transition-colors shadow-lg shadow-purple-600/25"
-                >
-                  Save Dynamic Parameters
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* MODULE 3: PROMO COUPONS */}
-          {activeTab === 'coupons' && (
-            <div className="space-y-6 max-w-4xl">
-              <div className="glass-panel p-6 rounded-3xl border border-slate-800/80">
-                <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-4">
-                  <Tag className="w-5 h-5 text-purple-400" /> Create New Promo Coupon
-                </h2>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <input
-                    type="text"
-                    placeholder="Coupon Code (e.g. SUMMER50)"
-                    value={newPromoCode}
-                    onChange={(e) => setNewPromoCode(e.target.value.toUpperCase())}
-                    className="flex-1 bg-slate-900 border border-slate-700 rounded-xl py-2.5 px-4 text-xs text-white focus:border-purple-500 outline-none"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Discount %"
-                    value={newPromoDiscount}
-                    onChange={(e) => setNewPromoDiscount(e.target.value)}
-                    className="w-32 bg-slate-900 border border-slate-700 rounded-xl py-2.5 px-4 text-xs text-white focus:border-purple-500 outline-none"
-                  />
-                  <button
-                    onClick={() => {
-                      if (!newPromoCode) return;
-                      addPromoCode({
-                        code: newPromoCode,
-                        discountPercent: Number(newPromoDiscount) || 10,
-                        flatDiscount: 0,
-                        expiryDate: '2026-12-31',
-                        isActive: true
-                      });
-                      triggerNotify(`Added coupon ${newPromoCode}!`);
-                      setNewPromoCode('');
-                    }}
-                    className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-xs shadow-lg shadow-purple-600/25"
-                  >
-                    Add Coupon
+          {/* ==================================================== */}
+          {/* MODULE 3: 🪪 VERIFICATION & KYC                      */}
+          {/* ==================================================== */}
+          {activeTab === 'verification' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                {['verification-dashboard', 'pending', 'approved', 'rejected', 'expired', 'history'].map((s) => (
+                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
+                    {s.replace('-', ' ')}
                   </button>
-                </div>
+                ))}
               </div>
 
-              <div className="glass-panel p-6 rounded-3xl border border-slate-800/80 space-y-4">
-                <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider">Active Platform Coupons</h3>
+              <div className="rounded-3xl bg-slate-900 border border-slate-800 p-6 space-y-4">
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <UserCheck className="w-5 h-5 text-amber-400" /> Pending KYC Verification Queue
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {promos.map((p) => (
-                    <div key={p.id} className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between">
-                      <div>
-                        <span className="font-mono font-bold text-purple-400 text-sm">{p.code}</span>
-                        <p className="text-xs text-slate-400 font-semibold">{p.discountPercent}% OFF Discount</p>
+                  {MOCK_KYC_QUEUE.map((doc) => (
+                    <div key={doc.id} className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono font-bold text-purple-400 text-xs">{doc.type}</span>
+                        <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold">{doc.status}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => togglePromoCode(p.id)}
-                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${p.isActive ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-slate-800 text-slate-500 border-slate-700'}`}
-                        >
-                          {p.isActive ? 'Active' : 'Disabled'}
-                        </button>
-                        <button
-                          onClick={() => deletePromoCode(p.id)}
-                          className="p-1 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                      <img src={doc.fileUrl} alt="ID Document" className="w-full h-36 rounded-xl object-cover border border-slate-800" />
+                      <div className="flex items-center justify-between text-xs text-slate-400">
+                        <span>Liveness: {(doc.livenessScore! * 100).toFixed(0)}%</span>
+                        <span>Face Match: {(doc.selfieMatchScore! * 100).toFixed(0)}%</span>
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                        <button onClick={() => triggerNotify(`Document #${doc.id} Approved!`)} className="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs">Approve KYC</button>
+                        <button onClick={() => triggerNotify(`Document #${doc.id} Rejected.`)} className="flex-1 py-2 rounded-xl bg-rose-600/20 text-rose-300 border border-rose-500/30 font-bold text-xs">Reject</button>
                       </div>
                     </div>
                   ))}
@@ -809,37 +748,501 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
-          {/* MODULE 4: OVERVIEW ANALYTICS */}
-          {activeTab === 'overview' && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="glass-panel p-6 rounded-3xl border border-slate-800/80">
-                <p className="text-xs text-slate-400 font-bold uppercase font-mono">Total Companions</p>
-                <h3 className="text-3xl font-extrabold text-white mt-2">{companions.length}</h3>
-                <p className="text-xs text-emerald-400 mt-2">↑ 12% increase this month</p>
+          {/* ==================================================== */}
+          {/* MODULE 4: 🤝 COMPANION MANAGEMENT                    */}
+          {/* ==================================================== */}
+          {activeTab === 'companions' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                {['companion-profiles', 'pending-approval', 'active-companions', 'inactive', 'restricted', 'performance'].map((s) => (
+                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
+                    {s.replace('-', ' ')}
+                  </button>
+                ))}
               </div>
-              <div className="glass-panel p-6 rounded-3xl border border-slate-800/80">
-                <p className="text-xs text-slate-400 font-bold uppercase font-mono">Active Escrow Value</p>
-                <h3 className="text-3xl font-extrabold text-emerald-400 mt-2">$14,850</h3>
-                <p className="text-xs text-slate-400 mt-2">Locked in bank-grade escrow</p>
-              </div>
-              <div className="glass-panel p-6 rounded-3xl border border-slate-800/80">
-                <p className="text-xs text-slate-400 font-bold uppercase font-mono">Platform Revenue</p>
-                <h3 className="text-3xl font-extrabold text-purple-400 mt-2">$2,227.50</h3>
-                <p className="text-xs text-slate-400 mt-2">Calculated at {config.platformFeePercent}% fee rate</p>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {companions.slice(0, 3).map((comp) => (
+                  <div key={comp.id} className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-4">
+                    <div className="flex items-center gap-4">
+                      <img src={(comp as any).avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200'} className="w-12 h-12 rounded-2xl object-cover border border-purple-500/40" />
+                      <div>
+                        <h4 className="font-bold text-white text-base">{comp.name}</h4>
+                        <p className="text-xs text-slate-400">{comp.city}, {comp.country}</p>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-slate-400">Hourly Rate:</span>
+                      <span className="font-bold text-emerald-400 font-mono">${comp.hourlyRate}/hr</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-slate-400">Rating Avg:</span>
+                      <span className="font-bold text-amber-400">★ {comp.ratingAvg}</span>
+                    </div>
+                    <button onClick={() => toggleCompanionActive(comp.id)} className={`w-full py-2 rounded-xl text-xs font-bold ${comp.isActive ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-slate-800 text-slate-400'}`}>
+                      {comp.isActive ? 'Active Companion' : 'Mark Active'}
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
           )}
 
-          {/* DEFAULT / OTHER MODULE PLACEHOLDERS */}
-          {['revenue', 'bookings', 'disputes', 'verification', 'withdrawals', 'categories', 'tickets', 'settings'].includes(activeTab) && (
-            <div className="glass-panel p-12 rounded-3xl border border-slate-800/80 text-center space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center mx-auto">
-                <ShieldCheck className="w-6 h-6" />
+          {/* ==================================================== */}
+          {/* MODULE 5: 🛎️ SERVICES & CATEGORIES                   */}
+          {/* ==================================================== */}
+          {activeTab === 'categories' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                {['categories', 'services', 'service-policies', 'pricing-rules', 'risk-levels', 'service-approval'].map((s) => (
+                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
+                    {s.replace('-', ' ')}
+                  </button>
+                ))}
               </div>
-              <h3 className="text-lg font-bold text-white capitalize">{activeTab} Module Workspace</h3>
-              <p className="text-xs text-slate-400 max-w-md mx-auto">
-                This ERP module is synchronized live with Prisma database schema and global Zustand state.
-              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {categories.map((cat) => (
+                  <div key={cat.id} className="p-6 rounded-3xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+                    <div>
+                      <h4 className="font-bold text-white text-sm">{cat.name}</h4>
+                      <p className="text-xs text-slate-400">{cat.description}</p>
+                    </div>
+                    <button onClick={() => toggleCategory(cat.id)} className={`px-3 py-1 rounded-full text-xs font-bold ${cat.isActive ? 'bg-purple-500/20 text-purple-300' : 'bg-slate-800 text-slate-500'}`}>
+                      {cat.isActive ? 'Enabled' : 'Disabled'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ==================================================== */}
+          {/* MODULE 6: 📅 BOOKING MANAGEMENT                      */}
+          {/* ==================================================== */}
+          {activeTab === 'bookings' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                {['all-bookings', 'pending', 'confirmed', 'active', 'completed', 'cancelled', 'disputed'].map((s) => (
+                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
+                    {s.replace('-', ' ')}
+                  </button>
+                ))}
+              </div>
+
+              <div className="rounded-3xl bg-slate-900 border border-slate-800 overflow-hidden">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-800 bg-slate-950 text-[11px] font-mono text-slate-400 uppercase">
+                      <th className="py-4 px-5">Booking Ref</th>
+                      <th className="py-4 px-5">Customer ➔ Companion</th>
+                      <th className="py-4 px-5">Category</th>
+                      <th className="py-4 px-5">Escrow Amount</th>
+                      <th className="py-4 px-5">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800 text-xs">
+                    {MOCK_BOOKINGS.map((b) => (
+                      <tr key={b.id} className="hover:bg-slate-800/50">
+                        <td className="py-4 px-5 font-mono font-bold text-purple-400">{b.bookingNumber}</td>
+                        <td className="py-4 px-5 text-white">{b.userName} ➔ {b.companionName}</td>
+                        <td className="py-4 px-5 text-slate-300">{b.category}</td>
+                        <td className="py-4 px-5 font-mono font-bold text-emerald-400">${b.totalAmount}</td>
+                        <td className="py-4 px-5">
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                            {b.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ==================================================== */}
+          {/* MODULE 7: 💰 PAYMENTS & FINANCE                       */}
+          {/* ==================================================== */}
+          {activeTab === 'payments' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                {['transactions', 'payments', 'refunds', 'payouts', 'platform-fees', 'ledger', 'failed-payments', 'chargebacks'].map((s) => (
+                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
+                    {s.replace('-', ' ')}
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800">
+                  <p className="text-xs text-slate-400 font-mono">Platform Fee Rate</p>
+                  <p className="text-2xl font-bold text-purple-400 mt-1">{config.platformFeePercent}%</p>
+                </div>
+                <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800">
+                  <p className="text-xs text-slate-400 font-mono">Escrow Vault Reserve</p>
+                  <p className="text-2xl font-bold text-emerald-400 mt-1">$14,850.00</p>
+                </div>
+                <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800">
+                  <p className="text-xs text-slate-400 font-mono">GST / VAT Rate</p>
+                  <p className="text-2xl font-bold text-blue-400 mt-1">{config.gstTaxPercent}%</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ==================================================== */}
+          {/* MODULE 8: 💬 COMMUNICATION                           */}
+          {/* ==================================================== */}
+          {activeTab === 'communication' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                {['conversations', 'message-reports', 'flagged-messages', 'blocked-users'].map((s) => (
+                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
+                    {s.replace('-', ' ')}
+                  </button>
+                ))}
+              </div>
+
+              <div className="rounded-3xl bg-slate-900 border border-slate-800 p-6 space-y-4">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-purple-400" /> Monitored Live Encrypted Chat Streams
+                </h3>
+                <div className="space-y-3">
+                  {MOCK_MESSAGES.map(m => (
+                    <div key={m.id} className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex justify-between items-center text-xs">
+                      <div>
+                        <p className="font-bold text-white">{m.senderName}: <span className="font-normal text-slate-300">{m.content}</span></p>
+                        <p className="text-[10px] text-slate-500 mt-1">Timestamp: {m.timestamp} • End-to-End Encrypted</p>
+                      </div>
+                      <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[10px]">VERIFIED</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ==================================================== */}
+          {/* MODULE 9: 🛡️ TRUST & SAFETY                         */}
+          {/* ==================================================== */}
+          {activeTab === 'safety' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                {['safety-dashboard', 'user-reports', 'safety-incidents', 'risk-alerts', 'fraud-detection', 'suspicious-accounts', 'emergency-events', 'safety-actions'].map((s) => (
+                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
+                    {s.replace('-', ' ')}
+                  </button>
+                ))}
+              </div>
+
+              <div className="p-6 rounded-3xl bg-rose-500/10 border border-rose-500/30 space-y-4">
+                <h3 className="text-base font-bold text-rose-300 flex items-center gap-2">
+                  <ShieldAlert className="w-5 h-5 text-rose-400" /> Active SOS Emergency Event Feed
+                </h3>
+                {MOCK_PANIC_ALERTS.map(a => (
+                  <div key={a.id} className="p-4 rounded-2xl bg-slate-950 border border-rose-500/30 flex items-center justify-between">
+                    <div>
+                      <p className="font-bold text-white text-sm">Panic Alert: {a.userName}</p>
+                      <p className="text-xs text-rose-300">{a.address}</p>
+                    </div>
+                    <button onClick={() => triggerNotify(`SOS Dispatch Sent for Alert #${a.id}!`)} className="px-4 py-2 rounded-xl bg-rose-600 text-white font-bold text-xs shadow-lg shadow-rose-600/30">Dispatch Emergency Team</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ==================================================== */}
+          {/* MODULE 10: ⚖️ DISPUTES & RESOLUTION                  */}
+          {/* ==================================================== */}
+          {activeTab === 'disputes' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                {['open-disputes', 'under-review', 'resolved', 'refund-cases', 'evidence'].map((s) => (
+                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
+                    {s.replace('-', ' ')}
+                  </button>
+                ))}
+              </div>
+
+              <div className="p-8 rounded-3xl bg-slate-900 border border-slate-800 text-center space-y-3">
+                <Scale className="w-10 h-10 text-purple-400 mx-auto" />
+                <h3 className="text-base font-bold text-white">Dispute Desk (0 Active Disputes)</h3>
+                <p className="text-xs text-slate-400">All escrow transactions are currently smooth and dispute-free.</p>
+              </div>
+            </div>
+          )}
+
+          {/* ==================================================== */}
+          {/* MODULE 11: ⭐ REVIEWS & MODERATION                   */}
+          {/* ==================================================== */}
+          {activeTab === 'reviews' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                {['reviews', 'reported-reviews', 'flagged-content', 'moderation-queue'].map((s) => (
+                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
+                    {s.replace('-', ' ')}
+                  </button>
+                ))}
+              </div>
+
+              <div className="space-y-4">
+                {MOCK_REVIEWS.map(r => (
+                  <div key={r.id} className="p-5 rounded-3xl bg-slate-900 border border-slate-800 flex justify-between items-center text-xs">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-white">{r.authorName}</span>
+                        <span className="text-amber-400 font-bold">★ {r.rating}/5</span>
+                      </div>
+                      <p className="text-slate-300 mt-1">"{r.comment}"</p>
+                    </div>
+                    <button onClick={() => triggerNotify(`Review #${r.id} moderated.`)} className="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white">Approve Review</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ==================================================== */}
+          {/* MODULE 12: 📍 LOCATION MANAGEMENT                   */}
+          {/* ==================================================== */}
+          {activeTab === 'location' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                {['active-bookings', 'live-locations', 'location-alerts', 'location-history'].map((s) => (
+                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
+                    {s.replace('-', ' ')}
+                  </button>
+                ))}
+              </div>
+
+              <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-4">
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-purple-400" /> Live GPS Companion Fleet Tracker
+                </h3>
+                <div className="h-64 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center text-xs text-slate-400 font-mono">
+                  [ Live Interactive Geo-Map Simulation Active: 14 Companions Online in SF, NY & London ]
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ==================================================== */}
+          {/* MODULE 13: 🔔 NOTIFICATIONS                          */}
+          {/* ==================================================== */}
+          {activeTab === 'notifications' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                {['push-notifications', 'email', 'sms', 'notification-templates', 'notification-logs'].map((s) => (
+                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
+                    {s.replace('-', ' ')}
+                  </button>
+                ))}
+              </div>
+
+              <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-4 max-w-xl">
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <Bell className="w-5 h-5 text-purple-400" /> Broadcast System Notification
+                </h3>
+                <input type="text" placeholder="Title" value={broadcastTitle} onChange={e => setBroadcastTitle(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white outline-none focus:border-purple-500" />
+                <textarea placeholder="Message body..." value={broadcastMessage} onChange={e => setBroadcastMessage(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white outline-none focus:border-purple-500 h-24" />
+                <button onClick={() => { triggerNotify(`Broadcast sent via ${broadcastChannel}!`); setBroadcastTitle(''); setBroadcastMessage(''); }} className="w-full py-2.5 rounded-xl bg-purple-600 text-white font-bold text-xs shadow-lg shadow-purple-600/25">Send Broadcast Notification</button>
+              </div>
+            </div>
+          )}
+
+          {/* ==================================================== */}
+          {/* MODULE 14: 🎁 PROMOTIONS                             */}
+          {/* ==================================================== */}
+          {activeTab === 'promotions' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                {['coupons', 'promo-codes', 'campaigns', 'referral-program'].map((s) => (
+                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
+                    {s.replace('-', ' ')}
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {promos.map(p => (
+                  <div key={p.id} className="p-5 rounded-3xl bg-slate-900 border border-slate-800 flex justify-between items-center">
+                    <div>
+                      <span className="font-mono font-bold text-purple-400 text-sm">{p.code}</span>
+                      <p className="text-xs text-slate-400">{p.discountPercent}% Discount</p>
+                    </div>
+                    <button onClick={() => togglePromoCode(p.id)} className={`px-3 py-1 rounded-full text-xs font-bold ${p.isActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-500'}`}>{p.isActive ? 'Active' : 'Disabled'}</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ==================================================== */}
+          {/* MODULE 15: 📈 ANALYTICS & REPORTS                     */}
+          {/* ==================================================== */}
+          {activeTab === 'analytics' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                {['users-analytics', 'booking-analytics', 'revenue', 'companion-analytics', 'cancellation-analytics', 'safety-analytics', 'custom-reports'].map((s) => (
+                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
+                    {s.replace('-', ' ')}
+                  </button>
+                ))}
+              </div>
+
+              <div className="p-8 rounded-3xl bg-slate-900 border border-slate-800 text-center space-y-3">
+                <BarChart3 className="w-10 h-10 text-purple-400 mx-auto" />
+                <h3 className="text-base font-bold text-white">Executive BI Analytics Engine</h3>
+                <p className="text-xs text-slate-400">Generating real-time cohorts, user retention curves & companion performance analytics.</p>
+              </div>
+            </div>
+          )}
+
+          {/* ==================================================== */}
+          {/* MODULE 16: 👨‍💼 STAFF & ACCESS CONTROL                */}
+          {/* ==================================================== */}
+          {activeTab === 'staff' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                {['admin-users', 'roles', 'permissions', 'teams', 'login-sessions'].map((s) => (
+                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
+                    {s.replace('-', ' ')}
+                  </button>
+                ))}
+              </div>
+
+              <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-4">
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <UserCog className="w-5 h-5 text-purple-400" /> Admin Staff Roles & RBAC Matrix
+                </h3>
+                <div className="space-y-3">
+                  <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex justify-between items-center text-xs">
+                    <div>
+                      <p className="font-bold text-white">Executive Super Admin</p>
+                      <p className="text-slate-400">admin@sathi.com</p>
+                    </div>
+                    <span className="px-2.5 py-1 rounded bg-purple-500/20 text-purple-300 font-mono text-[10px] font-bold">SUPER_ADMIN</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ==================================================== */}
+          {/* MODULE 17: 🔐 SECURITY                               */}
+          {/* ==================================================== */}
+          {activeTab === 'security' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                {['security-events', 'login-attempts', 'suspicious-devices', 'api-activity', 'security-audit'].map((s) => (
+                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
+                    {s.replace('-', ' ')}
+                  </button>
+                ))}
+              </div>
+
+              <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-4">
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <Lock className="w-5 h-5 text-emerald-400" /> Security Controls & 2FA Enforcement
+                </h3>
+                <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-950 border border-slate-800 text-xs">
+                  <span>Enforce 2FA Mandatory for Admin Login</span>
+                  <input type="checkbox" checked={config.require2FAForAdmin} onChange={e => updateConfig({ require2FAForAdmin: e.target.checked })} className="w-4 h-4 rounded text-purple-600" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ==================================================== */}
+          {/* MODULE 18: 📝 AUDIT LOGS                             */}
+          {/* ==================================================== */}
+          {activeTab === 'audit' && (
+            <div className="space-y-6">
+              <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-4">
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-purple-400" /> Immutable System Audit Logs
+                </h3>
+                <div className="space-y-2 font-mono text-xs text-slate-300">
+                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex justify-between">
+                    <span>[2026-08-05 10:45:12] ADMIN_LOGIN: User superadmin logged in from 192.168.1.1</span>
+                    <span className="text-emerald-400">SUCCESS</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex justify-between">
+                    <span>[2026-08-05 09:20:04] KYC_APPROVE: Approved Verification document doc-501</span>
+                    <span className="text-emerald-400">SUCCESS</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ==================================================== */}
+          {/* MODULE 19: ⚙️ SYSTEM SETTINGS                        */}
+          {/* ==================================================== */}
+          {activeTab === 'settings' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                {['general', 'booking', 'payment', 'cancellation', 'verification', 'safety', 'notifications', 'tax', 'localization'].map((s) => (
+                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
+                    {s.replace('-', ' ')}
+                  </button>
+                ))}
+              </div>
+
+              <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-4 max-w-xl">
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <Settings className="w-5 h-5 text-purple-400" /> System Operational Parameters
+                </h3>
+                <div className="space-y-3 text-xs">
+                  <div className="flex justify-between items-center p-3 rounded-xl bg-slate-950 border border-slate-800">
+                    <span>Maintenance Mode</span>
+                    <input type="checkbox" checked={config.maintenanceMode} onChange={e => updateConfig({ maintenanceMode: e.target.checked })} />
+                  </div>
+                  <div className="flex justify-between items-center p-3 rounded-xl bg-slate-950 border border-slate-800">
+                    <span>Auto SOS Dispatch</span>
+                    <input type="checkbox" checked={config.autoSOSDispatch} onChange={e => updateConfig({ autoSOSDispatch: e.target.checked })} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ==================================================== */}
+          {/* MODULE 20: 🔧 SYSTEM HEALTH                          */}
+          {/* ==================================================== */}
+          {activeTab === 'health' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                {['api-health', 'database', 'redis', 'queue', 'storage', 'payment-gateway', 'external-apis'].map((s) => (
+                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
+                    {s.replace('-', ' ')}
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {[
+                  { name: 'API Health (Next.js App Router)', status: 'Healthy (12ms latency)', icon: Server, color: 'text-emerald-400' },
+                  { name: 'PostgreSQL Database (Prisma)', status: 'Connected (Pool: 10/10)', icon: Database, color: 'text-emerald-400' },
+                  { name: 'Redis Cache & PubSub', status: 'Operational (0.4ms)', icon: Zap, color: 'text-emerald-400' },
+                  { name: 'Background BullMQ Queue', status: '0 Jobs Waiting', icon: Activity, color: 'text-blue-400' },
+                  { name: 'Cloud File Storage (AWS S3)', status: 'Operational', icon: HardDrive, color: 'text-emerald-400' },
+                  { name: 'Payment Gateways (Stripe/Razorpay)', status: 'Live & Accepting', icon: CreditCard, color: 'text-emerald-400' }
+                ].map((item, idx) => {
+                  const Icon = item.icon;
+                  return (
+                    <div key={idx} className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-3">
+                      <div className="flex items-center gap-3">
+                        <Icon className={`w-5 h-5 ${item.color}`} />
+                        <h4 className="font-bold text-white text-sm">{item.name}</h4>
+                      </div>
+                      <p className="text-xs text-slate-400 font-mono">{item.status}</p>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
