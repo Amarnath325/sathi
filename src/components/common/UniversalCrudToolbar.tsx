@@ -198,7 +198,7 @@ export const UniversalCrudToolbar: React.FC<UniversalCrudToolbarProps> = ({
             </button>
           )}
 
-          {/* Import CSV / XLSX */}
+          {/* Import Data */}
           <input 
             type="file" 
             ref={fileInputRef} 
@@ -210,26 +210,26 @@ export const UniversalCrudToolbar: React.FC<UniversalCrudToolbarProps> = ({
             onClick={() => fileInputRef.current?.click()}
             className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 font-bold hover:text-white flex items-center gap-1.5 shrink-0"
           >
-            <Upload className="w-3.5 h-3.5 text-indigo-400" /> Import CSV / XLSX
+            <Upload className="w-3.5 h-3.5 text-indigo-400" /> Import Data
           </button>
 
-          {/* Export CSV */}
+          {/* Export Sheet */}
           <button 
             onClick={() => {
               exportToCSV(`${title.toLowerCase()}_export`, exportRows);
-              if (onNotify) onNotify(`Exported ${exportRows.length} records to CSV!`);
+              if (onNotify) onNotify(`Exported ${exportRows.length} records!`);
             }}
             className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-emerald-400 font-bold hover:text-white flex items-center gap-1.5 shrink-0"
           >
-            <Download className="w-3.5 h-3.5 text-emerald-400" /> Export CSV
+            <Download className="w-3.5 h-3.5 text-emerald-400" /> Export Sheet
           </button>
 
-          {/* Export XLSX */}
+          {/* Export Excel */}
           <button 
             onClick={exportToXLSX}
             className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-indigo-300 font-bold hover:text-white flex items-center gap-1.5 shrink-0"
           >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-indigo-400" /> Export XLSX
+            <FileSpreadsheet className="w-3.5 h-3.5 text-indigo-400" /> Export Excel
           </button>
 
           {/* Export PDF (Opens PDF Printable Preview Modal) */}
@@ -242,25 +242,25 @@ export const UniversalCrudToolbar: React.FC<UniversalCrudToolbarProps> = ({
 
           <div className="h-4 w-px bg-slate-800 mx-1 hidden sm:block" />
 
-          {/* Sample CSV */}
+          {/* Sample Template */}
           <button 
             onClick={() => {
               downloadSampleCSV(`${title.toLowerCase()}_template`, headersForSample);
-              if (onNotify) onNotify('Sample CSV Template downloaded!');
+              if (onNotify) onNotify('Sample Template downloaded!');
             }}
             className="px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 font-mono text-[11px] hover:text-white shrink-0"
-            title="Download CSV Sample Template"
+            title="Download Sample Template"
           >
-            Sample CSV
+            Sample Template
           </button>
 
-          {/* Sample XLSX */}
+          {/* Sample Excel */}
           <button 
             onClick={downloadSampleXLSX}
             className="px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 font-mono text-[11px] hover:text-white shrink-0"
-            title="Download XLSX Sample Template"
+            title="Download Sample Excel Template"
           >
-            Sample XLSX
+            Sample Excel
           </button>
         </div>
 
