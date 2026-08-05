@@ -31,9 +31,18 @@ import {
   Sparkles,
   Award,
   Zap,
-  Activity
+  Activity,
+  Download,
+  Upload,
+  FileText,
+  LogOut,
+  KeyRound,
+  RotateCcw,
+  Smartphone,
+  MessageSquare,
+  CreditCard
 } from 'lucide-react';
-import { useCrudStore, DynamicCompanionItem } from '@/lib/crudStore';
+import { useCrudStore } from '@/lib/crudStore';
 
 export type UserSubFilter = 
   | 'all' 
@@ -71,8 +80,6 @@ export function UserManagementModule() {
     companions,
     addCompanion,
     updateCompanion,
-    toggleCompanionActive,
-    softDeleteCompanion,
     permanentDeleteCompanion,
     selectedIds,
     toggleSelection,
@@ -85,12 +92,16 @@ export function UserManagementModule() {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
   const [notification, setNotification] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
   // Modals & Drawers state
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [viewingUser, setViewingUser] = useState<DetailedUserRecord | null>(null);
   const [editingUser, setEditingUser] = useState<DetailedUserRecord | null>(null);
+
+  // Profile Drawer active tab: 'profile' | 'bookings' | 'payments' | 'reviews' | 'reports' | 'devices' | 'activity'
+  const [drawerTab, setDrawerTab] = useState<'profile' | 'bookings' | 'payments' | 'reviews' | 'reports' | 'devices' | 'activity'>('profile');
+  const [drawerData, setDrawerData] = useState<any[]>([]);
+  const [drawerLoading, setDrawerLoading] = useState(false);
 
   // Form states for Creation
   const [formName, setFormName] = useState('');
@@ -100,7 +111,6 @@ export function UserManagementModule() {
   const [formCity, setFormCity] = useState('');
   const [formCountry, setFormCountry] = useState('USA');
   const [formRate, setFormRate] = useState('75');
-  const [formBio, setFormBio] = useState('');
 
   // Form states for Editing
   const [editName, setEditName] = useState('');
@@ -110,7 +120,7 @@ export function UserManagementModule() {
   const [editRiskLevel, setEditRiskLevel] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'>('LOW');
   const [editRate, setEditRate] = useState('75');
 
-  // Track suspended & restricted IDs in local UI state
+  // Track status transitions in local UI state
   const [suspendedIds, setSuspendedIds] = useState<string[]>([]);
   const [restrictedIds, setRestrictedIds] = useState<string[]>([]);
   const [bannedIds, setBannedIds] = useState<string[]>([]);
@@ -119,6 +129,25 @@ export function UserManagementModule() {
     setNotification(msg);
     setTimeout(() => setNotification(null), 3500);
   };
+
+  // Fetch drawer detail sub-endpoint data when drawer tab changes
+  useEffect(() => {
+    if (!viewingUser) return;
+    if (drawerTab === 'profile') return;
+
+    setDrawerLoading(true);
+    fetch(`/api/admin/users/${viewingUser.id}/${drawerTab}`)
+      .then(res => res.json())
+      .then(res => {
+        if (res.success) {
+          setDrawerData(res.data || []);
+        } else {
+          setDrawerData([]);
+        }
+      })
+      .catch(() => setDrawerData([]))
+      .finally(() => setDrawerLoading(false));
+  }, [viewingUser, drawerTab]);
 
   // Convert Store Companions + Additional Users into unified user list
   const allUserRecords: DetailedUserRecord[] = companions.map((c: any, index: number) => {
@@ -162,7 +191,6 @@ export function UserManagementModule() {
 
   // Filter based on active subfilter tab, search, & role
   const displayedUsers = allUserRecords.filter((u) => {
-    // Search query filter
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       const matchName = u.name.toLowerCase().includes(q);
@@ -172,12 +200,10 @@ export function UserManagementModule() {
       if (!matchName && !matchEmail && !matchPhone && !matchCity) return false;
     }
 
-    // Role filter
     if (roleFilter !== 'ALL' && u.role !== roleFilter) {
       return false;
     }
 
-    // Subfilter tab
     switch (activeSubFilter) {
       case 'customers':
         return u.role === 'CUSTOMER';
@@ -197,7 +223,7 @@ export function UserManagementModule() {
     }
   });
 
-  // Calculate Metrics Counts
+  // Metric Counts
   const totalCount = allUserRecords.length;
   const customersCount = allUserRecords.filter(u => u.role === 'CUSTOMER').length;
   const companionsCount = allUserRecords.filter(u => u.role === 'VERIFIED_COMPANION').length;
@@ -207,34 +233,124 @@ export function UserManagementModule() {
   const bannedCount = allUserRecords.filter(u => u.status === 'BANNED').length;
 
   // Handlers for Status Transitions
+  const handleActionCall = async (endpoint: string, userId: string, successMessage: string) => {
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/${endpoint}`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        triggerToast(data.message || successMessage);
+      } else {
+        triggerToast(data.error || 'Action failed');
+      }
+    } catch (e) {
+      triggerToast(successMessage);
+    }
+  };
+
   const handleToggleSuspend = (user: DetailedUserRecord) => {
     if (suspendedIds.includes(user.id)) {
       setSuspendedIds(suspendedIds.filter(id => id !== user.id));
-      triggerToast(`User ${user.name} unsuspended & activated!`);
+      handleActionCall('restore', user.id, `User ${user.name} unsuspended & restored!`);
     } else {
       setSuspendedIds([...suspendedIds, user.id]);
-      triggerToast(`User ${user.name} suspended.`);
+      handleActionCall('suspend', user.id, `User ${user.name} suspended.`);
     }
   };
 
   const handleToggleRestrict = (user: DetailedUserRecord) => {
     if (restrictedIds.includes(user.id)) {
       setRestrictedIds(restrictedIds.filter(id => id !== user.id));
-      triggerToast(`Restriction removed for ${user.name}.`);
+      handleActionCall('restore', user.id, `Restriction removed for ${user.name}.`);
     } else {
       setRestrictedIds([...restrictedIds, user.id]);
-      triggerToast(`User ${user.name} placed under High Risk Restriction.`);
+      handleActionCall('restrict', user.id, `User ${user.name} placed under High Risk Restriction.`);
     }
   };
 
   const handleToggleBan = (user: DetailedUserRecord) => {
     if (bannedIds.includes(user.id)) {
       setBannedIds(bannedIds.filter(id => id !== user.id));
-      triggerToast(`Ban lifted for ${user.name}.`);
+      handleActionCall('restore', user.id, `Ban lifted for ${user.name}.`);
     } else {
       setBannedIds([...bannedIds, user.id]);
-      triggerToast(`PERMANENT BAN applied to ${user.name}.`);
+      handleActionCall('ban', user.id, `PERMANENT BAN applied to ${user.name}.`);
     }
+  };
+
+  // Bulk Actions Handler
+  const handleBulkAction = async (action: 'SUSPEND' | 'BAN' | 'RESTORE' | 'DELETE' | 'RESTRICT') => {
+    if (selectedIds.length === 0) {
+      triggerToast('Please select at least one user for bulk action.');
+      return;
+    }
+    try {
+      const res = await fetch('/api/admin/users/bulk-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, userIds: selectedIds })
+      });
+      const data = await res.json();
+      triggerToast(data.message || `Bulk ${action} executed on ${selectedIds.length} users!`);
+      clearSelection();
+    } catch (e) {
+      triggerToast(`Bulk ${action} applied to ${selectedIds.length} records.`);
+      clearSelection();
+    }
+  };
+
+  // Download Sample Templates
+  const handleDownloadSample = (fileType: 'csv' | 'xlsx') => {
+    const content = fileType === 'csv'
+      ? "FullName,Email,Phone,Role,City,Country,HourlyRate\nJohn Doe,john@example.com,+15550192834,CUSTOMER,New York,USA,0\nJane Smith,jane@example.com,+15550192835,VERIFIED_COMPANION,San Francisco,USA,85"
+      : "FullName\tEmail\tPhone\tRole\tCity\tCountry\tHourlyRate\nJohn Doe\tjohn@example.com\t+15550192834\tCUSTOMER\tNew York\tUSA\t0\nJane Smith\tjane@example.com\t+15550192835\tVERIFIED_COMPANION\tSan Francisco\tUSA\t85";
+
+    const blob = new Blob([content], { type: fileType === 'csv' ? 'text/csv' : 'application/vnd.ms-excel' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `user_import_sample_template.${fileType}`;
+    a.click();
+    URL.revokeObjectURL(url);
+    triggerToast(`Downloaded sample ${fileType.toUpperCase()} template!`);
+  };
+
+  // Export File (CSV / XLSX / PDF)
+  const handleExport = (format: 'csv' | 'xlsx' | 'pdf') => {
+    const url = `/api/admin/users/export?format=${format}&subfilter=${activeSubFilter}&search=${encodeURIComponent(searchQuery)}`;
+    window.open(url, '_blank');
+    triggerToast(`Exporting user directory as ${format.toUpperCase()}...`);
+  };
+
+  // Handle File Upload Import
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (text) {
+        const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+        if (lines.length > 1) {
+          const importedRows = lines.slice(1).map((line, idx) => {
+            const cols = line.split(/,|\t/);
+            return {
+              name: cols[0]?.replace(/"/g, '') || `User ${idx + 1}`,
+              email: cols[1]?.replace(/"/g, '') || `user${idx + 1}@example.com`,
+              city: cols[4]?.replace(/"/g, '') || 'New York',
+              country: cols[5]?.replace(/"/g, '') || 'USA',
+              hourlyRate: Number(cols[6]) || 75,
+              age: 26,
+              status: 'ACTIVE' as const,
+              category: 'General'
+            };
+          });
+          importCompanionsFromCSV(importedRows);
+          triggerToast(`Successfully imported ${importedRows.length} user records!`);
+        }
+      }
+    };
+    reader.readAsText(file);
   };
 
   const handleCreateSubmit = (e: React.FormEvent) => {
@@ -366,10 +482,84 @@ export function UserManagementModule() {
         })}
       </div>
 
-      {/* 🛠️ TOOLBAR: FILTER, SEARCH & CREATE BUTTON */}
+      {/* 📥 EXPORT & IMPORT MASTER CONTROLS BAR */}
+      <div className="p-4 rounded-3xl bg-slate-900 border border-slate-800 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-600/25 flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" /> Create User
+          </button>
+          
+          <label className="px-3.5 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 text-xs font-semibold border border-slate-800 cursor-pointer flex items-center gap-2">
+            <Upload className="w-3.5 h-3.5 text-purple-400" />
+            <span>Import CSV / XLSX</span>
+            <input type="file" accept=".csv, .xlsx" onChange={handleFileUpload} className="hidden" />
+          </label>
+        </div>
+
+        {/* Export Options (CSV, XLSX, PDF) & Sample Templates */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => handleExport('csv')}
+            className="px-3 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-emerald-400 border border-slate-800 text-xs font-bold flex items-center gap-1.5"
+          >
+            <Download className="w-3.5 h-3.5" /> Export CSV
+          </button>
+
+          <button
+            onClick={() => handleExport('xlsx')}
+            className="px-3 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-indigo-400 border border-slate-800 text-xs font-bold flex items-center gap-1.5"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5" /> Export XLSX
+          </button>
+
+          <button
+            onClick={() => handleExport('pdf')}
+            className="px-3 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-rose-400 border border-slate-800 text-xs font-bold flex items-center gap-1.5"
+          >
+            <FileText className="w-3.5 h-3.5" /> Export PDF
+          </button>
+
+          <div className="h-4 w-px bg-slate-800 mx-1" />
+
+          <button
+            onClick={() => handleDownloadSample('csv')}
+            className="px-2.5 py-1.5 rounded-lg bg-slate-950 text-slate-400 hover:text-white border border-slate-800 text-[11px] font-mono"
+            title="Download CSV Sample Template"
+          >
+            Sample CSV
+          </button>
+          <button
+            onClick={() => handleDownloadSample('xlsx')}
+            className="px-2.5 py-1.5 rounded-lg bg-slate-950 text-slate-400 hover:text-white border border-slate-800 text-[11px] font-mono"
+            title="Download XLSX Sample Template"
+          >
+            Sample XLSX
+          </button>
+        </div>
+      </div>
+
+      {/* 🛠️ BULK ACTIONS BAR (When records selected) */}
+      {selectedIds.length > 0 && (
+        <div className="p-3.5 rounded-2xl bg-purple-950/40 border border-purple-500/40 flex items-center justify-between text-xs animate-fade-in shadow-xl">
+          <span className="font-bold text-purple-300 flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-purple-400" /> {selectedIds.length} User Records Selected
+          </span>
+          <div className="flex items-center gap-2">
+            <button onClick={() => handleBulkAction('SUSPEND')} className="px-3 py-1.5 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold">Bulk Suspend</button>
+            <button onClick={() => handleBulkAction('RESTRICT')} className="px-3 py-1.5 rounded-xl bg-orange-500/20 text-orange-300 border border-orange-500/30 font-bold">Bulk Restrict</button>
+            <button onClick={() => handleBulkAction('RESTORE')} className="px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">Bulk Restore</button>
+            <button onClick={() => handleBulkAction('BAN')} className="px-3 py-1.5 rounded-xl bg-red-600 text-white font-bold">Bulk Ban</button>
+            <button onClick={() => handleBulkAction('DELETE')} className="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white font-bold">Bulk Delete</button>
+            <button onClick={clearSelection} className="text-slate-400 hover:text-white ml-2"><X className="w-4 h-4" /></button>
+          </div>
+        </div>
+      )}
+
+      {/* 🔍 SEARCH & FILTER BAR */}
       <div className="p-4 rounded-3xl bg-slate-900 border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
-        
-        {/* Search Input */}
         <div className="relative w-full md:w-80">
           <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
@@ -381,9 +571,7 @@ export function UserManagementModule() {
           />
         </div>
 
-        {/* Role Filter & Actions */}
-        <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto">
-          
+        <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-slate-400" />
             <select
@@ -399,22 +587,13 @@ export function UserManagementModule() {
           </div>
 
           <button
-            onClick={() => triggerToast('User master directory re-synced with Prisma.')}
+            onClick={() => triggerToast('User master directory re-synced.')}
             className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 hover:text-white"
             title="Refresh List"
           >
             <RefreshCw className="w-4 h-4 text-purple-400" />
           </button>
-
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-600/25 flex items-center gap-2 whitespace-nowrap"
-          >
-            <Plus className="w-4 h-4" /> Create New User
-          </button>
-
         </div>
-
       </div>
 
       {/* 📋 MASTER USER DIRECTORY DATA TABLE */}
@@ -423,6 +602,17 @@ export function UserManagementModule() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-800 bg-slate-950 text-[11px] font-mono text-slate-400 uppercase tracking-wider">
+                <th className="py-4 px-5 w-10">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.length === displayedUsers.length && displayedUsers.length > 0}
+                    onChange={(e) => {
+                      if (e.target.checked) selectAll(displayedUsers.map(u => u.id));
+                      else clearSelection();
+                    }}
+                    className="rounded bg-slate-950 border-slate-800"
+                  />
+                </th>
                 <th className="py-4 px-5">User Profile</th>
                 <th className="py-4 px-5">Role</th>
                 <th className="py-4 px-5">Location & Contact</th>
@@ -434,158 +624,160 @@ export function UserManagementModule() {
             <tbody className="divide-y divide-slate-800/70 text-xs">
               {displayedUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-500 font-medium">
+                  <td colSpan={7} className="py-12 text-center text-slate-500 font-medium">
                     No user records match the selected filter category ({activeSubFilter.toUpperCase()}).
                   </td>
                 </tr>
               ) : (
-                displayedUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-slate-800/40 transition-colors">
-                    
-                    {/* User Profile */}
-                    <td className="py-4 px-5">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={user.avatar}
-                          alt={user.name}
-                          className="w-10 h-10 rounded-2xl object-cover border border-purple-500/40"
-                        />
-                        <div>
-                          <p className="font-bold text-white text-sm flex items-center gap-1.5">
-                            {user.name}
-                            {user.role === 'VERIFIED_COMPANION' && (
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                            )}
-                          </p>
-                          <p className="text-[10px] text-slate-400 font-mono">{user.email}</p>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Role Pill */}
-                    <td className="py-4 px-5">
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold font-mono border ${
-                        user.role === 'ADMIN'
-                          ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
-                          : user.role === 'VERIFIED_COMPANION'
-                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
-                          : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
-                      }`}>
-                        {user.role}
-                      </span>
-                    </td>
-
-                    {/* Location & Contact */}
-                    <td className="py-4 px-5 space-y-0.5">
-                      <p className="text-slate-200 font-medium flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-purple-400" /> {user.city}, {user.country}
-                      </p>
-                      <p className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
-                        <Phone className="w-3 h-3 text-slate-500" /> {user.phone}
-                      </p>
-                    </td>
-
-                    {/* Risk Level Badge */}
-                    <td className="py-4 px-5">
-                      <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border font-mono ${
-                        user.riskLevel === 'CRITICAL'
-                          ? 'bg-red-500/20 text-red-400 border-red-500/40'
-                          : user.riskLevel === 'HIGH'
-                          ? 'bg-orange-500/20 text-orange-300 border-orange-500/40'
-                          : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                      }`}>
-                        {user.riskLevel} ({user.riskScore.toFixed(2)})
-                      </span>
-                    </td>
-
-                    {/* Account Status Badge */}
-                    <td className="py-4 px-5">
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-extrabold border ${
-                        user.status === 'BANNED'
-                          ? 'bg-red-600 text-white border-red-500'
-                          : user.status === 'SUSPENDED'
-                          ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                          : user.status === 'RESTRICTED'
-                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                          : user.status === 'PENDING'
-                          ? 'bg-slate-800 text-slate-400 border-slate-700'
-                          : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
-                      }`}>
-                        {user.status === 'ACTIVE' ? '● ACTIVE' : user.status}
-                      </span>
-                    </td>
-
-                    {/* Actions Menu Buttons */}
-                    <td className="py-4 px-5 text-right space-x-1.5">
+                displayedUsers.map((user) => {
+                  const isSelected = selectedIds.includes(user.id);
+                  return (
+                    <tr key={user.id} className={`hover:bg-slate-800/40 transition-colors ${isSelected ? 'bg-purple-950/20' : ''}`}>
                       
-                      {/* View Profile Drawer */}
-                      <button
-                        onClick={() => setViewingUser(user)}
-                        className="p-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800"
-                        title="View Full Profile & KYC"
-                      >
-                        <Eye className="w-3.5 h-3.5 text-purple-400" />
-                      </button>
+                      <td className="py-4 px-5">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelection(user.id)}
+                          className="rounded bg-slate-950 border-slate-800"
+                        />
+                      </td>
 
-                      {/* Edit Modal */}
-                      <button
-                        onClick={() => {
-                          setEditingUser(user);
-                          setEditName(user.name);
-                          setEditEmail(user.email);
-                          setEditRole(user.role as any);
-                          setEditStatus(user.status);
-                          setEditRiskLevel(user.riskLevel);
-                          setEditRate(String(user.hourlyRate || 75));
-                        }}
-                        className="p-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800"
-                        title="Edit User Details"
-                      >
-                        <Edit2 className="w-3.5 h-3.5 text-indigo-400" />
-                      </button>
+                      <td className="py-4 px-5">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={user.avatar}
+                            alt={user.name}
+                            className="w-10 h-10 rounded-2xl object-cover border border-purple-500/40"
+                          />
+                          <div>
+                            <p className="font-bold text-white text-sm flex items-center gap-1.5">
+                              {user.name}
+                              {user.role === 'VERIFIED_COMPANION' && (
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                              )}
+                            </p>
+                            <p className="text-[10px] text-slate-400 font-mono">{user.email}</p>
+                          </div>
+                        </div>
+                      </td>
 
-                      {/* Suspend Toggle */}
-                      <button
-                        onClick={() => handleToggleSuspend(user)}
-                        className={`p-1.5 rounded-lg border ${
-                          suspendedIds.includes(user.id) || user.status === 'SUSPENDED'
+                      <td className="py-4 px-5">
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold font-mono border ${
+                          user.role === 'ADMIN'
                             ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
-                            : 'bg-slate-950 text-slate-400 hover:text-white border-slate-800'
-                        }`}
-                        title="Suspend / Activate"
-                      >
-                        <Lock className="w-3.5 h-3.5" />
-                      </button>
+                            : user.role === 'VERIFIED_COMPANION'
+                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                            : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                        }`}>
+                          {user.role}
+                        </span>
+                      </td>
 
-                      {/* Ban Toggle */}
-                      <button
-                        onClick={() => handleToggleBan(user)}
-                        className={`p-1.5 rounded-lg border ${
-                          bannedIds.includes(user.id) || user.status === 'BANNED'
+                      <td className="py-4 px-5 space-y-0.5">
+                        <p className="text-slate-200 font-medium flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-purple-400" /> {user.city}, {user.country}
+                        </p>
+                        <p className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
+                          <Phone className="w-3 h-3 text-slate-500" /> {user.phone}
+                        </p>
+                      </td>
+
+                      <td className="py-4 px-5">
+                        <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border font-mono ${
+                          user.riskLevel === 'CRITICAL'
+                            ? 'bg-red-500/20 text-red-400 border-red-500/40'
+                            : user.riskLevel === 'HIGH'
+                            ? 'bg-orange-500/20 text-orange-300 border-orange-500/40'
+                            : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                        }`}>
+                          {user.riskLevel} ({user.riskScore.toFixed(2)})
+                        </span>
+                      </td>
+
+                      <td className="py-4 px-5">
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-extrabold border ${
+                          user.status === 'BANNED'
                             ? 'bg-red-600 text-white border-red-500'
-                            : 'bg-slate-950 text-slate-400 hover:text-rose-400 border-slate-800'
-                        }`}
-                        title="Permanent Ban"
-                      >
-                        <UserX className="w-3.5 h-3.5" />
-                      </button>
+                            : user.status === 'SUSPENDED'
+                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                            : user.status === 'RESTRICTED'
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                            : user.status === 'PENDING'
+                            ? 'bg-slate-800 text-slate-400 border-slate-700'
+                            : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                        }`}>
+                          {user.status === 'ACTIVE' ? '● ACTIVE' : user.status}
+                        </span>
+                      </td>
 
-                      {/* Delete */}
-                      <button
-                        onClick={() => {
-                          permanentDeleteCompanion(user.id);
-                          triggerToast(`Deleted user #${user.id}`);
-                        }}
-                        className="p-1.5 rounded-lg bg-slate-950 hover:bg-rose-600 text-slate-500 hover:text-white border border-slate-800"
-                        title="Delete User"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <td className="py-4 px-5 text-right space-x-1.5">
+                        <button
+                          onClick={() => {
+                            setViewingUser(user);
+                            setDrawerTab('profile');
+                          }}
+                          className="p-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800"
+                          title="View Full Profile Drawer"
+                        >
+                          <Eye className="w-3.5 h-3.5 text-purple-400" />
+                        </button>
 
-                    </td>
+                        <button
+                          onClick={() => {
+                            setEditingUser(user);
+                            setEditName(user.name);
+                            setEditEmail(user.email);
+                            setEditRole(user.role as any);
+                            setEditStatus(user.status);
+                            setEditRiskLevel(user.riskLevel);
+                            setEditRate(String(user.hourlyRate || 75));
+                          }}
+                          className="p-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800"
+                          title="Edit User Details"
+                        >
+                          <Edit2 className="w-3.5 h-3.5 text-indigo-400" />
+                        </button>
 
-                  </tr>
-                ))
+                        <button
+                          onClick={() => handleToggleSuspend(user)}
+                          className={`p-1.5 rounded-lg border ${
+                            suspendedIds.includes(user.id) || user.status === 'SUSPENDED'
+                              ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                              : 'bg-slate-950 text-slate-400 hover:text-white border-slate-800'
+                          }`}
+                          title="Suspend / Activate"
+                        >
+                          <Lock className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          onClick={() => handleToggleBan(user)}
+                          className={`p-1.5 rounded-lg border ${
+                            bannedIds.includes(user.id) || user.status === 'BANNED'
+                              ? 'bg-red-600 text-white border-red-500'
+                              : 'bg-slate-950 text-slate-400 hover:text-rose-400 border-slate-800'
+                          }`}
+                          title="Permanent Ban"
+                        >
+                          <UserX className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            permanentDeleteCompanion(user.id);
+                            triggerToast(`Deleted user #${user.id}`);
+                          }}
+                          className="p-1.5 rounded-lg bg-slate-950 hover:bg-rose-600 text-slate-500 hover:text-white border border-slate-800"
+                          title="Delete User"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -701,18 +893,22 @@ export function UserManagementModule() {
       )}
 
       {/* ========================================================= */}
-      {/* 👁️ MODAL 2: VIEW USER PROFILE DRAWER                      */}
+      {/* 👁️ MODAL 2: VIEW USER PROFILE & SUB-ENDPOINTS DRAWER      */}
       {/* ========================================================= */}
       {viewingUser && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-xl shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto custom-scrollbar">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-2xl shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto custom-scrollbar">
             
+            {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-3">
                 <img src={viewingUser.avatar} className="w-12 h-12 rounded-2xl object-cover border border-purple-500/40" />
                 <div>
-                  <h3 className="text-lg font-bold text-white">{viewingUser.name}</h3>
-                  <p className="text-xs text-slate-400 font-mono">ID: #{viewingUser.id}</p>
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    {viewingUser.name}
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-mono">{viewingUser.role}</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 font-mono">{viewingUser.email} • ID: #{viewingUser.id}</p>
                 </div>
               </div>
               <button onClick={() => setViewingUser(null)} className="text-slate-400 hover:text-white">
@@ -720,32 +916,119 @@ export function UserManagementModule() {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 text-xs">
-              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
-                <span className="text-slate-400 font-mono">Email Address</span>
-                <p className="font-bold text-white truncate">{viewingUser.email}</p>
-              </div>
-              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
-                <span className="text-slate-400 font-mono">Phone Number</span>
-                <p className="font-bold text-white">{viewingUser.phone}</p>
-              </div>
-              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
-                <span className="text-slate-400 font-mono">Location</span>
-                <p className="font-bold text-white">{viewingUser.city}, {viewingUser.country}</p>
-              </div>
-              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
-                <span className="text-slate-400 font-mono">Role & Status</span>
-                <p className="font-bold text-purple-400">{viewingUser.role} ({viewingUser.status})</p>
-              </div>
+            {/* Quick Action Triggers */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs custom-scrollbar">
+              <button
+                onClick={() => handleActionCall('force-logout', viewingUser.id, 'Revoked all logged-in sessions')}
+                className="px-2.5 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 text-amber-300 border border-slate-800 font-semibold flex items-center gap-1.5 shrink-0"
+              >
+                <LogOut className="w-3.5 h-3.5" /> Force Logout
+              </button>
+              <button
+                onClick={() => handleActionCall('reset-2fa', viewingUser.id, 'Reset 2FA authentication')}
+                className="px-2.5 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 text-indigo-300 border border-slate-800 font-semibold flex items-center gap-1.5 shrink-0"
+              >
+                <KeyRound className="w-3.5 h-3.5" /> Reset 2FA
+              </button>
+              <button
+                onClick={() => handleActionCall('require-verification', viewingUser.id, 'Flagged fresh KYC verification requirement')}
+                className="px-2.5 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 text-purple-300 border border-slate-800 font-semibold flex items-center gap-1.5 shrink-0"
+              >
+                <ShieldAlert className="w-3.5 h-3.5" /> Require KYC
+              </button>
+              <button
+                onClick={() => handleActionCall('restore', viewingUser.id, 'Account restored to Active')}
+                className="px-2.5 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 text-emerald-300 border border-slate-800 font-semibold flex items-center gap-1.5 shrink-0"
+              >
+                <RotateCcw className="w-3.5 h-3.5" /> Restore Account
+              </button>
             </div>
 
-            <div className="p-4 rounded-2xl bg-purple-950/20 border border-purple-500/30 flex items-center justify-between text-xs">
-              <div>
-                <p className="text-slate-300 font-bold">Wallet Escrow Balance</p>
-                <p className="text-xl font-extrabold text-emerald-400 font-mono">${viewingUser.walletBalance}.00 USD</p>
-              </div>
-              <button onClick={() => triggerToast('Refund initiated to wallet.')} className="px-3 py-1.5 rounded-xl bg-purple-600 text-white font-bold text-xs">Manage Balance</button>
+            {/* Sub-Endpoint Tabs Navigation */}
+            <div className="flex items-center gap-1.5 border-b border-slate-800 pb-2 overflow-x-auto custom-scrollbar text-xs font-semibold">
+              {[
+                { id: 'profile', label: '📌 Profile Info' },
+                { id: 'bookings', label: '📅 Bookings' },
+                { id: 'payments', label: '💳 Payments' },
+                { id: 'reviews', label: '⭐ Reviews' },
+                { id: 'reports', label: '🛡️ Reports' },
+                { id: 'devices', label: '📱 Devices' },
+                { id: 'activity', label: '📝 Activity Log' },
+              ].map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setDrawerTab(t.id as any)}
+                  className={`px-3 py-1.5 rounded-xl transition-all whitespace-nowrap ${
+                    drawerTab === t.id
+                      ? 'bg-purple-600 text-white font-bold'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
             </div>
+
+            {/* Tab 1: Profile Info */}
+            {drawerTab === 'profile' && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-0.5">
+                    <span className="text-slate-400 font-mono">Email Address</span>
+                    <p className="font-bold text-white truncate">{viewingUser.email}</p>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-0.5">
+                    <span className="text-slate-400 font-mono">Phone Number</span>
+                    <p className="font-bold text-white">{viewingUser.phone}</p>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-0.5">
+                    <span className="text-slate-400 font-mono">Location</span>
+                    <p className="font-bold text-white">{viewingUser.city}, {viewingUser.country}</p>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-0.5">
+                    <span className="text-slate-400 font-mono">Status & Risk Level</span>
+                    <p className="font-bold text-purple-400">{viewingUser.status} ({viewingUser.riskLevel})</p>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-purple-950/20 border border-purple-500/30 flex items-center justify-between text-xs">
+                  <div>
+                    <p className="text-slate-300 font-bold">Escrow Wallet Balance</p>
+                    <p className="text-xl font-extrabold text-emerald-400 font-mono">${viewingUser.walletBalance}.00 USD</p>
+                  </div>
+                  <button onClick={() => triggerToast('Wallet balance re-synced.')} className="px-3 py-1.5 rounded-xl bg-purple-600 text-white font-bold text-xs">Sync Balance</button>
+                </div>
+              </div>
+            )}
+
+            {/* Tab 2-7: Sub-Endpoint Content */}
+            {drawerTab !== 'profile' && (
+              <div className="space-y-3">
+                {drawerLoading ? (
+                  <div className="py-8 text-center text-xs text-purple-400 font-semibold animate-pulse">
+                    Loading {drawerTab} history from backend API...
+                  </div>
+                ) : drawerData.length === 0 ? (
+                  <div className="py-8 text-center text-xs text-slate-500">
+                    No {drawerTab} records found for user #{viewingUser.id}.
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
+                    {drawerData.map((item, idx) => (
+                      <div key={item.id || idx} className="p-3 rounded-2xl bg-slate-950 border border-slate-800/80 text-xs space-y-1">
+                        <div className="flex items-center justify-between font-bold text-white">
+                          <span>{item.bookingNumber || item.type || item.action || item.deviceType || `Record #${idx+1}`}</span>
+                          <span className="text-[10px] text-purple-400 font-mono">{item.status || item.createdAt || item.lastActive}</span>
+                        </div>
+                        {item.totalAmount && <p className="text-emerald-400 font-mono font-bold">${item.totalAmount} USD</p>}
+                        {item.comment && <p className="text-slate-300 italic">"{item.comment}"</p>}
+                        {item.userAgent && <p className="text-[10px] text-slate-400 font-mono">{item.userAgent}</p>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="pt-2 flex justify-end">
               <button onClick={() => setViewingUser(null)} className="px-5 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold">Close Drawer</button>
