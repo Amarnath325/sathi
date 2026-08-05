@@ -322,7 +322,7 @@ export function KycVerificationModule() {
       </div>
 
       {/* 🏷️ SUBMODULE NAVIGATION TABS */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {[
           { id: 'verification-dashboard', label: '📊 Verification Dashboard', count: totalCount },
           { id: 'pending', label: '⏳ Pending Verification', count: pendingCount },
@@ -443,28 +443,28 @@ export function KycVerificationModule() {
                 </div>
               </div>
 
-              {/* Document Photo Preview (Sleek Compact Size h-28 sm:h-32) */}
-              <div className="relative rounded-xl overflow-hidden border border-slate-800 group h-28 sm:h-32 bg-slate-950">
+              {/* Document Photo Preview (Clean Proportions & 100% Uncropped) */}
+              <div className="relative rounded-2xl overflow-hidden border border-slate-800/80 group h-40 sm:h-44 bg-slate-950 flex items-center justify-center p-1.5 shadow-inner">
                 <img
                   src={doc.fileUrl}
                   alt="KYC Document"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-full object-contain rounded-xl group-hover:scale-105 transition-transform duration-300"
                 />
                 
                 {/* User Live Selfie Overlay Badge */}
-                <div className="absolute bottom-2 left-2 bg-slate-950/90 backdrop-blur-md p-1 rounded-lg border border-slate-800 flex items-center gap-1.5">
-                  <img src={doc.selfieUrl} className="w-6 h-6 rounded-md object-cover" />
+                <div className="absolute bottom-2.5 left-2.5 bg-slate-950/90 backdrop-blur-md px-2 py-1 rounded-xl border border-slate-800 flex items-center gap-2 shadow-lg">
+                  <img src={doc.selfieUrl} className="w-6 h-6 rounded-lg object-cover border border-purple-500/30" />
                   <div className="text-[9px]">
-                    <p className="font-bold text-white">Live Selfie</p>
-                    <p className="text-emerald-400 font-mono">Matched</p>
+                    <p className="font-bold text-white leading-tight">Live Selfie</p>
+                    <p className="text-emerald-400 font-mono font-bold leading-tight">100% Match</p>
                   </div>
                 </div>
 
                 <button
                   onClick={() => setInspectingDoc(doc)}
-                  className="absolute top-2 right-2 p-1.5 rounded-lg bg-slate-950/80 text-white hover:bg-purple-600 transition-colors border border-slate-800 flex items-center gap-1 text-[10px] font-bold"
+                  className="absolute top-2.5 right-2.5 px-2 py-1 rounded-xl bg-slate-950/90 hover:bg-purple-600 text-white transition-all border border-slate-800 flex items-center gap-1 text-[10px] font-bold shadow-lg"
                 >
-                  <Eye className="w-3 h-3" /> Inspect
+                  <Eye className="w-3.5 h-3.5 text-purple-400" /> Inspect
                 </button>
               </div>
 

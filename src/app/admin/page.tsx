@@ -490,10 +490,10 @@ export default function AdminDashboardPage() {
       {/* ========================================== */}
       {/* 🟦 MAIN ERP DASHBOARD CONTENT AREA        */}
       {/* ========================================== */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-950">
+      <main className="flex-1 flex flex-col min-h-screen bg-slate-950">
         
         {/* Top ERP Header Navigation Bar */}
-        <header className="h-20 border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md px-4 sm:px-8 flex items-center justify-between shrink-0">
+        <header className="h-20 border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md px-4 sm:px-8 flex items-center justify-between shrink-0 sticky top-0 z-30">
           
           {/* Left: Mobile Menu Trigger & Breadcrumb */}
           <div className="flex items-center gap-3">
@@ -559,8 +559,8 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* ERP Main Scrollable Workspace */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-6 sm:space-y-8 custom-scrollbar">
+        {/* ERP Main Content Workspace */}
+        <div className="flex-1 p-4 sm:p-8 space-y-6 sm:space-y-8">
 
           {/* ==================================================== */}
           {/* MODULE 1: 📊 DASHBOARD                               */}
