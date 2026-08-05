@@ -125,6 +125,8 @@ export function KycVerificationModule() {
   const [rejectingDoc, setRejectingDoc] = useState<KycDocumentRecord | null>(null);
   const [rejectReason, setRejectReason] = useState('Blurry document image');
   const [showPdfModal, setShowPdfModal] = useState(false);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [imagePreviewTitle, setImagePreviewTitle] = useState<string>('');
 
   const triggerToast = (msg: string) => {
     setNotification(msg);
@@ -443,16 +445,29 @@ export function KycVerificationModule() {
                 </div>
               </div>
 
-              {/* Document Photo Preview (Clean Proportions & 100% Uncropped) */}
-              <div className="relative rounded-lg overflow-hidden border border-slate-800/80 group h-20 sm:h-24 bg-slate-950 flex items-center justify-center p-0.5 shadow-inner">
+              {/* Document Photo Preview (Clickable Full Image Popup Modal) */}
+              <div 
+                onClick={() => {
+                  setImagePreviewUrl(doc.fileUrl);
+                  setImagePreviewTitle(`${doc.userName} - ${doc.type.replace(/_/g, ' ')} (${doc.documentNumber})`);
+                }}
+                className="relative rounded-lg overflow-hidden border border-slate-800/80 group h-20 sm:h-24 bg-slate-950 flex items-center justify-center p-0.5 shadow-inner cursor-pointer hover:border-purple-500/50 transition-all"
+              >
                 <img
                   src={doc.fileUrl}
                   alt="KYC Document"
                   className="w-full h-full object-contain rounded group-hover:scale-105 transition-transform duration-300"
                 />
                 
-                {/* User Live Selfie Overlay Badge */}
-                <div className="absolute bottom-1 left-1 bg-slate-950/90 backdrop-blur-md px-1 py-0.5 rounded border border-slate-800 flex items-center gap-1 shadow-lg">
+                {/* User Live Selfie Overlay Badge (Click to View Selfie Popup) */}
+                <div 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setImagePreviewUrl(doc.selfieUrl);
+                    setImagePreviewTitle(`${doc.userName} - Live Biometric Selfie Match`);
+                  }}
+                  className="absolute bottom-1 left-1 bg-slate-950/90 hover:bg-slate-900 backdrop-blur-md px-1 py-0.5 rounded border border-slate-800 flex items-center gap-1 shadow-lg cursor-pointer transition-colors"
+                >
                   <img src={doc.selfieUrl} className="w-3.5 h-3.5 rounded object-cover border border-purple-500/30" />
                   <div className="text-[7px]">
                     <p className="font-bold text-white leading-tight">Live Selfie</p>
@@ -461,7 +476,11 @@ export function KycVerificationModule() {
                 </div>
 
                 <button
-                  onClick={() => setInspectingDoc(doc)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setImagePreviewUrl(doc.fileUrl);
+                    setImagePreviewTitle(`${doc.userName} - ${doc.type.replace(/_/g, ' ')} (${doc.documentNumber})`);
+                  }}
                   className="absolute top-1 right-1 px-1 py-0.5 rounded bg-slate-950/90 hover:bg-purple-600 text-white transition-all border border-slate-800 flex items-center gap-0.5 text-[8px] font-bold shadow-lg"
                 >
                   <Eye className="w-2.5 h-2.5 text-purple-400" /> View
@@ -740,6 +759,58 @@ export function KycVerificationModule() {
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 🖼️ MODAL 4: FULL RESOLUTION IMAGE LIGHTBOX POPUP          */}
+      {/* ========================================================= */}
+      {imagePreviewUrl && (
+        <div 
+          onClick={() => setImagePreviewUrl(null)} 
+          className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out animate-fade-in"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()} 
+            className="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-6 w-full max-w-4xl shadow-2xl space-y-4 cursor-default relative max-h-[90vh] flex flex-col items-center justify-center"
+          >
+            <div className="flex items-center justify-between w-full pb-3 border-b border-slate-800">
+              <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                <Eye className="w-5 h-5 text-purple-400" /> {imagePreviewTitle || 'KYC Document Image Preview'}
+              </h3>
+              <button 
+                onClick={() => setImagePreviewUrl(null)} 
+                className="p-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="w-full flex-1 min-h-[280px] max-h-[68vh] bg-slate-950 rounded-2xl border border-slate-800/80 p-3 flex items-center justify-center overflow-hidden">
+              <img 
+                src={imagePreviewUrl} 
+                alt="Document Full Preview" 
+                className="max-w-full max-h-[64vh] object-contain rounded-xl shadow-2xl transition-all"
+              />
+            </div>
+
+            <div className="flex items-center justify-between w-full pt-1 text-xs">
+              <a 
+                href={imagePreviewUrl} 
+                target="_blank" 
+                rel="noreferrer"
+                className="px-3.5 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-purple-400 border border-slate-800 font-bold flex items-center gap-1.5 text-xs"
+              >
+                <Download className="w-4 h-4" /> Open Full Image
+              </a>
+              <button 
+                onClick={() => setImagePreviewUrl(null)} 
+                className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-600/25"
+              >
+                Close Preview
+              </button>
+            </div>
           </div>
         </div>
       )}
