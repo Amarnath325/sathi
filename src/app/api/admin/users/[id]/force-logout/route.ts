@@ -1,17 +1,15 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-// POST /api/admin/users/[id]/force-logout - Revoke all active login sessions
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
-    // Delete or invalidate user sessions
     try {
-      await prisma.session.deleteMany({
+      await prisma.userSession.deleteMany({
         where: { userId: id }
       });
     } catch (e) {}

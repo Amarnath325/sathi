@@ -144,7 +144,7 @@ model CompanionProfile {
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
 
-  @@index([city, category, ratingAvg])
+  @@index([city, ratingAvg])
 }
 
 model VerificationDocument {

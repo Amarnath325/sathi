@@ -1,76 +1,64 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-// PATCH /api/admin/users/[id]/status - Quick status transitions (Suspend, Restrict, Ban, Activate, Verify)
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
-    const { action, reason } = body; // action: 'SUSPEND' | 'UNSUSPEND' | 'RESTRICT' | 'BAN' | 'ACTIVATE' | 'VERIFY_EMAIL'
+    const { status, reason, isEmailVerified, isPhoneVerified } = body;
 
-    let updateData: any = {};
+    let accountFrozen: boolean | undefined = undefined;
+    let riskLevel: any = undefined;
+    let riskScore: number | undefined = undefined;
 
-    switch (action) {
-      case 'SUSPEND':
-        updateData = { accountFrozen: true };
-        break;
-      case 'UNSUSPEND':
-      case 'ACTIVATE':
-        updateData = { accountFrozen: false, riskLevel: 'LOW' };
-        break;
-      case 'RESTRICT':
-        updateData = { riskLevel: 'HIGH', riskScore: 0.8 };
-        break;
-      case 'BAN':
-        updateData = { accountFrozen: true, riskLevel: 'CRITICAL', riskScore: 1.0 };
-        break;
-      case 'VERIFY_EMAIL':
-        updateData = { isEmailVerified: true, isPhoneVerified: true };
-        break;
-      default:
-        return NextResponse.json(
-          { success: false, error: 'Invalid status action' },
-          { status: 400 }
-        );
+    if (status === 'SUSPENDED') {
+      accountFrozen = true;
+    } else if (status === 'BANNED') {
+      accountFrozen = true;
+      riskLevel = 'CRITICAL';
+      riskScore = 1.0;
+    } else if (status === 'RESTRICTED') {
+      riskLevel = 'HIGH';
+      riskScore = 0.8;
+    } else if (status === 'ACTIVE') {
+      accountFrozen = false;
+      riskLevel = 'LOW';
+      riskScore = 0.05;
     }
 
     const updatedUser = await prisma.user.update({
       where: { id },
-      data: updateData,
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        role: true,
-        accountFrozen: true,
-        riskLevel: true,
-        riskScore: true,
-        isEmailVerified: true,
+      data: {
+        accountFrozen,
+        riskLevel,
+        riskScore,
+        isEmailVerified: isEmailVerified !== undefined ? Boolean(isEmailVerified) : undefined,
+        isPhoneVerified: isPhoneVerified !== undefined ? Boolean(isPhoneVerified) : undefined,
       }
     });
 
-    // Create Audit Log entry
     try {
       await prisma.auditLog.create({
         data: {
-          action: `USER_STATUS_CHANGE_${action}`,
-          payload: { userId: id, reason, updatedState: updateData }
+          action: `ADMIN_USER_STATUS_CHANGE_${status}`,
+          payload: {
+            userId: id,
+            status,
+            reason: reason || 'Admin panel status update'
+          }
         }
       });
-    } catch (auditError) {
-      console.warn('Audit log write skipped:', auditError);
-    }
+    } catch (e) {}
 
     return NextResponse.json({
       success: true,
-      message: `User ${updatedUser.fullName} status updated via ${action}`,
+      message: `User status changed to ${status}`,
       data: updatedUser
     });
   } catch (error: any) {
-    console.error(`Error updating user status ${params.id}:`, error);
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to update user status' },
       { status: 500 }

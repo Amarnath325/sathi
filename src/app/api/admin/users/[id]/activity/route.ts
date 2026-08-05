@@ -1,22 +1,16 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-// GET /api/admin/users/[id]/activity - Fetch user audit log and activity timeline
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     try {
       const logs = await prisma.auditLog.findMany({
-        where: {
-          payload: {
-            path: ['userId'],
-            equals: id
-          }
-        },
+        where: { userId: id },
         orderBy: { createdAt: 'desc' },
         take: 50
       });

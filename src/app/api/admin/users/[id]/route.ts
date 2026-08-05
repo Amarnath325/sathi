@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-// GET /api/admin/users/[id] - Get single user with full relation details
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const user = await prisma.user.findUnique({
       where: { id },
@@ -36,7 +35,6 @@ export async function GET(
 
     return NextResponse.json({ success: true, data: user });
   } catch (error: any) {
-    console.error(`Error fetching user ${params.id}:`, error);
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to fetch user' },
       { status: 500 }
@@ -44,13 +42,12 @@ export async function GET(
   }
 }
 
-// PUT /api/admin/users/[id] - Update user details & profile
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
 
     const {
@@ -109,7 +106,6 @@ export async function PUT(
       data: updatedUser
     });
   } catch (error: any) {
-    console.error(`Error updating user ${params.id}:`, error);
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to update user' },
       { status: 500 }
@@ -117,13 +113,12 @@ export async function PUT(
   }
 }
 
-// DELETE /api/admin/users/[id] - Delete user permanently
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     await prisma.user.delete({
       where: { id }
@@ -134,7 +129,6 @@ export async function DELETE(
       message: `User #${id} permanently deleted`
     });
   } catch (error: any) {
-    console.error(`Error deleting user ${params.id}:`, error);
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to delete user' },
       { status: 500 }

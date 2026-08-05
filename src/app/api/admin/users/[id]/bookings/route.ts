@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-// GET /api/admin/users/[id]/bookings - Fetch user's booking history (as booker or companion)
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     try {
       const bookings = await prisma.booking.findMany({
@@ -24,7 +23,6 @@ export async function GET(
 
       return NextResponse.json({ success: true, data: bookings });
     } catch (dbErr) {
-      // Fallback response for offline / unseeded database
       return NextResponse.json({
         success: true,
         isFallback: true,

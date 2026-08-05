@@ -1,16 +1,15 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-// GET /api/admin/users/[id]/devices - Fetch logged-in devices and IP audit history
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     try {
-      const sessions = await prisma.session.findMany({
+      const sessions = await prisma.userSession.findMany({
         where: { userId: id },
         orderBy: { lastActive: 'desc' }
       });
