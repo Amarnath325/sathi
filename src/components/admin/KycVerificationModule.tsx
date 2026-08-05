@@ -23,7 +23,9 @@ import {
   Filter,
   Check,
   Shield,
-  FileCheck
+  FileCheck,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 export type KycSubFilter = 
@@ -54,6 +56,10 @@ export function KycVerificationModule() {
   const [searchQuery, setSearchQuery] = useState('');
   const [notification, setNotification] = useState<string | null>(null);
 
+  // Pagination states (Default 10)
+  const [pageSize, setPageSize] = useState<string>('10');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
   // Data records state
   const [documents, setDocuments] = useState<KycDocumentRecord[]>([
     {
@@ -63,8 +69,8 @@ export function KycVerificationModule() {
       userEmail: 'sophia.c@example.com',
       type: 'GOVERNMENT_ID',
       documentNumber: 'ID-98471203',
-      fileUrl: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=800&auto=format&fit=crop&q=80',
-      selfieUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+      fileUrl: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=80',
+      selfieUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
       status: 'PENDING',
       rejectionReason: null,
       createdAt: '2026-08-05T08:30:00Z',
@@ -77,8 +83,8 @@ export function KycVerificationModule() {
       userEmail: 'marcus.b@example.com',
       type: 'PASSPORT',
       documentNumber: 'PASS-8840192',
-      fileUrl: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&auto=format&fit=crop&q=80',
-      selfieUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
+      fileUrl: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&auto=format&fit=crop&q=80',
+      selfieUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
       status: 'APPROVED',
       rejectionReason: null,
       createdAt: '2026-08-04T14:15:00Z',
@@ -91,8 +97,8 @@ export function KycVerificationModule() {
       userEmail: 'elena.r@example.com',
       type: 'DRIVING_LICENSE',
       documentNumber: 'DL-7730192',
-      fileUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=80',
-      selfieUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80',
+      fileUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=600&auto=format&fit=crop&q=80',
+      selfieUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&auto=format&fit=crop&q=80',
       status: 'REJECTED',
       rejectionReason: 'Document photo blurry and unreadable',
       createdAt: '2026-08-03T11:20:00Z',
@@ -105,8 +111,8 @@ export function KycVerificationModule() {
       userEmail: 'aarav.s@example.com',
       type: 'NATIONAL_IDENTITY_CARD',
       documentNumber: 'NID-4401928',
-      fileUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800&auto=format&fit=crop&q=80',
-      selfieUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80',
+      fileUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=600&auto=format&fit=crop&q=80',
+      selfieUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80',
       status: 'EXPIRED',
       rejectionReason: 'Document expired on 2025-12-31',
       createdAt: '2026-08-01T09:10:00Z',
@@ -125,6 +131,11 @@ export function KycVerificationModule() {
     setTimeout(() => setNotification(null), 3500);
   };
 
+  // Reset page number on filter/search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeSubFilter, searchQuery, pageSize]);
+
   // Fetch KYC queue from Backend API
   useEffect(() => {
     fetch('/api/admin/kyc')
@@ -138,8 +149,8 @@ export function KycVerificationModule() {
             userEmail: d.user?.email || d.userEmail || 'user@example.com',
             type: d.type || 'GOVERNMENT_ID',
             documentNumber: d.documentNumber || `ID-${Math.floor(100000 + Math.random() * 900000)}`,
-            fileUrl: d.fileUrl || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=800&auto=format&fit=crop&q=80',
-            selfieUrl: d.selfieUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+            fileUrl: d.fileUrl || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=80',
+            selfieUrl: d.selfieUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
             status: d.status || 'PENDING',
             rejectionReason: d.rejectionReason || null,
             createdAt: d.createdAt ? new Date(d.createdAt).toISOString().split('T')[0] : '2026-08-05',
@@ -152,7 +163,7 @@ export function KycVerificationModule() {
   }, []);
 
   // Filter documents
-  const displayedDocs = documents.filter((doc) => {
+  const filteredDocs = documents.filter((doc) => {
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       const matchName = doc.userName.toLowerCase().includes(q);
@@ -177,6 +188,13 @@ export function KycVerificationModule() {
         return true;
     }
   });
+
+  // Pagination calculation
+  const totalItems = filteredDocs.length;
+  const effectivePageSize = pageSize === 'ALL' ? totalItems : parseInt(pageSize, 10) || 10;
+  const totalPages = Math.ceil(totalItems / (effectivePageSize || 1)) || 1;
+  const startIndex = (currentPage - 1) * effectivePageSize;
+  const displayedDocs = filteredDocs.slice(startIndex, startIndex + effectivePageSize);
 
   // Summary Metrics
   const totalCount = documents.length;
@@ -216,7 +234,7 @@ export function KycVerificationModule() {
   const handleExportCSV = () => {
     const headers = ['ID', 'UserName', 'UserEmail', 'DocumentType', 'DocumentNumber', 'Status', 'ExpiresAt'];
     const lines = [headers.join(',')];
-    displayedDocs.forEach(d => {
+    filteredDocs.forEach(d => {
       lines.push(`"${d.id}","${d.userName}","${d.userEmail}","${d.type}","${d.documentNumber}","${d.status}","${d.expiresAt}"`);
     });
     const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
@@ -226,7 +244,7 @@ export function KycVerificationModule() {
     a.download = `kyc_verification_export.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    triggerToast(`Exported ${displayedDocs.length} KYC records to CSV!`);
+    triggerToast(`Exported ${filteredDocs.length} KYC records to CSV!`);
   };
 
   const handleExportXLSX = () => {
@@ -235,7 +253,7 @@ export function KycVerificationModule() {
       xmlTable += `<Cell><Data ss:Type="String">${h}</Data></Cell>`;
     });
     xmlTable += `</Row>`;
-    displayedDocs.forEach(d => {
+    filteredDocs.forEach(d => {
       xmlTable += `<Row>`;
       xmlTable += `<Cell><Data ss:Type="String">${d.id}</Data></Cell>`;
       xmlTable += `<Cell><Data ss:Type="String">${d.userName}</Data></Cell>`;
@@ -255,7 +273,7 @@ export function KycVerificationModule() {
     a.download = `kyc_verification_export.xlsx`;
     a.click();
     URL.revokeObjectURL(url);
-    triggerToast(`Exported ${displayedDocs.length} KYC records to XLSX!`);
+    triggerToast(`Exported ${filteredDocs.length} KYC records to XLSX!`);
   };
 
   return (
@@ -276,27 +294,27 @@ export function KycVerificationModule() {
 
       {/* 📊 SUMMARY METRICS CARDS BAR */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
           <p className="text-[10px] font-mono text-slate-400 uppercase font-bold">Total Submissions</p>
           <p className="text-xl font-extrabold text-white">{totalCount}</p>
-          <p className="text-[10px] text-purple-400 font-medium">All User KYC Documents</p>
+          <p className="text-[10px] text-purple-400 font-medium">All KYC Documents</p>
         </div>
-        <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
           <p className="text-[10px] font-mono text-slate-400 uppercase font-bold">Pending Review</p>
           <p className="text-xl font-extrabold text-amber-400">{pendingCount}</p>
           <p className="text-[10px] text-amber-300 font-medium">Awaiting Inspection</p>
         </div>
-        <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
           <p className="text-[10px] font-mono text-slate-400 uppercase font-bold">Approved Verified</p>
           <p className="text-xl font-extrabold text-emerald-400">{approvedCount}</p>
           <p className="text-[10px] text-emerald-300 font-medium">Identity Confirmed</p>
         </div>
-        <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
           <p className="text-[10px] font-mono text-slate-400 uppercase font-bold">Rejected Docs</p>
           <p className="text-xl font-extrabold text-rose-400">{rejectedCount}</p>
           <p className="text-[10px] text-rose-300 font-medium">Verification Failed</p>
         </div>
-        <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
           <p className="text-[10px] font-mono text-slate-400 uppercase font-bold">Expired IDs</p>
           <p className="text-xl font-extrabold text-orange-400">{expiredCount}</p>
           <p className="text-[10px] text-orange-300 font-medium">Requires Renewal</p>
@@ -318,7 +336,7 @@ export function KycVerificationModule() {
             <button
               key={tab.id}
               onClick={() => setActiveSubFilter(tab.id as KycSubFilter)}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 border ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 border ${
                 isActive
                   ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold border-purple-500 shadow-lg shadow-purple-600/25'
                   : 'bg-slate-900/90 text-slate-400 hover:text-white border-slate-800 hover:border-slate-700'
@@ -334,7 +352,7 @@ export function KycVerificationModule() {
       </div>
 
       {/* 🎛️ MASTER CONTROL TOOLBAR */}
-      <div className="glass-panel p-5 rounded-3xl border border-slate-800 space-y-4">
+      <div className="glass-panel p-4 sm:p-5 rounded-3xl border border-slate-800 space-y-4">
         <div className="flex flex-col lg:flex-row items-center justify-between gap-3 text-xs">
           
           {/* 🔍 Search Input Box */}
@@ -382,26 +400,26 @@ export function KycVerificationModule() {
         </div>
       </div>
 
-      {/* 📋 KYC DOCUMENT CARDS GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* 📋 KYC DOCUMENT CARDS GRID (COMPACT & RESPONSIVE IMAGES) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
         {displayedDocs.length === 0 ? (
           <div className="col-span-2 p-12 text-center bg-slate-900 border border-slate-800 rounded-3xl text-slate-500 font-medium">
             No KYC verification documents found in {activeSubFilter.toUpperCase()} view.
           </div>
         ) : (
           displayedDocs.map((doc) => (
-            <div key={doc.id} className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl hover:border-slate-700 transition-all">
+            <div key={doc.id} className="p-4 sm:p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-3 shadow-xl hover:border-slate-700 transition-all">
               
-              <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
                 <div>
-                  <h4 className="font-bold text-white text-sm flex items-center gap-2">
+                  <h4 className="font-bold text-white text-sm flex items-center gap-1.5">
                     {doc.userName}
                     {doc.status === 'APPROVED' && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
                   </h4>
                   <p className="text-[10px] text-slate-400 font-mono">{doc.userEmail} • #{doc.id}</p>
                 </div>
 
-                <span className={`px-3 py-1 rounded-full text-[10px] font-extrabold border ${
+                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${
                   doc.status === 'APPROVED'
                     ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
                     : doc.status === 'REJECTED'
@@ -414,19 +432,19 @@ export function KycVerificationModule() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="p-2.5 rounded-2xl bg-slate-950 border border-slate-800/80 space-y-0.5">
-                  <span className="text-[10px] text-slate-500 font-mono uppercase">Document Type</span>
-                  <p className="font-bold text-purple-400 truncate">{doc.type.replace(/_/g, ' ')}</p>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-2 rounded-xl bg-slate-950 border border-slate-800/80 space-y-0.5">
+                  <span className="text-[9px] text-slate-500 font-mono uppercase">Document Type</span>
+                  <p className="font-bold text-purple-400 truncate text-[11px]">{doc.type.replace(/_/g, ' ')}</p>
                 </div>
-                <div className="p-2.5 rounded-2xl bg-slate-950 border border-slate-800/80 space-y-0.5">
-                  <span className="text-[10px] text-slate-500 font-mono uppercase">ID / Passport No</span>
-                  <p className="font-mono font-bold text-white truncate">{doc.documentNumber}</p>
+                <div className="p-2 rounded-xl bg-slate-950 border border-slate-800/80 space-y-0.5">
+                  <span className="text-[9px] text-slate-500 font-mono uppercase">ID Number</span>
+                  <p className="font-mono font-bold text-white truncate text-[11px]">{doc.documentNumber}</p>
                 </div>
               </div>
 
-              {/* Document Photo Preview */}
-              <div className="relative rounded-2xl overflow-hidden border border-slate-800 group h-44 bg-slate-950">
+              {/* Document Photo Preview (Sleek Compact Size h-28 sm:h-32) */}
+              <div className="relative rounded-xl overflow-hidden border border-slate-800 group h-28 sm:h-32 bg-slate-950">
                 <img
                   src={doc.fileUrl}
                   alt="KYC Document"
@@ -434,9 +452,9 @@ export function KycVerificationModule() {
                 />
                 
                 {/* User Live Selfie Overlay Badge */}
-                <div className="absolute bottom-3 left-3 bg-slate-950/90 backdrop-blur-md p-1.5 rounded-xl border border-slate-800 flex items-center gap-2">
-                  <img src={doc.selfieUrl} className="w-8 h-8 rounded-lg object-cover" />
-                  <div className="text-[10px]">
+                <div className="absolute bottom-2 left-2 bg-slate-950/90 backdrop-blur-md p-1 rounded-lg border border-slate-800 flex items-center gap-1.5">
+                  <img src={doc.selfieUrl} className="w-6 h-6 rounded-md object-cover" />
+                  <div className="text-[9px]">
                     <p className="font-bold text-white">Live Selfie</p>
                     <p className="text-emerald-400 font-mono">Matched</p>
                   </div>
@@ -444,15 +462,15 @@ export function KycVerificationModule() {
 
                 <button
                   onClick={() => setInspectingDoc(doc)}
-                  className="absolute top-3 right-3 p-2 rounded-xl bg-slate-950/80 text-white hover:bg-purple-600 transition-colors border border-slate-800 flex items-center gap-1 text-xs font-bold"
+                  className="absolute top-2 right-2 p-1.5 rounded-lg bg-slate-950/80 text-white hover:bg-purple-600 transition-colors border border-slate-800 flex items-center gap-1 text-[10px] font-bold"
                 >
-                  <Eye className="w-3.5 h-3.5" /> Inspect Full
+                  <Eye className="w-3 h-3" /> Inspect
                 </button>
               </div>
 
               {doc.rejectionReason && (
-                <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[11px] flex items-center gap-2">
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
                   <span>Reason: "{doc.rejectionReason}"</span>
                 </div>
               )}
@@ -462,7 +480,7 @@ export function KycVerificationModule() {
                 {doc.status !== 'APPROVED' && (
                   <button
                     onClick={() => handleApprove(doc)}
-                    className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 shadow-lg shadow-emerald-600/20"
+                    className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1 text-[11px] shadow-md shadow-emerald-600/20"
                   >
                     <Check className="w-3.5 h-3.5" /> Approve KYC
                   </button>
@@ -474,7 +492,7 @@ export function KycVerificationModule() {
                       setRejectingDoc(doc);
                       setRejectReason('Blurry document photo or text unreadable');
                     }}
-                    className="px-3.5 py-2 rounded-xl bg-slate-950 hover:bg-rose-600/20 text-rose-400 border border-slate-800 font-bold flex items-center gap-1.5"
+                    className="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-rose-600/20 text-rose-400 border border-slate-800 font-bold flex items-center gap-1 text-[11px]"
                   >
                     <X className="w-3.5 h-3.5" /> Reject
                   </button>
@@ -484,6 +502,72 @@ export function KycVerificationModule() {
             </div>
           ))
         )}
+      </div>
+
+      {/* 🔢 PAGINATION & ROWS PER PAGE CONTROL BAR */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-slate-400">
+        
+        {/* Page Size Dropdown Selector */}
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-slate-400">Rows per page:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-white font-bold font-mono outline-none focus:border-purple-500 cursor-pointer"
+            >
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="ALL">All</option>
+            </select>
+          </div>
+
+          <span className="font-mono text-slate-400 text-[11px]">
+            Showing <strong className="text-white">{totalItems === 0 ? 0 : startIndex + 1}</strong> - <strong className="text-white">{Math.min(startIndex + effectivePageSize, totalItems)}</strong> of <strong className="text-white">{totalItems}</strong>
+          </span>
+        </div>
+
+        {/* Page Navigation Buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 font-bold text-slate-300 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" /> Prev
+          </button>
+
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 5).map((pageNum) => (
+              <button
+                key={pageNum}
+                onClick={() => setCurrentPage(pageNum)}
+                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl font-bold font-mono text-xs transition-all ${
+                  currentPage === pageNum
+                    ? 'bg-purple-600 text-white font-extrabold shadow-lg shadow-purple-600/30'
+                    : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                }`}
+              >
+                {pageNum}
+              </button>
+            ))}
+            {totalPages > 5 && <span className="text-slate-500 font-mono px-1">... {totalPages}</span>}
+          </div>
+
+          <button
+            disabled={currentPage >= totalPages}
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 font-bold text-slate-300 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+          >
+            Next <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
       </div>
 
       {/* ========================================================= */}
@@ -504,16 +588,16 @@ export function KycVerificationModule() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
               <div className="md:col-span-2 space-y-2">
                 <p className="font-semibold text-slate-400">Government Issued ID Document</p>
-                <img src={inspectingDoc.fileUrl} className="w-full rounded-2xl border border-slate-800 object-contain bg-black" />
+                <img src={inspectingDoc.fileUrl} className="w-full max-h-72 rounded-2xl border border-slate-800 object-contain bg-black" />
               </div>
               <div className="space-y-3">
                 <p className="font-semibold text-slate-400">User Biometric Selfie Match</p>
-                <img src={inspectingDoc.selfieUrl} className="w-full h-48 rounded-2xl border border-slate-800 object-cover" />
+                <img src={inspectingDoc.selfieUrl} className="w-full h-40 rounded-2xl border border-slate-800 object-cover" />
                 <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
-                  <p className="text-slate-400">Doc Number</p>
-                  <p className="font-mono font-bold text-white">{inspectingDoc.documentNumber}</p>
-                  <p className="text-slate-400 pt-2">Expires Date</p>
-                  <p className="font-mono font-bold text-emerald-400">{inspectingDoc.expiresAt}</p>
+                  <p className="text-slate-400 text-[10px]">Doc Number</p>
+                  <p className="font-mono font-bold text-white text-xs">{inspectingDoc.documentNumber}</p>
+                  <p className="text-slate-400 text-[10px] pt-1">Expires Date</p>
+                  <p className="font-mono font-bold text-emerald-400 text-xs">{inspectingDoc.expiresAt}</p>
                 </div>
               </div>
             </div>
@@ -609,7 +693,7 @@ export function KycVerificationModule() {
                 </div>
                 <div className="text-right text-xs text-slate-500 font-mono">
                   <p>Date: {new Date().toLocaleDateString()}</p>
-                  <p>Total Records: {displayedDocs.length}</p>
+                  <p>Total Records: {filteredDocs.length}</p>
                 </div>
               </div>
 
@@ -625,7 +709,7 @@ export function KycVerificationModule() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 text-slate-800">
-                    {displayedDocs.map((d) => (
+                    {filteredDocs.map((d) => (
                       <tr key={d.id}>
                         <td className="p-2 font-mono">{d.id}</td>
                         <td className="p-2 font-bold">{d.userName}</td>
@@ -640,7 +724,7 @@ export function KycVerificationModule() {
             </div>
 
             <div className="flex items-center justify-between pt-2">
-              <span className="text-xs text-slate-400 font-mono">PDF Preview Ready ({displayedDocs.length} records)</span>
+              <span className="text-xs text-slate-400 font-mono">PDF Preview Ready ({filteredDocs.length} records)</span>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => window.print()}

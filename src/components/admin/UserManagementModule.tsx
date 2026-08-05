@@ -26,6 +26,7 @@ import {
   Clock, 
   FileSpreadsheet, 
   ChevronRight, 
+  ChevronLeft,
   X,
   BadgeAlert,
   Sparkles,
@@ -96,8 +97,17 @@ export function UserManagementModule() {
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
   const [notification, setNotification] = useState<string | null>(null);
 
+  // Pagination states (Default 10)
+  const [pageSize, setPageSize] = useState<string>('10');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
   // Trash view toggle
   const [viewTrashBin, setViewTrashBin] = useState(false);
+
+  // Reset page number on filter/search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeSubFilter, searchQuery, roleFilter, viewTrashBin, pageSize]);
 
   // Modals & Drawers state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -237,6 +247,13 @@ export function UserManagementModule() {
         return true;
     }
   });
+
+  // Pagination calculation
+  const totalUserItems = displayedUsers.length;
+  const effectiveUserPageSize = pageSize === 'ALL' ? totalUserItems : parseInt(pageSize, 10) || 10;
+  const totalUserPages = Math.ceil(totalUserItems / (effectiveUserPageSize || 1)) || 1;
+  const startUserIndex = (currentPage - 1) * effectiveUserPageSize;
+  const paginatedUsers = displayedUsers.slice(startUserIndex, startUserIndex + effectiveUserPageSize);
 
   // Metric Counts
   const totalCount = allUserRecords.filter(u => !trashIds.includes(u.id)).length;
@@ -638,14 +655,14 @@ export function UserManagementModule() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/70 text-xs">
-              {displayedUsers.length === 0 ? (
+              {paginatedUsers.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-12 text-center text-slate-500 font-medium">
                     No user records found in {viewTrashBin ? 'Trash Bin' : activeSubFilter.toUpperCase()}.
                   </td>
                 </tr>
               ) : (
-                displayedUsers.map((user) => {
+                paginatedUsers.map((user) => {
                   return (
                     <tr key={user.id} className="hover:bg-slate-800/40 transition-colors">
                       
@@ -756,6 +773,72 @@ export function UserManagementModule() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* 🔢 PAGINATION & ROWS PER PAGE CONTROL BAR */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-slate-400">
+        
+        {/* Page Size Dropdown Selector */}
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-slate-400">Rows per page:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-white font-bold font-mono outline-none focus:border-purple-500 cursor-pointer"
+            >
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="ALL">All</option>
+            </select>
+          </div>
+
+          <span className="font-mono text-slate-400 text-[11px]">
+            Showing <strong className="text-white">{totalUserItems === 0 ? 0 : startUserIndex + 1}</strong> - <strong className="text-white">{Math.min(startUserIndex + effectiveUserPageSize, totalUserItems)}</strong> of <strong className="text-white">{totalUserItems}</strong>
+          </span>
+        </div>
+
+        {/* Page Navigation Buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 font-bold text-slate-300 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" /> Prev
+          </button>
+
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalUserPages }, (_, i) => i + 1).slice(0, 5).map((pageNum) => (
+              <button
+                key={pageNum}
+                onClick={() => setCurrentPage(pageNum)}
+                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl font-bold font-mono text-xs transition-all ${
+                  currentPage === pageNum
+                    ? 'bg-purple-600 text-white font-extrabold shadow-lg shadow-purple-600/30'
+                    : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                }`}
+              >
+                {pageNum}
+              </button>
+            ))}
+            {totalUserPages > 5 && <span className="text-slate-500 font-mono px-1">... {totalUserPages}</span>}
+          </div>
+
+          <button
+            disabled={currentPage >= totalUserPages}
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalUserPages))}
+            className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 font-bold text-slate-300 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+          >
+            Next <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
       </div>
 
       {/* ========================================================= */}
