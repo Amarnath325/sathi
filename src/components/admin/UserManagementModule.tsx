@@ -40,7 +40,10 @@ import {
   RotateCcw,
   Smartphone,
   MessageSquare,
-  CreditCard
+  CreditCard,
+  Archive,
+  Layers,
+  Printer
 } from 'lucide-react';
 import { useCrudStore } from '@/lib/crudStore';
 
@@ -93,12 +96,16 @@ export function UserManagementModule() {
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
   const [notification, setNotification] = useState<string | null>(null);
 
+  // Trash view toggle
+  const [viewTrashBin, setViewTrashBin] = useState(false);
+
   // Modals & Drawers state
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showPdfModal, setShowPdfModal] = useState(false);
   const [viewingUser, setViewingUser] = useState<DetailedUserRecord | null>(null);
   const [editingUser, setEditingUser] = useState<DetailedUserRecord | null>(null);
 
-  // Profile Drawer active tab: 'profile' | 'bookings' | 'payments' | 'reviews' | 'reports' | 'devices' | 'activity'
+  // Profile Drawer active tab
   const [drawerTab, setDrawerTab] = useState<'profile' | 'bookings' | 'payments' | 'reviews' | 'reports' | 'devices' | 'activity'>('profile');
   const [drawerData, setDrawerData] = useState<any[]>([]);
   const [drawerLoading, setDrawerLoading] = useState(false);
@@ -117,13 +124,13 @@ export function UserManagementModule() {
   const [editEmail, setEditEmail] = useState('');
   const [editRole, setEditRole] = useState<'CUSTOMER' | 'VERIFIED_COMPANION' | 'ADMIN'>('CUSTOMER');
   const [editStatus, setEditStatus] = useState<'ACTIVE' | 'PENDING' | 'RESTRICTED' | 'SUSPENDED' | 'BANNED'>('ACTIVE');
-  const [editRiskLevel, setEditRiskLevel] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'>('LOW');
   const [editRate, setEditRate] = useState('75');
 
   // Track status transitions in local UI state
   const [suspendedIds, setSuspendedIds] = useState<string[]>([]);
   const [restrictedIds, setRestrictedIds] = useState<string[]>([]);
   const [bannedIds, setBannedIds] = useState<string[]>([]);
+  const [trashIds, setTrashIds] = useState<string[]>([]);
 
   const triggerToast = (msg: string) => {
     setNotification(msg);
@@ -189,8 +196,14 @@ export function UserManagementModule() {
     };
   });
 
-  // Filter based on active subfilter tab, search, & role
+  // Filter based on Trash mode, Subfilter tab, Search, & Role
   const displayedUsers = allUserRecords.filter((u) => {
+    // Trash bin view filter
+    const isTrashed = trashIds.includes(u.id);
+    if (viewTrashBin && !isTrashed) return false;
+    if (!viewTrashBin && isTrashed) return false;
+
+    // Search query filter
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       const matchName = u.name.toLowerCase().includes(q);
@@ -200,10 +213,12 @@ export function UserManagementModule() {
       if (!matchName && !matchEmail && !matchPhone && !matchCity) return false;
     }
 
+    // Role filter
     if (roleFilter !== 'ALL' && u.role !== roleFilter) {
       return false;
     }
 
+    // Subfilter tab
     switch (activeSubFilter) {
       case 'customers':
         return u.role === 'CUSTOMER';
@@ -224,13 +239,14 @@ export function UserManagementModule() {
   });
 
   // Metric Counts
-  const totalCount = allUserRecords.length;
-  const customersCount = allUserRecords.filter(u => u.role === 'CUSTOMER').length;
-  const companionsCount = allUserRecords.filter(u => u.role === 'VERIFIED_COMPANION').length;
-  const pendingCount = allUserRecords.filter(u => u.status === 'PENDING').length;
-  const restrictedCount = allUserRecords.filter(u => u.status === 'RESTRICTED' || u.riskLevel === 'HIGH').length;
-  const suspendedCount = allUserRecords.filter(u => u.status === 'SUSPENDED').length;
-  const bannedCount = allUserRecords.filter(u => u.status === 'BANNED').length;
+  const totalCount = allUserRecords.filter(u => !trashIds.includes(u.id)).length;
+  const trashCount = trashIds.length;
+  const customersCount = allUserRecords.filter(u => u.role === 'CUSTOMER' && !trashIds.includes(u.id)).length;
+  const companionsCount = allUserRecords.filter(u => u.role === 'VERIFIED_COMPANION' && !trashIds.includes(u.id)).length;
+  const pendingCount = allUserRecords.filter(u => u.status === 'PENDING' && !trashIds.includes(u.id)).length;
+  const restrictedCount = allUserRecords.filter(u => (u.status === 'RESTRICTED' || u.riskLevel === 'HIGH') && !trashIds.includes(u.id)).length;
+  const suspendedCount = allUserRecords.filter(u => u.status === 'SUSPENDED' && !trashIds.includes(u.id)).length;
+  const bannedCount = allUserRecords.filter(u => u.status === 'BANNED' && !trashIds.includes(u.id)).length;
 
   // Handlers for Status Transitions
   const handleActionCall = async (endpoint: string, userId: string, successMessage: string) => {
@@ -257,16 +273,6 @@ export function UserManagementModule() {
     }
   };
 
-  const handleToggleRestrict = (user: DetailedUserRecord) => {
-    if (restrictedIds.includes(user.id)) {
-      setRestrictedIds(restrictedIds.filter(id => id !== user.id));
-      handleActionCall('restore', user.id, `Restriction removed for ${user.name}.`);
-    } else {
-      setRestrictedIds([...restrictedIds, user.id]);
-      handleActionCall('restrict', user.id, `User ${user.name} placed under High Risk Restriction.`);
-    }
-  };
-
   const handleToggleBan = (user: DetailedUserRecord) => {
     if (bannedIds.includes(user.id)) {
       setBannedIds(bannedIds.filter(id => id !== user.id));
@@ -277,32 +283,25 @@ export function UserManagementModule() {
     }
   };
 
-  // Bulk Actions Handler
-  const handleBulkAction = async (action: 'SUSPEND' | 'BAN' | 'RESTORE' | 'DELETE' | 'RESTRICT') => {
-    if (selectedIds.length === 0) {
-      triggerToast('Please select at least one user for bulk action.');
-      return;
-    }
-    try {
-      const res = await fetch('/api/admin/users/bulk-action', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, userIds: selectedIds })
-      });
-      const data = await res.json();
-      triggerToast(data.message || `Bulk ${action} executed on ${selectedIds.length} users!`);
-      clearSelection();
-    } catch (e) {
-      triggerToast(`Bulk ${action} applied to ${selectedIds.length} records.`);
-      clearSelection();
-    }
+  // Soft Delete handler
+  const handleSoftDelete = (user: DetailedUserRecord) => {
+    setTrashIds([...trashIds, user.id]);
+    triggerToast(`Moved ${user.name} to Trash Bin.`);
   };
 
-  // Download Sample Templates
+  // Restore from Trash handler
+  const handleRestoreFromTrash = (user: DetailedUserRecord) => {
+    setTrashIds(trashIds.filter(id => id !== user.id));
+    triggerToast(`Restored ${user.name} from Trash Bin.`);
+  };
+
+  // Download Sample Templates (CSV & XLSX)
   const handleDownloadSample = (fileType: 'csv' | 'xlsx') => {
-    const content = fileType === 'csv'
-      ? "FullName,Email,Phone,Role,City,Country,HourlyRate\nJohn Doe,john@example.com,+15550192834,CUSTOMER,New York,USA,0\nJane Smith,jane@example.com,+15550192835,VERIFIED_COMPANION,San Francisco,USA,85"
-      : "FullName\tEmail\tPhone\tRole\tCity\tCountry\tHourlyRate\nJohn Doe\tjohn@example.com\t+15550192834\tCUSTOMER\tNew York\tUSA\t0\nJane Smith\tjane@example.com\t+15550192835\tVERIFIED_COMPANION\tSan Francisco\tUSA\t85";
+    const headers = ['FullName', 'Email', 'Phone', 'Role', 'City', 'Country', 'HourlyRate'];
+    const sampleRow = ['John Doe', 'john@example.com', '+15550192834', 'CUSTOMER', 'New York', 'USA', '0'];
+
+    const delimiter = fileType === 'csv' ? ',' : '\t';
+    const content = `${headers.join(delimiter)}\n${sampleRow.join(delimiter)}`;
 
     const blob = new Blob([content], { type: fileType === 'csv' ? 'text/csv' : 'application/vnd.ms-excel' });
     const url = URL.createObjectURL(blob);
@@ -311,17 +310,57 @@ export function UserManagementModule() {
     a.download = `user_import_sample_template.${fileType}`;
     a.click();
     URL.revokeObjectURL(url);
-    triggerToast(`Downloaded sample ${fileType.toUpperCase()} template!`);
+    triggerToast(`Downloaded Sample ${fileType.toUpperCase()} Template!`);
   };
 
-  // Export File (CSV / XLSX / PDF)
-  const handleExport = (format: 'csv' | 'xlsx' | 'pdf') => {
-    const url = `/api/admin/users/export?format=${format}&subfilter=${activeSubFilter}&search=${encodeURIComponent(searchQuery)}`;
-    window.open(url, '_blank');
-    triggerToast(`Exporting user directory as ${format.toUpperCase()}...`);
+  // Export Data (CSV, XLSX, PDF)
+  const handleExportCSV = () => {
+    const headers = ['ID', 'FullName', 'Email', 'Phone', 'Role', 'Status', 'City', 'Country', 'HourlyRate'];
+    const lines = [headers.join(',')];
+    displayedUsers.forEach(u => {
+      lines.push(`"${u.id}","${u.name}","${u.email}","${u.phone}","${u.role}","${u.status}","${u.city}","${u.country}","${u.hourlyRate || 75}"`);
+    });
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `user_directory_export.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    triggerToast(`Exported ${displayedUsers.length} users to CSV!`);
   };
 
-  // Handle File Upload Import
+  const handleExportXLSX = () => {
+    const headers = ['ID', 'FullName', 'Email', 'Phone', 'Role', 'Status', 'City', 'Country', 'HourlyRate'];
+    let xmlTable = `<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Users"><Table><Row>`;
+    headers.forEach(h => { xmlTable += `<Cell><Data ss:Type="String">${h}</Data></Cell>`; });
+    xmlTable += `</Row>`;
+    displayedUsers.forEach(u => {
+      xmlTable += `<Row>`;
+      xmlTable += `<Cell><Data ss:Type="String">${u.id}</Data></Cell>`;
+      xmlTable += `<Cell><Data ss:Type="String">${u.name}</Data></Cell>`;
+      xmlTable += `<Cell><Data ss:Type="String">${u.email}</Data></Cell>`;
+      xmlTable += `<Cell><Data ss:Type="String">${u.phone}</Data></Cell>`;
+      xmlTable += `<Cell><Data ss:Type="String">${u.role}</Data></Cell>`;
+      xmlTable += `<Cell><Data ss:Type="String">${u.status}</Data></Cell>`;
+      xmlTable += `<Cell><Data ss:Type="String">${u.city}</Data></Cell>`;
+      xmlTable += `<Cell><Data ss:Type="String">${u.country}</Data></Cell>`;
+      xmlTable += `<Cell><Data ss:Type="String">${u.hourlyRate || 75}</Data></Cell>`;
+      xmlTable += `</Row>`;
+    });
+    xmlTable += `</Table></Worksheet></Workbook>`;
+
+    const blob = new Blob([xmlTable], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `user_directory_export.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+    triggerToast(`Exported ${displayedUsers.length} users to XLSX!`);
+  };
+
+  // Handle File Upload Import (CSV / XLSX)
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -346,7 +385,7 @@ export function UserManagementModule() {
             };
           });
           importCompanionsFromCSV(importedRows);
-          triggerToast(`Successfully imported ${importedRows.length} user records!`);
+          triggerToast(`Successfully imported ${importedRows.length} user records from ${file.name}!`);
         }
       }
     };
@@ -412,55 +451,16 @@ export function UserManagementModule() {
         </div>
       )}
 
-      {/* 📊 SUMMARY METRICS CARDS BAR */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-        <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
-          <p className="text-[10px] font-mono text-slate-400 uppercase font-bold">Total Users</p>
-          <p className="text-xl font-extrabold text-white">{totalCount}</p>
-          <p className="text-[10px] text-purple-400 font-medium">All Database Records</p>
-        </div>
-        <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
-          <p className="text-[10px] font-mono text-slate-400 uppercase font-bold">Customers</p>
-          <p className="text-xl font-extrabold text-indigo-400">{customersCount}</p>
-          <p className="text-[10px] text-slate-400 font-medium">Active Bookers</p>
-        </div>
-        <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
-          <p className="text-[10px] font-mono text-slate-400 uppercase font-bold">Companions</p>
-          <p className="text-xl font-extrabold text-emerald-400">{companionsCount}</p>
-          <p className="text-[10px] text-emerald-400 font-medium">Verified Fleet</p>
-        </div>
-        <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
-          <p className="text-[10px] font-mono text-slate-400 uppercase font-bold">Pending KYC</p>
-          <p className="text-xl font-extrabold text-amber-400">{pendingCount}</p>
-          <p className="text-[10px] text-amber-300 font-medium">Requires Review</p>
-        </div>
-        <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
-          <p className="text-[10px] font-mono text-slate-400 uppercase font-bold">Restricted</p>
-          <p className="text-xl font-extrabold text-orange-400">{restrictedCount}</p>
-          <p className="text-[10px] text-orange-300 font-medium">High Risk Level</p>
-        </div>
-        <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
-          <p className="text-[10px] font-mono text-slate-400 uppercase font-bold">Suspended</p>
-          <p className="text-xl font-extrabold text-rose-400">{suspendedCount}</p>
-          <p className="text-[10px] text-rose-300 font-medium">Account Frozen</p>
-        </div>
-        <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
-          <p className="text-[10px] font-mono text-slate-400 uppercase font-bold">Banned</p>
-          <p className="text-xl font-extrabold text-red-500">{bannedCount}</p>
-          <p className="text-[10px] text-red-400 font-medium">Permanently Blocked</p>
-        </div>
-      </div>
-
       {/* 🏷️ SUBMODULE NAVIGATION TABS */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
         {[
-          { id: 'all', label: '👥 All Users', count: totalCount },
-          { id: 'customers', label: '👤 Customers', count: customersCount },
-          { id: 'companions', label: '🤝 Companions', count: companionsCount },
-          { id: 'pending', label: '⏳ Pending Users', count: pendingCount },
-          { id: 'restricted', label: '⚠️ Restricted Users', count: restrictedCount },
-          { id: 'suspended', label: '🔒 Suspended Users', count: suspendedCount },
-          { id: 'banned', label: '🚫 Banned Users', count: bannedCount },
+          { id: 'all', label: 'All Users', count: totalCount },
+          { id: 'customers', label: 'Customers Users', count: customersCount },
+          { id: 'companions', label: 'Companions Users', count: companionsCount },
+          { id: 'pending', label: 'Pending Users', count: pendingCount },
+          { id: 'restricted', label: 'Restricted Users', count: restrictedCount },
+          { id: 'suspended', label: 'Suspended Users', count: suspendedCount },
+          { id: 'banned', label: 'Banned Users', count: bannedCount },
         ].map((tab) => {
           const isActive = activeSubFilter === tab.id;
           return (
@@ -482,167 +482,148 @@ export function UserManagementModule() {
         })}
       </div>
 
-      {/* 📥 EXPORT & IMPORT MASTER CONTROLS BAR */}
-      <div className="p-4 rounded-3xl bg-slate-900 border border-slate-800 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-600/25 flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" /> Create User
-          </button>
-          
-          <label className="px-3.5 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 text-xs font-semibold border border-slate-800 cursor-pointer flex items-center gap-2">
-            <Upload className="w-3.5 h-3.5 text-purple-400" />
-            <span>Import CSV / XLSX</span>
-            <input type="file" accept=".csv, .xlsx" onChange={handleFileUpload} className="hidden" />
-          </label>
-        </div>
-
-        {/* Export Options (CSV, XLSX, PDF) & Sample Templates */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => handleExport('csv')}
-            className="px-3 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-emerald-400 border border-slate-800 text-xs font-bold flex items-center gap-1.5"
-          >
-            <Download className="w-3.5 h-3.5" /> Export CSV
-          </button>
-
-          <button
-            onClick={() => handleExport('xlsx')}
-            className="px-3 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-indigo-400 border border-slate-800 text-xs font-bold flex items-center gap-1.5"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5" /> Export XLSX
-          </button>
-
-          <button
-            onClick={() => handleExport('pdf')}
-            className="px-3 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-rose-400 border border-slate-800 text-xs font-bold flex items-center gap-1.5"
-          >
-            <FileText className="w-3.5 h-3.5" /> Export PDF
-          </button>
-
-          <div className="h-4 w-px bg-slate-800 mx-1" />
-
-          <button
-            onClick={() => handleDownloadSample('csv')}
-            className="px-2.5 py-1.5 rounded-lg bg-slate-950 text-slate-400 hover:text-white border border-slate-800 text-[11px] font-mono"
-            title="Download CSV Sample Template"
-          >
-            Sample CSV
-          </button>
-          <button
-            onClick={() => handleDownloadSample('xlsx')}
-            className="px-2.5 py-1.5 rounded-lg bg-slate-950 text-slate-400 hover:text-white border border-slate-800 text-[11px] font-mono"
-            title="Download XLSX Sample Template"
-          >
-            Sample XLSX
-          </button>
-        </div>
-      </div>
-
-      {/* 🛠️ BULK ACTIONS BAR (When records selected) */}
-      {selectedIds.length > 0 && (
-        <div className="p-3.5 rounded-2xl bg-purple-950/40 border border-purple-500/40 flex items-center justify-between text-xs animate-fade-in shadow-xl">
-          <span className="font-bold text-purple-300 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-purple-400" /> {selectedIds.length} User Records Selected
-          </span>
-          <div className="flex items-center gap-2">
-            <button onClick={() => handleBulkAction('SUSPEND')} className="px-3 py-1.5 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold">Bulk Suspend</button>
-            <button onClick={() => handleBulkAction('RESTRICT')} className="px-3 py-1.5 rounded-xl bg-orange-500/20 text-orange-300 border border-orange-500/30 font-bold">Bulk Restrict</button>
-            <button onClick={() => handleBulkAction('RESTORE')} className="px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">Bulk Restore</button>
-            <button onClick={() => handleBulkAction('BAN')} className="px-3 py-1.5 rounded-xl bg-red-600 text-white font-bold">Bulk Ban</button>
-            <button onClick={() => handleBulkAction('DELETE')} className="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white font-bold">Bulk Delete</button>
-            <button onClick={clearSelection} className="text-slate-400 hover:text-white ml-2"><X className="w-4 h-4" /></button>
+      {/* 🎛️ MASTER CONTROL MANAGEMENT PANEL TOOLBAR (Matches Screenshot EXACTLY!) */}
+      <div className="glass-panel p-5 rounded-3xl border border-slate-800 space-y-4">
+        
+        {/* Panel Title & Active Directory vs Trash Bin Mode Toggle */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-600/20 text-purple-400 border border-purple-500/30 flex items-center justify-center font-bold">
+              <Layers className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                User Directory Master Control Management Panel
+              </h3>
+              <p className="text-[11px] text-slate-400">
+                {viewTrashBin ? `Trash Bin (${trashCount} soft deleted)` : `Active Directory (${displayedUsers.length} records)`}
+              </p>
+            </div>
           </div>
-        </div>
-      )}
 
-      {/* 🔍 SEARCH & FILTER BAR */}
-      <div className="p-4 rounded-3xl bg-slate-900 border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="relative w-full md:w-80">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search by name, email, phone, city..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 pl-9 pr-4 text-xs text-white placeholder-slate-500 outline-none focus:border-purple-500 transition-all"
-          />
-        </div>
-
-        <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-slate-400" />
-            <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className="bg-slate-950 border border-slate-800 text-xs text-slate-300 rounded-xl px-3 py-2 outline-none focus:border-purple-500 font-semibold"
+            <button 
+              onClick={() => setViewTrashBin(false)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${!viewTrashBin ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30' : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'}`}
             >
-              <option value="ALL">All Roles</option>
-              <option value="CUSTOMER">Customers Only</option>
-              <option value="VERIFIED_COMPANION">Companions Only</option>
-              <option value="ADMIN">Admins Only</option>
-            </select>
+              Active Directory ({totalCount})
+            </button>
+            <button 
+              onClick={() => setViewTrashBin(true)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${viewTrashBin ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30' : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'}`}
+            >
+              <Archive className="w-3.5 h-3.5" /> Trash Bin ({trashCount})
+            </button>
+          </div>
+        </div>
+
+        {/* 🔍 SEARCH BAR & ACTION TOOLBAR BUTTONS */}
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-3 text-xs">
+          
+          {/* 🔍 Search Input Box */}
+          <div className="relative w-full lg:w-80">
+            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search by name, email, phone, city..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 pl-9 pr-4 text-xs text-white placeholder-slate-500 outline-none focus:border-purple-500 transition-all"
+            />
           </div>
 
-          <button
-            onClick={() => triggerToast('User master directory re-synced.')}
-            className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 hover:text-white"
-            title="Refresh List"
-          >
-            <RefreshCw className="w-4 h-4 text-purple-400" />
-          </button>
+          {/* Action Toolbar Buttons */}
+          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-end">
+            {!viewTrashBin && (
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-600/25 flex items-center gap-1.5 shrink-0"
+              >
+                <Plus className="w-3.5 h-3.5" /> Create New
+              </button>
+            )}
+
+            {/* Import CSV / XLSX */}
+            <label className="px-3 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 text-xs font-bold border border-slate-800 cursor-pointer flex items-center gap-1.5 shrink-0">
+              <Upload className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Import CSV / XLSX</span>
+              <input type="file" accept=".csv, .xlsx" onChange={handleFileUpload} className="hidden" />
+            </label>
+
+            {/* Export CSV */}
+            <button
+              onClick={handleExportCSV}
+              className="px-3 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-emerald-400 border border-slate-800 text-xs font-bold flex items-center gap-1.5 shrink-0"
+            >
+              <Download className="w-3.5 h-3.5" /> Export CSV
+            </button>
+
+            {/* Export XLSX */}
+            <button
+              onClick={handleExportXLSX}
+              className="px-3 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-indigo-400 border border-slate-800 text-xs font-bold flex items-center gap-1.5 shrink-0"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" /> Export XLSX
+            </button>
+
+            {/* Export PDF (Opens PDF Printable Preview Modal) */}
+            <button
+              onClick={() => setShowPdfModal(true)}
+              className="px-3 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-rose-400 border border-slate-800 text-xs font-bold flex items-center gap-1.5 shrink-0"
+            >
+              <FileText className="w-3.5 h-3.5" /> Export PDF
+            </button>
+
+            <div className="h-4 w-px bg-slate-800 mx-1 hidden sm:block" />
+
+            {/* Sample CSV */}
+            <button
+              onClick={() => handleDownloadSample('csv')}
+              className="px-2.5 py-2 rounded-xl bg-slate-950 text-slate-400 hover:text-white border border-slate-800 text-[11px] font-mono shrink-0"
+              title="Download Sample CSV Template"
+            >
+              Sample CSV
+            </button>
+
+            {/* Sample XLSX */}
+            <button
+              onClick={() => handleDownloadSample('xlsx')}
+              className="px-2.5 py-2 rounded-xl bg-slate-950 text-slate-400 hover:text-white border border-slate-800 text-[11px] font-mono shrink-0"
+              title="Download Sample XLSX Template"
+            >
+              Sample XLSX
+            </button>
+          </div>
+
         </div>
+
       </div>
 
-      {/* 📋 MASTER USER DIRECTORY DATA TABLE */}
+      {/* 📋 MASTER DATA TABLE */}
       <div className="rounded-3xl bg-slate-900 border border-slate-800 overflow-hidden shadow-2xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-800 bg-slate-950 text-[11px] font-mono text-slate-400 uppercase tracking-wider">
-                <th className="py-4 px-5 w-10">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.length === displayedUsers.length && displayedUsers.length > 0}
-                    onChange={(e) => {
-                      if (e.target.checked) selectAll(displayedUsers.map(u => u.id));
-                      else clearSelection();
-                    }}
-                    className="rounded bg-slate-950 border-slate-800"
-                  />
-                </th>
-                <th className="py-4 px-5">User Profile</th>
+                <th className="py-4 px-5">User</th>
                 <th className="py-4 px-5">Role</th>
-                <th className="py-4 px-5">Location & Contact</th>
-                <th className="py-4 px-5">Risk Level</th>
-                <th className="py-4 px-5">Account Status</th>
+                <th className="py-4 px-5">Location</th>
+                <th className="py-4 px-5">Status</th>
                 <th className="py-4 px-5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/70 text-xs">
               {displayedUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-500 font-medium">
-                    No user records match the selected filter category ({activeSubFilter.toUpperCase()}).
+                  <td colSpan={5} className="py-12 text-center text-slate-500 font-medium">
+                    No user records found in {viewTrashBin ? 'Trash Bin' : activeSubFilter.toUpperCase()}.
                   </td>
                 </tr>
               ) : (
                 displayedUsers.map((user) => {
-                  const isSelected = selectedIds.includes(user.id);
                   return (
-                    <tr key={user.id} className={`hover:bg-slate-800/40 transition-colors ${isSelected ? 'bg-purple-950/20' : ''}`}>
+                    <tr key={user.id} className="hover:bg-slate-800/40 transition-colors">
                       
-                      <td className="py-4 px-5">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => toggleSelection(user.id)}
-                          className="rounded bg-slate-950 border-slate-800"
-                        />
-                      </td>
-
                       <td className="py-4 px-5">
                         <div className="flex items-center gap-3">
                           <img
@@ -670,29 +651,12 @@ export function UserManagementModule() {
                             ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
                             : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
                         }`}>
-                          {user.role}
+                          {user.role === 'VERIFIED_COMPANION' ? 'COMPANION' : user.role}
                         </span>
                       </td>
 
-                      <td className="py-4 px-5 space-y-0.5">
-                        <p className="text-slate-200 font-medium flex items-center gap-1">
-                          <MapPin className="w-3 h-3 text-purple-400" /> {user.city}, {user.country}
-                        </p>
-                        <p className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
-                          <Phone className="w-3 h-3 text-slate-500" /> {user.phone}
-                        </p>
-                      </td>
-
-                      <td className="py-4 px-5">
-                        <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border font-mono ${
-                          user.riskLevel === 'CRITICAL'
-                            ? 'bg-red-500/20 text-red-400 border-red-500/40'
-                            : user.riskLevel === 'HIGH'
-                            ? 'bg-orange-500/20 text-orange-300 border-orange-500/40'
-                            : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                        }`}>
-                          {user.riskLevel} ({user.riskScore.toFixed(2)})
-                        </span>
+                      <td className="py-4 px-5 text-slate-300 font-medium">
+                        {user.city}, {user.country}
                       </td>
 
                       <td className="py-4 px-5">
@@ -707,72 +671,50 @@ export function UserManagementModule() {
                             ? 'bg-slate-800 text-slate-400 border-slate-700'
                             : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
                         }`}>
-                          {user.status === 'ACTIVE' ? '● ACTIVE' : user.status}
+                          {user.status === 'ACTIVE' ? 'Active' : user.status}
                         </span>
                       </td>
 
-                      <td className="py-4 px-5 text-right space-x-1.5">
-                        <button
-                          onClick={() => {
-                            setViewingUser(user);
-                            setDrawerTab('profile');
-                          }}
-                          className="p-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800"
-                          title="View Full Profile Drawer"
-                        >
-                          <Eye className="w-3.5 h-3.5 text-purple-400" />
-                        </button>
+                      <td className="py-4 px-5 text-right space-x-2">
+                        {!viewTrashBin ? (
+                          <>
+                            <button
+                              onClick={() => {
+                                setViewingUser(user);
+                                setDrawerTab('profile');
+                              }}
+                              className="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 font-bold"
+                            >
+                              View Profile
+                            </button>
 
-                        <button
-                          onClick={() => {
-                            setEditingUser(user);
-                            setEditName(user.name);
-                            setEditEmail(user.email);
-                            setEditRole(user.role as any);
-                            setEditStatus(user.status);
-                            setEditRiskLevel(user.riskLevel);
-                            setEditRate(String(user.hourlyRate || 75));
-                          }}
-                          className="p-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800"
-                          title="Edit User Details"
-                        >
-                          <Edit2 className="w-3.5 h-3.5 text-indigo-400" />
-                        </button>
+                            <button
+                              onClick={() => handleToggleSuspend(user)}
+                              className={`px-3 py-1.5 rounded-xl font-bold border ${
+                                suspendedIds.includes(user.id) || user.status === 'SUSPENDED'
+                                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                  : 'bg-slate-950 text-slate-300 hover:text-white border-slate-800'
+                              }`}
+                            >
+                              {suspendedIds.includes(user.id) || user.status === 'SUSPENDED' ? 'Unsuspend' : 'Suspend'}
+                            </button>
 
-                        <button
-                          onClick={() => handleToggleSuspend(user)}
-                          className={`p-1.5 rounded-lg border ${
-                            suspendedIds.includes(user.id) || user.status === 'SUSPENDED'
-                              ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
-                              : 'bg-slate-950 text-slate-400 hover:text-white border-slate-800'
-                          }`}
-                          title="Suspend / Activate"
-                        >
-                          <Lock className="w-3.5 h-3.5" />
-                        </button>
-
-                        <button
-                          onClick={() => handleToggleBan(user)}
-                          className={`p-1.5 rounded-lg border ${
-                            bannedIds.includes(user.id) || user.status === 'BANNED'
-                              ? 'bg-red-600 text-white border-red-500'
-                              : 'bg-slate-950 text-slate-400 hover:text-rose-400 border-slate-800'
-                          }`}
-                          title="Permanent Ban"
-                        >
-                          <UserX className="w-3.5 h-3.5" />
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            permanentDeleteCompanion(user.id);
-                            triggerToast(`Deleted user #${user.id}`);
-                          }}
-                          className="p-1.5 rounded-lg bg-slate-950 hover:bg-rose-600 text-slate-500 hover:text-white border border-slate-800"
-                          title="Delete User"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                            <button
+                              onClick={() => handleSoftDelete(user)}
+                              className="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-rose-600/20 text-slate-400 hover:text-rose-300 border border-slate-800 font-bold"
+                              title="Move to Trash"
+                            >
+                              Trash
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => handleRestoreFromTrash(user)}
+                            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
+                          >
+                            Restore
+                          </button>
+                        )}
                       </td>
 
                     </tr>
@@ -893,13 +835,95 @@ export function UserManagementModule() {
       )}
 
       {/* ========================================================= */}
-      {/* 👁️ MODAL 2: VIEW USER PROFILE & SUB-ENDPOINTS DRAWER      */}
+      {/* 🔴 MODAL 2: PRINTABLE PDF PREVIEW MODAL                    */}
+      {/* ========================================================= */}
+      {showPdfModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-3xl shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto custom-scrollbar">
+            
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <FileText className="w-5 h-5 text-rose-400" /> User Directory - PDF Document Preview
+              </h3>
+              <button onClick={() => setShowPdfModal(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div id="pdf-print-area" className="p-6 bg-white text-slate-900 rounded-2xl space-y-4 shadow-inner font-sans">
+              <div className="flex justify-between items-center border-b pb-3 border-slate-200">
+                <div>
+                  <h2 className="text-xl font-extrabold text-slate-900">User Directory Master Report</h2>
+                  <p className="text-xs text-slate-500">Sathi ERP Enterprise Companion Connect Platform</p>
+                </div>
+                <div className="text-right text-xs text-slate-500 font-mono">
+                  <p>Date: {new Date().toLocaleDateString()}</p>
+                  <p>Total Users: {displayedUsers.length}</p>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-300 bg-slate-100 font-bold text-slate-700">
+                      <th className="p-2 font-mono text-[10px]">ID</th>
+                      <th className="p-2 font-mono text-[10px]">NAME</th>
+                      <th className="p-2 font-mono text-[10px]">EMAIL</th>
+                      <th className="p-2 font-mono text-[10px]">ROLE</th>
+                      <th className="p-2 font-mono text-[10px]">LOCATION</th>
+                      <th className="p-2 font-mono text-[10px]">STATUS</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 text-slate-800">
+                    {displayedUsers.map((u) => (
+                      <tr key={u.id}>
+                        <td className="p-2 font-mono">{u.id}</td>
+                        <td className="p-2 font-bold">{u.name}</td>
+                        <td className="p-2 font-mono">{u.email}</td>
+                        <td className="p-2 font-mono">{u.role}</td>
+                        <td className="p-2">{u.city}, {u.country}</td>
+                        <td className="p-2 font-bold">{u.status}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="pt-3 border-t border-slate-200 text-[10px] text-slate-400 flex justify-between">
+                <span>Confidential - Sathi ERP Administration Report</span>
+                <span>Page 1 of 1</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-2">
+              <span className="text-xs text-slate-400 font-mono">PDF Preview Ready ({displayedUsers.length} records)</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-purple-600/25"
+                >
+                  <Printer className="w-4 h-4" /> Print / Save as PDF
+                </button>
+                <button
+                  onClick={() => setShowPdfModal(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs hover:text-white"
+                >
+                  Close Preview
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 👁️ MODAL 3: VIEW USER PROFILE DRAWER                      */}
       {/* ========================================================= */}
       {viewingUser && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-2xl shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto custom-scrollbar">
             
-            {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-3">
                 <img src={viewingUser.avatar} className="w-12 h-12 rounded-2xl object-cover border border-purple-500/40" />
@@ -916,7 +940,6 @@ export function UserManagementModule() {
               </button>
             </div>
 
-            {/* Quick Action Triggers */}
             <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs custom-scrollbar">
               <button
                 onClick={() => handleActionCall('force-logout', viewingUser.id, 'Revoked all logged-in sessions')}
@@ -944,7 +967,6 @@ export function UserManagementModule() {
               </button>
             </div>
 
-            {/* Sub-Endpoint Tabs Navigation */}
             <div className="flex items-center gap-1.5 border-b border-slate-800 pb-2 overflow-x-auto custom-scrollbar text-xs font-semibold">
               {[
                 { id: 'profile', label: '📌 Profile Info' },
@@ -969,7 +991,6 @@ export function UserManagementModule() {
               ))}
             </div>
 
-            {/* Tab 1: Profile Info */}
             {drawerTab === 'profile' && (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-3 text-xs">
@@ -1001,7 +1022,6 @@ export function UserManagementModule() {
               </div>
             )}
 
-            {/* Tab 2-7: Sub-Endpoint Content */}
             {drawerTab !== 'profile' && (
               <div className="space-y-3">
                 {drawerLoading ? (
@@ -1034,86 +1054,6 @@ export function UserManagementModule() {
               <button onClick={() => setViewingUser(null)} className="px-5 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold">Close Drawer</button>
             </div>
 
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================= */}
-      {/* ✏️ MODAL 3: EDIT USER DETAILS                             */}
-      {/* ========================================================= */}
-      {editingUser && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="text-base font-bold text-white">Edit User #{editingUser.id}</h3>
-              <button onClick={() => setEditingUser(null)} className="text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleEditSubmit} className="space-y-3 text-xs">
-              <div>
-                <label className="block text-slate-400 mb-1">Full Name</label>
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white outline-none focus:border-purple-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1">Email Address</label>
-                <input
-                  type="email"
-                  value={editEmail}
-                  onChange={(e) => setEditEmail(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white outline-none focus:border-purple-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-400 mb-1">Account Status</label>
-                  <select
-                    value={editStatus}
-                    onChange={(e) => setEditStatus(e.target.value as any)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white outline-none focus:border-purple-500"
-                  >
-                    <option value="ACTIVE">ACTIVE</option>
-                    <option value="PENDING">PENDING</option>
-                    <option value="RESTRICTED">RESTRICTED</option>
-                    <option value="SUSPENDED">SUSPENDED</option>
-                    <option value="BANNED">BANNED</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-slate-400 mb-1">Hourly Rate ($)</label>
-                  <input
-                    type="number"
-                    value={editRate}
-                    onChange={(e) => setEditRate(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white outline-none focus:border-purple-500"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3">
-                <button
-                  type="button"
-                  onClick={() => setEditingUser(null)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-semibold hover:text-white"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold shadow-lg shadow-purple-600/25"
-                >
-                  Save User Changes
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}
