@@ -67,6 +67,8 @@ import { useAdminStore } from '@/lib/adminStore';
 import { useCrudStore, DynamicCompanionItem } from '@/lib/crudStore';
 import { UniversalCrudToolbar } from '@/components/common/UniversalCrudToolbar';
 import { MOCK_BOOKINGS, MOCK_KYC_QUEUE, MOCK_PANIC_ALERTS, MOCK_REVIEWS, MOCK_MESSAGES } from '@/lib/mockData';
+import { UserManagementModule } from '@/components/admin/UserManagementModule';
+
 
 export type ERPModuleTab = 
   | 'overview' 
@@ -628,85 +630,8 @@ export default function AdminDashboardPage() {
           {/* ==================================================== */}
           {/* MODULE 2: 👥 USER MANAGEMENT                        */}
           {/* ==================================================== */}
-          {activeTab === 'users' && (
-            <div className="space-y-6">
-              {/* Submodule Filter Tabs */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar">
-                {['all', 'customers', 'companions', 'pending', 'restricted', 'suspended', 'banned'].map((sub) => (
-                  <button
-                    key={sub}
-                    onClick={() => setSubFilter(sub)}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize whitespace-nowrap transition-colors ${
-                      subFilter === sub ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-                    }`}
-                  >
-                    {sub} Users
-                  </button>
-                ))}
-              </div>
+          {activeTab === 'users' && <UserManagementModule />}
 
-              <UniversalCrudToolbar
-                title="User Directory Master Control"
-                totalActiveCount={activeCompanions.length}
-                totalTrashCount={trashedCompanions.length}
-                viewTrash={viewTrash}
-                setViewTrash={setViewTrash}
-                onOpenCreateModal={() => setShowCreateModal(true)}
-                onNotify={triggerNotify}
-                exportRows={displayedCompanions}
-                onImportData={(rows) => {
-                  importCompanionsFromCSV(rows);
-                  triggerNotify(`Imported ${rows.length} companions via CSV!`);
-                }}
-              />
-
-              <div className="rounded-3xl bg-slate-900 border border-slate-800 overflow-hidden shadow-2xl">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-800 bg-slate-950 text-[11px] font-mono text-slate-400 uppercase">
-                        <th className="py-4 px-5">User</th>
-                        <th className="py-4 px-5">Role</th>
-                        <th className="py-4 px-5">Location</th>
-                        <th className="py-4 px-5">Status</th>
-                        <th className="py-4 px-5 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800 text-xs">
-                      {displayedCompanions.map((c) => {
-                        const isSuspended = suspendedUserIds.includes(c.id);
-                        return (
-                          <tr key={c.id} className="hover:bg-slate-800/40">
-                            <td className="py-4 px-5">
-                              <div className="flex items-center gap-3">
-                                <img src={(c as any).avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'} className="w-9 h-9 rounded-xl object-cover" />
-                                <div>
-                                  <p className="font-bold text-white">{c.name}</p>
-                                  <p className="text-[10px] text-slate-400">{(c as any).email || 'user@example.com'}</p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="py-4 px-5"><span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono text-[10px]">{(c as any).role || 'COMPANION'}</span></td>
-                            <td className="py-4 px-5 text-slate-300">{c.city}, {c.country}</td>
-                            <td className="py-4 px-5">
-                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${isSuspended ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-400'}`}>
-                                {isSuspended ? 'Suspended' : 'Active'}
-                              </span>
-                            </td>
-                            <td className="py-4 px-5 text-right space-x-2">
-                              <button onClick={() => toggleUserSuspension(c.id)} className="px-2 py-1 rounded bg-slate-800 text-slate-300 hover:text-white">
-                                {isSuspended ? 'Unsuspend' : 'Suspend'}
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* ==================================================== */}
           {/* MODULE 3: 🪪 VERIFICATION & KYC                      */}
