@@ -1,13 +1,14 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { ServiceCategory, SubCategoryItem, RiskLevel, BookingDetails, BookingStatus, EscrowStatus, LocationItem, GeofenceZone, PopularVenue, FinancialTransaction, PayoutRecord, PaymentGatewayConfig, PromoCodeItem, SosAlertItem, SosAlertStatus, SosAlertSeverity, IncidentReport, IncidentStatus, IncidentCategory, DisciplinaryAction, DisputeTicket, DisputeMessage, DisputeEvidence, DisputeStatus, ResolutionOutcome } from './types';
+import { ServiceCategory, SubCategoryItem, RiskLevel, BookingDetails, BookingStatus, EscrowStatus, LocationItem, GeofenceZone, PopularVenue, FinancialTransaction, PayoutRecord, PaymentGatewayConfig, PromoCodeItem, SosAlertItem, SosAlertStatus, SosAlertSeverity, IncidentReport, IncidentStatus, IncidentCategory, DisciplinaryAction, DisputeTicket, DisputeMessage, DisputeEvidence, DisputeStatus, ResolutionOutcome, Review, ReviewStatus, ReviewSentiment } from './types';
 import { INITIAL_CATEGORIES } from './initialCategories';
 import { INITIAL_BOOKINGS } from './initialBookings';
 import { INITIAL_LOCATIONS } from './initialLocations';
 import { INITIAL_TRANSACTIONS, INITIAL_PAYOUTS, INITIAL_GATEWAYS } from './initialPayments';
 import { INITIAL_PROMOS } from './initialPromos';
 import { INITIAL_SOS_ALERTS, INITIAL_INCIDENT_REPORTS } from './initialSafety';
-import { MOCK_DISPUTES } from './mockData';
+import { MOCK_DISPUTES, MOCK_REVIEWS } from './mockData';
+
 
 
 export interface SystemConfig {
@@ -40,6 +41,7 @@ interface AdminStore {
   sosAlerts: SosAlertItem[];
   incidentReports: IncidentReport[];
   disputes: DisputeTicket[];
+  reviews: Review[];
   suspendedUserIds: string[];
 
   // Actions
@@ -48,6 +50,16 @@ interface AdminStore {
   addDisputeMessage: (disputeId: string, message: Omit<DisputeMessage, 'id' | 'disputeId' | 'sentAt'>) => void;
   resolveDispute: (disputeId: string, outcome: ResolutionOutcome, refundAmount?: number, penaltyAmount?: number, adminNotes?: string) => void;
   escalateDispute: (disputeId: string, reason: string) => void;
+
+  // Review & Moderation Actions
+  submitReview: (reviewData: Omit<Review, 'id' | 'reviewRef' | 'date' | 'sentiment' | 'sentimentScore' | 'status' | 'helpfulVotes'>) => Review;
+  approveReview: (id: string, adminNotes?: string) => void;
+  flagReview: (id: string, reason: string, flaggedBy?: 'AUTOMATED_PROFANITY_FILTER' | 'COMPANION' | 'COMMUNITY' | 'ADMIN') => void;
+  rejectReview: (id: string, reason: string) => void;
+  hideReview: (id: string) => void;
+  addAdminReviewResponse: (id: string, adminResponse: string) => void;
+  deleteReview: (id: string) => void;
+
 
   addPromoCode: (promo: Omit<PromoCodeItem, 'id' | 'usageCount'>) => PromoCodeItem;
   updatePromoCode: (id: string, updates: Partial<PromoCodeItem>) => void;
@@ -132,12 +144,102 @@ export const useAdminStore = create<AdminStore>()(
       sosAlerts: INITIAL_SOS_ALERTS,
       incidentReports: INITIAL_INCIDENT_REPORTS,
       disputes: MOCK_DISPUTES,
+      reviews: MOCK_REVIEWS,
       suspendedUserIds: [],
 
       updateConfig: (newConfig) =>
         set((state) => ({
           config: { ...state.config, ...newConfig }
         })),
+
+      submitReview: (reviewData) => {
+        // Automated profanity and spam check
+        const text = reviewData.comment.toLowerCase();
+        const containsSpam = text.includes('http://') || text.includes('https://') || text.includes('call me') || text.includes('fake') || text.includes('casino');
+        const status: ReviewStatus = containsSpam ? 'FLAGGED' : 'PENDING_APPROVAL';
+        const sentiment: ReviewSentiment = containsSpam ? 'SUSPICIOUS' : reviewData.rating >= 4 ? 'POSITIVE' : reviewData.rating === 3 ? 'NEUTRAL' : 'NEGATIVE';
+
+        const newReview: Review = {
+          ...reviewData,
+          id: 'rev-' + Date.now(),
+          reviewRef: 'REV-2026-' + Math.floor(1000 + Math.random() * 9000),
+          date: new Date().toISOString(),
+          helpfulVotes: 0,
+          verifiedBooking: reviewData.verifiedBooking ?? true,
+          sentimentScore: reviewData.rating / 5,
+          sentiment,
+          status,
+          flaggedReason: containsSpam ? 'Automated spam/link detection rule triggered' : undefined,
+          flaggedBy: containsSpam ? 'AUTOMATED_PROFANITY_FILTER' : undefined
+        };
+
+        set((state) => ({ reviews: [newReview, ...state.reviews] }));
+        return newReview;
+      },
+
+      approveReview: (id, adminNotes) =>
+        set((state) => ({
+          reviews: state.reviews.map((r) =>
+            r.id === id
+              ? {
+                  ...r,
+                  status: 'APPROVED',
+                  adminNotes: adminNotes ? `${r.adminNotes || ''} | ${adminNotes}` : r.adminNotes,
+                  moderatedAt: new Date().toISOString()
+                }
+              : r
+          )
+        })),
+
+      flagReview: (id, reason, flaggedBy = 'ADMIN') =>
+        set((state) => ({
+          reviews: state.reviews.map((r) =>
+            r.id === id
+              ? {
+                  ...r,
+                  status: 'FLAGGED',
+                  flaggedReason: reason,
+                  flaggedBy,
+                  sentiment: 'SUSPICIOUS',
+                  moderatedAt: new Date().toISOString()
+                }
+              : r
+          )
+        })),
+
+      rejectReview: (id, reason) =>
+        set((state) => ({
+          reviews: state.reviews.map((r) =>
+            r.id === id
+              ? {
+                  ...r,
+                  status: 'REJECTED',
+                  adminNotes: reason,
+                  moderatedAt: new Date().toISOString()
+                }
+              : r
+          )
+        })),
+
+      hideReview: (id) =>
+        set((state) => ({
+          reviews: state.reviews.map((r) =>
+            r.id === id ? { ...r, status: 'HIDDEN', moderatedAt: new Date().toISOString() } : r
+          )
+        })),
+
+      addAdminReviewResponse: (id, adminResponse) =>
+        set((state) => ({
+          reviews: state.reviews.map((r) =>
+            r.id === id ? { ...r, adminResponse, moderatedAt: new Date().toISOString() } : r
+          )
+        })),
+
+      deleteReview: (id) =>
+        set((state) => ({
+          reviews: state.reviews.filter((r) => r.id !== id)
+        })),
+
 
       fileDispute: (disputeData) => {
         const newDispute: DisputeTicket = {

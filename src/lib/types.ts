@@ -179,19 +179,46 @@ export interface PanicAlert {
   resolved: boolean;
 }
 
+export type ReviewStatus = 'PENDING_APPROVAL' | 'APPROVED' | 'FLAGGED' | 'REJECTED' | 'HIDDEN';
+export type ReviewSentiment = 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE' | 'SUSPICIOUS';
+
+export interface ReviewSubRatings {
+  punctuality: number;
+  behavior: number;
+  communication: number;
+  authenticity: number;
+}
+
 export interface Review {
   id: string;
+  reviewRef: string;
+  bookingId?: string;
+  bookingNumber?: string;
+  authorId?: string;
   authorName: string;
   authorAvatar: string;
+  authorEmail?: string;
   companionId: string;
+  companionName?: string;
+  companionAvatar?: string;
   rating: number;
+  subRatings?: ReviewSubRatings;
   category: string;
   comment: string;
   helpfulVotes: number;
   date: string;
   verifiedBooking: boolean;
   sentimentScore: number;
+  sentiment: ReviewSentiment;
+  status: ReviewStatus;
+  flaggedReason?: string;
+  flaggedBy?: 'AUTOMATED_PROFANITY_FILTER' | 'COMPANION' | 'COMMUNITY' | 'ADMIN';
+  adminNotes?: string;
+  adminResponse?: string;
+  mediaUrls?: string[];
+  moderatedAt?: string;
 }
+
 
 export interface SubCategoryItem {
   id: string;

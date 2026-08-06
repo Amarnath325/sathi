@@ -83,7 +83,10 @@ import { KycVerificationModule } from '@/components/admin/KycVerificationModule'
 import { PageSizeOption, PaginationFooter } from '@/components/common/PaginationBar';
 import { DisputeAuditModal } from '@/components/dispute/DisputeAuditModal';
 import { DisputeThreadDrawer } from '@/components/dispute/DisputeThreadDrawer';
-import { DisputeTicket } from '@/lib/types';
+import { DisputeTicket, Review } from '@/lib/types';
+import { ReviewAuditModal } from '@/components/review/ReviewAuditModal';
+import { ReviewCard } from '@/components/review/ReviewCard';
+
 
 
 import { CompanionStatusBadge } from '@/components/companion/CompanionStatusBadge';
@@ -197,12 +200,19 @@ export default function AdminDashboardPage() {
     triggerSosAlert,
     suspendedUserIds,
     toggleUserSuspension,
-    disputes
+    disputes,
+    reviews,
+    approveReview,
+    flagReview
   } = useAdminStore();
+
+  // Review Modal State
+  const [auditingReview, setAuditingReview] = useState<Review | null>(null);
 
   // Dispute Modal & Drawer States
   const [auditingDispute, setAuditingDispute] = useState<DisputeTicket | null>(null);
   const [drawerDispute, setDrawerDispute] = useState<DisputeTicket | null>(null);
+
 
   // Trust & Safety Modal States
   const [selectedSosAlert, setSelectedSosAlert] = useState<SosAlertItem | null>(null);
@@ -2392,6 +2402,198 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
+          {/* ==================================================== */}
+          {/* MODULE 14.8: ⭐ REVIEWS & MODERATION COMMAND CENTER  */}
+          {/* ==================================================== */}
+          {activeTab === 'reviews' && (
+            <div className="space-y-6">
+              {/* Header Info */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-3xl bg-slate-900 border border-slate-800">
+                <div>
+                  <h3 className="font-extrabold text-white text-lg flex items-center gap-2">
+                    <Star className="w-5 h-5 text-amber-400 fill-amber-400" /> Review & Content Moderation Hub
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Audit user feedback, run automated spam checks, moderate flagged reviews, and manage companion ratings.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Link
+                    href="/reviews"
+                    target="_blank"
+                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs flex items-center gap-1.5 transition-all border border-slate-700"
+                  >
+                    Public Review Feed <ExternalLink className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              </div>
+
+              {/* KPI Metrics */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-1">
+                  <span className="text-[10px] uppercase font-mono text-slate-400 block">Total Reviews</span>
+                  <div className="text-xl font-bold text-white">{reviews.length} Reviews</div>
+                  <span className="text-[10px] text-purple-400 font-medium">Platform Feedback</span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-1">
+                  <span className="text-[10px] uppercase font-mono text-slate-400 block">Average Platform Score</span>
+                  <div className="text-xl font-bold text-amber-400 flex items-center gap-1">
+                    <Star className="w-4 h-4 fill-amber-400" />
+                    {(reviews.reduce((acc, r) => acc + r.rating, 0) / (reviews.length || 1)).toFixed(1)} / 5.0
+                  </div>
+                  <span className="text-[10px] text-emerald-400 font-medium">High Satisfaction</span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-1">
+                  <span className="text-[10px] uppercase font-mono text-slate-400 block">Pending Moderation</span>
+                  <div className="text-xl font-bold text-indigo-400">
+                    {reviews.filter(r => r.status === 'PENDING_APPROVAL').length} Pending
+                  </div>
+                  <span className="text-[10px] text-slate-500">Awaiting Admin Review</span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-1">
+                  <span className="text-[10px] uppercase font-mono text-slate-400 block">Flagged / Suspicious</span>
+                  <div className="text-xl font-bold text-rose-400">
+                    {reviews.filter(r => r.status === 'FLAGGED' || r.sentiment === 'SUSPICIOUS').length} Flagged
+                  </div>
+                  <span className="text-[10px] text-rose-500 font-medium">Spam / Toxic Content</span>
+                </div>
+              </div>
+
+              {/* Sub-Filters */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                {['all', 'pending', 'flagged', 'approved', 'rejected', '5-star', '1-star'].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => { setSubFilter(s); setCurrentPage(1); }}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold capitalize transition-all shrink-0 ${
+                      subFilter === s || (subFilter === 'all' && s === 'all')
+                        ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/25'
+                        : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-slate-200'
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+
+              {/* Toolbar & Grid View */}
+              <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-4">
+                
+                {/* Search & Page Limit Header */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 w-full sm:w-auto flex-1 max-w-md">
+                    <div className="relative flex-1">
+                      <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        placeholder="Search author, companion, review text..."
+                        value={searchQuery}
+                        onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 pl-9 pr-4 text-xs text-white placeholder-slate-500 outline-none focus:border-purple-500"
+                      />
+                    </div>
+
+                    {/* SHOW SELECTOR (RIGHT SIDE OF SEARCH) */}
+                    <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 shrink-0 text-xs">
+                      <span className="text-[11px] text-slate-400 font-bold hidden sm:inline">Show:</span>
+                      <select
+                        value={pageSize}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setPageSize(val === 'All' ? 'All' : Number(val) as PageSizeOption);
+                          setCurrentPage(1);
+                        }}
+                        className="bg-transparent text-white font-bold outline-none cursor-pointer text-xs"
+                      >
+                        <option value={10} className="bg-slate-900 text-white">10</option>
+                        <option value={25} className="bg-slate-900 text-white">25</option>
+                        <option value={50} className="bg-slate-900 text-white">50</option>
+                        <option value={100} className="bg-slate-900 text-white">100</option>
+                        <option value="All" className="bg-slate-900 text-white">All</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 w-full sm:w-auto justify-end text-xs">
+                    <button
+                      onClick={() => triggerNotify('Review moderation report exported.')}
+                      className="px-3 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 font-bold"
+                    >
+                      Export Reviews CSV
+                    </button>
+                  </div>
+                </div>
+
+                {/* Grid */}
+                {(() => {
+                  const filtered = reviews.filter(r => {
+                    if (subFilter === 'pending') return r.status === 'PENDING_APPROVAL';
+                    if (subFilter === 'flagged') return r.status === 'FLAGGED' || r.sentiment === 'SUSPICIOUS';
+                    if (subFilter === 'approved') return r.status === 'APPROVED';
+                    if (subFilter === 'rejected') return r.status === 'REJECTED';
+                    if (subFilter === '5-star') return r.rating === 5;
+                    if (subFilter === '1-star') return r.rating === 1;
+                    return true;
+                  }).filter(r => {
+                    if (!searchQuery.trim()) return true;
+                    const q = searchQuery.toLowerCase();
+                    return (
+                      r.authorName.toLowerCase().includes(q) ||
+                      (r.companionName && r.companionName.toLowerCase().includes(q)) ||
+                      r.comment.toLowerCase().includes(q)
+                    );
+                  });
+
+                  const paginated = pageSize === 'All' ? filtered : filtered.slice((currentPage - 1) * (pageSize as number), (currentPage - 1) * (pageSize as number) + (pageSize as number));
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="p-12 text-center text-slate-500 space-y-2">
+                        <Star className="w-10 h-10 text-slate-700 mx-auto" />
+                        <p className="font-bold text-white text-base">No reviews match your current filter</p>
+                        <p className="text-xs">Adjust search term or switch sub-filter tab.</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {paginated.map((rev) => (
+                          <ReviewCard
+                            key={rev.id}
+                            review={rev}
+                            isAdminView={true}
+                            onAudit={(r) => setAuditingReview(r)}
+                            onApprove={(id) => {
+                              approveReview(id);
+                              triggerNotify(`Review approved!`);
+                            }}
+                          />
+                        ))}
+                      </div>
+
+                      <PaginationFooter
+                        currentPage={currentPage}
+                        totalItems={filtered.length}
+                        pageSize={pageSize}
+                        onPageChange={(page) => setCurrentPage(page)}
+                        labelSingular="review"
+                        labelPlural="reviews"
+                      />
+                    </div>
+                  );
+                })()}
+
+              </div>
+            </div>
+          )}
+
+
 
 
           {/* ==================================================== */}
@@ -2907,9 +3109,19 @@ export default function AdminDashboardPage() {
           onClose={() => setDrawerDispute(null)}
         />
       )}
+
+      {/* Review Audit & Content Moderation Modal */}
+      {auditingReview && (
+        <ReviewAuditModal
+          review={auditingReview}
+          onClose={() => setAuditingReview(null)}
+          onSuccessNotification={(msg) => triggerNotify(msg)}
+        />
+      )}
     </div>
   );
 }
+
 
 
 
