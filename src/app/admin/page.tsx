@@ -71,8 +71,13 @@ import {
 
 import { useAdminStore } from '@/lib/adminStore';
 import { useCrudStore, DynamicCompanionItem } from '@/lib/crudStore';
-import { UniversalCrudToolbar } from '@/components/common/UniversalCrudToolbar';
 import { MOCK_BOOKINGS, MOCK_KYC_QUEUE, MOCK_PANIC_ALERTS, MOCK_REVIEWS, MOCK_MESSAGES, MOCK_COMPANIONS } from '@/lib/mockData';
+import { SosAlertCard } from '@/components/safety/SosAlertCard';
+import { IncidentReportCard } from '@/components/safety/IncidentReportCard';
+import { SosDispatchModal } from '@/components/safety/SosDispatchModal';
+import { IncidentAuditModal } from '@/components/safety/IncidentAuditModal';
+import { SosAlertItem, IncidentReport, DisciplinaryAction, IncidentStatus } from '@/lib/types';
+
 import { UserManagementModule } from '@/components/admin/UserManagementModule';
 import { KycVerificationModule } from '@/components/admin/KycVerificationModule';
 import { CompanionStatusBadge } from '@/components/companion/CompanionStatusBadge';
@@ -177,9 +182,23 @@ export default function AdminDashboardPage() {
     processRefund,
     toggleGateway,
     updateGatewayConfig,
+    sosAlerts,
+    incidentReports,
+    dispatchResponders,
+    resolveSosAlert,
+    applySafetyDisciplinaryAction,
+    updateIncidentStatus,
+    triggerSosAlert,
     suspendedUserIds,
     toggleUserSuspension
   } = useAdminStore();
+
+  // Trust & Safety Modal States
+  const [selectedSosAlert, setSelectedSosAlert] = useState<SosAlertItem | null>(null);
+  const [isSosDispatchModalOpen, setIsSosDispatchModalOpen] = useState(false);
+  const [selectedIncident, setSelectedIncident] = useState<IncidentReport | null>(null);
+  const [isIncidentAuditModalOpen, setIsIncidentAuditModalOpen] = useState(false);
+
 
   const {
     companions,
@@ -1867,6 +1886,213 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
+          {/* ==================================================== */}
+          {/* MODULE: 🛡️ TRUST & SAFETY MANAGEMENT               */}
+          {/* ==================================================== */}
+          {activeTab === 'safety' && (
+            <div className="space-y-6 animate-fadeIn">
+              {/* Top 4 KPI Metrics Header */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-5 rounded-3xl bg-slate-900 border border-rose-500/40 space-y-2 shadow-lg shadow-rose-500/5">
+                  <div className="flex items-center justify-between text-xs text-rose-400 font-bold">
+                    <span>Active Live SOS Panic Alerts</span>
+                    <ShieldAlert className="w-5 h-5 text-rose-500 animate-pulse" />
+                  </div>
+                  <div className="text-3xl font-black text-white font-mono flex items-center gap-2">
+                    {sosAlerts.filter((a: SosAlertItem) => a.status === 'ACTIVE_DISPATCH' || a.status === 'RESPONDER_EN_ROUTE' || a.status === 'POLICE_NOTIFIED').length}
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping inline-block" />
+                  </div>
+                  <p className="text-[10px] text-slate-400">Live GPS tracking & audio stream</p>
+                </div>
+
+                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400 font-bold">
+                    <span>Resolved Safe Alerts</span>
+                    <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                  </div>
+                  <div className="text-3xl font-black text-emerald-400 font-mono">
+                    {sosAlerts.filter((a: SosAlertItem) => a.status === 'RESOLVED_SAFE').length}
+                  </div>
+                  <p className="text-[10px] text-emerald-400/80 font-bold">Verified zero casualties</p>
+                </div>
+
+                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400 font-bold">
+                    <span>Pending Safety Tickets</span>
+                    <AlertTriangle className="w-5 h-5 text-amber-400" />
+                  </div>
+                  <div className="text-3xl font-black text-amber-400 font-mono">
+                    {incidentReports.filter((i: IncidentReport) => i.status === 'PENDING_AUDIT' || i.status === 'INVESTIGATING').length}
+                  </div>
+                  <p className="text-[10px] text-amber-400/80 font-bold">Under active investigation</p>
+                </div>
+
+                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400 font-bold">
+                    <span>Blacklisted Offenders</span>
+                    <UserX className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div className="text-3xl font-black text-purple-400 font-mono">
+                    {suspendedUserIds.length + incidentReports.filter((i: IncidentReport) => i.disciplinaryAction === 'PERMANENT_BAN').length}
+                  </div>
+                  <p className="text-[10px] text-purple-300 font-bold">Network ban enforced</p>
+                </div>
+              </div>
+
+              {/* Toolbar & Filter Bar */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900 p-4 rounded-3xl border border-slate-800">
+                <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
+                  {[
+                    { id: 'all-alerts', label: '🚨 Live SOS Feeds' },
+                    { id: 'open-incidents', label: '⚠️ Safety Incident Tickets' },
+                    { id: 'resolved-safe', label: '🛡️ Verified Safe' },
+                    { id: 'banned-offenders', label: '⛔ Banned & Suspended' }
+                  ].map((filter) => (
+                    <button
+                      key={filter.id}
+                      onClick={() => setSubFilter(filter.id)}
+                      className={`px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${
+                        subFilter === filter.id || (subFilter === 'all' && filter.id === 'all-alerts')
+                          ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30 font-extrabold'
+                          : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                      }`}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <div className="relative flex-1 sm:w-64">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                    <input
+                      type="text"
+                      placeholder="Search alerts, reference or user..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 transition-all"
+                    />
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      triggerSosAlert({
+                        userId: 'u-admin-test',
+                        userName: 'Test Simulation Client',
+                        locationName: 'Connaught Place, New Delhi',
+                        coordinates: { lat: 28.6315, lng: 77.2167 },
+                        severity: 'CRITICAL_EMERGENCY',
+                        notes: 'Simulated admin test SOS trigger'
+                      });
+                      triggerNotify('Simulated Emergency SOS Triggered!');
+                    }}
+                    className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-extrabold text-xs shadow-lg shadow-rose-600/30 shrink-0 flex items-center gap-1.5"
+                  >
+                    <Plus className="w-4 h-4" /> Trigger Test SOS
+                  </button>
+                </div>
+              </div>
+
+              {/* SOS Alert Grid View */}
+              {(subFilter === 'all' || subFilter === 'all-alerts' || subFilter === 'resolved-safe') && (
+                <div className="space-y-4">
+                  <h3 className="text-base font-black text-white flex items-center gap-2">
+                    <Radio className="w-5 h-5 text-rose-500 animate-pulse" /> Emergency SOS Panic Monitor
+                  </h3>
+
+                  {(() => {
+                    const filtered = sosAlerts.filter((a: SosAlertItem) => {
+                      if (searchQuery.trim()) {
+                        const q = searchQuery.toLowerCase();
+                        const matchRef = a.alertRef.toLowerCase().includes(q) || a.userName.toLowerCase().includes(q) || (a.companionName && a.companionName.toLowerCase().includes(q));
+                        if (!matchRef) return false;
+                      }
+                      if (subFilter === 'resolved-safe') return a.status === 'RESOLVED_SAFE' || a.status === 'FALSE_ALARM';
+                      return true;
+                    });
+
+                    if (filtered.length === 0) {
+                      return (
+                        <div className="p-10 text-center rounded-3xl bg-slate-900 border border-slate-800">
+                          <ShieldCheck className="w-10 h-10 text-emerald-400 mx-auto mb-2" />
+                          <h4 className="text-sm font-bold text-white">All Clear — Zero Active Emergencies</h4>
+                          <p className="text-xs text-slate-400">All companion GPS perimeters are safe.</p>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filtered.map((alert: SosAlertItem) => (
+                          <SosAlertCard
+                            key={alert.id}
+                            alert={alert}
+                            onDispatch={(item) => {
+                              setSelectedSosAlert(item);
+                              setIsSosDispatchModalOpen(true);
+                            }}
+                            onResolve={(item) => {
+                              resolveSosAlert(item.id, 'Resolved via Admin Dashboard Control', false);
+                              triggerNotify(`SOS Alert ${item.alertRef} marked as Resolved Safe.`);
+                            }}
+                          />
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* Safety Incident Tickets Grid View */}
+              {(subFilter === 'open-incidents' || subFilter === 'banned-offenders') && (
+                <div className="space-y-4 pt-4 border-t border-slate-800">
+                  <h3 className="text-base font-black text-white flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-indigo-400" /> Trust & Safety Incident Audit Tickets
+                  </h3>
+
+                  {(() => {
+                    const filteredIncidents = incidentReports.filter((inc: IncidentReport) => {
+                      if (searchQuery.trim()) {
+                        const q = searchQuery.toLowerCase();
+                        const matchRef = inc.incidentRef.toLowerCase().includes(q) || inc.reporterName.toLowerCase().includes(q) || inc.targetName.toLowerCase().includes(q);
+                        if (!matchRef) return false;
+                      }
+                      if (subFilter === 'banned-offenders') return inc.disciplinaryAction === 'PERMANENT_BAN' || inc.disciplinaryAction === 'TEMPORARY_SUSPENSION';
+                      return true;
+                    });
+
+                    if (filteredIncidents.length === 0) {
+                      return (
+                        <div className="p-10 text-center rounded-3xl bg-slate-900 border border-slate-800">
+                          <CheckCircle2 className="w-10 h-10 text-indigo-400 mx-auto mb-2" />
+                          <h4 className="text-sm font-bold text-white">No Incident Tickets Found</h4>
+                          <p className="text-xs text-slate-400">No safety tickets match the selected query.</p>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredIncidents.map((inc: IncidentReport) => (
+                          <IncidentReportCard
+                            key={inc.id}
+                            incident={inc}
+                            onAudit={(item) => {
+                              setSelectedIncident(item);
+                              setIsIncidentAuditModalOpen(true);
+                            }}
+                          />
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+          )}
+
+
+
 
           {/* ==================================================== */}
           {/* MODULE 13: 🔔 NOTIFICATIONS                          */}
@@ -2352,9 +2578,47 @@ export default function AdminDashboardPage() {
         onClose={() => setViewingPromo(null)}
       />
 
+      {/* SOS Dispatch Modal */}
+      <SosDispatchModal
+        isOpen={isSosDispatchModalOpen}
+        alert={selectedSosAlert}
+        onClose={() => {
+          setIsSosDispatchModalOpen(false);
+          setSelectedSosAlert(null);
+        }}
+        onConfirmDispatch={(id, responderName, policeRef) => {
+          dispatchResponders(id, responderName, policeRef);
+          triggerNotify(`Emergency Responders (${responderName}) dispatched to SOS location!`);
+          setIsSosDispatchModalOpen(false);
+          setSelectedSosAlert(null);
+        }}
+      />
+
+      {/* Incident Audit & Disciplinary Modal */}
+      <IncidentAuditModal
+        isOpen={isIncidentAuditModalOpen}
+        incident={selectedIncident}
+        onClose={() => {
+          setIsIncidentAuditModalOpen(false);
+          setSelectedIncident(null);
+        }}
+        onApplyAction={(id, action, notes) => {
+          applySafetyDisciplinaryAction(id, action, notes);
+          triggerNotify(`Disciplinary Action "${action.replace('_', ' ')}" enforced!`);
+          setIsIncidentAuditModalOpen(false);
+          setSelectedIncident(null);
+        }}
+        onUpdateStatus={(id, status, notes) => {
+          updateIncidentStatus(id, status, notes);
+          triggerNotify(`Incident ticket status updated to ${status}!`);
+          setIsIncidentAuditModalOpen(false);
+          setSelectedIncident(null);
+        }}
+      />
     </div>
   );
 }
+
 
 
 

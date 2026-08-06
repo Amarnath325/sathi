@@ -1,11 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { ServiceCategory, SubCategoryItem, RiskLevel, BookingDetails, BookingStatus, EscrowStatus, LocationItem, GeofenceZone, PopularVenue, FinancialTransaction, PayoutRecord, PaymentGatewayConfig, PromoCodeItem } from './types';
+import { ServiceCategory, SubCategoryItem, RiskLevel, BookingDetails, BookingStatus, EscrowStatus, LocationItem, GeofenceZone, PopularVenue, FinancialTransaction, PayoutRecord, PaymentGatewayConfig, PromoCodeItem, SosAlertItem, SosAlertStatus, SosAlertSeverity, IncidentReport, IncidentStatus, IncidentCategory, DisciplinaryAction } from './types';
 import { INITIAL_CATEGORIES } from './initialCategories';
 import { INITIAL_BOOKINGS } from './initialBookings';
 import { INITIAL_LOCATIONS } from './initialLocations';
 import { INITIAL_TRANSACTIONS, INITIAL_PAYOUTS, INITIAL_GATEWAYS } from './initialPayments';
 import { INITIAL_PROMOS } from './initialPromos';
+import { INITIAL_SOS_ALERTS, INITIAL_INCIDENT_REPORTS } from './initialSafety';
 
 export interface SystemConfig {
   platformFeePercent: number;
@@ -34,6 +35,8 @@ interface AdminStore {
   transactions: FinancialTransaction[];
   payouts: PayoutRecord[];
   gateways: PaymentGatewayConfig[];
+  sosAlerts: SosAlertItem[];
+  incidentReports: IncidentReport[];
   suspendedUserIds: string[];
 
   // Actions
@@ -78,6 +81,14 @@ interface AdminStore {
   toggleGateway: (gatewayId: string) => void;
   updateGatewayConfig: (gatewayId: string, updates: Partial<PaymentGatewayConfig>) => void;
 
+  // Trust & Safety Actions
+  triggerSosAlert: (alert: Omit<SosAlertItem, 'id' | 'alertRef' | 'triggeredAt' | 'status'>) => SosAlertItem;
+  resolveSosAlert: (id: string, notes?: string, isFalseAlarm?: boolean) => void;
+  dispatchResponders: (id: string, responderName: string, policeRef?: string) => void;
+  createIncidentReport: (report: Omit<IncidentReport, 'id' | 'incidentRef' | 'filedAt' | 'status'>) => IncidentReport;
+  updateIncidentStatus: (id: string, status: IncidentStatus, adminNotes?: string) => void;
+  applySafetyDisciplinaryAction: (id: string, action: DisciplinaryAction, adminNotes?: string) => void;
+
   toggleUserSuspension: (userId: string) => void;
 }
 
@@ -110,7 +121,10 @@ export const useAdminStore = create<AdminStore>()(
       transactions: INITIAL_TRANSACTIONS,
       payouts: INITIAL_PAYOUTS,
       gateways: INITIAL_GATEWAYS,
+      sosAlerts: INITIAL_SOS_ALERTS,
+      incidentReports: INITIAL_INCIDENT_REPORTS,
       suspendedUserIds: [],
+
 
       updateConfig: (newConfig) =>
         set((state) => ({
@@ -449,7 +463,100 @@ export const useAdminStore = create<AdminStore>()(
           )
         })),
 
+      triggerSosAlert: (alertData) => {
+        const newAlert: SosAlertItem = {
+          ...alertData,
+          id: 'sos-' + Date.now(),
+          alertRef: 'SOS-2026-' + Math.floor(1000 + Math.random() * 9000),
+          triggeredAt: new Date().toISOString(),
+          status: 'ACTIVE_DISPATCH'
+        };
+        set((state) => ({ sosAlerts: [newAlert, ...state.sosAlerts] }));
+        return newAlert;
+      },
+
+      resolveSosAlert: (id, notes, isFalseAlarm) =>
+        set((state) => ({
+          sosAlerts: state.sosAlerts.map((a) =>
+            a.id === id
+              ? {
+                  ...a,
+                  status: isFalseAlarm ? 'FALSE_ALARM' : 'RESOLVED_SAFE',
+                  resolvedAt: new Date().toISOString(),
+                  notes: notes ? `${a.notes || ''} | Resolution: ${notes}` : a.notes
+                }
+              : a
+          )
+        })),
+
+      dispatchResponders: (id, responderName, policeRef) =>
+        set((state) => ({
+          sosAlerts: state.sosAlerts.map((a) =>
+            a.id === id
+              ? {
+                  ...a,
+                  status: policeRef ? 'POLICE_NOTIFIED' : 'RESPONDER_EN_ROUTE',
+                  assignedResponder: responderName,
+                  policeDispatchRef: policeRef || a.policeDispatchRef
+                }
+              : a
+          )
+        })),
+
+      createIncidentReport: (reportData) => {
+        const newReport: IncidentReport = {
+          ...reportData,
+          id: 'inc-' + Date.now(),
+          incidentRef: 'INC-2026-' + Math.floor(1000 + Math.random() * 9000),
+          filedAt: new Date().toISOString(),
+          status: 'PENDING_AUDIT'
+        };
+        set((state) => ({ incidentReports: [newReport, ...state.incidentReports] }));
+        return newReport;
+      },
+
+      updateIncidentStatus: (id, status, adminNotes) =>
+        set((state) => ({
+          incidentReports: state.incidentReports.map((inc) =>
+            inc.id === id
+              ? {
+                  ...inc,
+                  status,
+                  adminNotes: adminNotes ? `${inc.adminNotes || ''} | ${adminNotes}` : inc.adminNotes,
+                  resolvedAt: status === 'RESOLVED' || status === 'ACTION_TAKEN' || status === 'DISMISSED' ? new Date().toISOString() : inc.resolvedAt
+                }
+              : inc
+          )
+        })),
+
+      applySafetyDisciplinaryAction: (id, disciplinaryAction, adminNotes) =>
+        set((state) => {
+          const report = state.incidentReports.find((inc) => inc.id === id);
+          let updatedSuspendedUserIds = [...state.suspendedUserIds];
+          if (report && (disciplinaryAction === 'TEMPORARY_SUSPENSION' || disciplinaryAction === 'PERMANENT_BAN')) {
+            if (!updatedSuspendedUserIds.includes(report.targetId)) {
+              updatedSuspendedUserIds.push(report.targetId);
+            }
+          }
+
+          return {
+            suspendedUserIds: updatedSuspendedUserIds,
+            incidentReports: state.incidentReports.map((inc) =>
+              inc.id === id
+                ? {
+                    ...inc,
+                    disciplinaryAction,
+                    status: disciplinaryAction === 'NONE' ? inc.status : 'ACTION_TAKEN',
+                    adminNotes: adminNotes ? `${inc.adminNotes || ''} | Disciplinary Action: ${disciplinaryAction}. ${adminNotes}` : inc.adminNotes,
+                    resolvedAt: new Date().toISOString()
+                  }
+                : inc
+            )
+          };
+        }),
+
       toggleUserSuspension: (userId) =>
+
         set((state) => ({
           suspendedUserIds: state.suspendedUserIds.includes(userId)
             ? state.suspendedUserIds.filter((id) => id !== userId)

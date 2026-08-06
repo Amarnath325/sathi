@@ -363,5 +363,69 @@ export interface PromoCodeItem {
   createdAt?: string;
 }
 
+export type SosAlertSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL_EMERGENCY';
+export type SosAlertStatus = 'ACTIVE_DISPATCH' | 'RESPONDER_EN_ROUTE' | 'POLICE_NOTIFIED' | 'RESOLVED_SAFE' | 'FALSE_ALARM';
+
+export interface SosAlertItem {
+  id: string;
+  alertRef: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  userPhone?: string;
+  companionId?: string;
+  companionName?: string;
+  companionPhone?: string;
+  bookingId?: string;
+  bookingNumber?: string;
+  locationName: string;
+  coordinates: { lat: number; lng: number };
+  severity: SosAlertSeverity;
+  status: SosAlertStatus;
+  triggeredAt: string;
+  resolvedAt?: string;
+  assignedResponder?: string;
+  policeDispatchRef?: string;
+  notes?: string;
+  liveAudioFeedActive?: boolean;
+  safeWordTriggered?: string;
+}
+
+export type IncidentSeverity = 'MINOR' | 'MODERATE' | 'SERIOUS' | 'CRITICAL';
+export type IncidentCategory = 
+  | 'HARASSMENT' 
+  | 'STALKING' 
+  | 'NO_SHOW_ISOLATION' 
+  | 'SUBSTANCE_ABUSE' 
+  | 'IDENTITY_MISMATCH' 
+  | 'PAYMENT_EXTORTION' 
+  | 'SAFE_WORD_TRIGGERED';
+
+export type IncidentStatus = 'PENDING_AUDIT' | 'INVESTIGATING' | 'RESOLVED' | 'ACTION_TAKEN' | 'DISMISSED';
+export type DisciplinaryAction = 'NONE' | 'WARNING_ISSUED' | 'ESCROW_FROZEN' | 'TEMPORARY_SUSPENSION' | 'PERMANENT_BAN' | 'LAW_ENFORCEMENT_ESCALATION';
+
+export interface IncidentReport {
+  id: string;
+  incidentRef: string;
+  reporterId: string;
+  reporterName: string;
+  reporterRole: 'COMPANION' | 'CUSTOMER' | 'SYSTEM_AUTOMATION';
+  targetId: string;
+  targetName: string;
+  targetRole: 'COMPANION' | 'CUSTOMER';
+  bookingId?: string;
+  bookingNumber?: string;
+  category: IncidentCategory;
+  severity: IncidentSeverity;
+  description: string;
+  evidenceUrls?: string[];
+  status: IncidentStatus;
+  disciplinaryAction: DisciplinaryAction;
+  adminNotes?: string;
+  filedAt: string;
+  resolvedAt?: string;
+}
+
+
 
 
