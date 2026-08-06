@@ -67,6 +67,8 @@ import { useAdminStore } from '@/lib/adminStore';
 import { useCrudStore, DynamicCompanionItem } from '@/lib/crudStore';
 import { UniversalCrudToolbar } from '@/components/common/UniversalCrudToolbar';
 import { MOCK_BOOKINGS, MOCK_KYC_QUEUE, MOCK_PANIC_ALERTS, MOCK_REVIEWS, MOCK_MESSAGES, MOCK_COMPANIONS } from '@/lib/mockData';
+import { UserManagementModule } from '@/components/admin/UserManagementModule';
+import { KycVerificationModule } from '@/components/admin/KycVerificationModule';
 import { CompanionStatusBadge } from '@/components/companion/CompanionStatusBadge';
 import { CompanionFormModal } from '@/components/companion/CompanionFormModal';
 import Link from 'next/link';
