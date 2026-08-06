@@ -84,8 +84,13 @@ import { BookingFormModal } from '@/components/booking/BookingFormModal';
 import { LocationCard } from '@/components/location/LocationCard';
 import { LocationDetailsModal } from '@/components/location/LocationDetailsModal';
 import { LocationFormModal } from '@/components/location/LocationFormModal';
-import { ServiceCategory, BookingDetails, BookingStatus, EscrowStatus, LocationItem } from '@/lib/types';
+import { TransactionTable } from '@/components/payment/TransactionTable';
+import { PayoutModal } from '@/components/payment/PayoutModal';
+import { PaymentConfigModal } from '@/components/payment/PaymentConfigModal';
+import { FinancialLedgerModal } from '@/components/payment/FinancialLedgerModal';
+import { ServiceCategory, BookingDetails, BookingStatus, EscrowStatus, LocationItem, FinancialTransaction, PayoutRecord, PaymentGatewayConfig } from '@/lib/types';
 import Link from 'next/link';
+
 
 
 
@@ -154,6 +159,14 @@ export default function AdminDashboardPage() {
     updateLocationSurge,
     addGeofenceZone,
     addPopularVenue,
+    transactions,
+    payouts,
+    gateways,
+    addTransaction,
+    processPayout,
+    processRefund,
+    toggleGateway,
+    updateGatewayConfig,
     suspendedUserIds,
     toggleUserSuspension
   } = useAdminStore();
@@ -194,6 +207,12 @@ export default function AdminDashboardPage() {
   const [viewingLocation, setViewingLocation] = useState<LocationItem | null>(null);
   const [editingLocation, setEditingLocation] = useState<LocationItem | null>(null);
   const [isLocationFormOpen, setIsLocationFormOpen] = useState(false);
+
+  // Payment & Finance Modal States
+  const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false);
+  const [editingGateway, setEditingGateway] = useState<PaymentGatewayConfig | null>(null);
+  const [auditingTransaction, setAuditingTransaction] = useState<FinancialTransaction | null>(null);
+
 
 
 
@@ -1207,30 +1226,180 @@ export default function AdminDashboardPage() {
           {/* ==================================================== */}
           {activeTab === 'payments' && (
             <div className="space-y-6">
-              <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                {['transactions', 'payments', 'refunds', 'payouts', 'platform-fees', 'ledger', 'failed-payments', 'chargebacks'].map((s) => (
-                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
-                    {s.replace('-', ' ')}
-                  </button>
-                ))}
+              {/* Top Metrics Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>Total Financial Volume</span>
+                    <DollarSign className="w-4 h-4 text-indigo-400" />
+                  </div>
+                  <div className="text-2xl font-black text-white font-mono">
+                    ${transactions.reduce((acc, t) => acc + t.amount, 0).toLocaleString()}.00
+                  </div>
+                  <p className="text-[10px] text-slate-500">Gross ledger throughput</p>
+                </div>
+
+                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>Escrow Vault Holding Reserve</span>
+                    <Lock className="w-4 h-4 text-amber-400" />
+                  </div>
+                  <div className="text-2xl font-black text-amber-400 font-mono">
+                    ${transactions.filter(t => t.status === 'HELD_IN_ESCROW').reduce((acc, t) => acc + t.amount, 0).toLocaleString()}.00
+                  </div>
+                  <p className="text-[10px] text-amber-400/80 font-bold">Secured in Partner Bank Vault</p>
+                </div>
+
+                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>Companion Payouts Dispatched</span>
+                    <ArrowUpRight className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <div className="text-2xl font-black text-emerald-400 font-mono">
+                    ${payouts.filter(p => p.status === 'PAID').reduce((acc, p) => acc + p.amount, 0).toLocaleString()}.00
+                  </div>
+                  <p className="text-[10px] text-emerald-400/80 font-bold">{payouts.length} Direct Bank Wires Executed</p>
+                </div>
+
+                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>Platform Commission Net Revenue</span>
+                    <CreditCard className="w-4 h-4 text-indigo-400" />
+                  </div>
+                  <div className="text-2xl font-black text-indigo-400 font-mono">
+                    ${transactions.reduce((acc, t) => acc + t.platformFee, 0).toLocaleString()}.00
+                  </div>
+                  <p className="text-[10px] text-slate-500">From 10% platform fee policy</p>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800">
-                  <p className="text-xs text-slate-400 font-mono">Platform Fee Rate</p>
-                  <p className="text-2xl font-bold text-purple-400 mt-1">{config.platformFeePercent}%</p>
+              {/* Sub-Filter Tabs & Action Toolbar */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900 p-4 rounded-3xl border border-slate-800">
+                <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
+                  {[
+                    { id: 'all-transactions', label: 'All Transactions' },
+                    { id: 'escrow-held', label: '🔒 Escrow Vault' },
+                    { id: 'payouts', label: '↗ Companion Payouts' },
+                    { id: 'refunds', label: '↩ Customer Refunds' },
+                    { id: 'platform-fees', label: '💰 Platform Revenue' },
+                    { id: 'wallet-topups', label: '💳 Wallet Top-ups' },
+                    { id: 'gateways', label: '⚡ Payment Gateways' }
+                  ].map((filter) => (
+                    <button
+                      key={filter.id}
+                      onClick={() => setSubFilter(filter.id)}
+                      className={`px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${
+                        subFilter === filter.id || (subFilter === 'all' && filter.id === 'all-transactions')
+                          ? 'gradient-bg-primary text-white shadow-md shadow-indigo-600/30'
+                          : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                      }`}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
                 </div>
-                <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800">
-                  <p className="text-xs text-slate-400 font-mono">Escrow Vault Reserve</p>
-                  <p className="text-2xl font-bold text-emerald-400 mt-1">$14,850.00</p>
-                </div>
-                <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800">
-                  <p className="text-xs text-slate-400 font-mono">GST / VAT Rate</p>
-                  <p className="text-2xl font-bold text-blue-400 mt-1">{config.gstTaxPercent}%</p>
+
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <div className="relative flex-1 sm:w-64">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                    <input
+                      type="text"
+                      placeholder="Search ref, client or host..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <button
+                    onClick={() => setIsPayoutModalOpen(true)}
+                    className="px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold flex items-center gap-1.5 shadow-lg shadow-emerald-600/30 shrink-0"
+                  >
+                    <Plus className="w-4 h-4" /> Dispatch Payout
+                  </button>
                 </div>
               </div>
+
+              {/* View 1: Payment Gateways Config View */}
+              {subFilter === 'gateways' ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-extrabold text-white uppercase tracking-wider">Configured Payment Provider Engines ({gateways.length})</h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {gateways.map((gw) => (
+                      <div key={gw.id} className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-4 flex flex-col justify-between">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="font-extrabold text-white text-sm">{gw.name}</span>
+                            <button
+                              onClick={() => {
+                                toggleGateway(gw.id);
+                                triggerNotify(`Gateway ${gw.provider} status toggled!`);
+                              }}
+                              className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border transition-all ${
+                                gw.isEnabled ? 'bg-emerald-950/80 text-emerald-300 border-emerald-700/60' : 'bg-slate-950 text-slate-500 border-slate-800'
+                              }`}
+                            >
+                              {gw.isEnabled ? 'ONLINE' : 'DISABLED'}
+                            </button>
+                          </div>
+
+                          <div className="text-xs space-y-1 text-slate-400 font-mono">
+                            <p>Merchant ID: <strong className="text-indigo-300">{gw.merchantId}</strong></p>
+                            <p>Fee Rate: <strong className="text-amber-400">{gw.transactionFeePercent}%</strong> per txn</p>
+                            <p>Environment: <span className="px-2 py-0.5 rounded bg-slate-950 text-indigo-400 text-[10px] border border-slate-800">{gw.environment}</span></p>
+                          </div>
+                        </div>
+
+                        <div className="pt-3 border-t border-slate-800 flex justify-end">
+                          <button
+                            onClick={() => setEditingGateway(gw)}
+                            className="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 text-indigo-300 font-bold text-xs border border-slate-800 flex items-center gap-1"
+                          >
+                            <Settings className="w-3.5 h-3.5" /> Configure Gateway
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                /* View 2: Transaction Table View */
+                (() => {
+                  const filteredTxns = transactions.filter((t) => {
+                    if (searchQuery.trim()) {
+                      const q = searchQuery.toLowerCase();
+                      const match = t.transactionRef.toLowerCase().includes(q) ||
+                        t.userName.toLowerCase().includes(q) ||
+                        (t.companionName && t.companionName.toLowerCase().includes(q)) ||
+                        (t.gatewayRef && t.gatewayRef.toLowerCase().includes(q));
+                      if (!match) return false;
+                    }
+                    if (subFilter === 'escrow-held') return t.status === 'HELD_IN_ESCROW';
+                    if (subFilter === 'payouts') return t.type === 'COMPANION_PAYOUT';
+                    if (subFilter === 'refunds') return t.type === 'CUSTOMER_REFUND' || t.status === 'REFUNDED';
+                    if (subFilter === 'platform-fees') return t.type === 'PLATFORM_FEE_CREDIT';
+                    if (subFilter === 'wallet-topups') return t.type === 'WALLET_TOPUP';
+                    return true;
+                  });
+
+                  return (
+                    <TransactionTable
+                      transactions={filteredTxns}
+                      onViewLedger={(t) => setAuditingTransaction(t)}
+                      onRefundTxn={(t) => {
+                        processRefund(t.id, 'Admin ERP manual refund');
+                        triggerNotify(`Transaction #${t.transactionRef} refunded!`);
+                      }}
+                    />
+                  );
+                })()
+              )}
             </div>
           )}
+
 
           {/* ==================================================== */}
           {/* MODULE 8: 💬 COMMUNICATION                           */}
@@ -1948,9 +2117,42 @@ export default function AdminDashboardPage() {
         }}
       />
 
+      {/* Payout Dispatch Modal */}
+      <PayoutModal
+        isOpen={isPayoutModalOpen}
+        onClose={() => setIsPayoutModalOpen(false)}
+        onDispatch={(data) => {
+          processPayout(data.companionId, data.companionName, data.bankName, data.accountNumberMasked, data.amount);
+          triggerNotify(`Direct wire payout of $${data.amount} dispatched to ${data.companionName}!`);
+        }}
+      />
+
+      {/* Payment Gateway Config Modal */}
+      <PaymentConfigModal
+        isOpen={!!editingGateway}
+        gateway={editingGateway}
+        onClose={() => setEditingGateway(null)}
+        onSave={(id, updates) => {
+          updateGatewayConfig(id, updates);
+          triggerNotify(`Gateway ${editingGateway?.name} config saved!`);
+        }}
+      />
+
+      {/* Financial Audit Ledger Modal */}
+      <FinancialLedgerModal
+        isOpen={!!auditingTransaction}
+        transaction={auditingTransaction}
+        onClose={() => setAuditingTransaction(null)}
+        onRefund={(id) => {
+          processRefund(id, 'Auditor requested refund');
+          triggerNotify(`Escrow refunded for transaction #${auditingTransaction?.transactionRef}!`);
+        }}
+      />
+
     </div>
   );
 }
+
 
 
 

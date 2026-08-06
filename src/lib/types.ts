@@ -275,3 +275,69 @@ export interface LocationItem {
   updatedAt?: string;
 }
 
+export type TransactionType = 
+  | 'BOOKING_ESCROW_LOCK' 
+  | 'COMPANION_PAYOUT' 
+  | 'CUSTOMER_REFUND' 
+  | 'PLATFORM_FEE_CREDIT' 
+  | 'WALLET_TOPUP' 
+  | 'CHARGEBACK_DISPUTE';
+
+export type TransactionStatus = 
+  | 'COMPLETED' 
+  | 'PENDING' 
+  | 'HELD_IN_ESCROW' 
+  | 'FAILED' 
+  | 'REFUNDED';
+
+export interface FinancialTransaction {
+  id: string;
+  transactionRef: string;
+  bookingId?: string;
+  bookingNumber?: string;
+  userId: string;
+  userName: string;
+  companionId?: string;
+  companionName?: string;
+  type: TransactionType;
+  amount: number;
+  platformFee: number;
+  escrowFee: number;
+  gstTax: number;
+  netPayoutAmount: number;
+  status: TransactionStatus;
+  paymentMethod: PaymentMethod;
+  gatewayRef?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface PayoutRecord {
+  id: string;
+  payoutRef: string;
+  companionId: string;
+  companionName: string;
+  companionAvatar?: string;
+  bankName: string;
+  accountNumberMasked: string;
+  ifscOrRoutingCode?: string;
+  amount: number;
+  status: 'PROCESSING' | 'PAID' | 'FAILED';
+  processedAt: string;
+  transactionRef?: string;
+}
+
+export interface PaymentGatewayConfig {
+  id: string;
+  provider: PaymentMethod;
+  name: string;
+  isEnabled: boolean;
+  merchantId: string;
+  environment: 'SANDBOX' | 'PRODUCTION';
+  transactionFeePercent: number;
+  supportedCurrencies: string[];
+  lastPingStatus?: 'HEALTHY' | 'DEGRADED' | 'DOWN';
+}
+
+

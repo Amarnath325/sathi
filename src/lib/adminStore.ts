@@ -1,9 +1,11 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { ServiceCategory, SubCategoryItem, RiskLevel, BookingDetails, BookingStatus, EscrowStatus, LocationItem, GeofenceZone, PopularVenue } from './types';
+import { ServiceCategory, SubCategoryItem, RiskLevel, BookingDetails, BookingStatus, EscrowStatus, LocationItem, GeofenceZone, PopularVenue, FinancialTransaction, PayoutRecord, PaymentGatewayConfig } from './types';
 import { INITIAL_CATEGORIES } from './initialCategories';
 import { INITIAL_BOOKINGS } from './initialBookings';
 import { INITIAL_LOCATIONS } from './initialLocations';
+import { INITIAL_TRANSACTIONS, INITIAL_PAYOUTS, INITIAL_GATEWAYS } from './initialPayments';
+
 
 
 export interface SystemConfig {
@@ -40,6 +42,9 @@ interface AdminStore {
   categories: ServiceCategory[];
   bookings: BookingDetails[];
   locations: LocationItem[];
+  transactions: FinancialTransaction[];
+  payouts: PayoutRecord[];
+  gateways: PaymentGatewayConfig[];
   suspendedUserIds: string[];
 
   // Actions
@@ -74,8 +79,16 @@ interface AdminStore {
   addGeofenceZone: (locationId: string, zone: Omit<GeofenceZone, 'id'>) => void;
   addPopularVenue: (locationId: string, venue: Omit<PopularVenue, 'id'>) => void;
 
+  // Payment & Finance Actions
+  addTransaction: (txn: Omit<FinancialTransaction, 'id' | 'createdAt' | 'transactionRef'>) => FinancialTransaction;
+  processPayout: (companionId: string, companionName: string, bankName: string, accountNumberMasked: string, amount: number) => PayoutRecord;
+  processRefund: (transactionId: string, reason?: string) => void;
+  toggleGateway: (gatewayId: string) => void;
+  updateGatewayConfig: (gatewayId: string, updates: Partial<PaymentGatewayConfig>) => void;
+
   toggleUserSuspension: (userId: string) => void;
 }
+
 
 
 export const useAdminStore = create<AdminStore>()(
@@ -107,7 +120,11 @@ export const useAdminStore = create<AdminStore>()(
       categories: INITIAL_CATEGORIES,
       bookings: INITIAL_BOOKINGS,
       locations: INITIAL_LOCATIONS,
+      transactions: INITIAL_TRANSACTIONS,
+      payouts: INITIAL_PAYOUTS,
+      gateways: INITIAL_GATEWAYS,
       suspendedUserIds: [],
+
 
 
       updateConfig: (newConfig) =>
@@ -341,15 +358,64 @@ export const useAdminStore = create<AdminStore>()(
           )
         })),
 
+      addTransaction: (txn) => {
+        const newTxn: FinancialTransaction = {
+          ...txn,
+          id: 'txn-' + Date.now(),
+          transactionRef: 'TXN-2026-' + Math.floor(1000 + Math.random() * 9000),
+          createdAt: new Date().toISOString()
+        };
+        set((state) => ({ transactions: [newTxn, ...state.transactions] }));
+        return newTxn;
+      },
+
+      processPayout: (companionId, companionName, bankName, accountNumberMasked, amount) => {
+        const newPayout: PayoutRecord = {
+          id: 'po-' + Date.now(),
+          payoutRef: 'PO-2026-' + Math.floor(1000 + Math.random() * 9000),
+          companionId,
+          companionName,
+          bankName,
+          accountNumberMasked,
+          amount,
+          status: 'PAID',
+          processedAt: new Date().toISOString()
+        };
+        set((state) => ({ payouts: [newPayout, ...state.payouts] }));
+        return newPayout;
+      },
+
+      processRefund: (transactionId, reason) =>
+        set((state) => ({
+          transactions: state.transactions.map((t) =>
+            t.id === transactionId
+              ? { ...t, status: 'REFUNDED', notes: reason ? `${t.notes || ''} | Refunded: ${reason}` : t.notes }
+              : t
+          )
+        })),
+
+      toggleGateway: (gatewayId) =>
+        set((state) => ({
+          gateways: state.gateways.map((g) =>
+            g.id === gatewayId ? { ...g, isEnabled: !g.isEnabled } : g
+          )
+        })),
+
+      updateGatewayConfig: (gatewayId, updates) =>
+        set((state) => ({
+          gateways: state.gateways.map((g) =>
+            g.id === gatewayId ? { ...g, ...updates } : g
+          )
+        })),
+
       toggleUserSuspension: (userId) =>
-
-
         set((state) => ({
           suspendedUserIds: state.suspendedUserIds.includes(userId)
             ? state.suspendedUserIds.filter((id) => id !== userId)
             : [...state.suspendedUserIds, userId]
         }))
     }),
+
     {
       name: 'companion-admin-dynamic-store'
     }
