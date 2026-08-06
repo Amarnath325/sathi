@@ -66,9 +66,10 @@ import {
 import { useAdminStore } from '@/lib/adminStore';
 import { useCrudStore, DynamicCompanionItem } from '@/lib/crudStore';
 import { UniversalCrudToolbar } from '@/components/common/UniversalCrudToolbar';
-import { MOCK_BOOKINGS, MOCK_KYC_QUEUE, MOCK_PANIC_ALERTS, MOCK_REVIEWS, MOCK_MESSAGES } from '@/lib/mockData';
-import { UserManagementModule } from '@/components/admin/UserManagementModule';
-import { KycVerificationModule } from '@/components/admin/KycVerificationModule';
+import { MOCK_BOOKINGS, MOCK_KYC_QUEUE, MOCK_PANIC_ALERTS, MOCK_REVIEWS, MOCK_MESSAGES, MOCK_COMPANIONS } from '@/lib/mockData';
+import { CompanionStatusBadge } from '@/components/companion/CompanionStatusBadge';
+import { CompanionFormModal } from '@/components/companion/CompanionFormModal';
+import Link from 'next/link';
 
 
 export type ERPModuleTab = 
@@ -644,38 +645,157 @@ export default function AdminDashboardPage() {
           {/* ==================================================== */}
           {activeTab === 'companions' && (
             <div className="space-y-6">
-              <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                {['companion-profiles', 'pending-approval', 'active-companions', 'inactive', 'restricted', 'performance'].map((s) => (
-                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
-                    {s.replace('-', ' ')}
+              {/* Header Actions */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900 border border-slate-800">
+                <div>
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5 text-indigo-400" /> Companion Management Hub
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Manage companion profiles, status toggles, rate caps, and verify KYC credentials.</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Link
+                    href="/companion"
+                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold transition-all flex items-center gap-1.5"
+                  >
+                    <Globe className="w-4 h-4 text-indigo-400" /> View Public Directory
+                  </Link>
+                  <button
+                    onClick={() => setShowCreateModal(true)}
+                    className="px-4 py-2 rounded-xl gradient-bg-primary text-white text-xs font-extrabold hover:opacity-90 transition-all flex items-center gap-1.5"
+                  >
+                    <Plus className="w-4 h-4" /> Add Companion Profile
+                  </button>
+                </div>
+              </div>
+
+              {/* Sub-Filter Tabs */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-800">
+                {[
+                  { id: 'all', label: 'All Companions', count: MOCK_COMPANIONS.length },
+                  { id: 'companion-profiles', label: 'Profiles', count: MOCK_COMPANIONS.length },
+                  { id: 'pending-approval', label: 'Pending Approval', count: MOCK_COMPANIONS.filter(c => c.status === 'PENDING_VERIFICATION').length },
+                  { id: 'active-companions', label: 'Active Companions', count: MOCK_COMPANIONS.filter(c => c.status === 'ACTIVE').length },
+                  { id: 'inactive', label: 'Inactive', count: MOCK_COMPANIONS.filter(c => c.status === 'INACTIVE').length },
+                  { id: 'restricted', label: 'Restricted / Suspended', count: MOCK_COMPANIONS.filter(c => c.status === 'SUSPENDED').length },
+                  { id: 'performance', label: 'Top Rated', count: MOCK_COMPANIONS.filter(c => c.ratingAvg >= 4.9).length },
+                ].map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => setSubFilter(s.id)}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
+                      subFilter === s.id
+                        ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
+                        : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'
+                    }`}
+                  >
+                    <span>{s.label}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${subFilter === s.id ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'}`}>
+                      {s.count}
+                    </span>
                   </button>
                 ))}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {companions.slice(0, 3).map((comp) => (
-                  <div key={comp.id} className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-4">
-                    <div className="flex items-center gap-4">
-                      <img src={(comp as any).avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200'} className="w-12 h-12 rounded-2xl object-cover border border-purple-500/40" />
-                      <div>
-                        <h4 className="font-bold text-white text-base">{comp.name}</h4>
-                        <p className="text-xs text-slate-400">{comp.city}, {comp.country}</p>
+              {/* Filtered Companion Cards Grid */}
+              {(() => {
+                const list = MOCK_COMPANIONS.filter(c => {
+                  if (subFilter === 'pending-approval') return c.status === 'PENDING_VERIFICATION';
+                  if (subFilter === 'active-companions') return c.status === 'ACTIVE';
+                  if (subFilter === 'inactive') return c.status === 'INACTIVE';
+                  if (subFilter === 'restricted') return c.status === 'SUSPENDED';
+                  if (subFilter === 'performance') return c.ratingAvg >= 4.9;
+                  return true;
+                }).filter(c => {
+                  if (!searchQuery) return true;
+                  const q = searchQuery.toLowerCase();
+                  return c.name.toLowerCase().includes(q) || c.city.toLowerCase().includes(q) || c.categories.some(cat => cat.toLowerCase().includes(q));
+                });
+
+                if (list.length === 0) {
+                  return (
+                    <div className="p-12 rounded-3xl bg-slate-900 border border-slate-800 text-center space-y-3">
+                      <Users className="w-10 h-10 text-slate-600 mx-auto" />
+                      <h4 className="font-bold text-white text-base">No companion profiles in this filter</h4>
+                      <p className="text-xs text-slate-400">Select another filter tab or add a new companion profile.</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {list.map((comp) => (
+                      <div key={comp.id} className="p-6 rounded-3xl bg-slate-900 border border-slate-800 hover:border-purple-500/40 transition-all space-y-4 flex flex-col">
+                        <div className="flex items-center gap-4">
+                          <img
+                            src={comp.avatar}
+                            alt={comp.name}
+                            className="w-14 h-14 rounded-2xl object-cover border-2 border-purple-500/30 shrink-0"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-extrabold text-white text-base truncate">{comp.name}, {comp.age}</h4>
+                            </div>
+                            <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                              <MapPin className="w-3.5 h-3.5 text-purple-400 shrink-0" /> {comp.city}, {comp.country}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Status Badge & Rating */}
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs">
+                          {comp.status && <CompanionStatusBadge status={comp.status} size="md" />}
+                          <div className="flex items-center gap-1 text-amber-400 font-bold">
+                            <Star className="w-3.5 h-3.5 fill-amber-400" /> {comp.ratingAvg}
+                            <span className="text-slate-500 text-[10px] font-normal">({comp.ratingCount})</span>
+                          </div>
+                        </div>
+
+                        {/* Pricing & Bookings */}
+                        <div className="grid grid-cols-2 gap-2 p-3 rounded-2xl bg-slate-950/60 border border-slate-800 text-xs">
+                          <div>
+                            <span className="text-[10px] text-slate-500 block uppercase font-mono">Hourly Rate</span>
+                            <span className="font-mono font-bold text-emerald-400">${comp.hourlyRate}/hr</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-slate-500 block uppercase font-mono">Bookings</span>
+                            <span className="font-bold text-white">{comp.completedBookings} Done</span>
+                          </div>
+                        </div>
+
+                        {/* Categories */}
+                        <div className="flex flex-wrap gap-1">
+                          {comp.categories.slice(0, 2).map((cat, idx) => (
+                            <span key={idx} className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 font-medium">
+                              {cat}
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2 pt-2 border-t border-slate-800/80 mt-auto">
+                          <Link
+                            href={`/companion/${comp.id}`}
+                            className="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold text-center transition-all"
+                          >
+                            View Profile
+                          </Link>
+                          <button
+                            onClick={() => toggleCompanionActive(comp.id)}
+                            className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                              comp.status === 'ACTIVE'
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30'
+                                : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
+                            }`}
+                          >
+                            {comp.status === 'ACTIVE' ? 'Active' : 'Toggle Active'}
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-slate-400">Hourly Rate:</span>
-                      <span className="font-bold text-emerald-400 font-mono">${comp.hourlyRate}/hr</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-slate-400">Rating Avg:</span>
-                      <span className="font-bold text-amber-400">★ {comp.ratingAvg}</span>
-                    </div>
-                    <button onClick={() => toggleCompanionActive(comp.id)} className={`w-full py-2 rounded-xl text-xs font-bold ${comp.isActive ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-slate-800 text-slate-400'}`}>
-                      {comp.isActive ? 'Active Companion' : 'Mark Active'}
-                    </button>
+                    ))}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
             </div>
           )}
 
