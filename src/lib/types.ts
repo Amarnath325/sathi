@@ -340,4 +340,28 @@ export interface PaymentGatewayConfig {
   lastPingStatus?: 'HEALTHY' | 'DEGRADED' | 'DOWN';
 }
 
+export type DiscountType = 'PERCENTAGE' | 'FLAT_AMOUNT';
+
+export interface PromoCodeItem {
+  id: string;
+  code: string;
+  title: string;
+  description?: string;
+  discountType: DiscountType;
+  discountValue: number;
+  discountPercent?: number;
+  flatDiscount?: number;
+  minBookingAmount: number;
+  maxDiscountLimit?: number;
+  usageLimit?: number;
+  usageCount: number;
+  validFrom?: string;
+  expiryDate: string;
+  applicableCategories?: string[];
+  isActive: boolean;
+  isFeatured?: boolean;
+  createdAt?: string;
+}
+
+
 

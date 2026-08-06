@@ -17,13 +17,14 @@ export function LocationPicker({ selectedCity, onSelectCity, className = '' }: L
   const [search, setSearch] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const activeLocations = locations.filter(l => l.isActive);
-  const filtered = activeLocations.filter(l =>
+  const activeLocations = locations.filter((l: LocationItem) => l.isActive);
+  const filtered = activeLocations.filter((l: LocationItem) =>
     l.name.toLowerCase().includes(search.toLowerCase()) ||
     l.country.toLowerCase().includes(search.toLowerCase())
   );
 
-  const currentLoc = activeLocations.find(l => l.name.toLowerCase() === selectedCity?.toLowerCase()) || activeLocations[0];
+  const currentLoc = activeLocations.find((l: LocationItem) => l.name.toLowerCase() === selectedCity?.toLowerCase()) || activeLocations[0];
+
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -71,7 +72,8 @@ export function LocationPicker({ selectedCity, onSelectCity, className = '' }: L
             {filtered.length === 0 ? (
               <p className="text-[11px] text-slate-500 p-2 text-center">No operational cities found.</p>
             ) : (
-              filtered.map((loc) => (
+              filtered.map((loc: LocationItem) => (
+
                 <button
                   key={loc.id}
                   type="button"

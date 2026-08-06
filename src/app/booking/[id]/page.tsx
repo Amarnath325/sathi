@@ -20,7 +20,9 @@ import {
   Tag
 } from 'lucide-react';
 import { MOCK_COMPANIONS } from '@/lib/mockData';
-import { useAdminStore, PromoCodeItem } from '@/lib/adminStore';
+import { useAdminStore } from '@/lib/adminStore';
+import { PromoCodeItem } from '@/lib/types';
+
 
 export default function BookingPage() {
   const params = useParams();
@@ -59,12 +61,14 @@ export default function BookingPage() {
   const handleApplyPromo = () => {
     const match = promos.find((p: PromoCodeItem) => p.code.toUpperCase() === promoInput.trim().toUpperCase() && p.isActive);
     if (match) {
-      setDiscountPercent(match.discountPercent);
-      setPromoMessage(`Promo Code "${match.code}" applied! ${match.discountPercent}% OFF`);
+      const discountVal = match.discountPercent || match.discountValue || match.flatDiscount || 15;
+      setDiscountPercent(discountVal);
+      setPromoMessage(`Promo Code "${match.code}" applied! ${discountVal}% OFF`);
     } else {
       setPromoMessage('Invalid or expired promo code');
     }
   };
+
 
   const handleLockEscrowBooking = (e: React.FormEvent) => {
     e.preventDefault();

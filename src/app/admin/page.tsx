@@ -19,9 +19,12 @@ import {
   MapPin, 
   Bell, 
   Tag, 
+  Ticket,
+  Gift,
   TrendingUp, 
   UserCog, 
   Lock, 
+
   FileText, 
   Settings, 
   Activity, 
@@ -88,8 +91,13 @@ import { TransactionTable } from '@/components/payment/TransactionTable';
 import { PayoutModal } from '@/components/payment/PayoutModal';
 import { PaymentConfigModal } from '@/components/payment/PaymentConfigModal';
 import { FinancialLedgerModal } from '@/components/payment/FinancialLedgerModal';
-import { ServiceCategory, BookingDetails, BookingStatus, EscrowStatus, LocationItem, FinancialTransaction, PayoutRecord, PaymentGatewayConfig } from '@/lib/types';
+import { PromoCard } from '@/components/promo/PromoCard';
+import { PromoFormModal } from '@/components/promo/PromoFormModal';
+import { PromoDetailsModal } from '@/components/promo/PromoDetailsModal';
+import { ServiceCategory, SubCategoryItem, BookingDetails, BookingStatus, EscrowStatus, LocationItem, FinancialTransaction, PayoutRecord, PaymentGatewayConfig, PromoCodeItem } from '@/lib/types';
+
 import Link from 'next/link';
+
 
 
 
@@ -136,8 +144,10 @@ export default function AdminDashboardPage() {
     updateConfig, 
     promos, 
     addPromoCode, 
+    updatePromoCode,
     togglePromoCode, 
     deletePromoCode,
+
     categories,
     addCategory,
     updateCategory,
@@ -212,6 +222,12 @@ export default function AdminDashboardPage() {
   const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false);
   const [editingGateway, setEditingGateway] = useState<PaymentGatewayConfig | null>(null);
   const [auditingTransaction, setAuditingTransaction] = useState<FinancialTransaction | null>(null);
+
+  // Promotion & Coupons Modal States
+  const [isPromoFormOpen, setIsPromoFormOpen] = useState(false);
+  const [editingPromo, setEditingPromo] = useState<PromoCodeItem | null>(null);
+  const [viewingPromo, setViewingPromo] = useState<PromoCodeItem | null>(null);
+
 
 
 
@@ -925,7 +941,8 @@ export default function AdminDashboardPage() {
               {/* SUB-VIEW 1: Category Cards Grid */}
               {(subFilter === 'categories' || subFilter === 'all') && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {categories.map((cat) => (
+                  {categories.map((cat: ServiceCategory) => (
+
                     <CategoryCard
                       key={cat.id}
                       category={cat}
@@ -960,8 +977,9 @@ export default function AdminDashboardPage() {
                   <div className="p-4 border-b border-slate-800 flex items-center justify-between">
                     <h4 className="font-bold text-white text-sm">All Sub-Service Offerings</h4>
                     <span className="text-xs text-slate-400 font-mono">
-                      {categories.reduce((acc, c) => acc + (c.subcategories?.length || 0), 0)} Total Sub-Services
+                      {categories.reduce((acc: number, c: ServiceCategory) => acc + (c.subcategories?.length || 0), 0)} Total Sub-Services
                     </span>
+
                   </div>
                   <table className="w-full text-left border-collapse text-xs">
                     <thead>
@@ -974,8 +992,9 @@ export default function AdminDashboardPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800">
-                      {categories.flatMap(cat =>
-                        (cat.subcategories || []).map(sub => (
+                      {categories.flatMap((cat: ServiceCategory) =>
+                        (cat.subcategories || []).map((sub: SubCategoryItem) => (
+
                           <tr key={sub.id} className="hover:bg-slate-800/40">
                             <td className="py-3 px-4 font-bold text-white">{sub.name}</td>
                             <td className="py-3 px-4 text-indigo-400 font-semibold">{cat.name}</td>
@@ -999,7 +1018,8 @@ export default function AdminDashboardPage() {
               {/* SUB-VIEW 3: Service Policies */}
               {subFilter === 'service-policies' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {categories.map((cat) => (
+                  {categories.map((cat: ServiceCategory) => (
+
                     <div key={cat.id} className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-3">
                       <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                         <h4 className="font-bold text-white text-base flex items-center gap-2">
@@ -1032,7 +1052,8 @@ export default function AdminDashboardPage() {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {categories.map((cat) => (
+                    {categories.map((cat: ServiceCategory) => (
+
                       <div key={cat.id} className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between">
                         <div>
                           <span className="font-bold text-white text-xs block">{cat.name}</span>
@@ -1052,7 +1073,8 @@ export default function AdminDashboardPage() {
               {subFilter === 'risk-levels' && (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                   {['LOW', 'MEDIUM', 'HIGH'].map((risk) => {
-                    const matched = categories.filter(c => c.riskLevel === risk);
+                    const matched = categories.filter((c: ServiceCategory) => c.riskLevel === risk);
+
                     return (
                       <div key={risk} className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-4">
                         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -1062,7 +1084,8 @@ export default function AdminDashboardPage() {
                           </span>
                         </div>
                         <div className="space-y-2">
-                          {matched.map(m => (
+                          {matched.map((m: ServiceCategory) => (
+
                             <div key={m.id} className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between text-xs">
                               <span className="font-bold text-slate-200">{m.name}</span>
                               <span className="text-slate-400 font-mono">{m.subcategories?.length || 0} Sub-services</span>
@@ -1100,8 +1123,9 @@ export default function AdminDashboardPage() {
                     <Lock className="w-4 h-4 text-amber-400" />
                   </div>
                   <div className="text-2xl font-black text-amber-400 font-mono">
-                    ${bookings.filter(b => b.escrowStatus === 'HELD').reduce((acc, b) => acc + b.totalAmount, 0).toLocaleString()}.00
+                    ${bookings.filter((b: BookingDetails) => b.escrowStatus === 'HELD').reduce((acc: number, b: BookingDetails) => acc + b.totalAmount, 0).toLocaleString()}.00
                   </div>
+
                   <p className="text-[10px] text-amber-400/80 font-bold">Secured in Partner Bank Escrow</p>
                 </div>
 
@@ -1111,7 +1135,7 @@ export default function AdminDashboardPage() {
                     <Clock className="w-4 h-4 text-emerald-400 animate-pulse" />
                   </div>
                   <div className="text-2xl font-black text-emerald-400 font-mono">
-                    {bookings.filter(b => b.status === 'IN_PROGRESS').length}
+                    {bookings.filter((b: BookingDetails) => b.status === 'IN_PROGRESS').length}
                   </div>
                   <p className="text-[10px] text-emerald-400/80 font-bold">GPS Live Location Monitoring Active</p>
                 </div>
@@ -1122,8 +1146,9 @@ export default function AdminDashboardPage() {
                     <DollarSign className="w-4 h-4 text-indigo-400" />
                   </div>
                   <div className="text-2xl font-black text-indigo-400 font-mono">
-                    ${bookings.reduce((acc, b) => acc + (b.platformFee || 0), 0).toLocaleString()}.00
+                    ${bookings.reduce((acc: number, b: BookingDetails) => acc + (b.platformFee || 0), 0).toLocaleString()}.00
                   </div>
+
                   <p className="text-[10px] text-slate-500">From 10% platform commission fee</p>
                 </div>
               </div>
@@ -1166,26 +1191,27 @@ export default function AdminDashboardPage() {
                 let filtered = [...bookings];
 
                 if (subFilter === 'pending') {
-                  filtered = filtered.filter(b => b.status === 'PENDING_APPROVAL');
+                  filtered = filtered.filter((b: BookingDetails) => b.status === 'PENDING_APPROVAL');
                 } else if (subFilter === 'escrow-locked') {
-                  filtered = filtered.filter(b => b.status === 'ESCROW_LOCKED' || b.escrowStatus === 'HELD');
+                  filtered = filtered.filter((b: BookingDetails) => b.status === 'ESCROW_LOCKED' || b.escrowStatus === 'HELD');
                 } else if (subFilter === 'in-progress') {
-                  filtered = filtered.filter(b => b.status === 'IN_PROGRESS');
+                  filtered = filtered.filter((b: BookingDetails) => b.status === 'IN_PROGRESS');
                 } else if (subFilter === 'completed') {
-                  filtered = filtered.filter(b => b.status === 'COMPLETED');
+                  filtered = filtered.filter((b: BookingDetails) => b.status === 'COMPLETED');
                 } else if (subFilter === 'cancelled') {
-                  filtered = filtered.filter(b => b.status === 'CANCELLED');
+                  filtered = filtered.filter((b: BookingDetails) => b.status === 'CANCELLED');
                 }
 
                 if (searchQuery.trim()) {
                   const q = searchQuery.toLowerCase();
-                  filtered = filtered.filter(b =>
+                  filtered = filtered.filter((b: BookingDetails) =>
                     b.bookingNumber.toLowerCase().includes(q) ||
                     b.userName.toLowerCase().includes(q) ||
                     b.companionName.toLowerCase().includes(q) ||
                     b.category.toLowerCase().includes(q)
                   );
                 }
+
 
                 if (filtered.length === 0) {
                   return (
@@ -1199,7 +1225,8 @@ export default function AdminDashboardPage() {
 
                 return (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {filtered.map((b) => (
+                    {filtered.map((b: BookingDetails) => (
+
                       <BookingCard
                         key={b.id}
                         booking={b}
@@ -1234,7 +1261,7 @@ export default function AdminDashboardPage() {
                     <DollarSign className="w-4 h-4 text-indigo-400" />
                   </div>
                   <div className="text-2xl font-black text-white font-mono">
-                    ${transactions.reduce((acc, t) => acc + t.amount, 0).toLocaleString()}.00
+                    ${transactions.reduce((acc: number, t: FinancialTransaction) => acc + t.amount, 0).toLocaleString()}.00
                   </div>
                   <p className="text-[10px] text-slate-500">Gross ledger throughput</p>
                 </div>
@@ -1245,7 +1272,7 @@ export default function AdminDashboardPage() {
                     <Lock className="w-4 h-4 text-amber-400" />
                   </div>
                   <div className="text-2xl font-black text-amber-400 font-mono">
-                    ${transactions.filter(t => t.status === 'HELD_IN_ESCROW').reduce((acc, t) => acc + t.amount, 0).toLocaleString()}.00
+                    ${transactions.filter((t: FinancialTransaction) => t.status === 'HELD_IN_ESCROW').reduce((acc: number, t: FinancialTransaction) => acc + t.amount, 0).toLocaleString()}.00
                   </div>
                   <p className="text-[10px] text-amber-400/80 font-bold">Secured in Partner Bank Vault</p>
                 </div>
@@ -1256,7 +1283,7 @@ export default function AdminDashboardPage() {
                     <ArrowUpRight className="w-4 h-4 text-emerald-400" />
                   </div>
                   <div className="text-2xl font-black text-emerald-400 font-mono">
-                    ${payouts.filter(p => p.status === 'PAID').reduce((acc, p) => acc + p.amount, 0).toLocaleString()}.00
+                    ${payouts.filter((p: PayoutRecord) => p.status === 'PAID').reduce((acc: number, p: PayoutRecord) => acc + p.amount, 0).toLocaleString()}.00
                   </div>
                   <p className="text-[10px] text-emerald-400/80 font-bold">{payouts.length} Direct Bank Wires Executed</p>
                 </div>
@@ -1267,8 +1294,9 @@ export default function AdminDashboardPage() {
                     <CreditCard className="w-4 h-4 text-indigo-400" />
                   </div>
                   <div className="text-2xl font-black text-indigo-400 font-mono">
-                    ${transactions.reduce((acc, t) => acc + t.platformFee, 0).toLocaleString()}.00
+                    ${transactions.reduce((acc: number, t: FinancialTransaction) => acc + t.platformFee, 0).toLocaleString()}.00
                   </div>
+
                   <p className="text-[10px] text-slate-500">From 10% platform fee policy</p>
                 </div>
               </div>
@@ -1328,7 +1356,8 @@ export default function AdminDashboardPage() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {gateways.map((gw) => (
+                    {gateways.map((gw: PaymentGatewayConfig) => (
+
                       <div key={gw.id} className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-4 flex flex-col justify-between">
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
@@ -1368,7 +1397,8 @@ export default function AdminDashboardPage() {
               ) : (
                 /* View 2: Transaction Table View */
                 (() => {
-                  const filteredTxns = transactions.filter((t) => {
+                  const filteredTxns = transactions.filter((t: FinancialTransaction) => {
+
                     if (searchQuery.trim()) {
                       const q = searchQuery.toLowerCase();
                       const match = t.transactionRef.toLowerCase().includes(q) ||
@@ -1399,6 +1429,175 @@ export default function AdminDashboardPage() {
               )}
             </div>
           )}
+
+          {/* ==================================================== */}
+          {/* MODULE: 🎟 PROMOTIONS & COUPONS                       */}
+          {/* ==================================================== */}
+          {activeTab === 'promotions' && (
+            <div className="space-y-6">
+              {/* Top Metrics KPI Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>Total Active Campaigns</span>
+                    <Ticket className="w-4 h-4 text-purple-400" />
+                  </div>
+                  <div className="text-2xl font-black text-white font-mono">
+                    {promos.filter((p: PromoCodeItem) => p.isActive).length} / {promos.length}
+                  </div>
+                  <p className="text-[10px] text-slate-500">Live promo campaigns</p>
+                </div>
+
+                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>Total Coupon Redemptions</span>
+                    <Users className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <div className="text-2xl font-black text-emerald-400 font-mono">
+                    {promos.reduce((acc: number, p: PromoCodeItem) => acc + p.usageCount, 0).toLocaleString()}
+                  </div>
+                  <p className="text-[10px] text-emerald-400/80 font-bold">Successful client uses</p>
+                </div>
+
+                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>Client Savings Granted</span>
+                    <Gift className="w-4 h-4 text-indigo-400" />
+                  </div>
+                  <div className="text-2xl font-black text-indigo-400 font-mono">
+                    ${promos.reduce((acc: number, p: PromoCodeItem) => acc + (p.usageCount * (p.discountValue || p.discountPercent || p.flatDiscount || 15)), 0).toLocaleString()}.00
+                  </div>
+                  <p className="text-[10px] text-slate-500">Total customer discount value</p>
+                </div>
+
+                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>Driven Booking Volume</span>
+                    <TrendingUp className="w-4 h-4 text-amber-400" />
+                  </div>
+                  <div className="text-2xl font-black text-amber-400 font-mono">
+                    ${(promos.reduce((acc: number, p: PromoCodeItem) => acc + p.usageCount, 0) * 280).toLocaleString()}.00
+                  </div>
+                  <p className="text-[10px] text-amber-400/80 font-bold">Attributed gross booking revenue</p>
+                </div>
+
+              </div>
+
+              {/* Sub-Filter Tabs & Action Toolbar */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900 p-4 rounded-3xl border border-slate-800">
+                <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
+                  {[
+                    { id: 'all-promos', label: 'All Coupons' },
+                    { id: 'active-live', label: '⚡ Active & Live' },
+                    { id: 'percentage-off', label: '% Percentage Discount' },
+                    { id: 'flat-discount', label: '$ Flat Savings' },
+                    { id: 'expired-promos', label: '⏳ Expired & Paused' }
+                  ].map((filter) => (
+                    <button
+                      key={filter.id}
+                      onClick={() => setSubFilter(filter.id)}
+                      className={`px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${
+                        subFilter === filter.id || (subFilter === 'all' && filter.id === 'all-promos')
+                          ? 'gradient-bg-primary text-white shadow-md shadow-purple-600/30'
+                          : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                      }`}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <div className="relative flex-1 sm:w-64">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                    <input
+                      type="text"
+                      placeholder="Search code, title or terms..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setEditingPromo(null);
+                      setIsPromoFormOpen(true);
+                    }}
+                    className="px-4 py-2 rounded-2xl gradient-bg-primary text-white text-xs font-extrabold flex items-center gap-1.5 shadow-lg shadow-purple-600/30 shrink-0 hover:scale-[1.02] transition-transform"
+                  >
+                    <Plus className="w-4 h-4" /> Create Promo Code
+                  </button>
+                </div>
+              </div>
+
+              {/* Promo Card Grid */}
+              {(() => {
+                const today = new Date().toISOString().split('T')[0];
+                let filtered = promos.filter((p: PromoCodeItem) => {
+                  if (searchQuery.trim()) {
+                    const q = searchQuery.toLowerCase();
+                    const match = p.code.toLowerCase().includes(q) ||
+                      p.title.toLowerCase().includes(q) ||
+                      (p.description && p.description.toLowerCase().includes(q));
+                    if (!match) return false;
+                  }
+
+                  if (subFilter === 'active-live') return p.isActive && (!p.expiryDate || p.expiryDate >= today);
+                  if (subFilter === 'percentage-off') return p.discountType === 'PERCENTAGE' || p.discountPercent;
+                  if (subFilter === 'flat-discount') return p.discountType === 'FLAT_AMOUNT' || p.flatDiscount;
+                  if (subFilter === 'expired-promos') return !p.isActive || (p.expiryDate && p.expiryDate < today);
+
+                  return true;
+                });
+
+                if (filtered.length === 0) {
+                  return (
+                    <div className="p-12 text-center rounded-3xl bg-slate-900 border border-slate-800 space-y-3">
+                      <Ticket className="w-10 h-10 text-slate-600 mx-auto" />
+                      <h4 className="text-base font-bold text-white">No Promotions Found</h4>
+                      <p className="text-xs text-slate-400">There are no promo codes matching your sub-filter or search query.</p>
+                      <button
+                        onClick={() => {
+                          setEditingPromo(null);
+                          setIsPromoFormOpen(true);
+                        }}
+                        className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold inline-flex items-center gap-1"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Create Promo Code
+                      </button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filtered.map((p: PromoCodeItem) => (
+
+                      <PromoCard
+                        key={p.id}
+                        promo={p}
+                        onEdit={(p) => {
+                          setEditingPromo(p);
+                          setIsPromoFormOpen(true);
+                        }}
+                        onAudit={(p) => setViewingPromo(p)}
+                        onToggleActive={(id) => {
+                          togglePromoCode(id);
+                          triggerNotify(`Promo code #${id} status toggled!`);
+                        }}
+                        onDelete={(id) => {
+                          deletePromoCode(id);
+                          triggerNotify(`Promo code #${id} deleted!`);
+                        }}
+                      />
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
 
 
           {/* ==================================================== */}
@@ -1536,7 +1735,7 @@ export default function AdminDashboardPage() {
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                   </div>
                   <div className="text-2xl font-black text-emerald-400 font-mono">
-                    {locations.filter(l => l.isActive).length} Hubs
+                    {locations.filter((l: LocationItem) => l.isActive).length} Hubs
                   </div>
                   <p className="text-[10px] text-emerald-400/80 font-bold">100% Monitored via GPS Geofencing</p>
                 </div>
@@ -1547,7 +1746,7 @@ export default function AdminDashboardPage() {
                     <ShieldCheck className="w-4 h-4 text-indigo-400" />
                   </div>
                   <div className="text-2xl font-black text-indigo-400 font-mono">
-                    {locations.reduce((acc, l) => acc + (l.geofencedZones?.length || 0), 0)}
+                    {locations.reduce((acc: number, l: LocationItem) => acc + (l.geofencedZones?.length || 0), 0)}
                   </div>
                   <p className="text-[10px] text-slate-500">High-security meeting perimeters</p>
                 </div>
@@ -1558,8 +1757,9 @@ export default function AdminDashboardPage() {
                     <Zap className="w-4 h-4 text-amber-400" />
                   </div>
                   <div className="text-2xl font-black text-amber-400 font-mono">
-                    {locations.filter(l => l.surgePricingMultiplier > 1.0).length} Cities
+                    {locations.filter((l: LocationItem) => l.surgePricingMultiplier > 1.0).length} Cities
                   </div>
+
                   <p className="text-[10px] text-amber-400/80 font-bold">Peak demand surge activated</p>
                 </div>
               </div>
@@ -1616,7 +1816,7 @@ export default function AdminDashboardPage() {
 
               {/* Cards Grid */}
               {(() => {
-                const filteredLocations = locations.filter((loc) => {
+                const filteredLocations = locations.filter((loc: LocationItem) => {
                   if (searchQuery.trim()) {
                     const q = searchQuery.toLowerCase();
                     const matchName = loc.name.toLowerCase().includes(q) || loc.country.toLowerCase().includes(q) || (loc.state && loc.state.toLowerCase().includes(q));
@@ -1645,7 +1845,8 @@ export default function AdminDashboardPage() {
 
                 return (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredLocations.map((loc) => (
+                    {filteredLocations.map((loc: LocationItem) => (
+
                       <LocationCard
                         key={loc.id}
                         location={loc}
@@ -1691,32 +1892,6 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
-          {/* ==================================================== */}
-          {/* MODULE 14: 🎁 PROMOTIONS                             */}
-          {/* ==================================================== */}
-          {activeTab === 'promotions' && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                {['coupons', 'promo-codes', 'campaigns', 'referral-program'].map((s) => (
-                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
-                    {s.replace('-', ' ')}
-                  </button>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {promos.map(p => (
-                  <div key={p.id} className="p-5 rounded-3xl bg-slate-900 border border-slate-800 flex justify-between items-center">
-                    <div>
-                      <span className="font-mono font-bold text-purple-400 text-sm">{p.code}</span>
-                      <p className="text-xs text-slate-400">{p.discountPercent}% Discount</p>
-                    </div>
-                    <button onClick={() => togglePromoCode(p.id)} className={`px-3 py-1 rounded-full text-xs font-bold ${p.isActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-500'}`}>{p.isActive ? 'Active' : 'Disabled'}</button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* ==================================================== */}
           {/* MODULE 15: 📈 ANALYTICS & REPORTS                     */}
@@ -2149,9 +2324,38 @@ export default function AdminDashboardPage() {
         }}
       />
 
+      {/* Promo Code Form Modal */}
+      <PromoFormModal
+        isOpen={isPromoFormOpen}
+        promo={editingPromo}
+        onClose={() => {
+          setIsPromoFormOpen(false);
+          setEditingPromo(null);
+        }}
+        onSave={(data) => {
+          if ('id' in data && data.id) {
+            updatePromoCode(data.id, data);
+            triggerNotify(`Promo code "${data.code}" updated successfully!`);
+          } else {
+            addPromoCode(data);
+            triggerNotify(`New promo code "${data.code}" created successfully!`);
+          }
+          setIsPromoFormOpen(false);
+          setEditingPromo(null);
+        }}
+      />
+
+      {/* Promo Details Audit Modal */}
+      <PromoDetailsModal
+        isOpen={!!viewingPromo}
+        promo={viewingPromo}
+        onClose={() => setViewingPromo(null)}
+      />
+
     </div>
   );
 }
+
 
 
 

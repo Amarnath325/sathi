@@ -17,25 +17,26 @@ export default function ServiceCategoriesCatalogPage() {
   const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | null>(null);
 
   const activeCategories = useMemo(() => {
-    return categories.filter(c => c.isActive);
+    return categories.filter((c: ServiceCategory) => c.isActive);
   }, [categories]);
 
   const featuredCategories = useMemo(() => {
-    return activeCategories.filter(c => c.isFeatured);
+    return activeCategories.filter((c: ServiceCategory) => c.isFeatured);
   }, [activeCategories]);
 
   const filteredCategories = useMemo(() => {
-    return activeCategories.filter(cat => {
+    return activeCategories.filter((cat: ServiceCategory) => {
       const matchesSearch =
         cat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         cat.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (cat.subcategories || []).some(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()));
+        (cat.subcategories || []).some((s: { name: string }) => s.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
       const matchesRisk = selectedRisk === 'ALL' || cat.riskLevel === selectedRisk;
 
       return matchesSearch && matchesRisk;
     });
   }, [activeCategories, searchQuery, selectedRisk]);
+
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
@@ -95,7 +96,7 @@ export default function ServiceCategoriesCatalogPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredCategories.map((cat) => (
+            {featuredCategories.map((cat: ServiceCategory) => (
               <CategoryCard
                 key={cat.id}
                 category={cat}
@@ -117,7 +118,8 @@ export default function ServiceCategoriesCatalogPage() {
 
         {filteredCategories.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredCategories.map((cat) => (
+            {filteredCategories.map((cat: ServiceCategory) => (
+
               <CategoryCard
                 key={cat.id}
                 category={cat}

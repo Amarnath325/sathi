@@ -1,12 +1,11 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { ServiceCategory, SubCategoryItem, RiskLevel, BookingDetails, BookingStatus, EscrowStatus, LocationItem, GeofenceZone, PopularVenue, FinancialTransaction, PayoutRecord, PaymentGatewayConfig } from './types';
+import { ServiceCategory, SubCategoryItem, RiskLevel, BookingDetails, BookingStatus, EscrowStatus, LocationItem, GeofenceZone, PopularVenue, FinancialTransaction, PayoutRecord, PaymentGatewayConfig, PromoCodeItem } from './types';
 import { INITIAL_CATEGORIES } from './initialCategories';
 import { INITIAL_BOOKINGS } from './initialBookings';
 import { INITIAL_LOCATIONS } from './initialLocations';
 import { INITIAL_TRANSACTIONS, INITIAL_PAYOUTS, INITIAL_GATEWAYS } from './initialPayments';
-
-
+import { INITIAL_PROMOS } from './initialPromos';
 
 export interface SystemConfig {
   platformFeePercent: number;
@@ -26,16 +25,6 @@ export interface SystemConfig {
 }
 
 
-export interface PromoCodeItem {
-  id: string;
-  code: string;
-  discountPercent: number;
-  flatDiscount: number;
-  expiryDate: string;
-  usageCount: number;
-  isActive: boolean;
-}
-
 interface AdminStore {
   config: SystemConfig;
   promos: PromoCodeItem[];
@@ -49,9 +38,12 @@ interface AdminStore {
 
   // Actions
   updateConfig: (newConfig: Partial<SystemConfig>) => void;
-  addPromoCode: (promo: Omit<PromoCodeItem, 'id' | 'usageCount'>) => void;
+  addPromoCode: (promo: Omit<PromoCodeItem, 'id' | 'usageCount'>) => PromoCodeItem;
+  updatePromoCode: (id: string, updates: Partial<PromoCodeItem>) => void;
   togglePromoCode: (id: string) => void;
   deletePromoCode: (id: string) => void;
+  validatePromoCode: (code: string, bookingAmount: number, categoryId?: string) => { isValid: boolean; discountAmount: number; finalAmount: number; error?: string; promo?: PromoCodeItem };
+
 
   // Category Actions
   addCategory: (cat: Omit<ServiceCategory, 'id' | 'companionCount' | 'createdAt'>) => void;
@@ -92,9 +84,8 @@ interface AdminStore {
 
 
 export const useAdminStore = create<AdminStore>()(
-
   persist(
-    (set) => ({
+    (set, get) => ({
       config: {
         platformFeePercent: 10,
         escrowHoldingFeePercent: 5,
@@ -112,11 +103,7 @@ export const useAdminStore = create<AdminStore>()(
         instantChatEnabled: true,
       },
 
-      promos: [
-        { id: 'p-1', code: 'WELCOME10', discountPercent: 10, flatDiscount: 0, expiryDate: '2026-12-31', usageCount: 1420, isActive: true },
-        { id: 'p-2', code: 'SAFETYFIRST', discountPercent: 0, flatDiscount: 20, expiryDate: '2026-10-15', usageCount: 890, isActive: true },
-        { id: 'p-3', code: 'VIP2026', discountPercent: 15, flatDiscount: 0, expiryDate: '2026-11-30', usageCount: 310, isActive: true },
-      ],
+      promos: INITIAL_PROMOS,
       categories: INITIAL_CATEGORIES,
       bookings: INITIAL_BOOKINGS,
       locations: INITIAL_LOCATIONS,
@@ -125,20 +112,25 @@ export const useAdminStore = create<AdminStore>()(
       gateways: INITIAL_GATEWAYS,
       suspendedUserIds: [],
 
-
-
       updateConfig: (newConfig) =>
-
         set((state) => ({
           config: { ...state.config, ...newConfig }
         })),
 
-      addPromoCode: (promo) =>
+      addPromoCode: (promo) => {
+        const newPromo: PromoCodeItem = {
+          ...promo,
+          id: 'p-' + Date.now(),
+          usageCount: 0,
+          createdAt: new Date().toISOString()
+        };
+        set((state) => ({ promos: [newPromo, ...state.promos] }));
+        return newPromo;
+      },
+
+      updatePromoCode: (id, updates) =>
         set((state) => ({
-          promos: [
-            ...state.promos,
-            { ...promo, id: 'p-' + Date.now(), usageCount: 0 }
-          ]
+          promos: state.promos.map((p) => (p.id === id ? { ...p, ...updates } : p))
         })),
 
       togglePromoCode: (id) =>
@@ -150,6 +142,55 @@ export const useAdminStore = create<AdminStore>()(
         set((state) => ({
           promos: state.promos.filter((p) => p.id !== id)
         })),
+
+      validatePromoCode: (code, bookingAmount, categoryId) => {
+        const currentPromos = get().promos;
+
+        const found = currentPromos.find(p => p.code.toUpperCase() === code.trim().toUpperCase());
+
+        if (!found) {
+          return { isValid: false, discountAmount: 0, finalAmount: bookingAmount, error: 'Invalid coupon code' };
+        }
+
+        if (!found.isActive) {
+          return { isValid: false, discountAmount: 0, finalAmount: bookingAmount, error: 'This promo code is currently inactive' };
+        }
+
+        const today = new Date().toISOString().split('T')[0];
+        if (found.expiryDate && found.expiryDate < today) {
+          return { isValid: false, discountAmount: 0, finalAmount: bookingAmount, error: 'This coupon code has expired' };
+        }
+
+        if (found.usageLimit && found.usageCount >= found.usageLimit) {
+          return { isValid: false, discountAmount: 0, finalAmount: bookingAmount, error: 'Coupon usage limit reached' };
+        }
+
+        if (bookingAmount < found.minBookingAmount) {
+          return { isValid: false, discountAmount: 0, finalAmount: bookingAmount, error: `Minimum booking amount of $${found.minBookingAmount} required for this coupon` };
+        }
+
+        let discount = 0;
+        if (found.discountType === 'PERCENTAGE' || found.discountPercent) {
+          const pct = found.discountValue || found.discountPercent || 0;
+          discount = (bookingAmount * pct) / 100;
+          if (found.maxDiscountLimit && discount > found.maxDiscountLimit) {
+            discount = found.maxDiscountLimit;
+          }
+        } else {
+          discount = found.discountValue || found.flatDiscount || 0;
+        }
+
+        discount = Math.min(discount, bookingAmount);
+        const finalAmount = Math.max(0, bookingAmount - discount);
+
+        return {
+          isValid: true,
+          discountAmount: Math.round(discount),
+          finalAmount: Math.round(finalAmount),
+          promo: found
+        };
+      },
+
 
       // Category Actions
       addCategory: (cat) =>
