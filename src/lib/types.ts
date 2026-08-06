@@ -426,6 +426,90 @@ export interface IncidentReport {
   resolvedAt?: string;
 }
 
+// ==========================================
+// ⚖️ DISPUTE & RESOLUTION MODULE TYPES
+// ==========================================
+export type DisputeCategory = 
+  | 'NO_SHOW' 
+  | 'SERVICE_QUALITY' 
+  | 'INAPPROPRIATE_BEHAVIOR' 
+  | 'UNAUTHORIZED_FEE' 
+  | 'TIMELINESS' 
+  | 'SAFETY_VIOLATION' 
+  | 'OTHER';
+
+export type DisputeStatus = 
+  | 'OPEN_LODGED' 
+  | 'UNDER_ARBITRATION' 
+  | 'EVIDENCE_REQUIRED' 
+  | 'RESOLVED_REFUNDED' 
+  | 'RESOLVED_DISMISSED' 
+  | 'ESCALATED_MANAGEMENT' 
+  | 'CLOSED';
+
+export type ResolutionOutcome = 
+  | 'FULL_REFUND_CUSTOMER' 
+  | 'PARTIAL_REFUND' 
+  | 'RELEASE_COMPANION' 
+  | 'COMPANION_PENALIZED' 
+  | 'MUTUAL_SETTLEMENT' 
+  | 'DISMISSED';
+
+export interface DisputeEvidence {
+  id: string;
+  title: string;
+  fileUrl: string;
+  fileType: 'IMAGE' | 'AUDIO' | 'PDF' | 'VIDEO';
+  uploadedBy: string;
+  uploaderRole: 'CUSTOMER' | 'COMPANION' | 'ADMIN';
+  uploadedAt: string;
+}
+
+export interface DisputeMessage {
+  id: string;
+  disputeId: string;
+  senderId: string;
+  senderName: string;
+  senderRole: 'CUSTOMER' | 'COMPANION' | 'ADMIN';
+  senderAvatar?: string;
+  message: string;
+  isArbitratorNote?: boolean;
+  attachments?: string[];
+  sentAt: string;
+}
+
+export interface DisputeTicket {
+  id: string;
+  disputeRef: string;
+  bookingId: string;
+  bookingNumber: string;
+  customerId: string;
+  customerName: string;
+  customerEmail: string;
+  customerAvatar?: string;
+  companionId: string;
+  companionName: string;
+  companionEmail: string;
+  companionAvatar?: string;
+  disputedAmount: number;
+  escrowStatus: 'HELD' | 'REFUNDED' | 'RELEASED' | 'FROZEN';
+  category: DisputeCategory;
+  reason: string;
+  detailedDescription: string;
+  status: DisputeStatus;
+  resolutionOutcome?: ResolutionOutcome;
+  refundAmountIssued?: number;
+  penaltyDeducted?: number;
+  assignedArbitrator?: string;
+  adminNotes?: string;
+  evidence: DisputeEvidence[];
+  messages: DisputeMessage[];
+  filedAt: string;
+  updatedAt: string;
+  resolvedAt?: string;
+}
+
+
 
 
 

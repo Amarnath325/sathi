@@ -1,12 +1,14 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { ServiceCategory, SubCategoryItem, RiskLevel, BookingDetails, BookingStatus, EscrowStatus, LocationItem, GeofenceZone, PopularVenue, FinancialTransaction, PayoutRecord, PaymentGatewayConfig, PromoCodeItem, SosAlertItem, SosAlertStatus, SosAlertSeverity, IncidentReport, IncidentStatus, IncidentCategory, DisciplinaryAction } from './types';
+import { ServiceCategory, SubCategoryItem, RiskLevel, BookingDetails, BookingStatus, EscrowStatus, LocationItem, GeofenceZone, PopularVenue, FinancialTransaction, PayoutRecord, PaymentGatewayConfig, PromoCodeItem, SosAlertItem, SosAlertStatus, SosAlertSeverity, IncidentReport, IncidentStatus, IncidentCategory, DisciplinaryAction, DisputeTicket, DisputeMessage, DisputeEvidence, DisputeStatus, ResolutionOutcome } from './types';
 import { INITIAL_CATEGORIES } from './initialCategories';
 import { INITIAL_BOOKINGS } from './initialBookings';
 import { INITIAL_LOCATIONS } from './initialLocations';
 import { INITIAL_TRANSACTIONS, INITIAL_PAYOUTS, INITIAL_GATEWAYS } from './initialPayments';
 import { INITIAL_PROMOS } from './initialPromos';
 import { INITIAL_SOS_ALERTS, INITIAL_INCIDENT_REPORTS } from './initialSafety';
+import { MOCK_DISPUTES } from './mockData';
+
 
 export interface SystemConfig {
   platformFeePercent: number;
@@ -37,10 +39,16 @@ interface AdminStore {
   gateways: PaymentGatewayConfig[];
   sosAlerts: SosAlertItem[];
   incidentReports: IncidentReport[];
+  disputes: DisputeTicket[];
   suspendedUserIds: string[];
 
   // Actions
   updateConfig: (newConfig: Partial<SystemConfig>) => void;
+  fileDispute: (disputeData: Omit<DisputeTicket, 'id' | 'disputeRef' | 'filedAt' | 'updatedAt' | 'messages' | 'evidence'>) => DisputeTicket;
+  addDisputeMessage: (disputeId: string, message: Omit<DisputeMessage, 'id' | 'disputeId' | 'sentAt'>) => void;
+  resolveDispute: (disputeId: string, outcome: ResolutionOutcome, refundAmount?: number, penaltyAmount?: number, adminNotes?: string) => void;
+  escalateDispute: (disputeId: string, reason: string) => void;
+
   addPromoCode: (promo: Omit<PromoCodeItem, 'id' | 'usageCount'>) => PromoCodeItem;
   updatePromoCode: (id: string, updates: Partial<PromoCodeItem>) => void;
   togglePromoCode: (id: string) => void;
@@ -123,13 +131,84 @@ export const useAdminStore = create<AdminStore>()(
       gateways: INITIAL_GATEWAYS,
       sosAlerts: INITIAL_SOS_ALERTS,
       incidentReports: INITIAL_INCIDENT_REPORTS,
+      disputes: MOCK_DISPUTES,
       suspendedUserIds: [],
-
 
       updateConfig: (newConfig) =>
         set((state) => ({
           config: { ...state.config, ...newConfig }
         })),
+
+      fileDispute: (disputeData) => {
+        const newDispute: DisputeTicket = {
+          ...disputeData,
+          id: 'disp-' + Date.now(),
+          disputeRef: 'DSP-2026-' + Math.floor(1000 + Math.random() * 9000),
+          status: 'OPEN_LODGED',
+          evidence: [],
+          messages: [],
+          filedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        set((state) => ({ disputes: [newDispute, ...state.disputes] }));
+        return newDispute;
+      },
+
+      addDisputeMessage: (disputeId, msg) =>
+        set((state) => ({
+          disputes: state.disputes.map((d) =>
+            d.id === disputeId
+              ? {
+                  ...d,
+                  status: d.status === 'OPEN_LODGED' ? 'UNDER_ARBITRATION' : d.status,
+                  updatedAt: new Date().toISOString(),
+                  messages: [
+                    ...d.messages,
+                    {
+                      ...msg,
+                      id: 'msg-d-' + Date.now(),
+                      disputeId,
+                      sentAt: new Date().toISOString()
+                    }
+                  ]
+                }
+              : d
+          )
+        })),
+
+      resolveDispute: (disputeId, outcome, refundAmount, penaltyAmount, adminNotes) =>
+        set((state) => ({
+          disputes: state.disputes.map((d) =>
+            d.id === disputeId
+              ? {
+                  ...d,
+                  status: outcome === 'FULL_REFUND_CUSTOMER' || outcome === 'PARTIAL_REFUND' ? 'RESOLVED_REFUNDED' : 'RESOLVED_DISMISSED',
+                  resolutionOutcome: outcome,
+                  refundAmountIssued: refundAmount || 0,
+                  penaltyDeducted: penaltyAmount || 0,
+                  adminNotes: adminNotes ? `${d.adminNotes || ''} | ${adminNotes}` : d.adminNotes,
+                  escrowStatus: outcome === 'FULL_REFUND_CUSTOMER' || outcome === 'PARTIAL_REFUND' ? 'REFUNDED' : 'RELEASED',
+                  resolvedAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString()
+                }
+              : d
+          )
+        })),
+
+      escalateDispute: (disputeId, reason) =>
+        set((state) => ({
+          disputes: state.disputes.map((d) =>
+            d.id === disputeId
+              ? {
+                  ...d,
+                  status: 'ESCALATED_MANAGEMENT',
+                  adminNotes: `${d.adminNotes || ''} | Escalated: ${reason}`,
+                  updatedAt: new Date().toISOString()
+                }
+              : d
+          )
+        })),
+
 
       addPromoCode: (promo) => {
         const newPromo: PromoCodeItem = {

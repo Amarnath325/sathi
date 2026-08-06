@@ -81,6 +81,10 @@ import { SosAlertItem, IncidentReport, DisciplinaryAction, IncidentStatus } from
 import { UserManagementModule } from '@/components/admin/UserManagementModule';
 import { KycVerificationModule } from '@/components/admin/KycVerificationModule';
 import { PageSizeOption, PaginationFooter } from '@/components/common/PaginationBar';
+import { DisputeAuditModal } from '@/components/dispute/DisputeAuditModal';
+import { DisputeThreadDrawer } from '@/components/dispute/DisputeThreadDrawer';
+import { DisputeTicket } from '@/lib/types';
+
 
 import { CompanionStatusBadge } from '@/components/companion/CompanionStatusBadge';
 import { CompanionFormModal } from '@/components/companion/CompanionFormModal';
@@ -192,11 +196,17 @@ export default function AdminDashboardPage() {
     updateIncidentStatus,
     triggerSosAlert,
     suspendedUserIds,
-    toggleUserSuspension
+    toggleUserSuspension,
+    disputes
   } = useAdminStore();
+
+  // Dispute Modal & Drawer States
+  const [auditingDispute, setAuditingDispute] = useState<DisputeTicket | null>(null);
+  const [drawerDispute, setDrawerDispute] = useState<DisputeTicket | null>(null);
 
   // Trust & Safety Modal States
   const [selectedSosAlert, setSelectedSosAlert] = useState<SosAlertItem | null>(null);
+
   const [isSosDispatchModalOpen, setIsSosDispatchModalOpen] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<IncidentReport | null>(null);
   const [isIncidentAuditModalOpen, setIsIncidentAuditModalOpen] = useState(false);
@@ -2145,6 +2155,244 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
+          {/* ==================================================== */}
+          {/* MODULE 14.5: ⚖️ DISPUTES & RESOLUTION COMMAND CENTER */}
+          {/* ==================================================== */}
+          {activeTab === 'disputes' && (
+            <div className="space-y-6">
+              {/* Header Info */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-3xl bg-slate-900 border border-slate-800">
+                <div>
+                  <h3 className="font-extrabold text-white text-lg flex items-center gap-2">
+                    <Scale className="w-5 h-5 text-purple-400" /> Dispute & Arbitration Command Center
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Arbitrate booking conflicts, review evidence logs, lock/release escrow funds, and issue partial or full refunds.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Link
+                    href="/disputes"
+                    target="_blank"
+                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs flex items-center gap-1.5 transition-all border border-slate-700"
+                  >
+                    Public Dispute Hub <ExternalLink className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              </div>
+
+              {/* KPI Metrics */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-1">
+                  <span className="text-[10px] uppercase font-mono text-slate-400 block">Total Dispute Cases</span>
+                  <div className="text-xl font-bold text-white">{disputes.length} Cases</div>
+                  <span className="text-[10px] text-purple-400 font-medium">All Time Tickets</span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-1">
+                  <span className="text-[10px] uppercase font-mono text-slate-400 block">Pending Arbitration</span>
+                  <div className="text-xl font-bold text-amber-400">
+                    {disputes.filter(d => d.status === 'OPEN_LODGED' || d.status === 'UNDER_ARBITRATION').length} Active
+                  </div>
+                  <span className="text-[10px] text-amber-500 font-medium">Escrow Locked</span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-1">
+                  <span className="text-[10px] uppercase font-mono text-slate-400 block">Escrow Funds Frozen</span>
+                  <div className="text-xl font-mono font-bold text-emerald-400">
+                    ${disputes.reduce((acc, d) => (d.escrowStatus === 'FROZEN' || d.escrowStatus === 'HELD' ? acc + d.disputedAmount : acc), 0)}
+                  </div>
+                  <span className="text-[10px] text-slate-500">Held in Vault</span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-1">
+                  <span className="text-[10px] uppercase font-mono text-slate-400 block">Resolved & Settled</span>
+                  <div className="text-xl font-bold text-indigo-400">
+                    {disputes.filter(d => d.status.startsWith('RESOLVED')).length} Resolved
+                  </div>
+                  <span className="text-[10px] text-emerald-400 font-medium">Customer/Companion Settled</span>
+                </div>
+              </div>
+
+              {/* Sub-Filters */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                {['all', 'open', 'arbitration', 'resolved', 'escalated'].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => { setSubFilter(s); setCurrentPage(1); }}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold capitalize transition-all shrink-0 ${
+                      subFilter === s || (subFilter === 'all' && s === 'all')
+                        ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/25'
+                        : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-slate-200'
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+
+              {/* Toolbar & Data Table */}
+              <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-4">
+                
+                {/* Search & Limit Selector Header */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 w-full sm:w-auto flex-1 max-w-md">
+                    <div className="relative flex-1">
+                      <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        placeholder="Search by dispute ref, customer, companion, reason..."
+                        value={searchQuery}
+                        onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 pl-9 pr-4 text-xs text-white placeholder-slate-500 outline-none focus:border-purple-500"
+                      />
+                    </div>
+
+                    {/* SHOW SELECTOR (RIGHT SIDE OF SEARCH) */}
+                    <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 shrink-0 text-xs">
+                      <span className="text-[11px] text-slate-400 font-bold hidden sm:inline">Show:</span>
+                      <select
+                        value={pageSize}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setPageSize(val === 'All' ? 'All' : Number(val) as PageSizeOption);
+                          setCurrentPage(1);
+                        }}
+                        className="bg-transparent text-white font-bold outline-none cursor-pointer text-xs"
+                      >
+                        <option value={10} className="bg-slate-900 text-white">10</option>
+                        <option value={25} className="bg-slate-900 text-white">25</option>
+                        <option value={50} className="bg-slate-900 text-white">50</option>
+                        <option value={100} className="bg-slate-900 text-white">100</option>
+                        <option value="All" className="bg-slate-900 text-white">All</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 w-full sm:w-auto justify-end text-xs">
+                    <button
+                      onClick={() => triggerNotify('Dispute CSV summary generated.')}
+                      className="px-3 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 font-bold"
+                    >
+                      Export Disputes CSV
+                    </button>
+                  </div>
+                </div>
+
+                {/* Table */}
+                {(() => {
+                  const filtered = disputes.filter(d => {
+                    if (subFilter === 'open') return d.status === 'OPEN_LODGED';
+                    if (subFilter === 'arbitration') return d.status === 'UNDER_ARBITRATION';
+                    if (subFilter === 'resolved') return d.status.startsWith('RESOLVED');
+                    if (subFilter === 'escalated') return d.status === 'ESCALATED_MANAGEMENT';
+                    return true;
+                  }).filter(d => {
+                    if (!searchQuery.trim()) return true;
+                    const q = searchQuery.toLowerCase();
+                    return (
+                      d.disputeRef.toLowerCase().includes(q) ||
+                      d.customerName.toLowerCase().includes(q) ||
+                      d.companionName.toLowerCase().includes(q) ||
+                      d.bookingNumber.toLowerCase().includes(q) ||
+                      d.reason.toLowerCase().includes(q)
+                    );
+                  });
+
+                  const paginated = pageSize === 'All' ? filtered : filtered.slice((currentPage - 1) * (pageSize as number), (currentPage - 1) * (pageSize as number) + (pageSize as number));
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="p-12 text-center text-slate-500 space-y-2">
+                        <Scale className="w-10 h-10 text-slate-700 mx-auto" />
+                        <p className="font-bold text-white text-base">No disputes match your current filter</p>
+                        <p className="text-xs">Adjust search term or switch sub-filter tab.</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-4">
+                      <div className="overflow-x-auto rounded-2xl border border-slate-800">
+                        <table className="w-full text-left border-collapse text-xs">
+                          <thead>
+                            <tr className="border-b border-slate-800 bg-slate-950 text-[10px] font-mono text-slate-400 uppercase">
+                              <th className="py-3 px-4">Dispute Ref</th>
+                              <th className="py-3 px-4">Booking Ref</th>
+                              <th className="py-3 px-4">Customer vs Companion</th>
+                              <th className="py-3 px-4">Category & Reason</th>
+                              <th className="py-3 px-4">Disputed ($)</th>
+                              <th className="py-3 px-4">Status</th>
+                              <th className="py-3 px-4 text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-800">
+                            {paginated.map((d) => (
+                              <tr key={d.id} className="hover:bg-slate-800/40 transition-colors">
+                                <td className="py-3.5 px-4 font-mono font-bold text-purple-400">{d.disputeRef}</td>
+                                <td className="py-3.5 px-4 font-mono text-slate-300">{d.bookingNumber}</td>
+                                <td className="py-3.5 px-4">
+                                  <div className="font-bold text-white">{d.customerName}</div>
+                                  <div className="text-[10px] text-slate-400">vs {d.companionName}</div>
+                                </td>
+                                <td className="py-3.5 px-4 max-w-xs">
+                                  <span className="px-2 py-0.5 rounded-full bg-slate-950 border border-slate-800 text-[10px] font-mono text-slate-300 font-bold block w-max mb-1">
+                                    {d.category.replace('_', ' ')}
+                                  </span>
+                                  <p className="text-slate-400 truncate">{d.reason}</p>
+                                </td>
+                                <td className="py-3.5 px-4 font-mono font-bold text-emerald-400">${d.disputedAmount}</td>
+                                <td className="py-3.5 px-4">
+                                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+                                    d.status.startsWith('RESOLVED')
+                                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                                      : d.status === 'UNDER_ARBITRATION'
+                                      ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                                      : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                                  }`}>
+                                    {d.status.replace('_', ' ')}
+                                  </span>
+                                </td>
+                                <td className="py-3.5 px-4 text-right">
+                                  <div className="flex items-center justify-end gap-2">
+                                    <button
+                                      onClick={() => setDrawerDispute(d)}
+                                      className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold transition-all text-xs"
+                                    >
+                                      Chat Thread ({d.messages.length})
+                                    </button>
+                                    <button
+                                      onClick={() => setAuditingDispute(d)}
+                                      className="px-3 py-1.5 rounded-xl gradient-bg-primary text-white font-bold transition-all text-xs shadow"
+                                    >
+                                      Audit & Resolve
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <PaginationFooter
+                        currentPage={currentPage}
+                        totalItems={filtered.length}
+                        pageSize={pageSize}
+                        onPageChange={(page) => setCurrentPage(page)}
+                        labelSingular="dispute"
+                        labelPlural="disputes"
+                      />
+                    </div>
+                  );
+                })()}
+
+              </div>
+            </div>
+          )}
+
+
 
           {/* ==================================================== */}
           {/* MODULE 15: 📈 ANALYTICS & REPORTS                     */}
@@ -2642,9 +2890,27 @@ export default function AdminDashboardPage() {
           setSelectedIncident(null);
         }}
       />
+
+      {/* Dispute Audit & Financial Settlement Modal */}
+      {auditingDispute && (
+        <DisputeAuditModal
+          dispute={auditingDispute}
+          onClose={() => setAuditingDispute(null)}
+          onSuccessNotification={(msg) => triggerNotify(msg)}
+        />
+      )}
+
+      {/* Dispute Live Arbitration Drawer */}
+      {drawerDispute && (
+        <DisputeThreadDrawer
+          dispute={drawerDispute}
+          onClose={() => setDrawerDispute(null)}
+        />
+      )}
     </div>
   );
 }
+
 
 
 

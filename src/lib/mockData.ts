@@ -1,4 +1,5 @@
-import { UserProfile, Booking, VerificationDocument, ChatMessage, PanicAlert, Review } from './types';
+import { UserProfile, Booking, VerificationDocument, ChatMessage, PanicAlert, Review, DisputeTicket } from './types';
+
 
 export const MOCK_COMPANIONS: UserProfile[] = [
   {
@@ -546,3 +547,143 @@ export const ALL_CATEGORIES = [
   "Conversation Partner",
   "Language Teaching",
 ];
+
+export const MOCK_DISPUTES: DisputeTicket[] = [
+  {
+    id: "disp-101",
+    disputeRef: "DSP-2026-8801",
+    bookingId: "bk-9001",
+    bookingNumber: "CC-2026-8812",
+    customerId: "usr-201",
+    customerName: "Michael Jordan",
+    customerEmail: "michael.j@example.com",
+    customerAvatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80",
+    companionId: "comp-101",
+    companionName: "Sophia Chen",
+    companionEmail: "sophia.chen@example.com",
+    companionAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
+    disputedAmount: 207,
+    escrowStatus: "HELD",
+    category: "SERVICE_QUALITY",
+    reason: "Late Arrival & Early Departure",
+    detailedDescription: "Companion arrived 45 minutes late to the gala venue and departed 30 minutes before the contracted 4-hour slot ended without prior consent.",
+    status: "UNDER_ARBITRATION",
+    assignedArbitrator: "Senior Arbitrator Sarah",
+    evidence: [
+      {
+        id: "ev-1",
+        title: "Venue Entrance Timestamp Photo",
+        fileUrl: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&auto=format&fit=crop&q=80",
+        fileType: "IMAGE",
+        uploadedBy: "Michael Jordan",
+        uploaderRole: "CUSTOMER",
+        uploadedAt: "2026-08-04T20:15:00Z"
+      },
+      {
+        id: "ev-2",
+        title: "Uber Receipt & GPS Log",
+        fileUrl: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=800&auto=format&fit=crop&q=80",
+        fileType: "PDF",
+        uploadedBy: "Sophia Chen",
+        uploaderRole: "COMPANION",
+        uploadedAt: "2026-08-04T21:00:00Z"
+      }
+    ],
+    messages: [
+      {
+        id: "msg-d1",
+        disputeId: "disp-101",
+        senderId: "usr-201",
+        senderName: "Michael Jordan",
+        senderRole: "CUSTOMER",
+        senderAvatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80",
+        message: "I expected full 4 hours as agreed. Being 45 minutes late impacted my corporate reception.",
+        sentAt: "2026-08-04T20:20:00Z"
+      },
+      {
+        id: "msg-d2",
+        disputeId: "disp-101",
+        senderId: "comp-101",
+        senderName: "Sophia Chen",
+        senderRole: "COMPANION",
+        senderAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
+        message: "Traffic was severely delayed due to a road block on Bay Bridge. I notified Mr. Jordan via chat 30 minutes in advance.",
+        sentAt: "2026-08-04T21:05:00Z"
+      },
+      {
+        id: "msg-d3",
+        disputeId: "disp-101",
+        senderId: "admin-1",
+        senderName: "Support Arbitrator",
+        senderRole: "ADMIN",
+        message: "Arbitration team is reviewing GPS records and chat timestamps.",
+        isArbitratorNote: true,
+        sentAt: "2026-08-05T09:00:00Z"
+      }
+    ],
+    filedAt: "2026-08-04T20:10:00Z",
+    updatedAt: "2026-08-05T09:00:00Z"
+  },
+  {
+    id: "disp-102",
+    disputeRef: "DSP-2026-8802",
+    bookingId: "bk-9002",
+    bookingNumber: "CC-2026-9043",
+    customerId: "usr-202",
+    customerName: "Sarah Jenkins",
+    customerEmail: "sarah.j@example.com",
+    customerAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80",
+    companionId: "comp-108",
+    companionName: "Riku Tanaka",
+    companionEmail: "riku.tanaka@example.com",
+    companionAvatar: "https://images.unsplash.com/photo-1578774296842-c45e472b3028?w=500&auto=format&fit=crop&q=80",
+    disputedAmount: 180,
+    escrowStatus: "FROZEN",
+    category: "NO_SHOW",
+    reason: "No Show at Designated Meetup Point",
+    detailedDescription: "Companion failed to show up at Shibuya Station Hachiko exit without cancellation notice.",
+    status: "OPEN_LODGED",
+    evidence: [],
+    messages: [
+      {
+        id: "msg-d4",
+        disputeId: "disp-102",
+        senderId: "usr-202",
+        senderName: "Sarah Jenkins",
+        senderRole: "CUSTOMER",
+        message: "Waited 40 minutes at Hachiko exit. No response to phone calls or messages.",
+        sentAt: "2026-08-05T14:30:00Z"
+      }
+    ],
+    filedAt: "2026-08-05T14:35:00Z",
+    updatedAt: "2026-08-05T14:35:00Z"
+  },
+  {
+    id: "disp-103",
+    disputeRef: "DSP-2026-8790",
+    bookingId: "bk-8990",
+    bookingNumber: "CC-2026-7719",
+    customerId: "usr-205",
+    customerName: "David Kim",
+    customerEmail: "david.kim@example.com",
+    companionId: "comp-103",
+    companionName: "Elena Rostova",
+    companionEmail: "elena.r@example.com",
+    disputedAmount: 240,
+    escrowStatus: "REFUNDED",
+    category: "UNAUTHORIZED_FEE",
+    reason: "Additional Cash Request",
+    detailedDescription: "Claimed companion demanded out-of-pocket cash tip during London shopping tour.",
+    status: "RESOLVED_REFUNDED",
+    resolutionOutcome: "FULL_REFUND_CUSTOMER",
+    refundAmountIssued: 240,
+    penaltyDeducted: 50,
+    adminNotes: "Violated terms section 4.2. Escrow refunded to customer, $50 penalty levied on companion.",
+    evidence: [],
+    messages: [],
+    filedAt: "2026-08-01T11:00:00Z",
+    updatedAt: "2026-08-02T15:20:00Z",
+    resolvedAt: "2026-08-02T15:20:00Z"
+  }
+];
+
