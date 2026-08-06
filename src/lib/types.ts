@@ -35,6 +35,15 @@ export type EscrowStatus = 'HELD' | 'RELEASED_TO_COMPANION' | 'REFUNDED_TO_USER'
 
 export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
+export type CompanionStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'PENDING_VERIFICATION';
+
+export type SortOption = 'rating_desc' | 'price_asc' | 'price_desc' | 'newest' | 'most_booked';
+
+// Availability slot: 7 days x 24 hours grid
+export type AvailabilityGrid = {
+  [day: string]: number[]; // day: 'Mon'|'Tue'... value: array of hours 0-23
+};
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -52,6 +61,7 @@ export interface UserProfile {
   languages: string[];
   hourlyRate: number;
   dailyRate?: number;
+  weeklyRate?: number;
   ratingAvg: number;
   ratingCount: number;
   completedBookings: number;
@@ -60,10 +70,34 @@ export interface UserProfile {
   bio: string;
   isAvailableNow: boolean;
   responseTimeMin: number;
-  riskScore: number; // 0.0 to 1.0
+  riskScore: number;
   riskLevel: RiskLevel;
   experienceYears?: number;
   education?: string;
+  status?: CompanionStatus;
+  suspendedReason?: string;
+  availability?: AvailabilityGrid;
+  createdAt?: string;
+  totalEarnings?: number;
+  socialLinks?: {
+    instagram?: string;
+    linkedin?: string;
+    twitter?: string;
+  };
+}
+
+export interface CompanionFilter {
+  search: string;
+  category: string;
+  city: string;
+  gender: string;
+  minRate: number;
+  maxRate: number;
+  minRating: number;
+  availableNow: boolean;
+  verifiedOnly: boolean;
+  status: CompanionStatus | '';
+  sortBy: SortOption;
 }
 
 export interface Booking {
