@@ -60,7 +60,8 @@ import {
   Sparkles,
   Layers,
   ArrowUpRight,
-  ChevronDown
+  ChevronDown,
+  ExternalLink
 } from 'lucide-react';
 
 import { useAdminStore } from '@/lib/adminStore';
@@ -72,6 +73,10 @@ import { KycVerificationModule } from '@/components/admin/KycVerificationModule'
 import { CompanionStatusBadge } from '@/components/companion/CompanionStatusBadge';
 import { CompanionFormModal } from '@/components/companion/CompanionFormModal';
 import { ImageLightboxModal } from '@/components/common/ImageLightboxModal';
+import { CategoryCard } from '@/components/category/CategoryCard';
+import { CategoryFormModal } from '@/components/category/CategoryFormModal';
+import { CategoryDetailsModal } from '@/components/category/CategoryDetailsModal';
+import { ServiceCategory } from '@/lib/types';
 import Link from 'next/link';
 
 
@@ -120,7 +125,10 @@ export default function AdminDashboardPage() {
     deletePromoCode,
     categories,
     addCategory,
+    updateCategory,
+    deleteCategory,
     toggleCategory,
+    toggleCategoryFeatured,
     suspendedUserIds,
     toggleUserSuspension
   } = useAdminStore();
@@ -147,6 +155,11 @@ export default function AdminDashboardPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [notification, setNotification] = useState<string | null>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+
+  // Category Modal States
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<ServiceCategory | null>(null);
+  const [viewingCategory, setViewingCategory] = useState<ServiceCategory | null>(null);
 
   // Admin User Session info
   const [adminUser, setAdminUser] = useState<{ email: string; fullName: string; role: string } | null>(null);
@@ -810,29 +823,205 @@ export default function AdminDashboardPage() {
           {/* ==================================================== */}
           {activeTab === 'categories' && (
             <div className="space-y-6">
+              {/* Header Bar */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-3xl bg-slate-900 border border-slate-800">
+                <div>
+                  <h3 className="font-extrabold text-white text-lg flex items-center gap-2">
+                    <Layers className="w-5 h-5 text-indigo-400" /> Service & Category Management Hub
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Manage service catalog, pricing multipliers, risk assessment levels & compliance rules ({categories.length} Total Categories)
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Link
+                    href="/categories"
+                    target="_blank"
+                    className="px-3.5 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5"
+                  >
+                    Public Catalog <ExternalLink className="w-3.5 h-3.5" />
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setEditingCategory(null);
+                      setIsCategoryModalOpen(true);
+                    }}
+                    className="px-4 py-2 rounded-xl gradient-bg-primary text-white font-bold text-xs hover:opacity-90 shadow-lg shadow-indigo-600/30 flex items-center gap-1.5"
+                  >
+                    <Plus className="w-4 h-4" /> Add New Category
+                  </button>
+                </div>
+              </div>
+
+              {/* Sub-Filters */}
               <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                {['categories', 'services', 'service-policies', 'pricing-rules', 'risk-levels', 'service-approval'].map((s) => (
-                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
+                {['categories', 'services', 'service-policies', 'pricing-rules', 'risk-levels'].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setSubFilter(s)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold capitalize transition-all shrink-0 ${subFilter === s || (subFilter === 'all' && s === 'categories') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-slate-200'}`}
+                  >
                     {s.replace('-', ' ')}
                   </button>
                 ))}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {categories.map((cat) => (
-                  <div key={cat.id} className="p-6 rounded-3xl bg-slate-900 border border-slate-800 flex items-center justify-between">
-                    <div>
-                      <h4 className="font-bold text-white text-sm">{cat.name}</h4>
-                      <p className="text-xs text-slate-400">{cat.description}</p>
-                    </div>
-                    <button onClick={() => toggleCategory(cat.id)} className={`px-3 py-1 rounded-full text-xs font-bold ${cat.isActive ? 'bg-purple-500/20 text-purple-300' : 'bg-slate-800 text-slate-500'}`}>
-                      {cat.isActive ? 'Enabled' : 'Disabled'}
-                    </button>
+              {/* SUB-VIEW 1: Category Cards Grid */}
+              {(subFilter === 'categories' || subFilter === 'all') && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {categories.map((cat) => (
+                    <CategoryCard
+                      key={cat.id}
+                      category={cat}
+                      isAdmin={true}
+                      onEdit={(c) => {
+                        setEditingCategory(c);
+                        setIsCategoryModalOpen(true);
+                      }}
+                      onDelete={(id) => {
+                        if (confirm(`Are you sure you want to delete category "${cat.name}"?`)) {
+                          deleteCategory(id);
+                          setNotification(`Category "${cat.name}" deleted.`);
+                        }
+                      }}
+                      onToggleActive={(id) => {
+                        toggleCategory(id);
+                        setNotification(`Category status updated.`);
+                      }}
+                      onToggleFeatured={(id) => {
+                        toggleCategoryFeatured(id);
+                        setNotification(`Featured status toggled.`);
+                      }}
+                      onViewDetails={(c) => setViewingCategory(c)}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* SUB-VIEW 2: Flattened Services Table */}
+              {subFilter === 'services' && (
+                <div className="rounded-3xl bg-slate-900 border border-slate-800 overflow-hidden">
+                  <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+                    <h4 className="font-bold text-white text-sm">All Sub-Service Offerings</h4>
+                    <span className="text-xs text-slate-400 font-mono">
+                      {categories.reduce((acc, c) => acc + (c.subcategories?.length || 0), 0)} Total Sub-Services
+                    </span>
                   </div>
-                ))}
-              </div>
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-800 bg-slate-950 text-[10px] font-mono text-slate-400 uppercase">
+                        <th className="py-3.5 px-4">Sub-Service Name</th>
+                        <th className="py-3.5 px-4">Category</th>
+                        <th className="py-3.5 px-4">Base Rate ($/hr)</th>
+                        <th className="py-3.5 px-4">Verification Needed</th>
+                        <th className="py-3.5 px-4">Description</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800">
+                      {categories.flatMap(cat =>
+                        (cat.subcategories || []).map(sub => (
+                          <tr key={sub.id} className="hover:bg-slate-800/40">
+                            <td className="py-3 px-4 font-bold text-white">{sub.name}</td>
+                            <td className="py-3 px-4 text-indigo-400 font-semibold">{cat.name}</td>
+                            <td className="py-3 px-4 font-mono font-bold text-emerald-400">${sub.basePrice}/hr</td>
+                            <td className="py-3 px-4">
+                              {sub.requiredVerification ? (
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">Required</span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 text-[10px]">Optional</span>
+                              )}
+                            </td>
+                            <td className="py-3 px-4 text-slate-400 max-w-xs truncate">{sub.description}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* SUB-VIEW 3: Service Policies */}
+              {subFilter === 'service-policies' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {categories.map((cat) => (
+                    <div key={cat.id} className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-3">
+                      <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <h4 className="font-bold text-white text-base flex items-center gap-2">
+                          <ShieldCheck className="w-4 h-4 text-indigo-400" /> {cat.name} Policy
+                        </h4>
+                        <span className="px-2.5 py-0.5 rounded-full bg-slate-950 border border-slate-700 text-slate-300 font-mono text-[10px]">
+                          Risk: {cat.riskLevel}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-300 leading-relaxed font-light">
+                        {cat.safetyPolicy || 'Standard public venue protocol applies with live GPS tracking.'}
+                      </p>
+                      <div className="pt-2 text-[10px] text-slate-500 flex items-center justify-between font-mono">
+                        <span>Min Companion Age: {cat.minAgeLimit}+</span>
+                        <span>Emergency SOS Dispatch: Enabled</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* SUB-VIEW 4: Pricing Rules & Multipliers */}
+              {subFilter === 'pricing-rules' && (
+                <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-bold text-white text-base">Category Base Rate Multiplier Matrix</h4>
+                      <p className="text-xs text-slate-400">Multipliers are applied to companion base rates during booking calculations.</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {categories.map((cat) => (
+                      <div key={cat.id} className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                        <div>
+                          <span className="font-bold text-white text-xs block">{cat.name}</span>
+                          <span className="text-[10px] text-slate-400">{cat.companionCount} Companions</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-lg font-mono font-black text-emerald-400">{cat.baseRateMultiplier}x</span>
+                          <span className="text-[10px] text-slate-500 block">Multiplier</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* SUB-VIEW 5: Risk Levels Matrix */}
+              {subFilter === 'risk-levels' && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                  {['LOW', 'MEDIUM', 'HIGH'].map((risk) => {
+                    const matched = categories.filter(c => c.riskLevel === risk);
+                    return (
+                      <div key={risk} className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                          <span className="font-black text-white text-sm tracking-wider uppercase">{risk} Risk Tier</span>
+                          <span className="px-2 py-0.5 rounded-full bg-indigo-600/20 text-indigo-300 font-mono text-[10px]">
+                            {matched.length} Categories
+                          </span>
+                        </div>
+                        <div className="space-y-2">
+                          {matched.map(m => (
+                            <div key={m.id} className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between text-xs">
+                              <span className="font-bold text-slate-200">{m.name}</span>
+                              <span className="text-slate-400 font-mono">{m.subcategories?.length || 0} Sub-services</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
+
 
           {/* ==================================================== */}
           {/* MODULE 6: 📅 BOOKING MANAGEMENT                      */}
@@ -1388,6 +1577,33 @@ export default function AdminDashboardPage() {
         onClose={() => setLightboxImage(null)}
       />
 
+      {/* Category Form Modal (Add / Edit) */}
+      <CategoryFormModal
+        isOpen={isCategoryModalOpen}
+        category={editingCategory}
+        onClose={() => {
+          setIsCategoryModalOpen(false);
+          setEditingCategory(null);
+        }}
+        onSave={(catData) => {
+          if (catData.id) {
+            updateCategory(catData.id, catData);
+            setNotification(`Category "${catData.name}" updated successfully.`);
+          } else {
+            addCategory(catData);
+            setNotification(`Category "${catData.name}" created successfully.`);
+          }
+        }}
+      />
+
+      {/* Category Details Modal */}
+      <CategoryDetailsModal
+        isOpen={!!viewingCategory}
+        category={viewingCategory}
+        onClose={() => setViewingCategory(null)}
+      />
+
     </div>
   );
 }
+

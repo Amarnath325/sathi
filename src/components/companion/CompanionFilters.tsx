@@ -27,9 +27,12 @@ const RATINGS = [4.9, 4.8, 4.5, 4.0];
 export function CompanionFilters({ filters, onChange, onReset, totalResults }: Props) {
   const set = (key: keyof CompanionFilter, value: any) => onChange({ ...filters, [key]: value });
 
+  const minR = filters.minRate ?? 0;
+  const maxR = filters.maxRate ?? 9999;
   const hasActiveFilters = filters.search || filters.category || filters.city || filters.gender ||
-    filters.minRate > 0 || filters.maxRate < 500 || filters.minRating > 0 ||
+    minR > 0 || maxR < 500 || filters.minRating > 0 ||
     filters.availableNow || filters.verifiedOnly || filters.status;
+
 
   return (
     <div className="glass-panel rounded-3xl border border-slate-800 p-5 space-y-5">
@@ -126,12 +129,13 @@ export function CompanionFilters({ filters, onChange, onReset, totalResults }: P
       <div>
         <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
           <DollarSign className="w-3 h-3" /> Hourly Rate
-          <span className="ml-auto text-indigo-400 font-bold">${filters.minRate} – ${filters.maxRate === 9999 ? '500+' : filters.maxRate}</span>
+          <span className="ml-auto text-indigo-400 font-bold">${minR} – ${maxR === 9999 ? '500+' : maxR}</span>
         </label>
         <div className="space-y-2">
           <input
             type="range" min={0} max={500} step={5}
-            value={filters.maxRate === 9999 ? 500 : filters.maxRate}
+            value={maxR === 9999 ? 500 : maxR}
+
             onChange={e => set('maxRate', Number(e.target.value) === 500 ? 9999 : Number(e.target.value))}
             className="w-full accent-indigo-500"
           />

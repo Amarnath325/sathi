@@ -43,16 +43,19 @@ export default function CompanionDirectoryPage() {
       const q = filters.search.toLowerCase();
       if (!c.name.toLowerCase().includes(q) && !c.city.toLowerCase().includes(q) && !c.bio.toLowerCase().includes(q)) return false;
     }
-    if (filters.category && !c.categories.some(cat => cat.toLowerCase().includes(filters.category.toLowerCase()))) return false;
+    if (filters.category && !c.categories.some(cat => cat.toLowerCase().includes(filters.category!.toLowerCase()))) return false;
     if (filters.city && !c.city.toLowerCase().includes(filters.city.toLowerCase())) return false;
     if (filters.gender && c.gender !== filters.gender) return false;
-    if (c.hourlyRate < filters.minRate || c.hourlyRate > (filters.maxRate === 9999 ? Infinity : filters.maxRate)) return false;
+    const minR = filters.minRate ?? 0;
+    const maxR = filters.maxRate ?? 9999;
+    if (c.hourlyRate < minR || c.hourlyRate > (maxR === 9999 ? Infinity : maxR)) return false;
     if (c.ratingAvg < filters.minRating) return false;
     if (filters.availableNow && !c.isAvailableNow) return false;
     if (filters.verifiedOnly && !c.verificationBadge) return false;
     if (filters.status && c.status !== filters.status) return false;
     return true;
   });
+
 
   // Sorting
   filtered.sort((a, b) => {

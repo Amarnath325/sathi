@@ -1,9 +1,10 @@
-'use client';
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { ServiceCategory, SubCategoryItem, RiskLevel } from './types';
+import { INITIAL_CATEGORIES } from './initialCategories';
 
 export interface SystemConfig {
+
   platformFeePercent: number;
   escrowHoldingFeePercent: number;
   gstTaxPercent: number;
@@ -24,31 +25,32 @@ export interface PromoCodeItem {
   isActive: boolean;
 }
 
-export interface CategoryItem {
-  id: string;
-  name: string;
-  description: string;
-  iconName: string;
-  isActive: boolean;
-}
-
 interface AdminStore {
   config: SystemConfig;
   promos: PromoCodeItem[];
-  categories: CategoryItem[];
+  categories: ServiceCategory[];
   suspendedUserIds: string[];
-  
+
   // Actions
   updateConfig: (newConfig: Partial<SystemConfig>) => void;
   addPromoCode: (promo: Omit<PromoCodeItem, 'id' | 'usageCount'>) => void;
   togglePromoCode: (id: string) => void;
   deletePromoCode: (id: string) => void;
-  addCategory: (cat: Omit<CategoryItem, 'id'>) => void;
+
+  // Category Actions
+  addCategory: (cat: Omit<ServiceCategory, 'id' | 'companionCount' | 'createdAt'>) => void;
+  updateCategory: (id: string, cat: Partial<ServiceCategory>) => void;
+  deleteCategory: (id: string) => void;
   toggleCategory: (id: string) => void;
+  toggleCategoryFeatured: (id: string) => void;
+  addSubCategory: (categoryId: string, sub: Omit<SubCategoryItem, 'id'>) => void;
+  deleteSubCategory: (categoryId: string, subId: string) => void;
+
   toggleUserSuspension: (userId: string) => void;
 }
 
 export const useAdminStore = create<AdminStore>()(
+
   persist(
     (set) => ({
       config: {
@@ -66,14 +68,7 @@ export const useAdminStore = create<AdminStore>()(
         { id: 'p-2', code: 'SAFETYFIRST', discountPercent: 0, flatDiscount: 20, expiryDate: '2026-10-15', usageCount: 890, isActive: true },
         { id: 'p-3', code: 'VIP2026', discountPercent: 15, flatDiscount: 0, expiryDate: '2026-11-30', usageCount: 310, isActive: true },
       ],
-      categories: [
-        { id: 'c-1', name: 'Event Companion', description: 'Gala, Corporate & Weddings', iconName: 'Users', isActive: true },
-        { id: 'c-2', name: 'Travel & City Guide', description: 'Explore cities safely', iconName: 'Compass', isActive: true },
-        { id: 'c-3', name: 'Elderly Assistance', description: 'Gentle companionship & care', iconName: 'Heart', isActive: true },
-        { id: 'c-4', name: 'Study & Work Buddy', description: 'Productivity & focus', iconName: 'BookOpen', isActive: true },
-        { id: 'c-5', name: 'Fitness & Sports', description: 'Gym, Running & Yoga', iconName: 'Activity', isActive: true },
-        { id: 'c-6', name: 'Gaming & Esport', description: 'Co-op online gaming', iconName: 'Gamepad', isActive: true },
-      ],
+      categories: INITIAL_CATEGORIES,
       suspendedUserIds: [],
 
       updateConfig: (newConfig) =>
@@ -99,14 +94,61 @@ export const useAdminStore = create<AdminStore>()(
           promos: state.promos.filter((p) => p.id !== id)
         })),
 
+      // Category Actions
       addCategory: (cat) =>
         set((state) => ({
-          categories: [...state.categories, { ...cat, id: 'c-' + Date.now() }]
+          categories: [
+            ...state.categories,
+            {
+              ...cat,
+              id: 'c-' + Date.now(),
+              slug: cat.slug || cat.name.toLowerCase().replace(/\s+/g, '-'),
+              companionCount: 0,
+              createdAt: new Date().toISOString().split('T')[0],
+              subcategories: cat.subcategories || []
+            }
+          ]
+        })),
+
+      updateCategory: (id, updates) =>
+        set((state) => ({
+          categories: state.categories.map((c) => (c.id === id ? { ...c, ...updates } : c))
+        })),
+
+      deleteCategory: (id) =>
+        set((state) => ({
+          categories: state.categories.filter((c) => c.id !== id)
         })),
 
       toggleCategory: (id) =>
         set((state) => ({
           categories: state.categories.map((c) => (c.id === id ? { ...c, isActive: !c.isActive } : c))
+        })),
+
+      toggleCategoryFeatured: (id) =>
+        set((state) => ({
+          categories: state.categories.map((c) => (c.id === id ? { ...c, isFeatured: !c.isFeatured } : c))
+        })),
+
+      addSubCategory: (categoryId, sub) =>
+        set((state) => ({
+          categories: state.categories.map((c) => {
+            if (c.id === categoryId) {
+              const newSub: SubCategoryItem = { ...sub, id: 'sub-' + Date.now() };
+              return { ...c, subcategories: [...(c.subcategories || []), newSub] };
+            }
+            return c;
+          })
+        })),
+
+      deleteSubCategory: (categoryId, subId) =>
+        set((state) => ({
+          categories: state.categories.map((c) => {
+            if (c.id === categoryId) {
+              return { ...c, subcategories: (c.subcategories || []).filter(s => s.id !== subId) };
+            }
+            return c;
+          })
         })),
 
       toggleUserSuspension: (userId) =>

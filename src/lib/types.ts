@@ -59,71 +59,88 @@ export interface UserProfile {
   categories: string[];
   skills: string[];
   languages: string[];
+  bio: string;
   hourlyRate: number;
   dailyRate?: number;
   weeklyRate?: number;
+  education?: string;
+  experienceYears?: number;
   ratingAvg: number;
   ratingCount: number;
   completedBookings: number;
-  verificationBadge: boolean;
-  kycStatus: VerificationStatus;
-  bio: string;
-  isAvailableNow: boolean;
-  responseTimeMin: number;
-  riskScore: number;
-  riskLevel: RiskLevel;
-  experienceYears?: number;
-  education?: string;
   status?: CompanionStatus;
-  suspendedReason?: string;
+  verificationBadge: boolean;
+  isAvailableNow: boolean;
   availability?: AvailabilityGrid;
+  responseTimeMin?: number;
+  suspendedReason?: string;
+  joinedDate?: string;
   createdAt?: string;
+  kycStatus?: string;
+  riskScore?: number;
+  riskLevel?: RiskLevel;
   totalEarnings?: number;
-  socialLinks?: {
-    instagram?: string;
-    linkedin?: string;
-    twitter?: string;
-  };
+  socialLinks?: { instagram?: string; linkedin?: string; twitter?: string; facebook?: string };
 }
 
+
+
+
 export interface CompanionFilter {
-  search: string;
-  category: string;
+  searchQuery?: string;
+  search?: string;
+  selectedCategories?: string[];
+  category?: string;
   city: string;
   gender: string;
-  minRate: number;
-  maxRate: number;
+  priceRange?: [number, number];
+  minRate?: number;
+  maxRate?: number;
   minRating: number;
-  availableNow: boolean;
-  verifiedOnly: boolean;
-  status: CompanionStatus | '';
+  onlyVerified?: boolean;
+  verifiedOnly?: boolean;
+  onlyAvailableNow?: boolean;
+  availableNow?: boolean;
+  status?: string;
   sortBy: SortOption;
 }
 
-export interface Booking {
+export interface BookingDetails {
   id: string;
   bookingNumber: string;
   userId: string;
   userName: string;
+  userAvatar?: string;
   companionId: string;
   companionName: string;
-  companionAvatar: string;
+  companionAvatar?: string;
   category: string;
+  subCategory?: string;
+  date?: string;
   startTime: string;
-  endTime: string;
+  endTime?: string;
+
   durationHours: number;
-  locationAddress: string;
+  locationName?: string;
+  locationAddress?: string;
   specialNotes?: string;
   hourlyRate: number;
-  baseAmount: number;
-  escrowFee: number;
+  baseAmount?: number;
+  subtotal?: number;
+
   platformFee: number;
+  escrowFee?: number;
   totalAmount: number;
   status: BookingStatus;
   paymentMethod: PaymentMethod;
   escrowStatus: EscrowStatus;
   createdAt: string;
+  updatedAt?: string;
 }
+
+
+
+export type Booking = BookingDetails;
 
 export interface VerificationDocument {
   id: string;
@@ -174,4 +191,42 @@ export interface Review {
   date: string;
   verifiedBooking: boolean;
   sentimentScore: number;
+}
+
+export interface SubCategoryItem {
+  id: string;
+  name: string;
+  description: string;
+  basePrice: number;
+  requiredVerification: boolean;
+  safetyPolicy?: string;
+}
+
+export interface ServiceCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  iconName: string;
+  bannerUrl?: string;
+  riskLevel: RiskLevel;
+  baseRateMultiplier: number;
+  minAgeLimit: number;
+  isFeatured: boolean;
+  isActive: boolean;
+  companionCount: number;
+  subcategories: SubCategoryItem[];
+  safetyPolicy?: string;
+  createdAt?: string;
+}
+
+export interface ServicePolicy {
+  id: string;
+  categoryId: string;
+  categoryName: string;
+  title: string;
+  rules: string[];
+  termsAndConditions: string;
+  requiredDocuments: DocumentType[];
+  emergencyDispatchTrigger: boolean;
 }
