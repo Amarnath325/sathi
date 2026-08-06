@@ -4,11 +4,16 @@ import { UserProfile, CompanionStatus } from '@/lib/types';
 
 let companions: UserProfile[] = [...MOCK_COMPANIONS];
 
+type Props = {
+  params: Promise<{ id: string }>;
+};
+
 // PATCH /api/companions/[id]/status
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, props: Props) {
   try {
+    const { id } = await props.params;
     const { status, suspendedReason } = await req.json() as { status: CompanionStatus; suspendedReason?: string };
-    const idx = companions.findIndex(c => c.id === params.id);
+    const idx = companions.findIndex(c => c.id === id);
     if (idx === -1) return NextResponse.json({ error: 'Companion not found.' }, { status: 404 });
 
     companions[idx] = {
