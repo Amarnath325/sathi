@@ -71,6 +71,7 @@ import { UserManagementModule } from '@/components/admin/UserManagementModule';
 import { KycVerificationModule } from '@/components/admin/KycVerificationModule';
 import { CompanionStatusBadge } from '@/components/companion/CompanionStatusBadge';
 import { CompanionFormModal } from '@/components/companion/CompanionFormModal';
+import { ImageLightboxModal } from '@/components/common/ImageLightboxModal';
 import Link from 'next/link';
 
 
@@ -145,6 +146,7 @@ export default function AdminDashboardPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [notification, setNotification] = useState<string | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   // Admin User Session info
   const [adminUser, setAdminUser] = useState<{ email: string; fullName: string; role: string } | null>(null);
@@ -732,7 +734,9 @@ export default function AdminDashboardPage() {
                           <img
                             src={comp.avatar}
                             alt={comp.name}
-                            className="w-14 h-14 rounded-2xl object-cover border-2 border-purple-500/30 shrink-0"
+                            onClick={() => setLightboxImage(comp.avatar)}
+                            className="w-14 h-14 rounded-2xl object-cover border-2 border-purple-500/30 shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                            title="Click to view image popup"
                           />
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2">
@@ -1375,6 +1379,14 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Image Lightbox Modal */}
+      <ImageLightboxModal
+        isOpen={!!lightboxImage}
+        imageUrl={lightboxImage}
+        title="Enlarged Image Preview"
+        onClose={() => setLightboxImage(null)}
+      />
 
     </div>
   );

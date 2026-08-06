@@ -5,21 +5,22 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ShieldCheck, Star, MapPin, Globe, Clock, CheckCircle2, Award, Calendar,
-  MessageSquare, Sparkles, Heart, Share2, Flag, GraduationCap, Briefcase, ChevronLeft
+  MessageSquare, Sparkles, Heart, Share2, Eye, ChevronLeft
 } from 'lucide-react';
 import { MOCK_COMPANIONS, MOCK_REVIEWS } from '@/lib/mockData';
 import { CompanionStatusBadge } from '@/components/companion/CompanionStatusBadge';
 import { AvailabilityGrid } from '@/components/companion/AvailabilityGrid';
+import { ImageLightboxModal } from '@/components/common/ImageLightboxModal';
 
 export default function CompanionProfilePage() {
   const params = useParams();
-  const router = useRouter();
   const companionId = params?.id as string;
   const companion = MOCK_COMPANIONS.find(c => c.id === companionId) || MOCK_COMPANIONS[0];
 
   const [activePhoto, setActivePhoto] = useState(companion.avatar);
   const [isSaved, setIsSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'availability' | 'reviews'>('overview');
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   const photoGallery = [
     companion.avatar,
@@ -52,11 +53,20 @@ export default function CompanionProfilePage() {
         <div className="lg:col-span-2 space-y-8">
           {/* Showcase */}
           <div className="space-y-3">
-            <div className="relative h-96 sm:h-[480px] rounded-3xl overflow-hidden glass-panel border border-slate-800">
-              <img src={activePhoto} alt={companion.name} className="w-full h-full object-cover" />
+            <div
+              className="relative h-96 sm:h-[480px] rounded-3xl overflow-hidden glass-panel border border-slate-800 cursor-pointer group"
+              onClick={() => setLightboxImage(activePhoto)}
+            >
+              <img src={activePhoto} alt={companion.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/10 to-transparent" />
 
-              <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+              <div className="absolute inset-0 bg-slate-950/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <span className="px-4 py-2 rounded-full bg-slate-950/80 backdrop-blur-md text-white text-xs font-bold flex items-center gap-2 border border-white/20">
+                  <Eye className="w-4 h-4 text-indigo-400" /> Click to Expand Image
+                </span>
+              </div>
+
+              <div className="absolute top-4 left-4 flex flex-wrap gap-2 pointer-events-none">
                 {companion.verificationBadge && (
                   <span className="px-3 py-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-emerald-500/40 text-emerald-400 text-xs font-bold flex items-center gap-1.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" /> GOVERNMENT ID VERIFIED
@@ -65,7 +75,7 @@ export default function CompanionProfilePage() {
                 {companion.status && <CompanionStatusBadge status={companion.status} size="md" />}
               </div>
 
-              <div className="absolute bottom-4 left-6 right-6 flex items-end justify-between">
+              <div className="absolute bottom-4 left-6 right-6 flex items-end justify-between pointer-events-none">
                 <div>
                   <h1 className="text-3xl font-extrabold text-white">{companion.name}, {companion.age}</h1>
                   <p className="text-xs text-slate-300 flex items-center gap-1.5 mt-1">
@@ -84,10 +94,16 @@ export default function CompanionProfilePage() {
               {photoGallery.slice(0, 4).map((img, idx) => (
                 <div
                   key={idx}
-                  onClick={() => setActivePhoto(img)}
-                  className={`h-24 rounded-2xl overflow-hidden cursor-pointer border transition-all ${activePhoto === img ? 'border-indigo-500 ring-2 ring-indigo-500/40 opacity-100' : 'border-slate-800 opacity-60 hover:opacity-100'}`}
+                  onClick={() => {
+                    setActivePhoto(img);
+                    setLightboxImage(img);
+                  }}
+                  className={`h-24 rounded-2xl overflow-hidden cursor-pointer border transition-all relative group ${activePhoto === img ? 'border-indigo-500 ring-2 ring-indigo-500/40 opacity-100' : 'border-slate-800 opacity-60 hover:opacity-100'}`}
                 >
                   <img src={img} alt="Gallery" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-slate-950/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                    <Eye className="w-4 h-4 text-white" />
+                  </div>
                 </div>
               ))}
             </div>
@@ -227,6 +243,13 @@ export default function CompanionProfilePage() {
           </div>
         </div>
       </div>
+
+      <ImageLightboxModal
+        isOpen={!!lightboxImage}
+        imageUrl={lightboxImage}
+        title={`${companion.name}'s Photo Showcase`}
+        onClose={() => setLightboxImage(null)}
+      />
     </div>
   );
 }
