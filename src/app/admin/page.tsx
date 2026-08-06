@@ -81,8 +81,12 @@ import { CategoryDetailsModal } from '@/components/category/CategoryDetailsModal
 import { BookingCard } from '@/components/booking/BookingCard';
 import { BookingDetailsModal } from '@/components/booking/BookingDetailsModal';
 import { BookingFormModal } from '@/components/booking/BookingFormModal';
-import { ServiceCategory, BookingDetails, BookingStatus, EscrowStatus } from '@/lib/types';
+import { LocationCard } from '@/components/location/LocationCard';
+import { LocationDetailsModal } from '@/components/location/LocationDetailsModal';
+import { LocationFormModal } from '@/components/location/LocationFormModal';
+import { ServiceCategory, BookingDetails, BookingStatus, EscrowStatus, LocationItem } from '@/lib/types';
 import Link from 'next/link';
+
 
 
 
@@ -142,10 +146,17 @@ export default function AdminDashboardPage() {
     refundBooking,
     cancelBooking,
     updateBookingDetails,
+    locations,
+    addLocation,
+    updateLocation,
+    deleteLocation,
+    toggleLocationActive,
+    updateLocationSurge,
+    addGeofenceZone,
+    addPopularVenue,
     suspendedUserIds,
     toggleUserSuspension
   } = useAdminStore();
-
 
   const {
     companions,
@@ -178,6 +189,12 @@ export default function AdminDashboardPage() {
   // Booking Modal States
   const [viewingBooking, setViewingBooking] = useState<BookingDetails | null>(null);
   const [isBookingFormOpen, setIsBookingFormOpen] = useState(false);
+
+  // Location Modal States
+  const [viewingLocation, setViewingLocation] = useState<LocationItem | null>(null);
+  const [editingLocation, setEditingLocation] = useState<LocationItem | null>(null);
+  const [isLocationFormOpen, setIsLocationFormOpen] = useState(false);
+
 
 
   // Admin User Session info
@@ -1333,24 +1350,153 @@ export default function AdminDashboardPage() {
           {/* ==================================================== */}
           {activeTab === 'location' && (
             <div className="space-y-6">
-              <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                {['active-bookings', 'live-locations', 'location-alerts', 'location-history'].map((s) => (
-                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
-                    {s.replace('-', ' ')}
-                  </button>
-                ))}
-              </div>
+              {/* Top Metrics Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>Operational City Hubs</span>
+                    <Globe className="w-4 h-4 text-indigo-400" />
+                  </div>
+                  <div className="text-2xl font-black text-white font-mono">{locations.length}</div>
+                  <p className="text-[10px] text-slate-500">Global & regional coverage hubs</p>
+                </div>
 
-              <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-4">
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <MapPin className="w-5 h-5 text-purple-400" /> Live GPS Companion Fleet Tracker
-                </h3>
-                <div className="h-64 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center text-xs text-slate-400 font-mono">
-                  [ Live Interactive Geo-Map Simulation Active: 14 Companions Online in SF, NY & London ]
+                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>Active Field Operations</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <div className="text-2xl font-black text-emerald-400 font-mono">
+                    {locations.filter(l => l.isActive).length} Hubs
+                  </div>
+                  <p className="text-[10px] text-emerald-400/80 font-bold">100% Monitored via GPS Geofencing</p>
+                </div>
+
+                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>Geofenced Safe Zones</span>
+                    <ShieldCheck className="w-4 h-4 text-indigo-400" />
+                  </div>
+                  <div className="text-2xl font-black text-indigo-400 font-mono">
+                    {locations.reduce((acc, l) => acc + (l.geofencedZones?.length || 0), 0)}
+                  </div>
+                  <p className="text-[10px] text-slate-500">High-security meeting perimeters</p>
+                </div>
+
+                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>High Surge Multipliers</span>
+                    <Zap className="w-4 h-4 text-amber-400" />
+                  </div>
+                  <div className="text-2xl font-black text-amber-400 font-mono">
+                    {locations.filter(l => l.surgePricingMultiplier > 1.0).length} Cities
+                  </div>
+                  <p className="text-[10px] text-amber-400/80 font-bold">Peak demand surge activated</p>
                 </div>
               </div>
+
+              {/* Sub-Filter Bar & Action Toolbar */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900 p-4 rounded-3xl border border-slate-800">
+                <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
+                  {[
+                    { id: 'all-cities', label: 'All Cities' },
+                    { id: 'active-hubs', label: 'Active Operational' },
+                    { id: 'high-surge', label: '⚡ Surge Pricing' },
+                    { id: 'tier-1', label: 'Tier 1 Metros' },
+                    { id: 'risk-low', label: 'Low Risk' },
+                    { id: 'risk-medium', label: 'Medium Risk' },
+                    { id: 'risk-high', label: 'High Risk Alert' }
+                  ].map((filter) => (
+                    <button
+                      key={filter.id}
+                      onClick={() => setSubFilter(filter.id)}
+                      className={`px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${
+                        subFilter === filter.id || (subFilter === 'all' && filter.id === 'all-cities')
+                          ? 'gradient-bg-primary text-white shadow-md shadow-indigo-600/30'
+                          : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                      }`}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <div className="relative flex-1 sm:w-64">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                    <input
+                      type="text"
+                      placeholder="Search city, country or state..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setEditingLocation(null);
+                      setIsLocationFormOpen(true);
+                    }}
+                    className="px-4 py-2 rounded-2xl gradient-bg-primary text-white text-xs font-extrabold flex items-center gap-1.5 shadow-lg shadow-indigo-600/30 hover:opacity-90 shrink-0"
+                  >
+                    <Plus className="w-4 h-4" /> Add Operational City
+                  </button>
+                </div>
+              </div>
+
+              {/* Cards Grid */}
+              {(() => {
+                const filteredLocations = locations.filter((loc) => {
+                  if (searchQuery.trim()) {
+                    const q = searchQuery.toLowerCase();
+                    const matchName = loc.name.toLowerCase().includes(q) || loc.country.toLowerCase().includes(q) || (loc.state && loc.state.toLowerCase().includes(q));
+                    if (!matchName) return false;
+                  }
+                  if (subFilter === 'active-hubs') return loc.isActive;
+                  if (subFilter === 'high-surge') return loc.surgePricingMultiplier > 1.0;
+                  if (subFilter === 'tier-1') return loc.tier === 'TIER_1_METRO';
+                  if (subFilter === 'risk-low') return loc.riskTier === 'LOW';
+                  if (subFilter === 'risk-medium') return loc.riskTier === 'MEDIUM';
+                  if (subFilter === 'risk-high') return loc.riskTier === 'HIGH' || loc.riskTier === 'CRITICAL';
+                  return true;
+                });
+
+                if (filteredLocations.length === 0) {
+                  return (
+                    <div className="p-12 text-center rounded-3xl bg-slate-900 border border-slate-800 space-y-3">
+                      <MapPin className="w-12 h-12 text-slate-600 mx-auto animate-bounce" />
+                      <h4 className="text-base font-bold text-white">No Operational Cities Found</h4>
+                      <p className="text-xs text-slate-400 max-w-md mx-auto">
+                        No locations match the selected filter query. Try selecting "All Cities" or adding a new operational hub.
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredLocations.map((loc) => (
+                      <LocationCard
+                        key={loc.id}
+                        location={loc}
+                        onViewDetails={(item) => setViewingLocation(item)}
+                        onToggleActive={(id) => {
+                          toggleLocationActive(id);
+                          triggerNotify(`Location status toggled for operational hub!`);
+                        }}
+                        onEditLocation={(item) => {
+                          setEditingLocation(item);
+                          setIsLocationFormOpen(true);
+                        }}
+                      />
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           )}
+
 
           {/* ==================================================== */}
           {/* MODULE 13: 🔔 NOTIFICATIONS                          */}
@@ -1759,8 +1905,52 @@ export default function AdminDashboardPage() {
         }}
       />
 
+      {/* Location Audit & Geofence Modal */}
+      <LocationDetailsModal
+        location={viewingLocation}
+        isOpen={!!viewingLocation}
+        onClose={() => setViewingLocation(null)}
+        onUpdateSurge={(id, surge) => {
+          updateLocationSurge(id, surge);
+          if (viewingLocation && viewingLocation.id === id) {
+            setViewingLocation({ ...viewingLocation, surgePricingMultiplier: surge });
+          }
+          triggerNotify(`Surge multiplier for ${viewingLocation?.name} set to ${surge}x!`);
+        }}
+        onAddZone={(id, zone) => {
+          addGeofenceZone(id, zone);
+          triggerNotify(`New geofenced safe zone added to ${viewingLocation?.name}!`);
+        }}
+        onAddVenue={(id, venue) => {
+          addPopularVenue(id, venue);
+          triggerNotify(`Verified safe meeting venue added to ${viewingLocation?.name}!`);
+        }}
+      />
+
+      {/* Location Form Modal (Add / Edit) */}
+      <LocationFormModal
+        isOpen={isLocationFormOpen}
+        location={editingLocation}
+        onClose={() => {
+          setIsLocationFormOpen(false);
+          setEditingLocation(null);
+        }}
+        onSave={(locData) => {
+          if ('id' in locData && locData.id) {
+            updateLocation(locData.id, locData);
+            triggerNotify(`Operational hub "${locData.name}" updated successfully.`);
+          } else {
+            addLocation(locData);
+            triggerNotify(`Operational hub "${locData.name}" created successfully.`);
+          }
+          setIsLocationFormOpen(false);
+          setEditingLocation(null);
+        }}
+      />
+
     </div>
   );
 }
+
 
 

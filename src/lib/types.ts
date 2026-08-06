@@ -230,3 +230,48 @@ export interface ServicePolicy {
   requiredDocuments: DocumentType[];
   emergencyDispatchTrigger: boolean;
 }
+
+export type LocationRiskTier = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+export type LocationMetroTier = 'TIER_1_METRO' | 'TIER_2_REGIONAL' | 'TIER_3_LOCAL';
+
+export interface GeofenceZone {
+  id: string;
+  name: string;
+  radiusKm: number;
+  safetyScore: number;
+  venueTypes: string[];
+  isHighAlert?: boolean;
+}
+
+export interface PopularVenue {
+  id: string;
+  name: string;
+  address: string;
+  category: string;
+  safetyRating: number;
+  isPartnerVenue: boolean;
+  coordinates?: { lat: number; lng: number };
+}
+
+export interface LocationItem {
+  id: string;
+  name: string;
+  state?: string;
+  country: string;
+  countryCode: string;
+  tier: LocationMetroTier;
+  riskTier: LocationRiskTier;
+  surgePricingMultiplier: number;
+  isActive: boolean;
+  companionCount: number;
+  coordinates: { lat: number; lng: number };
+  coverImageUrl?: string;
+  geofencedZones: GeofenceZone[];
+  popularVenues: PopularVenue[];
+  emergencyContactPhone: string;
+  policeHelpline: string;
+  safetyProtocolNotes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+

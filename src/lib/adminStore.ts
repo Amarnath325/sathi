@@ -1,8 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { ServiceCategory, SubCategoryItem, RiskLevel, BookingDetails, BookingStatus, EscrowStatus } from './types';
+import { ServiceCategory, SubCategoryItem, RiskLevel, BookingDetails, BookingStatus, EscrowStatus, LocationItem, GeofenceZone, PopularVenue } from './types';
 import { INITIAL_CATEGORIES } from './initialCategories';
 import { INITIAL_BOOKINGS } from './initialBookings';
+import { INITIAL_LOCATIONS } from './initialLocations';
+
 
 export interface SystemConfig {
   platformFeePercent: number;
@@ -37,6 +39,7 @@ interface AdminStore {
   promos: PromoCodeItem[];
   categories: ServiceCategory[];
   bookings: BookingDetails[];
+  locations: LocationItem[];
   suspendedUserIds: string[];
 
   // Actions
@@ -62,8 +65,18 @@ interface AdminStore {
   cancelBooking: (id: string, reason?: string) => void;
   updateBookingDetails: (id: string, details: Partial<BookingDetails>) => void;
 
+  // Location Actions
+  addLocation: (loc: Omit<LocationItem, 'id' | 'createdAt' | 'updatedAt'>) => LocationItem;
+  updateLocation: (id: string, updates: Partial<LocationItem>) => void;
+  deleteLocation: (id: string) => void;
+  toggleLocationActive: (id: string) => void;
+  updateLocationSurge: (id: string, surgePricingMultiplier: number) => void;
+  addGeofenceZone: (locationId: string, zone: Omit<GeofenceZone, 'id'>) => void;
+  addPopularVenue: (locationId: string, venue: Omit<PopularVenue, 'id'>) => void;
+
   toggleUserSuspension: (userId: string) => void;
 }
+
 
 export const useAdminStore = create<AdminStore>()(
 
@@ -93,7 +106,9 @@ export const useAdminStore = create<AdminStore>()(
       ],
       categories: INITIAL_CATEGORIES,
       bookings: INITIAL_BOOKINGS,
+      locations: INITIAL_LOCATIONS,
       suspendedUserIds: [],
+
 
       updateConfig: (newConfig) =>
 
@@ -258,7 +273,76 @@ export const useAdminStore = create<AdminStore>()(
           )
         })),
 
+      // Location Action Implementations
+      addLocation: (loc) => {
+        const id = 'loc-' + Date.now();
+        const createdAt = new Date().toISOString();
+        const newLoc: LocationItem = {
+          ...loc,
+          id,
+          createdAt,
+          updatedAt: createdAt
+        };
+        set((state) => ({
+          locations: [newLoc, ...state.locations]
+        }));
+        return newLoc;
+      },
+
+      updateLocation: (id, updates) =>
+        set((state) => ({
+          locations: state.locations.map((loc) =>
+            loc.id === id ? { ...loc, ...updates, updatedAt: new Date().toISOString() } : loc
+          )
+        })),
+
+      deleteLocation: (id) =>
+        set((state) => ({
+          locations: state.locations.filter((loc) => loc.id !== id)
+        })),
+
+      toggleLocationActive: (id) =>
+        set((state) => ({
+          locations: state.locations.map((loc) =>
+            loc.id === id ? { ...loc, isActive: !loc.isActive, updatedAt: new Date().toISOString() } : loc
+          )
+        })),
+
+      updateLocationSurge: (id, surgePricingMultiplier) =>
+        set((state) => ({
+          locations: state.locations.map((loc) =>
+            loc.id === id ? { ...loc, surgePricingMultiplier, updatedAt: new Date().toISOString() } : loc
+          )
+        })),
+
+      addGeofenceZone: (locationId, zone) =>
+        set((state) => ({
+          locations: state.locations.map((loc) =>
+            loc.id === locationId
+              ? {
+                  ...loc,
+                  geofencedZones: [...loc.geofencedZones, { ...zone, id: 'gz-' + Date.now() }],
+                  updatedAt: new Date().toISOString()
+                }
+              : loc
+          )
+        })),
+
+      addPopularVenue: (locationId, venue) =>
+        set((state) => ({
+          locations: state.locations.map((loc) =>
+            loc.id === locationId
+              ? {
+                  ...loc,
+                  popularVenues: [...loc.popularVenues, { ...venue, id: 'pv-' + Date.now() }],
+                  updatedAt: new Date().toISOString()
+                }
+              : loc
+          )
+        })),
+
       toggleUserSuspension: (userId) =>
+
 
         set((state) => ({
           suspendedUserIds: state.suspendedUserIds.includes(userId)
