@@ -1,19 +1,26 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { ServiceCategory, SubCategoryItem, RiskLevel } from './types';
+import { ServiceCategory, SubCategoryItem, RiskLevel, BookingDetails, BookingStatus, EscrowStatus } from './types';
 import { INITIAL_CATEGORIES } from './initialCategories';
+import { INITIAL_BOOKINGS } from './initialBookings';
 
 export interface SystemConfig {
-
   platformFeePercent: number;
   escrowHoldingFeePercent: number;
   gstTaxPercent: number;
   require2FAForAdmin: boolean;
-  requireKYCBeforeBooking: boolean;
-  autoSOSDispatch: boolean;
-  instantChatEnabled: boolean;
+  autoApproveVerifiedKYC: boolean;
+  maxDailyBookingsPerCompanion: number;
+  maxBookingHoursPerSession: number;
+  emergencySosBroadcastRadiusKm: number;
   maintenanceMode: boolean;
+  minAgeLimit: number;
+  allowCashOnDelivery: boolean;
+  requireKYCBeforeBooking: boolean;
+  autoSOSDispatch?: boolean;
+  instantChatEnabled?: boolean;
 }
+
 
 export interface PromoCodeItem {
   id: string;
@@ -29,6 +36,7 @@ interface AdminStore {
   config: SystemConfig;
   promos: PromoCodeItem[];
   categories: ServiceCategory[];
+  bookings: BookingDetails[];
   suspendedUserIds: string[];
 
   // Actions
@@ -46,6 +54,14 @@ interface AdminStore {
   addSubCategory: (categoryId: string, sub: Omit<SubCategoryItem, 'id'>) => void;
   deleteSubCategory: (categoryId: string, subId: string) => void;
 
+  // Booking Actions
+  addBooking: (booking: Omit<BookingDetails, 'id' | 'createdAt' | 'bookingNumber'>) => BookingDetails;
+  updateBookingStatus: (id: string, status: BookingStatus, escrowStatus?: EscrowStatus) => void;
+  releaseEscrow: (id: string) => void;
+  refundBooking: (id: string, reason?: string) => void;
+  cancelBooking: (id: string, reason?: string) => void;
+  updateBookingDetails: (id: string, details: Partial<BookingDetails>) => void;
+
   toggleUserSuspension: (userId: string) => void;
 }
 
@@ -58,20 +74,29 @@ export const useAdminStore = create<AdminStore>()(
         escrowHoldingFeePercent: 5,
         gstTaxPercent: 8,
         require2FAForAdmin: true,
+        autoApproveVerifiedKYC: true,
+        maxDailyBookingsPerCompanion: 3,
+        maxBookingHoursPerSession: 12,
+        emergencySosBroadcastRadiusKm: 5,
+        maintenanceMode: false,
+        minAgeLimit: 18,
+        allowCashOnDelivery: false,
         requireKYCBeforeBooking: true,
         autoSOSDispatch: true,
         instantChatEnabled: true,
-        maintenanceMode: false,
       },
+
       promos: [
         { id: 'p-1', code: 'WELCOME10', discountPercent: 10, flatDiscount: 0, expiryDate: '2026-12-31', usageCount: 1420, isActive: true },
         { id: 'p-2', code: 'SAFETYFIRST', discountPercent: 0, flatDiscount: 20, expiryDate: '2026-10-15', usageCount: 890, isActive: true },
         { id: 'p-3', code: 'VIP2026', discountPercent: 15, flatDiscount: 0, expiryDate: '2026-11-30', usageCount: 310, isActive: true },
       ],
       categories: INITIAL_CATEGORIES,
+      bookings: INITIAL_BOOKINGS,
       suspendedUserIds: [],
 
       updateConfig: (newConfig) =>
+
         set((state) => ({
           config: { ...state.config, ...newConfig }
         })),
@@ -151,7 +176,90 @@ export const useAdminStore = create<AdminStore>()(
           })
         })),
 
+      addBooking: (booking) => {
+        const id = 'bk-' + Date.now();
+        const bookingNumber = 'CC-2026-' + Math.floor(1000 + Math.random() * 9000);
+        const createdAt = new Date().toISOString();
+        const newBooking: BookingDetails = {
+          ...booking,
+          id,
+          bookingNumber,
+          createdAt,
+          updatedAt: createdAt
+        };
+        set((state) => ({
+          bookings: [newBooking, ...state.bookings]
+        }));
+        return newBooking;
+      },
+
+      updateBookingStatus: (id, status, escrowStatus) =>
+        set((state) => ({
+          bookings: state.bookings.map((b) =>
+            b.id === id || b.bookingNumber === id
+              ? {
+                  ...b,
+                  status,
+                  ...(escrowStatus ? { escrowStatus } : {}),
+                  updatedAt: new Date().toISOString()
+                }
+              : b
+          )
+        })),
+
+      releaseEscrow: (id) =>
+        set((state) => ({
+          bookings: state.bookings.map((b) =>
+            b.id === id || b.bookingNumber === id
+              ? {
+                  ...b,
+                  status: 'COMPLETED',
+                  escrowStatus: 'RELEASED_TO_COMPANION',
+                  updatedAt: new Date().toISOString()
+                }
+              : b
+          )
+        })),
+
+      refundBooking: (id) =>
+        set((state) => ({
+          bookings: state.bookings.map((b) =>
+            b.id === id || b.bookingNumber === id
+              ? {
+                  ...b,
+                  status: 'CANCELLED',
+                  escrowStatus: 'REFUNDED_TO_USER',
+                  updatedAt: new Date().toISOString()
+                }
+              : b
+          )
+        })),
+
+      cancelBooking: (id) =>
+        set((state) => ({
+          bookings: state.bookings.map((b) =>
+            b.id === id || b.bookingNumber === id
+              ? {
+                  ...b,
+                  status: 'CANCELLED',
+                  escrowStatus: 'REFUNDED_TO_USER',
+                  updatedAt: new Date().toISOString()
+                }
+              : b
+          )
+        })),
+
+      updateBookingDetails: (id, details) =>
+        set((state) => ({
+          bookings: state.bookings.map((b) =>
+            b.id === id || b.bookingNumber === id
+              ? { ...b, ...details, updatedAt: new Date().toISOString() }
+              : b
+          )
+        })),
+
       toggleUserSuspension: (userId) =>
+
         set((state) => ({
           suspendedUserIds: state.suspendedUserIds.includes(userId)
             ? state.suspendedUserIds.filter((id) => id !== userId)

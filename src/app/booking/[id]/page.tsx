@@ -28,7 +28,7 @@ export default function BookingPage() {
   const companionId = params?.id as string;
   const companion = MOCK_COMPANIONS.find(c => c.id === companionId) || MOCK_COMPANIONS[0];
 
-  const { config, promos } = useAdminStore();
+  const { config, promos, addBooking } = useAdminStore();
 
   const [bookingType, setBookingType] = useState<'hourly' | 'daily'>('hourly');
   const [selectedHours, setSelectedHours] = useState(3);
@@ -70,11 +70,39 @@ export default function BookingPage() {
     e.preventDefault();
     setIsSubmitting(true);
 
+    addBooking({
+      userId: 'usr-201',
+      userName: 'Verified Client',
+      userAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80',
+      companionId: companion.id,
+      companionName: companion.name,
+      companionAvatar: companion.avatar,
+      category,
+      subCategory: 'Standard Escrow Companion Request',
+      date: selectedDate,
+      startTime: `${selectedDate}T10:00:00Z`,
+      endTime: `${selectedDate}T${10 + selectedHours}:00:00Z`,
+      durationHours: selectedHours,
+      locationName: locationAddress,
+      locationAddress,
+      specialNotes,
+      hourlyRate,
+      baseAmount,
+      subtotal: baseAmount,
+      platformFee,
+      escrowFee,
+      totalAmount,
+      status: 'ESCROW_LOCKED',
+      paymentMethod: paymentProvider,
+      escrowStatus: 'HELD'
+    });
+
     setTimeout(() => {
       setIsSubmitting(false);
       setBookingConfirmed(true);
-    }, 1500);
+    }, 1200);
   };
+
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">

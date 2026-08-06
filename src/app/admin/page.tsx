@@ -7,7 +7,9 @@ import {
   Users, 
   UserCheck, 
   ShieldCheck, 
+  Calendar,
   Sliders, 
+
   Clock, 
   DollarSign, 
   MessageSquare, 
@@ -76,8 +78,12 @@ import { ImageLightboxModal } from '@/components/common/ImageLightboxModal';
 import { CategoryCard } from '@/components/category/CategoryCard';
 import { CategoryFormModal } from '@/components/category/CategoryFormModal';
 import { CategoryDetailsModal } from '@/components/category/CategoryDetailsModal';
-import { ServiceCategory } from '@/lib/types';
+import { BookingCard } from '@/components/booking/BookingCard';
+import { BookingDetailsModal } from '@/components/booking/BookingDetailsModal';
+import { BookingFormModal } from '@/components/booking/BookingFormModal';
+import { ServiceCategory, BookingDetails, BookingStatus, EscrowStatus } from '@/lib/types';
 import Link from 'next/link';
+
 
 
 export type ERPModuleTab = 
@@ -129,9 +135,17 @@ export default function AdminDashboardPage() {
     deleteCategory,
     toggleCategory,
     toggleCategoryFeatured,
+    bookings,
+    addBooking,
+    updateBookingStatus,
+    releaseEscrow,
+    refundBooking,
+    cancelBooking,
+    updateBookingDetails,
     suspendedUserIds,
     toggleUserSuspension
   } = useAdminStore();
+
 
   const {
     companions,
@@ -160,6 +174,11 @@ export default function AdminDashboardPage() {
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<ServiceCategory | null>(null);
   const [viewingCategory, setViewingCategory] = useState<ServiceCategory | null>(null);
+
+  // Booking Modal States
+  const [viewingBooking, setViewingBooking] = useState<BookingDetails | null>(null);
+  const [isBookingFormOpen, setIsBookingFormOpen] = useState(false);
+
 
   // Admin User Session info
   const [adminUser, setAdminUser] = useState<{ email: string; fullName: string; role: string } | null>(null);
@@ -1024,48 +1043,147 @@ export default function AdminDashboardPage() {
 
 
           {/* ==================================================== */}
-          {/* MODULE 6: 📅 BOOKING MANAGEMENT                      */}
+          {/* MODULE 6: 📅 BOOKING & ESCROW MANAGEMENT              */}
           {/* ==================================================== */}
           {activeTab === 'bookings' && (
             <div className="space-y-6">
-              <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                {['all-bookings', 'pending', 'confirmed', 'active', 'completed', 'cancelled', 'disputed'].map((s) => (
-                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
-                    {s.replace('-', ' ')}
-                  </button>
-                ))}
+              {/* Header Metrics */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>Total Bookings Ticket Volume</span>
+                    <Calendar className="w-4 h-4 text-indigo-400" />
+                  </div>
+                  <div className="text-2xl font-black text-white font-mono">{bookings.length}</div>
+                  <p className="text-[10px] text-slate-500">Across all platform categories</p>
+                </div>
+
+                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>Bank Escrow Vault Held</span>
+                    <Lock className="w-4 h-4 text-amber-400" />
+                  </div>
+                  <div className="text-2xl font-black text-amber-400 font-mono">
+                    ${bookings.filter(b => b.escrowStatus === 'HELD').reduce((acc, b) => acc + b.totalAmount, 0).toLocaleString()}.00
+                  </div>
+                  <p className="text-[10px] text-amber-400/80 font-bold">Secured in Partner Bank Escrow</p>
+                </div>
+
+                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>Active Live Meetups</span>
+                    <Clock className="w-4 h-4 text-emerald-400 animate-pulse" />
+                  </div>
+                  <div className="text-2xl font-black text-emerald-400 font-mono">
+                    {bookings.filter(b => b.status === 'IN_PROGRESS').length}
+                  </div>
+                  <p className="text-[10px] text-emerald-400/80 font-bold">GPS Live Location Monitoring Active</p>
+                </div>
+
+                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>Platform Service Revenue</span>
+                    <DollarSign className="w-4 h-4 text-indigo-400" />
+                  </div>
+                  <div className="text-2xl font-black text-indigo-400 font-mono">
+                    ${bookings.reduce((acc, b) => acc + (b.platformFee || 0), 0).toLocaleString()}.00
+                  </div>
+                  <p className="text-[10px] text-slate-500">From 10% platform commission fee</p>
+                </div>
               </div>
 
-              <div className="rounded-3xl bg-slate-900 border border-slate-800 overflow-hidden">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-800 bg-slate-950 text-[11px] font-mono text-slate-400 uppercase">
-                      <th className="py-4 px-5">Booking Ref</th>
-                      <th className="py-4 px-5">Customer ➔ Companion</th>
-                      <th className="py-4 px-5">Category</th>
-                      <th className="py-4 px-5">Escrow Amount</th>
-                      <th className="py-4 px-5">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800 text-xs">
-                    {MOCK_BOOKINGS.map((b) => (
-                      <tr key={b.id} className="hover:bg-slate-800/50">
-                        <td className="py-4 px-5 font-mono font-bold text-purple-400">{b.bookingNumber}</td>
-                        <td className="py-4 px-5 text-white">{b.userName} ➔ {b.companionName}</td>
-                        <td className="py-4 px-5 text-slate-300">{b.category}</td>
-                        <td className="py-4 px-5 font-mono font-bold text-emerald-400">${b.totalAmount}</td>
-                        <td className="py-4 px-5">
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                            {b.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              {/* Sub-Filter Tabs & Search Toolbar */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900 p-4 rounded-3xl border border-slate-800">
+                <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
+                  {[
+                    { id: 'all-bookings', label: 'All Bookings' },
+                    { id: 'pending', label: 'Pending' },
+                    { id: 'escrow-locked', label: 'Escrow Locked' },
+                    { id: 'in-progress', label: 'Active Live' },
+                    { id: 'completed', label: 'Completed' },
+                    { id: 'cancelled', label: 'Cancelled & Refunded' }
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setSubFilter(tab.id)}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                        subFilter === tab.id
+                          ? 'gradient-bg-primary text-white font-bold shadow-md shadow-indigo-600/30'
+                          : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setIsBookingFormOpen(true)}
+                  className="px-4 py-2 rounded-xl gradient-bg-primary text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 flex items-center gap-1.5 w-full sm:w-auto justify-center transition-all hover:scale-[1.02]"
+                >
+                  <Plus className="w-4 h-4" /> Create Manual Booking
+                </button>
               </div>
+
+              {/* Booking Cards Grid */}
+              {(() => {
+                let filtered = [...bookings];
+
+                if (subFilter === 'pending') {
+                  filtered = filtered.filter(b => b.status === 'PENDING_APPROVAL');
+                } else if (subFilter === 'escrow-locked') {
+                  filtered = filtered.filter(b => b.status === 'ESCROW_LOCKED' || b.escrowStatus === 'HELD');
+                } else if (subFilter === 'in-progress') {
+                  filtered = filtered.filter(b => b.status === 'IN_PROGRESS');
+                } else if (subFilter === 'completed') {
+                  filtered = filtered.filter(b => b.status === 'COMPLETED');
+                } else if (subFilter === 'cancelled') {
+                  filtered = filtered.filter(b => b.status === 'CANCELLED');
+                }
+
+                if (searchQuery.trim()) {
+                  const q = searchQuery.toLowerCase();
+                  filtered = filtered.filter(b =>
+                    b.bookingNumber.toLowerCase().includes(q) ||
+                    b.userName.toLowerCase().includes(q) ||
+                    b.companionName.toLowerCase().includes(q) ||
+                    b.category.toLowerCase().includes(q)
+                  );
+                }
+
+                if (filtered.length === 0) {
+                  return (
+                    <div className="p-12 text-center rounded-3xl bg-slate-900 border border-slate-800 space-y-3">
+                      <Calendar className="w-10 h-10 text-slate-600 mx-auto" />
+                      <h4 className="text-base font-bold text-white">No Bookings Found</h4>
+                      <p className="text-xs text-slate-400">There are no booking tickets matching your current sub-filter or search term.</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {filtered.map((b) => (
+                      <BookingCard
+                        key={b.id}
+                        booking={b}
+                        onViewDetails={(selected) => setViewingBooking(selected)}
+                        onReleaseEscrow={(id) => {
+                          releaseEscrow(id);
+                          triggerNotify(`Escrow funds for Booking #${id} successfully released to companion.`);
+                        }}
+                        onRefund={(id) => {
+                          refundBooking(id);
+                          triggerNotify(`Booking #${id} cancelled and escrow refunded to client.`);
+                        }}
+                      />
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           )}
+
 
           {/* ==================================================== */}
           {/* MODULE 7: 💰 PAYMENTS & FINANCE                       */}
@@ -1603,7 +1721,46 @@ export default function AdminDashboardPage() {
         onClose={() => setViewingCategory(null)}
       />
 
+      {/* Booking Details Audit Modal */}
+      <BookingDetailsModal
+        isOpen={!!viewingBooking}
+        booking={viewingBooking}
+        onClose={() => setViewingBooking(null)}
+        onUpdateStatus={(id, status, escrowStatus) => {
+          updateBookingStatus(id, status, escrowStatus);
+          if (viewingBooking && viewingBooking.id === id) {
+            setViewingBooking({ ...viewingBooking, status, ...(escrowStatus ? { escrowStatus } : {}) });
+          }
+          triggerNotify(`Booking #${id} status updated to ${status}.`);
+        }}
+        onReleaseEscrow={(id) => {
+          releaseEscrow(id);
+          if (viewingBooking && viewingBooking.id === id) {
+            setViewingBooking({ ...viewingBooking, status: 'COMPLETED', escrowStatus: 'RELEASED_TO_COMPANION' });
+          }
+          triggerNotify(`Escrow funds for Booking #${id} released to companion.`);
+        }}
+        onRefund={(id) => {
+          refundBooking(id);
+          if (viewingBooking && viewingBooking.id === id) {
+            setViewingBooking({ ...viewingBooking, status: 'CANCELLED', escrowStatus: 'REFUNDED_TO_USER' });
+          }
+          triggerNotify(`Booking #${id} refunded to client.`);
+        }}
+      />
+
+      {/* Booking Manual Dispatch Form Modal */}
+      <BookingFormModal
+        isOpen={isBookingFormOpen}
+        onClose={() => setIsBookingFormOpen(false)}
+        onSubmit={(data) => {
+          const created = addBooking(data);
+          triggerNotify(`Booking ticket #${created.bookingNumber} created and $${created.totalAmount} locked in bank escrow.`);
+        }}
+      />
+
     </div>
   );
 }
+
 
