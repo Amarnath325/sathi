@@ -80,6 +80,8 @@ import { SosAlertItem, IncidentReport, DisciplinaryAction, IncidentStatus } from
 
 import { UserManagementModule } from '@/components/admin/UserManagementModule';
 import { KycVerificationModule } from '@/components/admin/KycVerificationModule';
+import { PageSizeOption, PaginationFooter } from '@/components/common/PaginationBar';
+
 import { CompanionStatusBadge } from '@/components/companion/CompanionStatusBadge';
 import { CompanionFormModal } from '@/components/companion/CompanionFormModal';
 import { ImageLightboxModal } from '@/components/common/ImageLightboxModal';
@@ -220,7 +222,10 @@ export default function AdminDashboardPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [pageSize, setPageSize] = useState<PageSizeOption>(10);
+  const [currentPage, setCurrentPage] = useState<number>(1);
   const [notification, setNotification] = useState<string | null>(null);
+
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   // Category Modal States
@@ -624,19 +629,41 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Top Bar Actions & Search */}
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-3">
             
-            {/* Search Bar */}
-            <div className="relative hidden md:block">
-              <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search across all modules..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-48 lg:w-64 bg-slate-950/80 border border-slate-800 focus:border-purple-500 rounded-xl py-2 pl-9 pr-4 text-xs text-white placeholder-slate-500 outline-none transition-all"
-              />
+            {/* Search Bar + Limit Dropdown Right Side */}
+            <div className="hidden md:flex items-center gap-2">
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search across all modules..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-48 lg:w-64 bg-slate-950/80 border border-slate-800 focus:border-purple-500 rounded-xl py-2 pl-9 pr-4 text-xs text-white placeholder-slate-500 outline-none transition-all"
+                />
+              </div>
+
+              {/* Items limit dropdown right side of search */}
+              <div className="flex items-center gap-1 bg-slate-950/80 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs">
+                <span className="text-[11px] text-slate-400 font-bold hidden lg:inline">Show:</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setPageSize(val === 'All' ? 'All' : Number(val) as PageSizeOption);
+                  }}
+                  className="bg-transparent text-white font-bold outline-none cursor-pointer text-xs"
+                >
+                  <option value={10} className="bg-slate-900 text-white">10</option>
+                  <option value={25} className="bg-slate-900 text-white">25</option>
+                  <option value={50} className="bg-slate-900 text-white">50</option>
+                  <option value={100} className="bg-slate-900 text-white">100</option>
+                  <option value="All" className="bg-slate-900 text-white">All</option>
+                </select>
+              </div>
             </div>
+
 
             {/* Sync Button */}
             <button 

@@ -357,20 +357,42 @@ export function KycVerificationModule() {
       <div className="glass-panel p-4 sm:p-5 rounded-3xl border border-slate-800 space-y-4">
         <div className="flex flex-col lg:flex-row items-center justify-between gap-3 text-xs">
           
-          {/* 🔍 Search Input Box */}
-          <div className="relative w-full lg:w-80">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search by user name, document number, type..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 pl-9 pr-4 text-xs text-white placeholder-slate-500 outline-none focus:border-purple-500 transition-all"
-            />
+          <div className="flex items-center gap-2 w-full lg:w-auto flex-1 max-w-lg">
+            {/* 🔍 Search Input Box */}
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search by user name, document number, type..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 pl-9 pr-4 text-xs text-white placeholder-slate-500 outline-none focus:border-purple-500 transition-all"
+              />
+            </div>
+
+            {/* Page Size / Limit Dropdown (RIGHT SIDE OF SEARCH) */}
+            <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 shrink-0 text-xs">
+              <span className="text-[11px] text-slate-400 font-bold hidden sm:inline">Show:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="bg-transparent text-white font-bold outline-none cursor-pointer text-xs"
+              >
+                <option value="10" className="bg-slate-900 text-white">10</option>
+                <option value="25" className="bg-slate-900 text-white">25</option>
+                <option value="50" className="bg-slate-900 text-white">50</option>
+                <option value="100" className="bg-slate-900 text-white">100</option>
+                <option value="ALL" className="bg-slate-900 text-white">All</option>
+              </select>
+            </div>
           </div>
 
           {/* Action Toolbar Buttons */}
           <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-end">
+
             <label className="px-3 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 text-xs font-bold border border-slate-800 cursor-pointer flex items-center gap-1.5 shrink-0">
               <Upload className="w-3.5 h-3.5 text-indigo-400" />
               <span>Import Data</span>

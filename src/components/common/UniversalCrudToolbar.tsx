@@ -29,6 +29,8 @@ interface UniversalCrudToolbarProps {
   exportRows?: object[];
   onImportData?: (parsedRows: any[]) => void;
   onSearchChange?: (query: string) => void;
+  pageSize?: number | 'All';
+  onPageSizeChange?: (size: number | 'All') => void;
 }
 
 export const UniversalCrudToolbar: React.FC<UniversalCrudToolbarProps> = ({
@@ -42,8 +44,11 @@ export const UniversalCrudToolbar: React.FC<UniversalCrudToolbarProps> = ({
   headersForSample = ['name', 'email', 'phone', 'city', 'country', 'role', 'hourlyRate', 'category'],
   exportRows = [],
   onImportData,
-  onSearchChange
+  onSearchChange,
+  pageSize,
+  onPageSizeChange
 }) => {
+
   const { 
     selectedIds, 
     clearSelection, 
@@ -172,20 +177,44 @@ export const UniversalCrudToolbar: React.FC<UniversalCrudToolbarProps> = ({
         </div>
       </div>
 
-      {/* 🔍 SEARCH BAR & ACTION TOOLBAR BUTTONS */}
+      {/* 🔍 SEARCH BAR & PAGE SIZE SELECTOR */}
       <div className="flex flex-col lg:flex-row items-center justify-between gap-3 text-xs">
         
-        {/* Search Input Bar */}
-        <div className="relative w-full lg:w-72">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder={`Search ${title.toLowerCase()}...`}
-            value={searchQuery}
-            onChange={handleSearchInput}
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 pl-9 pr-3 text-xs text-white placeholder-slate-500 outline-none focus:border-purple-500 transition-all"
-          />
+        {/* Search Input Bar + Page Size Dropdown Right Next to It */}
+        <div className="flex items-center gap-2 w-full lg:w-auto flex-1 max-w-md">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder={`Search ${title.toLowerCase()}...`}
+              value={searchQuery}
+              onChange={handleSearchInput}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 pl-9 pr-3 text-xs text-white placeholder-slate-500 outline-none focus:border-purple-500 transition-all"
+            />
+          </div>
+
+          {/* Page Size Dropdown directly on the RIGHT SIDE of Search! */}
+          {pageSize !== undefined && onPageSizeChange && (
+            <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 shrink-0 text-xs">
+              <span className="text-[11px] text-slate-400 font-bold hidden sm:inline">Show:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  onPageSizeChange(val === 'All' ? 'All' : Number(val));
+                }}
+                className="bg-transparent text-white font-bold outline-none cursor-pointer text-xs"
+              >
+                <option value={10} className="bg-slate-900 text-white">10</option>
+                <option value={25} className="bg-slate-900 text-white">25</option>
+                <option value={50} className="bg-slate-900 text-white">50</option>
+                <option value={100} className="bg-slate-900 text-white">100</option>
+                <option value="All" className="bg-slate-900 text-white">All</option>
+              </select>
+            </div>
+          )}
         </div>
+
 
         {/* Buttons: Create, Import (CSV/XLSX), Export (CSV/XLSX/PDF), Samples */}
         <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-end">
