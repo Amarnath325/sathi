@@ -685,6 +685,60 @@ model SystemMaintenanceSchedule {
   createdAt        DateTime @default(now())
 }
 
+enum HealthStatus {
+  HEALTHY
+  DEGRADED
+  DOWN
+}
+
+enum HealthAlertType {
+  CPU_SPIKE
+  MEMORY_EXHAUSTION
+  DB_POOL_EXHAUSTION
+  HIGH_LATENCY
+  SERVICE_DOWN
+}
+
+model SystemHealthMetric {
+  id                 String   @id @default(uuid())
+  nodeName           String   @default("sathi-prod-uswest2-node-01")
+  cpuUsagePercent    Float    @default(34.2)
+  memoryUsagePercent Float    @default(58.7)
+  diskUsagePercent   Float    @default(41.0)
+  dbPoolActive       Int      @default(14)
+  dbPoolIdle         Int      @default(36)
+  redisHitRatePercent Float   @default(99.4)
+  activeWebsockets   Int      @default(1420)
+  responseLatencyMs  Int      @default(38)
+  timestamp          DateTime @default(now())
+
+  @@index([nodeName, timestamp])
+}
+
+model MicroserviceStatus {
+  id            String       @id @default(uuid())
+  serviceName   String       @unique // e.g. DATABASE_POSTGRES, REDIS_CACHE, PAYMENT_STRIPE
+  endpointUrl   String
+  status        HealthStatus @default(HEALTHY)
+  uptimePercent Float        @default(99.98)
+  lastPingMs    Int          @default(12)
+  lastCheckedAt DateTime     @default(now())
+}
+
+model SystemHealthAlert {
+  id          String          @id @default(uuid())
+  serviceName String
+  alertType   HealthAlertType @default(CPU_SPIKE)
+  severity    RiskLevel       @default(HIGH)
+  message     String
+  isResolved  Boolean         @default(false)
+  triggeredAt DateTime        @default(now())
+  resolvedAt  DateTime?
+
+  @@index([serviceName, isResolved, severity])
+}
+
+
 
 
 
