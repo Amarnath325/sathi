@@ -420,3 +420,83 @@ model NotificationLog {
   @@index([userId, channel, status])
 }
 
+enum StaffDepartment {
+  EXECUTIVE
+  OPERATIONS
+  TRUST_AND_SAFETY
+  FINANCE_AND_ESCROW
+  VERIFICATION_KYC
+  CUSTOMER_SUPPORT
+  ENGINEERING
+  LEGAL_AND_COMPLIANCE
+}
+
+enum StaffShiftStatus {
+  ON_DUTY
+  OFF_DUTY
+  ON_CALL
+  ON_LEAVE
+}
+
+model StaffMember {
+  id                String           @id @default(uuid())
+  employeeId        String           @unique // e.g. EMP-2026-004
+  userId            String           @unique
+  fullName          String
+  email             String           @unique
+  phone             String?
+  avatar            String?
+  department        StaffDepartment  @default(OPERATIONS)
+  designation       String           // e.g. Lead Dispute Arbitrator
+  assignedRole      RoleType         @default(MODERATOR)
+  customPermissions String[]         // Permission keys override
+  shiftStatus       StaffShiftStatus @default(ON_DUTY)
+  is2FAEnforced     Boolean          @default(true)
+  mfaEnabled        Boolean          @default(false)
+  lastLoginAt       DateTime?
+  lastLoginIp       String?
+  status            String           @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([department, assignedRole, status])
+}
+
+model RoleDefinition {
+  id          String   @id @default(uuid())
+  role        RoleType @unique
+  title       String
+  description String
+  permissions String[] // Array of permission keys
+  isCustom    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model StaffPermission {
+  id          String   @id @default(uuid())
+  key         String   @unique // e.g. users:read, bookings:cancel, escrow:release
+  name        String
+  domain      String   // USERS, BOOKINGS, PAYMENTS, SAFETY, REVIEWS, NOTIFICATIONS, STAFF, SYSTEM
+  description String
+  createdAt   DateTime @default(now())
+}
+
+model StaffAccessLog {
+  id           String   @id @default(uuid())
+  staffId      String
+  staffName    String
+  staffEmail   String
+  action       String   // e.g. USER_SUSPENDED, ESCROW_RELEASED, PERMISSION_MODIFIED
+  resource     String   // e.g. User#usr-901, Booking#CC-2026-8812
+  ipAddress    String
+  userAgent    String?
+  riskLevel    RiskLevel @default(LOW)
+  isAuthorized Boolean  @default(true)
+  details      Json?
+  timestamp    DateTime @default(now())
+
+  @@index([staffId, riskLevel, timestamp])
+}
+
+
