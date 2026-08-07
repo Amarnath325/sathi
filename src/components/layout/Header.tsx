@@ -63,21 +63,11 @@ export function Header({ currentRole, onRoleChange, onTriggerSos }: HeaderProps)
               <Search className="w-4 h-4 text-indigo-400" />
               Explore Companions
             </Link>
-            
-            <Link href="/kyc" className="flex items-center gap-2 text-xs xl:text-sm font-semibold text-slate-300 hover:text-white transition-colors">
-              <UserCheck className="w-4 h-4 text-emerald-400" />
-              KYC Verification
-            </Link>
 
             <Link href="/chat" className="flex items-center gap-2 text-xs xl:text-sm font-semibold text-slate-300 hover:text-white transition-colors relative">
               <MessageSquare className="w-4 h-4 text-cyan-400" />
-              Chat
+              Chat & Messages
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping absolute -top-1 -right-2"></span>
-            </Link>
-
-            <Link href="/wallet" className="flex items-center gap-2 text-xs xl:text-sm font-semibold text-slate-300 hover:text-white transition-colors">
-              <Wallet className="w-4 h-4 text-amber-400" />
-              Escrow & Wallet
             </Link>
 
             <Link href="/safety" className="flex items-center gap-2 text-xs xl:text-sm font-semibold text-slate-300 hover:text-white transition-colors">
@@ -173,25 +163,11 @@ export function Header({ currentRole, onRoleChange, onTriggerSos }: HeaderProps)
             <Search className="w-4 h-4 text-indigo-400" /> Explore Companions
           </Link>
           <Link 
-            href="/kyc" 
-            onClick={() => setMobileMenuOpen(false)} 
-            className="flex items-center gap-3 text-xs sm:text-sm font-semibold text-slate-200 py-2.5 px-3 rounded-xl hover:bg-slate-900 transition-colors"
-          >
-            <UserCheck className="w-4 h-4 text-emerald-400" /> KYC Verification
-          </Link>
-          <Link 
             href="/chat" 
             onClick={() => setMobileMenuOpen(false)} 
             className="flex items-center gap-3 text-xs sm:text-sm font-semibold text-slate-200 py-2.5 px-3 rounded-xl hover:bg-slate-900 transition-colors"
           >
             <MessageSquare className="w-4 h-4 text-cyan-400" /> Chat & Direct Messages
-          </Link>
-          <Link 
-            href="/wallet" 
-            onClick={() => setMobileMenuOpen(false)} 
-            className="flex items-center gap-3 text-xs sm:text-sm font-semibold text-slate-200 py-2.5 px-3 rounded-xl hover:bg-slate-900 transition-colors"
-          >
-            <Wallet className="w-4 h-4 text-amber-400" /> Escrow & Wallet
           </Link>
           <Link 
             href="/safety" 

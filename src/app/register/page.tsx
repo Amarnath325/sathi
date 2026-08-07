@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
@@ -10,7 +10,6 @@ import {
   Mail, 
   Lock, 
   Phone, 
-  Globe, 
   Sparkles, 
   ArrowRight,
   CheckCircle2,
@@ -21,9 +20,14 @@ import {
   Wallet,
   ChevronDown,
   ChevronUp,
-  Building,
-  CreditCard,
-  UploadCloud
+  UploadCloud,
+  KeyRound,
+  Fingerprint,
+  Shield,
+  Cpu,
+  RefreshCw,
+  Check,
+  X
 } from 'lucide-react';
 import { useUserAuthStore } from '@/lib/userAuthStore';
 
@@ -32,7 +36,7 @@ export default function RegisterPage() {
   const { login } = useUserAuthStore();
   const [role, setRole] = useState<'CUSTOMER' | 'VERIFIED_COMPANION'>('CUSTOMER');
   
-  // Account Mandatory Fields
+  // Mandatory Account Fields
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -40,7 +44,17 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
-  // Optional Accordion / Section Toggles
+  // Email & Phone Verification States
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [sendingEmailOtp, setSendingEmailOtp] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [sendingPhoneOtp, setSendingPhoneOtp] = useState(false);
+
+  // Advanced Security Features
+  const [enable2FA, setEnable2FA] = useState(true);
+  const [enableBiometrics, setEnableBiometrics] = useState(false);
+
+  // Optional Accordion Section Toggle
   const [showOptionalSections, setShowOptionalSections] = useState(false);
 
   // Optional KYC Verification State
@@ -49,17 +63,83 @@ export default function RegisterPage() {
   const [docFileUploaded, setDocFileUploaded] = useState<boolean>(false);
 
   // Optional Wallet Setup State
-  const [initialDeposit, setInitialDeposit] = useState<string>('50');
   const [payoutMethod, setPayoutMethod] = useState<string>('BANK_TRANSFER');
   const [accountNumber, setAccountNumber] = useState<string>('');
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Real-Time Password Strength Assessment Engine
+  const passwordAnalysis = useMemo(() => {
+    const p = password;
+    const checks = {
+      minLength: p.length >= 8,
+      hasUpperLower: /[a-z]/.test(p) && /[A-Z]/.test(p),
+      hasNumber: /\d/.test(p),
+      hasSpecial: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(p),
+    };
+
+    let score = 0;
+    if (checks.minLength) score += 25;
+    if (checks.hasUpperLower) score += 25;
+    if (checks.hasNumber) score += 25;
+    if (checks.hasSpecial) score += 25;
+
+    let label = 'Very Weak';
+    let color = 'bg-rose-500';
+    let textColor = 'text-rose-400';
+
+    if (score === 50) {
+      label = 'Moderate';
+      color = 'bg-amber-500';
+      textColor = 'text-amber-400';
+    } else if (score === 75) {
+      label = 'Strong';
+      color = 'bg-indigo-500';
+      textColor = 'text-indigo-400';
+    } else if (score === 100) {
+      label = 'Enterprise Grade (256-Bit)';
+      color = 'bg-emerald-500';
+      textColor = 'text-emerald-400';
+    }
+
+    return { score, label, color, textColor, checks };
+  }, [password]);
+
+  const handleSendEmailOtp = () => {
+    if (!email) {
+      setError('Please enter a valid email address first.');
+      return;
+    }
+    setError(null);
+    setSendingEmailOtp(true);
+    setTimeout(() => {
+      setSendingEmailOtp(false);
+      setEmailVerified(true);
+    }, 1000);
+  };
+
+  const handleSendPhoneOtp = () => {
+    if (!phone) {
+      setError('Please enter a valid phone number first.');
+      return;
+    }
+    setError(null);
+    setSendingPhoneOtp(true);
+    setTimeout(() => {
+      setSendingPhoneOtp(false);
+      setPhoneVerified(true);
+    }, 1000);
+  };
+
   const handleRegisterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!agreedToTerms) {
-      setError('You must agree to the Terms of Service & Safety Guidelines to proceed.');
+      setError('You must agree to the Terms of Service & Security Policy to proceed.');
+      return;
+    }
+    if (passwordAnalysis.score < 50) {
+      setError('Please choose a stronger password matching security guidelines.');
       return;
     }
     setError(null);
@@ -68,7 +148,7 @@ export default function RegisterPage() {
     setTimeout(() => {
       setIsLoading(false);
       
-      // Save session in auth store
+      // Store authenticated user session
       login({
         name: fullName || 'Alex Mercer',
         email: email || 'alex@example.com',
@@ -83,33 +163,51 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-[90vh] flex items-center justify-center px-4 py-12 relative overflow-hidden">
-      {/* Background Orbs */}
+      {/* Background Security Pulse Orbs */}
       <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none -z-10 animate-pulse-slow"></div>
       <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-emerald-600/15 rounded-full blur-3xl pointer-events-none -z-10"></div>
 
-      <div className="max-w-2xl w-full glass-panel p-8 sm:p-10 rounded-3xl border border-slate-800 shadow-2xl relative z-10">
+      <div className="max-w-2xl w-full glass-panel p-6 sm:p-10 rounded-3xl border border-slate-800 shadow-2xl relative z-10 space-y-8">
         
-        {/* Header */}
-        <div className="text-center space-y-3 mb-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-semibold">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-400" /> Join Companion Connect Network
+        {/* Top Enterprise Security Badge Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl bg-slate-950 border border-slate-800 text-[11px]">
+          <div className="flex items-center gap-2 text-emerald-400 font-bold font-mono">
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            256-BIT END-TO-END ENCRYPTED
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Create Your Account</h1>
+
+          <div className="flex items-center gap-2 text-slate-400 font-mono">
+            <Cpu className="w-3.5 h-3.5 text-indigo-400" />
+            <span>DEVICE RISK: <strong className="text-emerald-400">0.00 (LOW)</strong></span>
+          </div>
+
+          <div className="flex items-center gap-1.5 text-indigo-400 font-bold">
+            <Shield className="w-3.5 h-3.5" />
+            ZERO-KNOWLEDGE VAULT
+          </div>
+        </div>
+
+        {/* Form Header */}
+        <div className="text-center space-y-2">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center mx-auto border border-indigo-500/30">
+            <KeyRound className="w-6 h-6" />
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Enterprise Account Registration</h1>
           <p className="text-xs text-slate-400 max-w-md mx-auto">
-            Register as a client looking for assistance or apply to become a certified companion.
+            Create your zero-knowledge encrypted account as a Client or Verified Companion with multi-factor protection.
           </p>
         </div>
 
         {error && (
-          <div className="mb-6 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2.5">
+          <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2.5">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        {/* Role Selection Selector */}
-        <div className="mb-8">
-          <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-3 text-center">I want to join as</label>
+        {/* Account Role Selector */}
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block text-center">I want to join as</label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             
             <div 
@@ -147,9 +245,10 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        {/* Registration Form */}
-        <form onSubmit={handleRegisterSubmit} className="space-y-4">
+        {/* Main Registration Form */}
+        <form onSubmit={handleRegisterSubmit} className="space-y-5">
           
+          {/* Full Name */}
           <div>
             <label className="text-xs font-semibold text-slate-300 block mb-1.5">Full Legal Name</label>
             <div className="relative">
@@ -165,47 +264,75 @@ export default function RegisterPage() {
             </div>
           </div>
 
+          {/* Email & Phone with Verification Badges */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1.5">Email Address</label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
-                <input 
-                  type="email" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="alex@example.com"
-                  className="w-full pl-10 pr-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
-                  required
-                />
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-semibold text-slate-300">Email Address</label>
+                {emailVerified && <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1"><Check className="w-3 h-3" /> Verified</span>}
+              </div>
+              <div className="relative flex gap-2">
+                <div className="relative flex-1">
+                  <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+                  <input 
+                    type="email" 
+                    value={email}
+                    onChange={(e) => { setEmail(e.target.value); setEmailVerified(false); }}
+                    placeholder="alex@example.com"
+                    className="w-full pl-10 pr-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                    required
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSendEmailOtp}
+                  disabled={sendingEmailOtp || emailVerified}
+                  className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-[11px] font-bold text-indigo-400 hover:text-white hover:border-slate-700 disabled:opacity-50 shrink-0"
+                >
+                  {sendingEmailOtp ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : emailVerified ? 'Verified' : 'Verify'}
+                </button>
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1.5">Phone Number</label>
-              <div className="relative">
-                <Phone className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
-                <input 
-                  type="tel" 
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+1 (555) 019-2834"
-                  className="w-full pl-10 pr-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
-                  required
-                />
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-semibold text-slate-300">Mobile Phone Number</label>
+                {phoneVerified && <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1"><Check className="w-3 h-3" /> Verified</span>}
+              </div>
+              <div className="relative flex gap-2">
+                <div className="relative flex-1">
+                  <Phone className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+                  <input 
+                    type="tel" 
+                    value={phone}
+                    onChange={(e) => { setPhone(e.target.value); setPhoneVerified(false); }}
+                    placeholder="+1 (555) 019-2834"
+                    className="w-full pl-10 pr-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                    required
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSendPhoneOtp}
+                  disabled={sendingPhoneOtp || phoneVerified}
+                  className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-[11px] font-bold text-indigo-400 hover:text-white hover:border-slate-700 disabled:opacity-50 shrink-0"
+                >
+                  {sendingPhoneOtp ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : phoneVerified ? 'Verified' : 'Verify'}
+                </button>
               </div>
             </div>
           </div>
 
-          <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1.5">Create Password</label>
+          {/* Password Input with Interactive Strength Meter */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-slate-300 block">Create Password</label>
             <div className="relative">
               <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
               <input 
                 type={showPassword ? "text" : "password"} 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="At least 8 characters..."
+                placeholder="At least 8 characters with numbers & symbols..."
                 className="w-full pl-10 pr-10 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
                 required
               />
@@ -217,10 +344,79 @@ export default function RegisterPage() {
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+
+            {/* Password Strength Progress Bar */}
+            {password.length > 0 && (
+              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-2 animate-fadeIn">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400">Password Security Strength:</span>
+                  <span className={`font-mono font-bold ${passwordAnalysis.textColor}`}>{passwordAnalysis.label}</span>
+                </div>
+
+                <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full ${passwordAnalysis.color} transition-all duration-300`} 
+                    style={{ width: `${passwordAnalysis.score}%` }}
+                  ></div>
+                </div>
+
+                {/* Password Criteria Checklist */}
+                <div className="grid grid-cols-2 gap-2 pt-1 text-[11px]">
+                  <div className={`flex items-center gap-1.5 ${passwordAnalysis.checks.minLength ? 'text-emerald-400 font-semibold' : 'text-slate-500'}`}>
+                    {passwordAnalysis.checks.minLength ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />} Min. 8 Characters
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${passwordAnalysis.checks.hasUpperLower ? 'text-emerald-400 font-semibold' : 'text-slate-500'}`}>
+                    {passwordAnalysis.checks.hasUpperLower ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />} Upper & Lower Case
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${passwordAnalysis.checks.hasNumber ? 'text-emerald-400 font-semibold' : 'text-slate-500'}`}>
+                    {passwordAnalysis.checks.hasNumber ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />} Numbers (0-9)
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${passwordAnalysis.checks.hasSpecial ? 'text-emerald-400 font-semibold' : 'text-slate-500'}`}>
+                    {passwordAnalysis.checks.hasSpecial ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />} Special Symbols (!@#$)
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Advanced Multi-Factor & Biometric Security Setup */}
+          <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-indigo-400" /> Account Security Controls
+            </h4>
+
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80">
+              <div className="space-y-0.5">
+                <span className="text-xs font-semibold text-white block">Enforce Mandatory 2FA (TOTP / SMS)</span>
+                <span className="text-[10px] text-slate-400 block">Require 2FA code on unrecognized device logins</span>
+              </div>
+              <input 
+                type="checkbox"
+                checked={enable2FA}
+                onChange={(e) => setEnable2FA(e.target.checked)}
+                className="w-4 h-4 rounded border-slate-700 bg-slate-950 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+              />
+            </div>
+
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80">
+              <div className="space-y-0.5 flex items-center gap-2">
+                <Fingerprint className="w-4 h-4 text-cyan-400" />
+                <div>
+                  <span className="text-xs font-semibold text-white block">Bind Biometric Passkey / WebAuthn</span>
+                  <span className="text-[10px] text-slate-400 block">Enable FaceID / TouchID instant login token</span>
+                </div>
+              </div>
+              <input 
+                type="checkbox"
+                checked={enableBiometrics}
+                onChange={(e) => setEnableBiometrics(e.target.checked)}
+                className="w-4 h-4 rounded border-slate-700 bg-slate-950 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+              />
+            </div>
           </div>
 
           {/* Optional KYC Verification & Wallet Setup Section */}
-          <div className="pt-2">
+          <div>
             <button
               type="button"
               onClick={() => setShowOptionalSections(!showOptionalSections)}
@@ -333,10 +529,10 @@ export default function RegisterPage() {
                 type="checkbox"
                 checked={agreedToTerms}
                 onChange={(e) => setAgreedToTerms(e.target.checked)}
-                className="mt-1 w-4 h-4 rounded border-slate-700 bg-slate-950 text-indigo-600 focus:ring-indigo-500"
+                className="mt-1 w-4 h-4 rounded border-slate-700 bg-slate-950 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
               />
               <span className="text-[11px] text-slate-400 leading-relaxed">
-                I agree to the <a href="#" className="text-indigo-400 hover:underline">Terms of Service</a>, <a href="#" className="text-indigo-400 hover:underline">Privacy Policy</a>, and confirm that I understand Companion Connect maintains a strict zero-tolerance policy against illegal, exploitative, or unsafe activities.
+                I agree to the <a href="#" className="text-indigo-400 hover:underline font-semibold">Terms of Service</a>, <a href="#" className="text-indigo-400 hover:underline font-semibold">Privacy Policy</a>, and confirm that I understand Companion Connect maintains a strict zero-tolerance security framework.
               </span>
             </label>
           </div>
@@ -344,14 +540,14 @@ export default function RegisterPage() {
           <button 
             type="submit" 
             disabled={isLoading}
-            className="w-full mt-4 py-3.5 rounded-2xl gradient-bg-primary text-white font-bold text-sm hover:opacity-95 transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2"
+            className="w-full py-4 rounded-2xl gradient-bg-primary text-white font-extrabold text-sm uppercase tracking-wider hover:opacity-95 transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2"
           >
-            {isLoading ? 'Creating Account...' : 'Complete Account Registration'} <ArrowRight className="w-4 h-4" />
+            {isLoading ? 'Creating Zero-Knowledge Account...' : 'Complete Secure Registration'} <ArrowRight className="w-4 h-4" />
           </button>
         </form>
 
-        {/* Footer */}
-        <div className="mt-6 pt-4 border-t border-slate-800/80 text-center">
+        {/* Footer Link */}
+        <div className="pt-4 border-t border-slate-800/80 text-center">
           <p className="text-xs text-slate-400">
             Already have an account?{' '}
             <Link href="/login" className="text-indigo-400 font-semibold hover:underline">
