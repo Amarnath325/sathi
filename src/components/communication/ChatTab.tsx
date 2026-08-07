@@ -8,6 +8,7 @@ import {
   MapPin, Clock, MessageSquare, ArrowLeft
 } from 'lucide-react';
 import { useCommunicationStore, Conversation, FullChatMessage, MessageStatus } from '@/lib/communicationStore';
+import { MessagingModerationEngine } from '@/lib/messagingModeration';
 
 const EMOJI_QUICK = ['❤️', '👍', '😂', '😮', '😢', '🙏', '🔥', '👏'];
 
@@ -246,7 +247,17 @@ export default function ChatTab() {
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim() || !activeConvId) return;
-    sendMessage(activeConvId, inputText.trim());
+
+    // Evaluate message against Real-Time Moderation & Anti-Bypass Filter
+    const isBookingConfirmed = Boolean(activeConv?.bookingRef);
+    const modResult = MessagingModerationEngine.moderateMessage(inputText.trim(), isBookingConfirmed);
+
+    if (modResult.containsProhibitedContent) {
+      alert(`[TRUST & SAFETY BLOCK] ${modResult.rejectionReason}`);
+      return;
+    }
+
+    sendMessage(activeConvId, modResult.sanitizedContent);
     setInputText('');
   };
 

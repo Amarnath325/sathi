@@ -11,103 +11,206 @@ import {
   SlidersHorizontal, 
   MapPin, 
   Sparkles,
-  ArrowUpDown,
-  UserCheck
+  Calendar,
+  Clock,
+  Award,
+  AlertTriangle,
+  Zap,
+  Check
 } from 'lucide-react';
 import { MOCK_COMPANIONS } from '@/lib/mockData';
-import { recommendCompanions } from '@/lib/aiEngine';
+import { MarketplaceMatchingEngine, SearchCriteria } from '@/lib/matchingAlgorithm';
 import { SearchAndLimitBar, PaginationFooter, PageSizeOption } from '@/components/common/PaginationBar';
 
-
 export default function SearchPage() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [locationQuery, setLocationQuery] = useState('Raipur');
+  const [selectedCategory, setSelectedCategory] = useState<string>('Travel Companion');
+  const [selectedDate, setSelectedDate] = useState<string>('2026-08-15');
+  const [selectedTime, setSelectedTime] = useState<string>('10:00 AM - 04:00 PM');
   const [maxPrice, setMaxPrice] = useState<number>(100);
-  const [verifiedOnly, setVerifiedOnly] = useState<boolean>(false);
+  const [verifiedOnly, setVerifiedOnly] = useState<boolean>(true);
   const [availableNowOnly, setAvailableNowOnly] = useState<boolean>(false);
-  const [sortBy, setSortBy] = useState<'AI' | 'RATING' | 'PRICE_LOW' | 'PRICE_HIGH'>('AI');
+  const [sortBy, setSortBy] = useState<'MATCH_SCORE' | 'RATING' | 'PRICE_LOW' | 'PRICE_HIGH'>('MATCH_SCORE');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<PageSizeOption>(10);
 
-  const categoriesList = ["ALL", "Event Companion", "Elderly Support & Care", "Travel & City Buddy", "Fitness & Outdoor", "Shopping & Styling", "Study & Co-Working"];
+  const categoriesList = [
+    "ALL", 
+    "Conversation", 
+    "Event Companion", 
+    "Travel Companion", 
+    "Shopping Companion", 
+    "Study Partner", 
+    "Gaming Partner", 
+    "Fitness Partner", 
+    "Elderly Support", 
+    "Local Assistance"
+  ];
 
-  const filteredCompanions = useMemo(() => {
-    let result = recommendCompanions(MOCK_COMPANIONS, {
-      category: selectedCategory === 'ALL' ? undefined : selectedCategory,
-      maxPrice: maxPrice,
-      verifiedOnly: verifiedOnly,
-      searchQuery: searchQuery
-    });
+  // Map MOCK_COMPANIONS into candidate model for 9-Factor Match Score engine
+  const candidatePool = useMemo(() => {
+    return MOCK_COMPANIONS.map(comp => ({
+      id: comp.id,
+      name: comp.name,
+      avatar: comp.avatar,
+      city: comp.city || 'Raipur',
+      distanceKm: comp.city === 'Raipur' ? 3.5 : 12.0,
+      hourlyRate: comp.hourlyRate,
+      ratingAvg: comp.ratingAvg,
+      ratingCount: comp.ratingCount,
+      completedBookings: comp.completedBookings || 40,
+      cancellationRatePercent: 1.5,
+      responseTimeMin: comp.responseTimeMin || 15,
+      categories: comp.categories || ['Travel Companion', 'Conversation'],
+      languages: comp.languages || ['English', 'Hindi'],
+      skills: comp.skills || ['City Guide', 'Event Protocol'],
+      verificationStatus: (comp.verificationBadge ? 'VERIFIED' : 'PENDING') as any,
+      isIdentityVerified: comp.verificationBadge,
+      safetyRiskScore: comp.verificationBadge ? 0.02 : 0.40,
+      isAvailableForDate: true,
+      isAvailableForTime: true,
+      rawComp: comp
+    }));
+  }, []);
 
+  const searchCriteria: SearchCriteria = useMemo(() => ({
+    location: locationQuery,
+    serviceCategory: selectedCategory === 'ALL' ? '' : selectedCategory,
+    date: selectedDate,
+    timeSlot: selectedTime,
+    maxHourlyRate: maxPrice,
+  }), [locationQuery, selectedCategory, selectedDate, selectedTime, maxPrice]);
+
+  // Execute 9-Factor Matching & Safety Gate Engine
+  const rankedResults = useMemo(() => {
+    let list = MarketplaceMatchingEngine.rankCandidates(candidatePool, searchCriteria);
+
+    if (verifiedOnly) {
+      list = list.filter(item => item.candidate.isIdentityVerified);
+    }
     if (availableNowOnly) {
-      result = result.filter(c => c.isAvailableNow);
+      list = list.filter(item => item.candidate.rawComp.isAvailableNow);
     }
 
     if (sortBy === 'RATING') {
-      result.sort((a, b) => b.ratingAvg - a.ratingAvg);
+      list.sort((a, b) => b.candidate.ratingAvg - a.candidate.ratingAvg);
     } else if (sortBy === 'PRICE_LOW') {
-      result.sort((a, b) => a.hourlyRate - b.hourlyRate);
+      list.sort((a, b) => a.candidate.hourlyRate - b.candidate.hourlyRate);
     } else if (sortBy === 'PRICE_HIGH') {
-      result.sort((a, b) => b.hourlyRate - a.hourlyRate);
+      list.sort((a, b) => b.candidate.hourlyRate - a.candidate.hourlyRate);
     }
 
-    return result;
-  }, [searchQuery, selectedCategory, maxPrice, verifiedOnly, availableNowOnly, sortBy]);
+    return list;
+  }, [candidatePool, searchCriteria, verifiedOnly, availableNowOnly, sortBy]);
 
-  const paginatedCompanions = useMemo(() => {
-    if (pageSize === 'All') return filteredCompanions;
+  const paginatedCandidates = useMemo(() => {
+    if (pageSize === 'All') return rankedResults;
     const start = (currentPage - 1) * pageSize;
-    return filteredCompanions.slice(start, start + pageSize);
-  }, [filteredCompanions, currentPage, pageSize]);
+    return rankedResults.slice(start, start + pageSize);
+  }, [rankedResults, currentPage, pageSize]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       
-      {/* Header & Quick Search Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 glass-panel p-6 rounded-3xl border border-slate-800">
-        <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            Explore Verified Companions <Sparkles className="w-5 h-5 text-indigo-400" />
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">Search, compare rates, and instantly reserve background-checked partners.</p>
-        </div>
+      {/* Search Header Banner */}
+      <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 relative overflow-hidden">
+        <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
 
-        <div className="w-full lg:w-auto">
-          <SearchAndLimitBar
-            searchQuery={searchQuery}
-            onSearchChange={(q) => { setSearchQuery(q); setCurrentPage(1); }}
-            pageSize={pageSize}
-            onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
-            placeholder="Search by name, skills, or city..."
-            sortBy={sortBy}
-            onSortChange={(val) => setSortBy(val as any)}
-            sortOptions={[
-              { label: 'AI Rank', value: 'AI' },
-              { label: 'Best Rating', value: 'RATING' },
-              { label: 'Price: Low to High', value: 'PRICE_LOW' },
-              { label: 'Price: High to Low', value: 'PRICE_HIGH' }
-            ]}
-          />
+        <div className="space-y-4 relative z-10">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <span className="px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-400 text-xs font-bold font-mono tracking-wider flex items-center gap-1.5 w-fit mb-2">
+                <Sparkles className="w-3.5 h-3.5" /> 9-FACTOR COMPOSITE MATCH ENGINE
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Marketplace Search & Companion Discovery</h1>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-[11px] font-mono text-emerald-400 font-bold flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" /> SAFETY GATE: ACTIVE
+              </span>
+            </div>
+          </div>
+
+          {/* Quick Search Controls Bar */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
+            
+            {/* Location */}
+            <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                <MapPin className="w-3 h-3 text-indigo-400" /> Location
+              </label>
+              <input 
+                type="text" 
+                value={locationQuery}
+                onChange={(e) => setLocationQuery(e.target.value)}
+                placeholder="City e.g. Raipur"
+                className="w-full bg-transparent text-xs text-white font-semibold focus:outline-none"
+              />
+            </div>
+
+            {/* Service Category */}
+            <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                <Zap className="w-3 h-3 text-cyan-400" /> Service Category
+              </label>
+              <select 
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full bg-transparent text-xs text-white font-semibold focus:outline-none cursor-pointer"
+              >
+                {categoriesList.map(cat => (
+                  <option key={cat} value={cat} className="bg-slate-900 text-white">{cat}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Date */}
+            <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                <Calendar className="w-3 h-3 text-amber-400" /> Date
+              </label>
+              <input 
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="w-full bg-transparent text-xs text-white font-semibold focus:outline-none"
+              />
+            </div>
+
+            {/* Time Slot */}
+            <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                <Clock className="w-3 h-3 text-rose-400" /> Time Window
+              </label>
+              <input 
+                type="text"
+                value={selectedTime}
+                onChange={(e) => setSelectedTime(e.target.value)}
+                placeholder="10:00 AM - 04:00 PM"
+                className="w-full bg-transparent text-xs text-white font-semibold focus:outline-none"
+              />
+            </div>
+
+          </div>
         </div>
       </div>
 
-
-      {/* Main Grid: Filters Sidebar + Companion Cards */}
+      {/* Filter Sidebar & Search Results Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         
-        {/* Filter Sidebar */}
+        {/* Filter Controls Sidebar */}
         <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-6 h-fit">
           <div className="flex items-center justify-between border-b border-slate-800 pb-4">
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <SlidersHorizontal className="w-4 h-4 text-indigo-400" /> Advanced Filters
+              <SlidersHorizontal className="w-4 h-4 text-indigo-400" /> Refine Search
             </h3>
             <button 
               onClick={() => {
+                setLocationQuery('Raipur');
                 setSelectedCategory('ALL');
                 setMaxPrice(150);
-                setVerifiedOnly(false);
-                setAvailableNowOnly(false);
-                setSearchQuery('');
+                setVerifiedOnly(true);
               }}
               className="text-[11px] text-indigo-400 hover:underline font-medium"
             >
@@ -115,28 +218,8 @@ export default function SearchPage() {
             </button>
           </div>
 
-          {/* Category Filter */}
+          {/* Max Hourly Rate */}
           <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">Service Category</label>
-            <div className="space-y-1">
-              {categoriesList.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all ${
-                    selectedCategory === cat 
-                      ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 font-semibold' 
-                      : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Price Range Slider */}
-          <div className="space-y-2 pt-2 border-t border-slate-800">
             <div className="flex justify-between items-center text-xs">
               <span className="font-bold text-slate-300 uppercase tracking-wider">Max Hourly Rate</span>
               <span className="font-mono text-emerald-400 font-bold">${maxPrice}/hr</span>
@@ -152,11 +235,26 @@ export default function SearchPage() {
             />
           </div>
 
-          {/* Verification & Availability Toggles */}
+          {/* Sort By Option */}
+          <div className="space-y-2 pt-2 border-t border-slate-800">
+            <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">Ranking Strategy</label>
+            <select 
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-semibold"
+            >
+              <option value="MATCH_SCORE">9-Factor Match Score (Default)</option>
+              <option value="RATING">Highest Customer Rating</option>
+              <option value="PRICE_LOW">Price: Low to High</option>
+              <option value="PRICE_HIGH">Price: High to Low</option>
+            </select>
+          </div>
+
+          {/* Safety & Verification Toggles */}
           <div className="space-y-3 pt-2 border-t border-slate-800">
             <label className="flex items-center justify-between text-xs text-slate-300 cursor-pointer">
               <span className="flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" /> KYC Verified Only
+                <ShieldCheck className="w-4 h-4 text-emerald-400" /> Mandatory Identity Verified
               </span>
               <input 
                 type="checkbox"
@@ -165,92 +263,99 @@ export default function SearchPage() {
                 className="w-4 h-4 accent-indigo-500 rounded cursor-pointer"
               />
             </label>
-
-            <label className="flex items-center justify-between text-xs text-slate-300 cursor-pointer">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span> Available Right Now
-              </span>
-              <input 
-                type="checkbox"
-                checked={availableNowOnly}
-                onChange={(e) => setAvailableNowOnly(e.target.checked)}
-                className="w-4 h-4 accent-indigo-500 rounded cursor-pointer"
-              />
-            </label>
           </div>
+
         </div>
 
-        {/* Companion Grid */}
+        {/* Results Column */}
         <div className="lg:col-span-3 space-y-4">
+          
           <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>Showing <strong className="text-white">{filteredCompanions.length}</strong> verified companions</span>
-            <span className="font-mono text-indigo-400">AI Risk Score Verified: &lt; 0.05</span>
+            <span>Showing <strong className="text-white">{rankedResults.length}</strong> companions matched by location & score</span>
+            <span className="text-emerald-400 font-mono font-bold flex items-center gap-1">
+              <Check className="w-3.5 h-3.5" /> Safety Gate Active
+            </span>
           </div>
 
-          {filteredCompanions.length === 0 ? (
+          {paginatedCandidates.length === 0 ? (
             <div className="glass-panel p-12 rounded-3xl text-center space-y-4">
-              <p className="text-sm text-slate-400">No companions match your exact filter parameters.</p>
+              <p className="text-sm text-slate-400">No companions match your search parameters.</p>
               <button 
-                onClick={() => { setSelectedCategory('ALL'); setMaxPrice(200); setSearchQuery(''); }}
+                onClick={() => { setSelectedCategory('ALL'); setMaxPrice(200); setLocationQuery(''); }}
                 className="px-4 py-2 rounded-xl bg-slate-800 text-xs font-semibold text-white hover:bg-slate-700"
               >
-                Clear Filters
+                Clear Search
               </button>
             </div>
           ) : (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {paginatedCompanions.map((comp) => (
-                  <div key={comp.id} className="rounded-3xl glass-card border border-slate-800 overflow-hidden hover:border-slate-700 transition-all flex flex-col justify-between group">
-                    
-                    <div className="relative h-60 overflow-hidden">
+                {paginatedCandidates.map(({ candidate, matchResult }) => (
+                  <div 
+                    key={candidate.id} 
+                    className={`rounded-3xl glass-card border overflow-hidden transition-all flex flex-col justify-between group ${matchResult.passedSafetyGate ? 'border-slate-800 hover:border-indigo-500/50' : 'border-rose-500/40 bg-rose-500/5'}`}
+                  >
+                    <div className="relative h-56 overflow-hidden">
                       <img 
-                        src={comp.avatar} 
-                        alt={comp.name}
+                        src={candidate.avatar} 
+                        alt={candidate.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
 
-                      {comp.verificationBadge && (
-                        <span className="absolute top-3 left-3 px-2 py-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-emerald-500/40 text-emerald-400 text-[10px] font-bold flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> VERIFIED
+                      {/* Top Match Score Pill */}
+                      <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-slate-950/90 backdrop-blur-md border border-indigo-500/40 text-indigo-300 text-[10px] font-mono font-extrabold flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-indigo-400" /> MATCH: {matchResult.totalMatchScore}%
+                      </div>
+
+                      {/* Safety Gate Status Pill */}
+                      {matchResult.passedSafetyGate ? (
+                        <span className="absolute top-3 right-3 px-2 py-1 rounded-full bg-slate-950/90 backdrop-blur-md border border-emerald-500/40 text-emerald-400 text-[10px] font-bold flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-400" /> PASSED GATE
+                        </span>
+                      ) : (
+                        <span className="absolute top-3 right-3 px-2 py-1 rounded-full bg-rose-950/90 backdrop-blur-md border border-rose-500/40 text-rose-400 text-[10px] font-bold flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3 text-rose-400" /> GATE FAILED
                         </span>
                       )}
 
-                      <div className="absolute top-3 right-3 px-2 py-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-slate-800 text-amber-400 text-[10px] font-bold flex items-center gap-1">
-                        <Star className="w-3 h-3 fill-amber-400" /> {comp.ratingAvg}
-                      </div>
-
                       <div className="absolute bottom-3 left-3 right-3">
-                        <h3 className="text-base font-bold text-white">{comp.name}, {comp.age}</h3>
+                        <h3 className="text-base font-bold text-white">{candidate.name}</h3>
                         <p className="text-[11px] text-slate-300 flex items-center gap-1">
-                          <MapPin className="w-3 h-3 text-indigo-400" /> {comp.city}, {comp.country}
+                          <MapPin className="w-3 h-3 text-indigo-400" /> {candidate.city} ({candidate.distanceKm} km away)
                         </p>
                       </div>
                     </div>
 
                     <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
-                      <p className="text-xs text-slate-400 line-clamp-2">{comp.bio}</p>
-
-                      <div className="flex flex-wrap gap-1">
-                        {comp.skills.slice(0, 2).map((s, i) => (
-                          <span key={i} className="px-2 py-0.5 rounded-md bg-slate-900 text-[10px] text-slate-300 border border-slate-800">
-                            {s}
-                          </span>
-                        ))}
+                      
+                      {/* Match Factor Mini Matrix */}
+                      <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800/80 space-y-1.5 text-[10px]">
+                        <div className="flex items-center justify-between text-slate-400">
+                          <span>Service Match:</span>
+                          <strong className="text-white">{matchResult.breakdown.serviceScore}/20</strong>
+                        </div>
+                        <div className="flex items-center justify-between text-slate-400">
+                          <span>Location Compatibility:</span>
+                          <strong className="text-white">{matchResult.breakdown.locationScore}/20</strong>
+                        </div>
+                        <div className="flex items-center justify-between text-slate-400">
+                          <span>Safety & Verification:</span>
+                          <strong className="text-emerald-400">{matchResult.breakdown.safetyScore}/10</strong>
+                        </div>
                       </div>
 
-                      <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between">
+                      <div className="pt-2 flex items-center justify-between">
                         <div>
-                          <span className="text-[10px] text-slate-500">Hourly Rate</span>
-                          <p className="text-base font-extrabold text-white">${comp.hourlyRate}<span className="text-xs font-normal text-slate-400">/hr</span></p>
+                          <span className="text-[10px] text-slate-500 block">Hourly Rate</span>
+                          <p className="text-base font-extrabold text-white">${candidate.hourlyRate}<span className="text-xs font-normal text-slate-400">/hr</span></p>
                         </div>
                         
                         <Link 
-                          href={`/companion/${comp.id}`}
-                          className="px-4 py-2 rounded-xl gradient-bg-primary text-white text-xs font-bold hover:opacity-90 transition-opacity"
+                          href={`/companion/${candidate.id}`}
+                          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${matchResult.passedSafetyGate ? 'gradient-bg-primary text-white hover:opacity-95 shadow-md shadow-indigo-600/20' : 'bg-slate-800 text-slate-500 cursor-not-allowed'}`}
                         >
-                          Book Now
+                          {matchResult.passedSafetyGate ? 'Book Companion' : 'Restricted'}
                         </Link>
                       </div>
                     </div>
@@ -259,10 +364,9 @@ export default function SearchPage() {
                 ))}
               </div>
 
-              {/* Full Pagination Footer */}
               <PaginationFooter
                 currentPage={currentPage}
-                totalItems={filteredCompanions.length}
+                totalItems={rankedResults.length}
                 pageSize={pageSize}
                 onPageChange={(page) => setCurrentPage(page)}
                 labelSingular="companion"
@@ -270,6 +374,7 @@ export default function SearchPage() {
               />
             </div>
           )}
+
         </div>
 
       </div>
@@ -277,4 +382,3 @@ export default function SearchPage() {
     </div>
   );
 }
-

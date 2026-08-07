@@ -17,12 +17,16 @@ import {
   DollarSign,
   ArrowRight,
   UserCheck,
-  Tag
+  Tag,
+  Check,
+  RefreshCw,
+  FileText
 } from 'lucide-react';
 import { MOCK_COMPANIONS } from '@/lib/mockData';
 import { useAdminStore } from '@/lib/adminStore';
 import { PromoCodeItem } from '@/lib/types';
-
+import { BookingStateMachine, BookingStatusType } from '@/lib/bookingStateMachine';
+import { FinancialLedgerService } from '@/lib/paymentArchitecture';
 
 export default function BookingPage() {
   const params = useParams();
@@ -48,15 +52,31 @@ export default function BookingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
 
-  // Dynamic Financial Pricing Logic connected to Admin Store
+  // Booking Lifecycle State Machine state
+  const [bookingStatus, setBookingStatus] = useState<BookingStatusType>('REQUESTED');
+
+  // Dynamic Financial Pricing Logic
   const hourlyRate = companion.hourlyRate || 75;
   const rawBaseAmount = bookingType === 'hourly' ? hourlyRate * selectedHours : (companion.dailyRate || 500);
   const baseAmount = discountPercent > 0 ? Math.round(rawBaseAmount * (1 - discountPercent / 100)) : rawBaseAmount;
 
-  const escrowFee = Math.round(baseAmount * (config.escrowHoldingFeePercent / 100)); // Dynamic Bank Escrow Fee
-  const platformFee = Math.round(baseAmount * (config.platformFeePercent / 100)); // Dynamic Platform Fee
-  const gstTax = Math.round(baseAmount * (config.gstTaxPercent / 100)); // Dynamic GST Tax
+  const escrowFee = Math.round(baseAmount * (config.escrowHoldingFeePercent / 100)); 
+  const platformFee = Math.round(baseAmount * (config.platformFeePercent / 100)); 
+  const gstTax = Math.round(baseAmount * (config.gstTaxPercent / 100)); 
   const totalAmount = baseAmount + escrowFee + platformFee + gstTax;
+
+  // Double-Entry Financial Ledger Calculation
+  const ledgerEntries = React.useMemo(() => {
+    return FinancialLedgerService.processBookingFinancialSplit({
+      bookingId: 'BK-8821',
+      userId: 'usr-client-201',
+      companionId: companion.id,
+      grossAmount: totalAmount,
+      platformCommissionPercent: 15.0,
+      provider: paymentProvider === 'RAZORPAY' ? 'RAZORPAY' : 'STRIPE',
+      transactionId: `tx_proof_${Date.now()}`
+    });
+  }, [totalAmount, companion.id, paymentProvider]);
 
   const handleApplyPromo = () => {
     const match = promos.find((p: PromoCodeItem) => p.code.toUpperCase() === promoInput.trim().toUpperCase() && p.isActive);
@@ -69,10 +89,24 @@ export default function BookingPage() {
     }
   };
 
-
   const handleLockEscrowBooking = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+
+    // Validate transition via Backend Booking State Machine
+    const transition = BookingStateMachine.transition({
+      bookingId: 'BK-8821',
+      currentStatus: 'REQUESTED',
+      targetStatus: 'ACCEPTED',
+      actorId: 'usr-client-201',
+      actorRole: 'USER'
+    });
+
+    if (!transition.success) {
+      setIsSubmitting(false);
+      alert(`State Machine Error: ${transition.error}`);
+      return;
+    }
 
     addBooking({
       userId: 'usr-201',
@@ -96,17 +130,27 @@ export default function BookingPage() {
       platformFee,
       escrowFee,
       totalAmount,
-      status: 'ESCROW_LOCKED',
+      status: 'CONFIRMED' as any,
       paymentMethod: paymentProvider,
       escrowStatus: 'HELD'
     });
 
     setTimeout(() => {
       setIsSubmitting(false);
+      setBookingStatus('CONFIRMED');
       setBookingConfirmed(true);
     }, 1200);
   };
 
+  const LIFECYCLE_STEPS: { status: BookingStatusType; label: string }[] = [
+    { status: 'REQUESTED', label: 'Requested' },
+    { status: 'ACCEPTED', label: 'Accepted' },
+    { status: 'PAYMENT_AUTHORIZED', label: 'Payment Authorized' },
+    { status: 'CONFIRMED', label: 'Confirmed' },
+    { status: 'STARTED', label: 'Started' },
+    { status: 'COMPLETED', label: 'Completed' },
+    { status: 'RELEASED', label: 'Funds Released' },
+  ];
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -116,8 +160,37 @@ export default function BookingPage() {
         <Link href="/search" className="text-xs text-indigo-400 font-semibold hover:underline">
           ← Back to Companion Search
         </Link>
-        <h1 className="text-3xl font-extrabold text-white tracking-tight">Configure Escrow Booking</h1>
-        <p className="text-xs text-slate-400">Lock funds into secure escrow holding until your booking is completed.</p>
+        <h1 className="text-3xl font-extrabold text-white tracking-tight">Configure Escrow Booking & Payment</h1>
+        <p className="text-xs text-slate-400">Lock funds into secure escrow holding managed by double-entry ledger architecture.</p>
+      </div>
+
+      {/* Visual Booking State Machine Lifecycle Progress Bar */}
+      <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+            <RefreshCw className="w-4 h-4 text-indigo-400" /> Booking State Machine Lifecycle
+          </h3>
+          <span className="px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-mono font-bold border border-indigo-500/40">
+            STATE: {bookingStatus}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 pt-2">
+          {LIFECYCLE_STEPS.map((step, idx) => {
+            const isCompleted = bookingConfirmed || step.status === 'REQUESTED';
+            return (
+              <div 
+                key={step.status}
+                className={`p-2.5 rounded-2xl border text-center transition-all ${isCompleted ? 'bg-indigo-600/20 border-indigo-500/50 text-white' : 'bg-slate-950 border-slate-900 text-slate-600'}`}
+              >
+                <div className={`w-5 h-5 rounded-full mx-auto mb-1 flex items-center justify-center text-[10px] font-bold ${isCompleted ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-500'}`}>
+                  {isCompleted ? <Check className="w-3 h-3" /> : idx + 1}
+                </div>
+                <span className="text-[10px] font-bold block truncate">{step.label}</span>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {bookingConfirmed ? (
@@ -129,31 +202,35 @@ export default function BookingPage() {
 
           <div className="space-y-2 max-w-md mx-auto">
             <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-mono font-bold border border-emerald-500/30">
-              ESCROW HOLD ACTIVE
+              ESCROW HOLD ACTIVE & LEDGER LOGGED
             </span>
-            <h2 className="text-2xl font-bold text-white">Booking Request Dispatched!</h2>
+            <h2 className="text-2xl font-bold text-white">Booking Request Dispatched & Confirmed!</h2>
             <p className="text-xs text-slate-300">
-              Your payment of <span className="font-extrabold text-white">${totalAmount}.00 USD</span> is now securely held in bank escrow. Funds will NOT be paid to <span className="text-white font-bold">{companion.name}</span> until you mutually approve task completion.
+              Your payment of <span className="font-extrabold text-white">${totalAmount}.00 USD</span> is now securely held in bank escrow. Funds will NOT be paid to <span className="text-white font-bold">{companion.name}</span> until task completion.
             </p>
           </div>
 
-          {/* Booking Summary Ticket */}
-          <div className="max-w-md mx-auto p-5 rounded-2xl bg-slate-950 border border-slate-800 text-left space-y-3 text-xs">
-            <div className="flex justify-between text-slate-400 border-b border-slate-800 pb-2">
-              <span>Booking Reference</span>
-              <span className="font-mono text-white font-bold">#BK-{Math.floor(100000 + Math.random() * 900000)}</span>
-            </div>
-            <div className="flex justify-between text-slate-400">
-              <span>Companion</span>
-              <span className="text-white font-bold">{companion.name} ({companion.city})</span>
-            </div>
-            <div className="flex justify-between text-slate-400">
-              <span>Date & Time</span>
-              <span className="text-white font-bold">{selectedDate} @ {selectedTimeSlot}</span>
-            </div>
-            <div className="flex justify-between text-slate-400">
-              <span>Location</span>
-              <span className="text-white font-bold truncate max-w-[200px]">{locationAddress}</span>
+          {/* Immutable Double-Entry Ledger Summary */}
+          <div className="max-w-xl mx-auto p-5 rounded-2xl bg-slate-950 border border-slate-800 text-left space-y-3 text-xs">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2 border-b border-slate-800 pb-2">
+              <FileText className="w-4 h-4 text-emerald-400" /> Immutable Financial Ledger Audit Trail
+            </h4>
+
+            <div className="space-y-2">
+              {ledgerEntries.map((entry) => (
+                <div key={entry.id} className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between text-[11px]">
+                  <div>
+                    <span className="font-mono text-indigo-400 font-bold block">{entry.type}</span>
+                    <span className="text-[10px] text-slate-500">{entry.id} • Provider: {entry.provider}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className={`font-mono font-bold block ${entry.direction === 'CREDIT' ? 'text-emerald-400' : 'text-slate-200'}`}>
+                      {entry.direction === 'CREDIT' ? '+' : '-'}${entry.amount}.00 {entry.currency}
+                    </span>
+                    <span className="text-[9px] text-slate-400 font-mono">{entry.status}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -347,7 +424,7 @@ export default function BookingPage() {
                 disabled={isSubmitting}
                 className="w-full py-4 rounded-2xl gradient-bg-primary text-white font-extrabold text-sm hover:opacity-95 transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2"
               >
-                {isSubmitting ? 'Locking Escrow Funds...' : `Lock $${totalAmount}.00 in Bank Escrow & Request Booking`} <Lock className="w-4 h-4" />
+                {isSubmitting ? 'Validating State Machine & Locking Ledger...' : `Lock $${totalAmount}.00 in Bank Escrow & Request Booking`} <Lock className="w-4 h-4" />
               </button>
 
             </form>

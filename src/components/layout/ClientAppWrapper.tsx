@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
+import { ToastProvider } from '@/components/ui/Toast';
 import { PanicAlertModal } from '@/components/safety/PanicAlertModal';
 import { AiAssistantDrawer } from '@/components/ai/AiAssistantDrawer';
 import { RoleType } from '@/lib/types';
@@ -29,16 +31,18 @@ export function ClientAppWrapper({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <>
+    <ToastProvider>
       <Header 
         currentRole={currentRole} 
         onRoleChange={setCurrentRole} 
         onTriggerSos={() => setSosModalOpen(true)} 
       />
 
-      <main className="flex-1">
+      <main className="flex-1 pb-16 md:pb-0">
         {children}
       </main>
+
+      <MobileBottomNav />
 
       <Footer />
 
@@ -51,7 +55,7 @@ export function ClientAppWrapper({ children }: { children: React.ReactNode }) {
       {/* Floating AI Assistant Trigger Button */}
       <button
         onClick={() => setAiDrawerOpen(true)}
-        className="fixed bottom-6 right-6 z-40 p-3.5 rounded-full gradient-bg-primary text-white shadow-2xl shadow-indigo-500/40 hover:scale-110 transition-transform flex items-center gap-2 group"
+        className="fixed bottom-20 md:bottom-6 right-6 z-40 p-3.5 rounded-full gradient-bg-primary text-white shadow-2xl shadow-indigo-500/40 hover:scale-110 transition-transform flex items-center gap-2 group"
         title="Open AI Smart Assistant"
       >
         <Bot className="w-6 h-6 animate-pulse" />
@@ -65,6 +69,6 @@ export function ClientAppWrapper({ children }: { children: React.ReactNode }) {
         isOpen={aiDrawerOpen} 
         onClose={() => setAiDrawerOpen(false)} 
       />
-    </>
+    </ToastProvider>
   );
 }

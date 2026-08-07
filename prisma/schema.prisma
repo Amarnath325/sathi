@@ -20,9 +20,13 @@ enum RoleType {
 
 enum VerificationStatus {
   PENDING
+  IN_PROGRESS
+  VERIFIED
+  FAILED
+  EXPIRED
+  REVOKED
   APPROVED
   REJECTED
-  EXPIRED
 }
 
 enum DocumentType {
@@ -36,14 +40,62 @@ enum DocumentType {
 }
 
 enum BookingStatus {
-  PENDING_APPROVAL
+  REQUESTED
   ACCEPTED
-  REJECTED
-  ESCROW_LOCKED
-  IN_PROGRESS
+  PAYMENT_AUTHORIZED
+  CONFIRMED
+  STARTED
   COMPLETED
+  SETTLEMENT_PENDING
+  RELEASED
+  DECLINED
   CANCELLED
   DISPUTED
+  PENDING_APPROVAL
+  ESCROW_LOCKED
+  IN_PROGRESS
+}
+
+enum FinancialLedgerType {
+  PAYMENT
+  PLATFORM_FEE
+  REFUND
+  PAYOUT
+  PENALTY
+  ADJUSTMENT
+  CHARGEBACK
+}
+
+model ServicePolicy {
+  id                      String    @id @default(uuid())
+  serviceId               String    @unique
+  serviceName             String
+  categoryName            String
+  riskLevel               RiskLevel @default(LOW)
+  allowed                 Boolean   @default(true)
+  requiresVerification    Boolean   @default(true)
+  requiresAdminApproval   Boolean   @default(false)
+  requiresLocation        Boolean   @default(true)
+  requiresAgeVerification Boolean   @default(true)
+  description             String?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+}
+
+model FinancialLedger {
+  id                   String              @id @default(uuid())
+  bookingId            String?
+  userId               String
+  type                 FinancialLedgerType @default(PAYMENT)
+  amount               Float
+  currency             String              @default("USD")
+  direction            String              // CREDIT or DEBIT
+  status               String              @default("COMPLETED")
+  provider             String              @default("STRIPE")
+  providerTransactionId String?
+  createdAt            DateTime            @default(now())
+
+  @@index([bookingId, userId, type])
 }
 
 enum PaymentMethod {
