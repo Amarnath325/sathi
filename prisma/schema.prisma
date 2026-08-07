@@ -570,5 +570,77 @@ model TrustedDeviceSession {
   @@index([userId, deviceFingerprint])
 }
 
+enum AuditAction {
+  CREATE
+  READ
+  UPDATE
+  DELETE
+  EXECUTE
+  AUTHENTICATE
+  AUTHORIZE_OVERRIDE
+  EXPORT
+}
+
+enum AuditChecksumStatus {
+  VALID
+  CORRUPTED
+  TAMPERED
+}
+
+enum AuditDomain {
+  FINANCE_AND_ESCROW
+  TRUST_AND_SAFETY
+  STAFF_RBAC
+  SYSTEM_CONFIG
+  USERS
+  BOOKINGS
+  REVIEWS
+  KYC_VERIFICATION
+}
+
+model AuditTrailLog {
+  id             String              @id @default(uuid())
+  sequenceNumber Int                 @default(autoincrement())
+  previousHash   String              // SHA-256 hash of previous entry
+  currentHash    String              // SHA-256 checksum of this entry
+  actorId        String
+  actorName      String
+  actorEmail     String
+  actorRole      RoleType            @default(ADMIN)
+  action         AuditAction         @default(UPDATE)
+  resourceDomain AuditDomain         @default(SYSTEM_CONFIG)
+  resourceId     String              // e.g. EscrowPayout#9901, User#usr-102
+  payload        Json?               // Details diff or payload
+  ipAddress      String
+  userAgent      String?
+  checksumStatus AuditChecksumStatus @default(VALID)
+  timestamp      DateTime            @default(now())
+
+  @@index([sequenceNumber, resourceDomain, checksumStatus])
+}
+
+model AuditRetentionPolicy {
+  id                  String      @id @default(uuid())
+  domain              AuditDomain @unique
+  retentionDays       Int         @default(2555) // 7 years default for finance
+  autoArchive         Boolean     @default(true)
+  coldStorageEnabled  Boolean     @default(true)
+  complianceStandard  String      @default("SOC2_TYPE_II") // SOC2, HIPAA, GDPR, PCI_DSS
+  updatedAt           DateTime    @updatedAt
+}
+
+model AuditExportJob {
+  id             String   @id @default(uuid())
+  requestedBy    String
+  domainFilter   String   @default("ALL")
+  startDate      DateTime
+  endDate        DateTime
+  format         String   @default("CRYPTOGRAPHIC_PROOF") // CSV, JSON, PDF_REPORT, CRYPTOGRAPHIC_PROOF
+  fileUrl        String?
+  status         String   @default("COMPLETED") // PENDING, PROCESSING, COMPLETED, FAILED
+  createdAt      DateTime @default(now())
+}
+
+
 
 
