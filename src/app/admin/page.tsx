@@ -446,7 +446,7 @@ export default function AdminDashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex overflow-hidden font-sans">
+    <div className="h-screen max-h-screen w-full bg-slate-950 text-slate-100 flex overflow-hidden font-sans">
       
       {/* ========================================== */}
       {/* 🟢 ENTERPRISE LEFT SIDEBAR (DESKTOP)       */}
@@ -454,7 +454,7 @@ export default function AdminDashboardPage() {
       <aside 
         className={`hidden lg:flex ${
           sidebarCollapsed ? 'w-20' : 'w-72'
-        } bg-slate-900/90 border-r border-slate-800/80 backdrop-blur-xl flex-col justify-between transition-all duration-300 relative z-30 shrink-0 select-none`}
+        } h-screen sticky top-0 bg-slate-900/90 border-r border-slate-800/80 backdrop-blur-xl flex-col justify-between transition-all duration-300 relative z-30 shrink-0 select-none`}
       >
         <div>
           {/* Logo Header */}
@@ -631,7 +631,7 @@ export default function AdminDashboardPage() {
       {/* ========================================== */}
       {/* 🟦 MAIN ERP DASHBOARD CONTENT AREA        */}
       {/* ========================================== */}
-      <main className="flex-1 flex flex-col min-h-screen bg-slate-950">
+      <main className="flex-1 flex flex-col h-screen overflow-y-auto bg-slate-950 custom-scrollbar">
         
         {/* Top ERP Header Navigation Bar */}
         <header className="h-20 border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md px-4 sm:px-8 flex items-center justify-between shrink-0 sticky top-0 z-30">

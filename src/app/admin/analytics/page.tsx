@@ -19,7 +19,7 @@ export default function AnalyticsAdminPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 space-y-6 max-w-7xl mx-auto pb-20">
+    <div className="w-full bg-slate-950 text-slate-100 p-4 md:p-8 space-y-6 max-w-7xl mx-auto pb-20">
       {/* Header Controls & Filter Tabs */}
       <AnalyticsHeaderControls
         onOpenReportBuilder={() => setIsReportBuilderOpen(true)}

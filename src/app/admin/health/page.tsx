@@ -16,7 +16,7 @@ export default function AdminSystemHealthPage() {
   const activeAlertsCount = alerts.filter((a) => !a.isResolved).length;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-6 lg:p-8 space-y-8">
+    <div className="w-full bg-slate-950 text-slate-100 p-4 sm:p-6 lg:p-8 space-y-8">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Chaos Active Banner Alert */}
         {isChaosTesting && (

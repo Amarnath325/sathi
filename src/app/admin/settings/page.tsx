@@ -15,7 +15,7 @@ export default function AdminSystemSettingsPage() {
   const { general, finance, storage, maintenance, toggleMaintenanceMode } = useSystemSettingsStore();
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-6 lg:p-8 space-y-8">
+    <div className="w-full bg-slate-950 text-slate-100 p-4 sm:p-6 lg:p-8 space-y-8">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Maintenance Banner Alert */}
         {maintenance.isMaintenanceActive && (
