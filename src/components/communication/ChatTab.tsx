@@ -411,6 +411,11 @@ export default function ChatTab() {
             </div>
           )}
 
+          {/* Section 48: Chat Safety Warning Banner */}
+          <div className="mx-4 mt-3 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-300 font-semibold flex items-center justify-between">
+            <span>🛡️ <strong>Safety Warning:</strong> Never share passwords, OTPs, or financial info. Keep all payments inside Companion Connect.</span>
+          </div>
+
           {/* Messages Stream */}
           <div className="flex-1 p-4 overflow-y-auto space-y-3">
             {activeConv.messages.map(msg => (

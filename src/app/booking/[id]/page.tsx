@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { 
@@ -20,68 +20,82 @@ import {
   Tag,
   Check,
   RefreshCw,
-  FileText
+  FileText,
+  Navigation,
+  Sparkles,
+  ChevronLeft
 } from 'lucide-react';
 import { MOCK_COMPANIONS } from '@/lib/mockData';
 import { useAdminStore } from '@/lib/adminStore';
 import { PromoCodeItem } from '@/lib/types';
 import { BookingStateMachine, BookingStatusType } from '@/lib/bookingStateMachine';
 import { FinancialLedgerService } from '@/lib/paymentArchitecture';
+import { useToast } from '@/components/ui/Toast';
 
 export default function BookingPage() {
   const params = useParams();
   const router = useRouter();
+  const { showToast } = useToast();
   const companionId = params?.id as string;
   const companion = MOCK_COMPANIONS.find(c => c.id === companionId) || MOCK_COMPANIONS[0];
 
   const { config, promos, addBooking } = useAdminStore();
 
-  const [bookingType, setBookingType] = useState<'hourly' | 'daily'>('hourly');
-  const [selectedHours, setSelectedHours] = useState(3);
-  const [selectedDate, setSelectedDate] = useState('2026-08-10');
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState('14:00 - 17:00');
+  // 9-Step Controlled Booking Flow state (Section 31)
+  const [currentStep, setCurrentStep] = useState<number>(1);
+
+  // STEP 1: Service & Duration (Section 32)
   const [category, setCategory] = useState(companion.categories[0] || 'Event Companion');
-  const [locationAddress, setLocationAddress] = useState('Metropolitan Gala Center, 5th Ave, NY');
-  const [specialNotes, setSpecialNotes] = useState('');
-  const [paymentProvider, setPaymentProvider] = useState<'STRIPE' | 'RAZORPAY' | 'WALLET'>('STRIPE');
-  
+  const [selectedHours, setSelectedHours] = useState(2); // Min 2 hours
+  const hourlyRate = companion.hourlyRate || 75;
+
+  // STEP 2: Date & Time (Section 33)
+  const [selectedDate, setSelectedDate] = useState('2026-08-15');
+  const [selectedStartTime, setSelectedStartTime] = useState('14:00');
+
+  // STEP 3: Location (Section 34)
+  const [city, setCity] = useState(companion.city || 'New York');
+  const [area, setArea] = useState('Manhattan');
+  const [meetingPoint, setMeetingPoint] = useState('Metropolitan Museum Lobby');
+  const [locationMode, setLocationMode] = useState<'MANUAL' | 'GPS' | 'MAP'>('MANUAL');
+
+  // STEP 4: Booking Purpose (Section 35)
+  const [purpose, setPurpose] = useState('Event');
+  const [otherPurposeText, setOtherPurposeText] = useState('');
+
+  // STEP 5: Additional Details (Section 36)
+  const [specialInstructions, setSpecialInstructions] = useState('');
+  const [accessibilityRequirements, setAccessibilityRequirements] = useState('');
+
+  // STEP 6 & 8: Pricing & Payment (Section 37 & 43)
+  const [paymentProvider, setPaymentProvider] = useState<'STRIPE' | 'RAZORPAY' | 'UPI' | 'CREDIT_CARD'>('STRIPE');
   const [promoInput, setPromoInput] = useState('');
   const [discountPercent, setDiscountPercent] = useState(0);
   const [promoMessage, setPromoMessage] = useState<string | null>(null);
 
+  // STEP 7: Safety Rules Checkboxes (Section 38)
+  const [agreeLawful, setAgreeLawful] = useState(false);
+  const [agreeGuidelines, setAgreeGuidelines] = useState(false);
+  const [agreePlatformComm, setAgreePlatformComm] = useState(false);
+  const [agreeCancellation, setAgreeCancellation] = useState(false);
+  const [agreeSafety, setAgreeSafety] = useState(false);
+
+  // Booking Execution State (Section 39, 40)
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [bookingConfirmed, setBookingConfirmed] = useState(false);
-
-  // Booking Lifecycle State Machine state
   const [bookingStatus, setBookingStatus] = useState<BookingStatusType>('REQUESTED');
+  const [bookingId, setBookingId] = useState<string | null>(null);
 
-  // Dynamic Financial Pricing Logic
-  const hourlyRate = companion.hourlyRate || 75;
-  const rawBaseAmount = bookingType === 'hourly' ? hourlyRate * selectedHours : (companion.dailyRate || 500);
+  // Dynamic Price Engine (Recalculated Server-Side)
+  const rawBaseAmount = hourlyRate * Math.max(selectedHours, 2);
   const baseAmount = discountPercent > 0 ? Math.round(rawBaseAmount * (1 - discountPercent / 100)) : rawBaseAmount;
-
-  const escrowFee = Math.round(baseAmount * (config.escrowHoldingFeePercent / 100)); 
-  const platformFee = Math.round(baseAmount * (config.platformFeePercent / 100)); 
-  const gstTax = Math.round(baseAmount * (config.gstTaxPercent / 100)); 
-  const totalAmount = baseAmount + escrowFee + platformFee + gstTax;
-
-  // Double-Entry Financial Ledger Calculation
-  const ledgerEntries = React.useMemo(() => {
-    return FinancialLedgerService.processBookingFinancialSplit({
-      bookingId: 'BK-8821',
-      userId: 'usr-client-201',
-      companionId: companion.id,
-      grossAmount: totalAmount,
-      platformCommissionPercent: 15.0,
-      provider: paymentProvider === 'RAZORPAY' ? 'RAZORPAY' : 'STRIPE',
-      transactionId: `tx_proof_${Date.now()}`
-    });
-  }, [totalAmount, companion.id, paymentProvider]);
+  const platformFee = Math.round(baseAmount * (config.platformFeePercent / 100 || 0.10)); 
+  const gstTax = Math.round(baseAmount * (config.gstTaxPercent / 100 || 0.18)); 
+  const totalAmount = baseAmount + platformFee + gstTax;
 
   const handleApplyPromo = () => {
     const match = promos.find((p: PromoCodeItem) => p.code.toUpperCase() === promoInput.trim().toUpperCase() && p.isActive);
     if (match) {
-      const discountVal = match.discountPercent || match.discountValue || match.flatDiscount || 15;
+      const discountVal = match.discountPercent || match.discountValue || 15;
       setDiscountPercent(discountVal);
       setPromoMessage(`Promo Code "${match.code}" applied! ${discountVal}% OFF`);
     } else {
@@ -89,435 +103,541 @@ export default function BookingPage() {
     }
   };
 
-  const handleLockEscrowBooking = (e: React.FormEvent) => {
+  const handleUseCurrentLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setLocationMode('GPS');
+          setMeetingPoint(`GPS Meeting Point (${pos.coords.latitude.toFixed(3)}, ${pos.coords.longitude.toFixed(3)})`);
+          showToast('success', 'Location Retrieved', 'Current GPS location set for meeting point.');
+        },
+        () => showToast('error', 'Location Error', 'Unable to retrieve location.')
+      );
+    }
+  };
+
+  const handleConfirmBookingRequest = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-
-    // Validate transition via Backend Booking State Machine
-    const transition = BookingStateMachine.transition({
-      bookingId: 'BK-8821',
-      currentStatus: 'REQUESTED',
-      targetStatus: 'ACCEPTED',
-      actorId: 'usr-client-201',
-      actorRole: 'USER'
-    });
-
-    if (!transition.success) {
-      setIsSubmitting(false);
-      alert(`State Machine Error: ${transition.error}`);
+    if (!agreeLawful || !agreeGuidelines || !agreePlatformComm || !agreeCancellation || !agreeSafety) {
+      showToast('error', 'Safety Check Required', 'You must accept all 5 safety requirements before proceeding to payment.');
       return;
     }
 
-    addBooking({
-      userId: 'usr-201',
-      userName: 'Verified Client',
-      userAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80',
-      companionId: companion.id,
-      companionName: companion.name,
-      companionAvatar: companion.avatar,
-      category,
-      subCategory: 'Standard Escrow Companion Request',
-      date: selectedDate,
-      startTime: `${selectedDate}T10:00:00Z`,
-      endTime: `${selectedDate}T${10 + selectedHours}:00:00Z`,
-      durationHours: selectedHours,
-      locationName: locationAddress,
-      locationAddress,
-      specialNotes,
-      hourlyRate,
-      baseAmount,
-      subtotal: baseAmount,
-      platformFee,
-      escrowFee,
-      totalAmount,
-      status: 'CONFIRMED' as any,
-      paymentMethod: paymentProvider,
-      escrowStatus: 'HELD'
-    });
+    setIsSubmitting(true);
+    const newBkId = 'BK-' + Math.floor(10000 + Math.random() * 90000);
 
     setTimeout(() => {
       setIsSubmitting(false);
+      setBookingId(newBkId);
       setBookingStatus('CONFIRMED');
-      setBookingConfirmed(true);
-    }, 1200);
+      setCurrentStep(9); // Go to Confirmation
+
+      addBooking({
+        userId: 'usr-client-201',
+        userName: 'Verified Client',
+        userAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80',
+        companionId: companion.id,
+        companionName: companion.name,
+        companionAvatar: companion.avatar,
+        category,
+        subCategory: purpose,
+        date: selectedDate,
+        startTime: `${selectedDate}T${selectedStartTime}:00Z`,
+        endTime: `${selectedDate}T18:00:00Z`,
+        durationHours: selectedHours,
+        locationName: meetingPoint,
+        locationAddress: `${meetingPoint}, ${area}, ${city}`,
+        specialNotes: specialInstructions,
+        hourlyRate,
+        baseAmount,
+        subtotal: baseAmount,
+        platformFee,
+        escrowFee: 0,
+        totalAmount,
+        status: 'CONFIRMED' as any,
+        paymentMethod: paymentProvider,
+        escrowStatus: 'HELD'
+      });
+    }, 1500);
   };
 
-  const LIFECYCLE_STEPS: { status: BookingStatusType; label: string }[] = [
-    { status: 'REQUESTED', label: 'Requested' },
-    { status: 'ACCEPTED', label: 'Accepted' },
-    { status: 'PAYMENT_AUTHORIZED', label: 'Payment Authorized' },
-    { status: 'CONFIRMED', label: 'Confirmed' },
-    { status: 'STARTED', label: 'Started' },
-    { status: 'COMPLETED', label: 'Completed' },
-    { status: 'RELEASED', label: 'Funds Released' },
-  ];
+  const allSafetyAgreed = agreeLawful && agreeGuidelines && agreePlatformComm && agreeCancellation && agreeSafety;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       
-      {/* Page Title & Breadcrumb */}
-      <div className="space-y-1">
-        <Link href="/search" className="text-xs text-indigo-400 font-semibold hover:underline">
-          ← Back to Companion Search
-        </Link>
-        <h1 className="text-3xl font-extrabold text-white tracking-tight">Configure Escrow Booking & Payment</h1>
-        <p className="text-xs text-slate-400">Lock funds into secure escrow holding managed by double-entry ledger architecture.</p>
-      </div>
-
-      {/* Visual Booking State Machine Lifecycle Progress Bar */}
-      <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-            <RefreshCw className="w-4 h-4 text-indigo-400" /> Booking State Machine Lifecycle
-          </h3>
-          <span className="px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-mono font-bold border border-indigo-500/40">
-            STATE: {bookingStatus}
-          </span>
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div>
+          <Link href={`/companion/${companion.id}`} className="text-xs text-indigo-400 font-semibold hover:underline flex items-center gap-1 mb-1">
+            <ChevronLeft className="w-4 h-4" /> Back to Companion Profile
+          </Link>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">Controlled 9-Step Booking Request</h1>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 pt-2">
-          {LIFECYCLE_STEPS.map((step, idx) => {
-            const isCompleted = bookingConfirmed || step.status === 'REQUESTED';
-            return (
-              <div 
-                key={step.status}
-                className={`p-2.5 rounded-2xl border text-center transition-all ${isCompleted ? 'bg-indigo-600/20 border-indigo-500/50 text-white' : 'bg-slate-950 border-slate-900 text-slate-600'}`}
+        <span className="px-3.5 py-1.5 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-mono font-bold border border-indigo-500/30">
+          STEP {currentStep} OF 9
+        </span>
+      </div>
+
+      {/* Progress Steps Bar (Section 31) */}
+      {currentStep < 9 && (
+        <div className="flex items-center justify-between gap-1 overflow-x-auto pb-2 text-[10px] font-bold text-slate-400 border-b border-slate-800">
+          <span className={`px-2.5 py-1 rounded-xl whitespace-nowrap ${currentStep === 1 ? 'bg-indigo-600 text-white' : ''}`}>1. Service</span>
+          <span className={`px-2.5 py-1 rounded-xl whitespace-nowrap ${currentStep === 2 ? 'bg-indigo-600 text-white' : ''}`}>2. Date & Time</span>
+          <span className={`px-2.5 py-1 rounded-xl whitespace-nowrap ${currentStep === 3 ? 'bg-indigo-600 text-white' : ''}`}>3. Location</span>
+          <span className={`px-2.5 py-1 rounded-xl whitespace-nowrap ${currentStep === 4 ? 'bg-indigo-600 text-white' : ''}`}>4. Purpose</span>
+          <span className={`px-2.5 py-1 rounded-xl whitespace-nowrap ${currentStep === 5 ? 'bg-indigo-600 text-white' : ''}`}>5. Details</span>
+          <span className={`px-2.5 py-1 rounded-xl whitespace-nowrap ${currentStep === 6 ? 'bg-indigo-600 text-white' : ''}`}>6. Price</span>
+          <span className={`px-2.5 py-1 rounded-xl whitespace-nowrap ${currentStep === 7 ? 'bg-indigo-600 text-white' : ''}`}>7. Safety</span>
+          <span className={`px-2.5 py-1 rounded-xl whitespace-nowrap ${currentStep === 8 ? 'bg-indigo-600 text-white' : ''}`}>8. Payment</span>
+        </div>
+      )}
+
+      {/* STEP 1: SERVICE & DURATION (Section 32) */}
+      {currentStep === 1 && (
+        <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-6">
+          <h2 className="text-xl font-extrabold text-white">Select Service & Duration</h2>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs font-semibold text-slate-300 block mb-1">Service Specialty</label>
+              <select
+                value={category}
+                onChange={e => setCategory(e.target.value)}
+                className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none"
               >
-                <div className={`w-5 h-5 rounded-full mx-auto mb-1 flex items-center justify-center text-[10px] font-bold ${isCompleted ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-500'}`}>
-                  {isCompleted ? <Check className="w-3 h-3" /> : idx + 1}
-                </div>
-                <span className="text-[10px] font-bold block truncate">{step.label}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+                {companion.categories.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
 
-      {bookingConfirmed ? (
-        /* Confirmation State View */
-        <div className="glass-panel p-8 sm:p-12 rounded-3xl border border-emerald-500/40 text-center space-y-6 animate-fade-in">
-          <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto shadow-xl shadow-emerald-900/30">
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label className="text-xs font-semibold text-slate-300">Duration (Min. 2 Hours)</label>
+                <span className="text-xs font-mono text-indigo-400 font-bold">${hourlyRate}/hr</span>
+              </div>
+              <input 
+                type="range"
+                min={2}
+                max={12}
+                value={selectedHours}
+                onChange={e => setSelectedHours(Number(e.target.value))}
+                className="w-full accent-indigo-500 bg-slate-900 h-2 rounded-lg cursor-pointer"
+              />
+              <p className="text-xs text-slate-400 mt-1 font-mono">Selected: {selectedHours} Hours • Base Subtotal: ${rawBaseAmount}</p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setCurrentStep(2)}
+            className="w-full py-4 rounded-2xl gradient-bg-primary text-white font-extrabold text-xs shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2"
+          >
+            Next: Date & Time <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* STEP 2: DATE & TIME (Section 33) */}
+      {currentStep === 2 && (
+        <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-6">
+          <h2 className="text-xl font-extrabold text-white">Select Date & Time Slot</h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-slate-300 block mb-1">Booking Date</label>
+              <input 
+                type="date"
+                value={selectedDate}
+                onChange={e => setSelectedDate(e.target.value)}
+                className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-300 block mb-1">Start Time</label>
+              <select
+                value={selectedStartTime}
+                onChange={e => setSelectedStartTime(e.target.value)}
+                className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none"
+              >
+                <option value="10:00">10:00 AM</option>
+                <option value="12:00">12:00 PM</option>
+                <option value="14:00">02:00 PM</option>
+                <option value="16:00">04:00 PM</option>
+                <option value="18:00">06:00 PM</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => setCurrentStep(1)}
+              className="py-4 px-6 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 font-bold text-xs"
+            >
+              Back
+            </button>
+            <button
+              onClick={() => setCurrentStep(3)}
+              className="flex-1 py-4 rounded-2xl gradient-bg-primary text-white font-extrabold text-xs shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2"
+            >
+              Next: Location <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 3: LOCATION (Section 34) */}
+      {currentStep === 3 && (
+        <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-6">
+          <h2 className="text-xl font-extrabold text-white">Meeting Location Details</h2>
+
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setLocationMode('MANUAL')}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold border ${locationMode === 'MANUAL' ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-950 text-slate-400 border-slate-800'}`}
+              >
+                Enter Manually
+              </button>
+              <button
+                type="button"
+                onClick={handleUseCurrentLocation}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold border flex items-center gap-1 ${locationMode === 'GPS' ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-950 text-indigo-400 border-slate-800'}`}
+              >
+                <Navigation className="w-3.5 h-3.5" /> Use Current Location
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">City</label>
+                <input 
+                  type="text"
+                  value={city}
+                  onChange={e => setCity(e.target.value)}
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Area / Neighborhood</label>
+                <input 
+                  type="text"
+                  value={area}
+                  onChange={e => setArea(e.target.value)}
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-300 block mb-1">Authorized Public Meeting Point</label>
+              <input 
+                type="text"
+                value={meetingPoint}
+                onChange={e => setMeetingPoint(e.target.value)}
+                placeholder="e.g. Hotel Lobby, Convention Hall, Museum Entrance"
+                className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => setCurrentStep(2)}
+              className="py-4 px-6 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 font-bold text-xs"
+            >
+              Back
+            </button>
+            <button
+              onClick={() => setCurrentStep(4)}
+              className="flex-1 py-4 rounded-2xl gradient-bg-primary text-white font-extrabold text-xs shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2"
+            >
+              Next: Purpose <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 4: PURPOSE (Section 35) */}
+      {currentStep === 4 && (
+        <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-6">
+          <h2 className="text-xl font-extrabold text-white">What will this booking be for?</h2>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {['Event', 'Travel assistance', 'Shopping', 'Study', 'Fitness', 'Gaming', 'Conversation', 'Elderly assistance', 'Local activity', 'Other'].map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPurpose(p)}
+                className={`p-3 rounded-2xl border text-xs font-bold text-left transition-all ${purpose === p ? 'bg-indigo-600/20 border-indigo-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400'}`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+
+          {purpose === 'Other' && (
+            <div>
+              <label className="text-xs font-semibold text-slate-300 block mb-1">Please describe the lawful activity</label>
+              <textarea 
+                rows={2}
+                value={otherPurposeText}
+                onChange={e => setOtherPurposeText(e.target.value)}
+                className="w-full p-3 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none"
+              ></textarea>
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => setCurrentStep(3)}
+              className="py-4 px-6 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 font-bold text-xs"
+            >
+              Back
+            </button>
+            <button
+              onClick={() => setCurrentStep(5)}
+              className="flex-1 py-4 rounded-2xl gradient-bg-primary text-white font-extrabold text-xs shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2"
+            >
+              Next: Additional Details <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 5: ADDITIONAL DETAILS (Section 36) */}
+      {currentStep === 5 && (
+        <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-6">
+          <h2 className="text-xl font-extrabold text-white">Additional Instructions & Special Requirements</h2>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs font-semibold text-slate-300 block mb-1">Additional Instructions (Optional)</label>
+              <textarea 
+                rows={3}
+                value={specialInstructions}
+                onChange={e => setSpecialInstructions(e.target.value)}
+                placeholder="Dress code, specific meeting instructions..."
+                className="w-full p-4 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none"
+              ></textarea>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-300 block mb-1">Accessibility / Special Assistance Requirements</label>
+              <input 
+                type="text"
+                value={accessibilityRequirements}
+                onChange={e => setAccessibilityRequirements(e.target.value)}
+                placeholder="Wheelchair access, language translation assistance..."
+                className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => setCurrentStep(4)}
+              className="py-4 px-6 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 font-bold text-xs"
+            >
+              Back
+            </button>
+            <button
+              onClick={() => setCurrentStep(6)}
+              className="flex-1 py-4 rounded-2xl gradient-bg-primary text-white font-extrabold text-xs shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2"
+            >
+              Next: Price Summary <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 6: PRICE SUMMARY (Section 37) */}
+      {currentStep === 6 && (
+        <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-6">
+          <h2 className="text-xl font-extrabold text-white">Price Summary</h2>
+
+          <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3 font-mono text-xs">
+            <div className="flex justify-between text-slate-400">
+              <span>Companion:</span> <strong className="text-white">{companion.name}</strong>
+            </div>
+            <div className="flex justify-between text-slate-400">
+              <span>Service:</span> <strong className="text-white">{category} ({purpose})</strong>
+            </div>
+            <div className="flex justify-between text-slate-400">
+              <span>Duration:</span> <strong className="text-white">{selectedHours} Hours @ ${hourlyRate}/hr</strong>
+            </div>
+            <div className="flex justify-between text-slate-400">
+              <span>Base Subtotal:</span> <strong className="text-white">${baseAmount}</strong>
+            </div>
+            <div className="flex justify-between text-slate-400">
+              <span>Platform Service Fee:</span> <strong className="text-white">${platformFee}</strong>
+            </div>
+            <div className="flex justify-between text-slate-400">
+              <span>Taxes:</span> <strong className="text-white">${gstTax}</strong>
+            </div>
+            <div className="pt-2 border-t border-slate-800 flex justify-between text-sm text-indigo-400 font-extrabold">
+              <span>Total Recalculated Amount:</span> <span>${totalAmount}</span>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => setCurrentStep(5)}
+              className="py-4 px-6 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 font-bold text-xs"
+            >
+              Back
+            </button>
+            <button
+              onClick={() => setCurrentStep(7)}
+              className="flex-1 py-4 rounded-2xl gradient-bg-primary text-white font-extrabold text-xs shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2"
+            >
+              Next: Safety Confirmation <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 7: SAFETY CONFIRMATION (Section 38) */}
+      {currentStep === 7 && (
+        <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-6">
+          <h2 className="text-xl font-extrabold text-white flex items-center gap-2">
+            <ShieldCheck className="w-6 h-6 text-emerald-400" /> Mandatory Safety Confirmation
+          </h2>
+
+          <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3 text-xs text-slate-300">
+            <span className="font-bold text-white block mb-1">Before continuing to payment, confirm:</span>
+
+            <label className="flex items-start gap-2.5 cursor-pointer">
+              <input type="checkbox" checked={agreeLawful} onChange={e => setAgreeLawful(e.target.checked)} className="mt-0.5 rounded text-indigo-500" />
+              <span>✓ This booking is for a lawful service.</span>
+            </label>
+
+            <label className="flex items-start gap-2.5 cursor-pointer">
+              <input type="checkbox" checked={agreeGuidelines} onChange={e => setAgreeGuidelines(e.target.checked)} className="mt-0.5 rounded text-indigo-500" />
+              <span>✓ I agree to follow Community Guidelines.</span>
+            </label>
+
+            <label className="flex items-start gap-2.5 cursor-pointer">
+              <input type="checkbox" checked={agreePlatformComm} onChange={e => setAgreePlatformComm(e.target.checked)} className="mt-0.5 rounded text-indigo-500" />
+              <span>✓ I will keep all communication strictly on the platform.</span>
+            </label>
+
+            <label className="flex items-start gap-2.5 cursor-pointer">
+              <input type="checkbox" checked={agreeCancellation} onChange={e => setAgreeCancellation(e.target.checked)} className="mt-0.5 rounded text-indigo-500" />
+              <span>✓ I understand the platform cancellation policy.</span>
+            </label>
+
+            <label className="flex items-start gap-2.5 cursor-pointer">
+              <input type="checkbox" checked={agreeSafety} onChange={e => setAgreeSafety(e.target.checked)} className="mt-0.5 rounded text-indigo-500" />
+              <span>✓ I understand and accept the platform safety guidelines.</span>
+            </label>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => setCurrentStep(6)}
+              className="py-4 px-6 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 font-bold text-xs"
+            >
+              Back
+            </button>
+            <button
+              onClick={() => {
+                if (!allSafetyAgreed) {
+                  showToast('error', 'Safety Check Required', 'Please check all 5 safety requirements.');
+                  return;
+                }
+                setCurrentStep(8);
+              }}
+              className="flex-1 py-4 rounded-2xl gradient-bg-primary text-white font-extrabold text-xs shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2"
+            >
+              Next: Payment Gateway <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 8: PAYMENT GATEWAY (Section 43) */}
+      {currentStep === 8 && (
+        <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-6">
+          <h2 className="text-xl font-extrabold text-white">Payment Gateway & Escrow Hold</h2>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {['STRIPE', 'RAZORPAY', 'UPI', 'CREDIT_CARD'].map((provider) => (
+              <button
+                key={provider}
+                type="button"
+                onClick={() => setPaymentProvider(provider as any)}
+                className={`p-4 rounded-2xl border text-xs font-bold text-center transition-all ${paymentProvider === provider ? 'bg-indigo-600/20 border-indigo-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400'}`}
+              >
+                {provider}
+              </button>
+            ))}
+          </div>
+
+          <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-slate-300 space-y-2">
+            <div className="flex justify-between font-mono font-bold text-indigo-400">
+              <span>Amount to Hold in Escrow:</span> <span>${totalAmount}</span>
+            </div>
+            <p className="text-[10px] text-slate-400">Funds are held securely in platform escrow until companion accepts and service completes.</p>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => setCurrentStep(7)}
+              className="py-4 px-6 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 font-bold text-xs"
+            >
+              Back
+            </button>
+
+            <button
+              onClick={handleConfirmBookingRequest}
+              disabled={isSubmitting}
+              className="flex-1 py-4 rounded-2xl gradient-bg-primary text-white font-extrabold text-xs shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2"
+            >
+              {isSubmitting ? 'Authorizing Payment & Request...' : `Confirm & Authorize $${totalAmount}`}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 9: CONFIRMATION & EXPLICIT STATUS (Section 46) */}
+      {currentStep === 9 && (
+        <div className="glass-panel p-8 rounded-3xl border border-slate-800 space-y-6 text-center shadow-2xl animate-fade-in">
+          <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto shadow-xl">
             <CheckCircle2 className="w-10 h-10" />
           </div>
 
-          <div className="space-y-2 max-w-md mx-auto">
-            <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-mono font-bold border border-emerald-500/30">
-              ESCROW HOLD ACTIVE & LEDGER LOGGED
-            </span>
-            <h2 className="text-2xl font-bold text-white">Booking Request Dispatched & Confirmed!</h2>
-            <p className="text-xs text-slate-300">
-              Your payment of <span className="font-extrabold text-white">${totalAmount}.00 USD</span> is now securely held in bank escrow. Funds will NOT be paid to <span className="text-white font-bold">{companion.name}</span> until task completion.
-            </p>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-extrabold text-white">Booking Confirmed ✓</h2>
+            <p className="text-xs text-slate-400">Reference ID: <span className="font-mono text-indigo-300 font-bold">{bookingId}</span></p>
           </div>
 
-          {/* Immutable Double-Entry Ledger Summary */}
-          <div className="max-w-xl mx-auto p-5 rounded-2xl bg-slate-950 border border-slate-800 text-left space-y-3 text-xs">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2 border-b border-slate-800 pb-2">
-              <FileText className="w-4 h-4 text-emerald-400" /> Immutable Financial Ledger Audit Trail
-            </h4>
-
-            <div className="space-y-2">
-              {ledgerEntries.map((entry) => (
-                <div key={entry.id} className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between text-[11px]">
-                  <div>
-                    <span className="font-mono text-indigo-400 font-bold block">{entry.type}</span>
-                    <span className="text-[10px] text-slate-500">{entry.id} • Provider: {entry.provider}</span>
-                  </div>
-                  <div className="text-right">
-                    <span className={`font-mono font-bold block ${entry.direction === 'CREDIT' ? 'text-emerald-400' : 'text-slate-200'}`}>
-                      {entry.direction === 'CREDIT' ? '+' : '-'}${entry.amount}.00 {entry.currency}
-                    </span>
-                    <span className="text-[9px] text-slate-400 font-mono">{entry.status}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-slate-300 space-y-2 max-w-md mx-auto text-left font-mono">
+            <div className="flex justify-between"><span>Companion:</span> <strong className="text-white">{companion.name}</strong></div>
+            <div className="flex justify-between"><span>Service:</span> <strong className="text-white">{category}</strong></div>
+            <div className="flex justify-between"><span>Meeting Point:</span> <strong className="text-white">{meetingPoint}</strong></div>
+            <div className="flex justify-between"><span>Status:</span> <strong className="text-emerald-400 font-bold">CONFIRMED</strong></div>
+            <div className="flex justify-between"><span>Escrow Amount:</span> <strong className="text-indigo-400">${totalAmount}</strong></div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <Link 
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
               href="/chat"
-              className="w-full sm:w-auto px-6 py-3 rounded-2xl gradient-bg-primary text-white font-bold text-xs hover:opacity-95 transition-opacity"
+              className="px-6 py-3 rounded-2xl gradient-bg-primary text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30"
             >
-              Open Direct Encrypted Chat
+              Open Encrypted Chat
             </Link>
-            <Link 
-              href="/wallet"
-              className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 font-bold text-xs hover:text-white"
+            <Link
+              href="/dashboard"
+              className="px-6 py-3 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 font-bold text-xs"
             >
-              View Escrow Wallet Status
+              View Booking Dashboard
             </Link>
           </div>
-        </div>
-      ) : (
-        /* Configurator Grid View */
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Form Controls Column */}
-          <div className="lg:col-span-2 space-y-6">
-            
-            {/* Companion Card Summary */}
-            <div className="glass-panel p-5 rounded-3xl border border-slate-800 flex items-center gap-4">
-              <img 
-                src={companion.avatar} 
-                alt={companion.name}
-                className="w-16 h-16 rounded-2xl object-cover border border-slate-700" 
-              />
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-bold text-white">{companion.name}, {companion.age}</h3>
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold flex items-center gap-1 border border-emerald-500/30">
-                    <UserCheck className="w-3 h-3" /> VERIFIED
-                  </span>
-                </div>
-                <p className="text-xs text-slate-400">{companion.city}, {companion.country} • {companion.responseTimeMin}m Response Time</p>
-                <div className="flex items-center gap-1 text-xs text-amber-400 font-bold">
-                  <Star className="w-3.5 h-3.5 fill-amber-400" /> {companion.ratingAvg} ({companion.ratingCount} reviews)
-                </div>
-              </div>
-            </div>
-
-            {/* Booking Details Form */}
-            <form onSubmit={handleLockEscrowBooking} className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-6">
-              <h3 className="text-base font-bold text-white border-b border-slate-800 pb-3 flex items-center gap-2">
-                <CalendarIcon className="w-4 h-4 text-indigo-400" /> Schedule & Service Category
-              </h3>
-
-              {/* Service Category */}
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-2">Category / Service Needed</label>
-                <select 
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500"
-                >
-                  {companion.categories.map((cat, i) => (
-                    <option key={i} value={cat}>{cat}</option>
-                  ))}
-                  <option value="Event Companion">Event Companion & Gala Partner</option>
-                  <option value="Travel Buddy">City Sightseeing & Travel Buddy</option>
-                  <option value="Elderly Assistance">Elderly Assistance & Errands</option>
-                </select>
-              </div>
-
-              {/* Rate Model Selector */}
-              <div className="grid grid-cols-2 gap-4">
-                <button 
-                  type="button"
-                  onClick={() => setBookingType('hourly')}
-                  className={`p-4 rounded-2xl border text-left transition-all ${bookingType === 'hourly' ? 'bg-indigo-600/20 border-indigo-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'}`}
-                >
-                  <h4 className="text-xs font-bold uppercase tracking-wider">Hourly Booking</h4>
-                  <p className="text-lg font-black text-white mt-1">${companion.hourlyRate}<span className="text-xs font-normal text-slate-400">/hr</span></p>
-                </button>
-
-                <button 
-                  type="button"
-                  onClick={() => setBookingType('daily')}
-                  className={`p-4 rounded-2xl border text-left transition-all ${bookingType === 'daily' ? 'bg-indigo-600/20 border-indigo-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'}`}
-                >
-                  <h4 className="text-xs font-bold uppercase tracking-wider">Full Day Pass</h4>
-                  <p className="text-lg font-black text-white mt-1">${companion.dailyRate || 500}<span className="text-xs font-normal text-slate-400">/day</span></p>
-                </button>
-              </div>
-
-              {/* Duration Slider if Hourly */}
-              {bookingType === 'hourly' && (
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs font-semibold">
-                    <span className="text-slate-300">Duration (Hours)</span>
-                    <span className="text-indigo-400 font-bold">{selectedHours} Hours</span>
-                  </div>
-                  <input 
-                    type="range" 
-                    min={1} 
-                    max={12} 
-                    value={selectedHours} 
-                    onChange={(e) => setSelectedHours(Number(e.target.value))}
-                    className="w-full accent-indigo-500 bg-slate-900 rounded-lg cursor-pointer"
-                  />
-                </div>
-              )}
-
-              {/* Date & Time Selection */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-2">Reservation Date</label>
-                  <input 
-                    type="date" 
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-2">Time Slot</label>
-                  <select 
-                    value={selectedTimeSlot}
-                    onChange={(e) => setSelectedTimeSlot(e.target.value)}
-                    className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500"
-                  >
-                    <option value="10:00 - 13:00">Morning (10:00 AM - 1:00 PM)</option>
-                    <option value="14:00 - 17:00">Afternoon (2:00 PM - 5:00 PM)</option>
-                    <option value="18:00 - 22:00">Evening (6:00 PM - 10:00 PM)</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Promo Code Input */}
-              <div className="space-y-1.5 pt-2 border-t border-slate-800">
-                <label className="text-xs font-semibold text-slate-300 block">Apply Dynamic Admin Promo Code</label>
-                <div className="flex gap-2">
-                  <input 
-                    type="text" 
-                    placeholder="Enter Promo Code (e.g. WELCOME10)" 
-                    value={promoInput}
-                    onChange={(e) => setPromoInput(e.target.value)}
-                    className="flex-1 px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs font-bold text-white uppercase focus:outline-none focus:border-indigo-500"
-                  />
-                  <button 
-                    type="button" 
-                    onClick={handleApplyPromo}
-                    className="px-4 py-2.5 rounded-2xl bg-slate-900 border border-slate-800 text-white font-bold text-xs hover:bg-slate-800"
-                  >
-                    Apply Promo
-                  </button>
-                </div>
-                {promoMessage && (
-                  <p className={`text-[11px] font-bold ${discountPercent > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {promoMessage}
-                  </p>
-                )}
-              </div>
-
-              {/* Address */}
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1.5">Meeting Address / Venue Location</label>
-                <div className="relative">
-                  <MapPin className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
-                  <input 
-                    type="text" 
-                    value={locationAddress}
-                    onChange={(e) => setLocationAddress(e.target.value)}
-                    placeholder="Public cafe, gala venue, or mall address..."
-                    className="w-full pl-10 pr-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Special Instructions */}
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1.5">Special Instructions / Preferences (Optional)</label>
-                <textarea 
-                  rows={3}
-                  value={specialNotes}
-                  onChange={(e) => setSpecialNotes(e.target.value)}
-                  placeholder="Dress code recommendations, venue instructions..."
-                  className="w-full p-4 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-indigo-500"
-                ></textarea>
-              </div>
-
-              <button 
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full py-4 rounded-2xl gradient-bg-primary text-white font-extrabold text-sm hover:opacity-95 transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2"
-              >
-                {isSubmitting ? 'Validating State Machine & Locking Ledger...' : `Lock $${totalAmount}.00 in Bank Escrow & Request Booking`} <Lock className="w-4 h-4" />
-              </button>
-
-            </form>
-          </div>
-
-          {/* Dynamic Pricing & Escrow Invoice Column */}
-          <div className="space-y-6">
-            <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-6">
-              <h3 className="text-base font-bold text-white border-b border-slate-800 pb-3 flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-emerald-400" /> Dynamic Invoice Breakdown
-              </h3>
-
-              <div className="space-y-3 text-xs">
-                <div className="flex justify-between text-slate-400">
-                  <span>Companion Base Rate ({bookingType === 'hourly' ? `${selectedHours} hrs @ $${hourlyRate}/hr` : '1 Day'})</span>
-                  <span className="text-white font-bold">${rawBaseAmount}.00</span>
-                </div>
-
-                {discountPercent > 0 && (
-                  <div className="flex justify-between text-emerald-400 font-bold">
-                    <span>Admin Promo Discount ({discountPercent}%)</span>
-                    <span>-${rawBaseAmount - baseAmount}.00</span>
-                  </div>
-                )}
-
-                <div className="flex justify-between text-slate-400">
-                  <span className="flex items-center gap-1">
-                    Bank Escrow Protection ({config.escrowHoldingFeePercent}%) <Info className="w-3 h-3 text-slate-500" />
-                  </span>
-                  <span className="text-white font-bold">${escrowFee}.00</span>
-                </div>
-
-                <div className="flex justify-between text-slate-400">
-                  <span>Platform Operations ({config.platformFeePercent}%)</span>
-                  <span className="text-white font-bold">${platformFee}.00</span>
-                </div>
-
-                <div className="flex justify-between text-slate-400">
-                  <span>GST / Tax Compliance ({config.gstTaxPercent}%)</span>
-                  <span className="text-white font-bold">${gstTax}.00</span>
-                </div>
-
-                <div className="pt-4 border-t border-slate-800 flex justify-between items-baseline">
-                  <div>
-                    <span className="text-xs font-bold text-slate-300 block">Total Payable</span>
-                    <span className="text-[10px] text-slate-500">Refundable until completion</span>
-                  </div>
-                  <span className="text-2xl font-black text-emerald-400">${totalAmount}.00</span>
-                </div>
-              </div>
-
-              {/* Payment Gateway Provider Selector */}
-              <div className="space-y-2 pt-2">
-                <label className="text-xs font-semibold text-slate-300 block">Payment Processor</label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button 
-                    type="button"
-                    onClick={() => setPaymentProvider('STRIPE')}
-                    className={`py-2 px-3 rounded-xl border text-[11px] font-bold text-center transition-all ${paymentProvider === 'STRIPE' ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-950 border-slate-800 text-slate-400'}`}
-                  >
-                    Stripe
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => setPaymentProvider('RAZORPAY')}
-                    className={`py-2 px-3 rounded-xl border text-[11px] font-bold text-center transition-all ${paymentProvider === 'RAZORPAY' ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-950 border-slate-800 text-slate-400'}`}
-                  >
-                    Razorpay
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => setPaymentProvider('WALLET')}
-                    className={`py-2 px-3 rounded-xl border text-[11px] font-bold text-center transition-all ${paymentProvider === 'WALLET' ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-950 border-slate-800 text-slate-400'}`}
-                  >
-                    Wallet
-                  </button>
-                </div>
-              </div>
-
-              {/* Safety Guarantee Box */}
-              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800/80 text-[11px] text-slate-400 space-y-2">
-                <div className="flex items-center gap-1.5 font-bold text-emerald-400">
-                  <ShieldCheck className="w-4 h-4 shrink-0" />
-                  Companion Guarantee
-                </div>
-                <p className="leading-relaxed">
-                  Your payment remains strictly in escrow. Companion is paid only after you approve task fulfillment. Cancel anytime 2 hours prior for 100% full refund.
-                </p>
-              </div>
-
-            </div>
-          </div>
-
         </div>
       )}
 
