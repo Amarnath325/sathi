@@ -211,4 +211,11 @@ export class ServicePolicyEngine {
       violations: []
     };
   }
+
+  /**
+   * Evaluates proposed companion service text description
+   */
+  public static evaluateProposedService(description: string) {
+    return this.evaluateServiceRequest('Companion Service', description);
+  }
 }
