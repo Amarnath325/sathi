@@ -499,4 +499,76 @@ model StaffAccessLog {
   @@index([staffId, riskLevel, timestamp])
 }
 
+enum TwoFactorMethod {
+  TOTP_AUTHENTICATOR
+  SMS_OTP
+  EMAIL_MAGIC_CODE
+  HARDWARE_KEY
+}
+
+enum ThreatCategory {
+  BRUTE_FORCE
+  SQL_INJECTION
+  RATE_LIMIT_BREACH
+  GEO_MISMATCH
+  COMPROMISED_TOKEN
+  SUSPICIOUS_IP
+}
+
+model TwoFactorAuth {
+  id           String          @id @default(uuid())
+  userId       String          @unique
+  method       TwoFactorMethod @default(TOTP_AUTHENTICATOR)
+  totpSecret   String?
+  backupCodes  String[]        // Array of hashed backup codes
+  isVerified   Boolean         @default(false)
+  isEnforced   Boolean         @default(false)
+  lastUsedAt   DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+}
+
+model SecurityPolicy {
+  id                     String   @id @default(uuid())
+  policyName             String   @default("DEFAULT_ENTERPRISE_POLICY")
+  whitelistedIpRanges    String[] // e.g. ["192.168.1.0/24", "10.0.0.0/16"]
+  blacklistedIps         String[] // e.g. ["185.220.101.4", "45.154.255.8"]
+  allowedCountries       String[] // Country codes e.g. ["US", "IN", "CA", "GB"]
+  maxFailedLogins        Int      @default(5)
+  sessionTimeoutMinutes  Int      @default(30)
+  passwordExpiryDays     Int      @default(90)
+  requireSpecialChars    Boolean  @default(true)
+  isEmergencyLockdown    Boolean  @default(false)
+  updatedAt              DateTime @updatedAt
+}
+
+model SecurityThreat {
+  id             String         @id @default(uuid())
+  ipAddress      String
+  category       ThreatCategory @default(BRUTE_FORCE)
+  targetResource String?        // e.g. /api/auth/login
+  details        String?
+  riskLevel      RiskLevel      @default(HIGH)
+  isBlocked      Boolean        @default(true)
+  detectedAt     DateTime       @default(now())
+
+  @@index([ipAddress, category, riskLevel])
+}
+
+model TrustedDeviceSession {
+  id                String   @id @default(uuid())
+  userId            String
+  deviceFingerprint String
+  browserName       String
+  ipAddress         String
+  country           String   @default("US")
+  city              String?
+  isTrusted         Boolean  @default(true)
+  lastActiveAt      DateTime @default(now())
+  createdAt         DateTime @default(now())
+
+  @@index([userId, deviceFingerprint])
+}
+
+
 
