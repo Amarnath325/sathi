@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { RoleType } from '@/lib/types';
 
+import { NotificationBell } from '@/components/notifications/NotificationBell';
+
 interface HeaderProps {
   currentRole: RoleType;
   onRoleChange: (role: RoleType) => void;
@@ -27,13 +29,6 @@ interface HeaderProps {
 
 export function Header({ currentRole, onRoleChange, onTriggerSos }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
-
-  const notifications = [
-    { id: 1, title: 'KYC Document Approved', time: '10m ago', unread: true },
-    { id: 2, title: 'Escrow Funds Secured for Booking #CC-2026', time: '1h ago', unread: true },
-    { id: 3, title: 'New Message from Sophia Chen', time: '2h ago', unread: false }
-  ];
 
   return (
     <header className="sticky top-0 z-50 glass-panel border-b border-slate-800 backdrop-blur-md">
@@ -89,33 +84,8 @@ export function Header({ currentRole, onRoleChange, onTriggerSos }: HeaderProps)
           {/* Header Controls (Emergency SOS + Notifications + Profile) */}
           <div className="hidden lg:flex items-center gap-4">
 
-            {/* Notifications Popover */}
-            <div className="relative">
-              <button 
-                onClick={() => setNotificationsOpen(!notificationsOpen)}
-                className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-300 hover:text-white hover:border-slate-700 relative"
-              >
-                <Bell className="w-4 h-4" />
-                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-indigo-500"></span>
-              </button>
-
-              {notificationsOpen && (
-                <div className="absolute right-0 mt-2 w-80 glass-panel rounded-2xl p-4 border border-slate-700 shadow-2xl z-50">
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
-                    <h4 className="text-sm font-semibold text-white">Notifications</h4>
-                    <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full font-medium">3 New</span>
-                  </div>
-                  <div className="space-y-2">
-                    {notifications.map((item) => (
-                      <div key={item.id} className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer">
-                        <p className="text-xs font-medium text-white">{item.title}</p>
-                        <span className="text-[10px] text-slate-500">{item.time}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* Notification Bell Component */}
+            <NotificationBell />
 
             {/* SOS Panic Trigger Button */}
             <button

@@ -325,3 +325,98 @@ model UserSession {
   expiresAt         DateTime
   createdAt         DateTime             @default(now())
 }
+
+enum NotificationCategory {
+  SYSTEM
+  BOOKING
+  SAFETY
+  PAYMENT
+  KYC
+  PROMO
+  SECURITY
+  COMMUNITY
+}
+
+enum NotificationPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  PUSH
+  SMS
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  QUEUED
+}
+
+model NotificationTemplate {
+  id          String               @id @default(uuid())
+  code        String               @unique // e.g. BOOKING_CONFIRMED, SOS_ALERT
+  title       String
+  body        String               // Supports handlebars e.g. Hi {{name}}
+  category    NotificationCategory @default(SYSTEM)
+  priority    NotificationPriority @default(MEDIUM)
+  channels    NotificationChannel[]
+  isActive    Boolean              @default(true)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+}
+
+model NotificationItem {
+  id          String               @id @default(uuid())
+  userId      String
+  title       String
+  body        String
+  category    NotificationCategory @default(SYSTEM)
+  priority    NotificationPriority @default(MEDIUM)
+  channels    NotificationChannel[]
+  isRead      Boolean              @default(false)
+  isArchived  Boolean              @default(false)
+  isPinned    Boolean              @default(false)
+  actionUrl   String?
+  actionLabel String?
+  metadata    Json?
+  sentAt      DateTime             @default(now())
+  readAt      DateTime?
+
+  @@index([userId, isRead, category])
+}
+
+model NotificationPreference {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  inAppEnabled      Boolean  @default(true)
+  emailEnabled      Boolean  @default(true)
+  pushEnabled       Boolean  @default(true)
+  smsEnabled        Boolean  @default(false)
+  quietHoursStart   String?  // e.g. "22:00"
+  quietHoursEnd     String?  // e.g. "07:00"
+  dndEnabled        Boolean  @default(false)
+  disabledCategories NotificationCategory[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model NotificationLog {
+  id             String              @id @default(uuid())
+  notificationId String?
+  userId         String
+  channel        NotificationChannel
+  status         DeliveryStatus      @default(PENDING)
+  errorMessage   String?
+  providerRef    String?             // e.g. Sendgrid MessageID, Twilio SID
+  sentAt         DateTime            @default(now())
+
+  @@index([userId, channel, status])
+}
+
