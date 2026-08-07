@@ -111,6 +111,13 @@ import { PromoDetailsModal } from '@/components/promo/PromoDetailsModal';
 import { ServiceCategory, SubCategoryItem, BookingDetails, BookingStatus, EscrowStatus, LocationItem, FinancialTransaction, PayoutRecord, PaymentGatewayConfig, PromoCodeItem } from '@/lib/types';
 
 import Link from 'next/link';
+import ExecutiveDashboardAdminPage from '@/app/admin/executive/page';
+import AnalyticsAdminPage from '@/app/admin/analytics/page';
+import AdminCommunicationPage from '@/app/admin/communication/page';
+import AdminAuditLogsPage from '@/app/admin/audit/page';
+import AdminSystemSettingsPage from '@/app/admin/settings/page';
+import AdminSystemHealthPage from '@/app/admin/health/page';
+
 
 
 
@@ -119,6 +126,7 @@ import Link from 'next/link';
 
 export type ERPModuleTab = 
   | 'overview' 
+  | 'executive'
   | 'users' 
   | 'verification' 
   | 'companions' 
@@ -718,70 +726,16 @@ export default function AdminDashboardPage() {
         <div className="flex-1 p-4 sm:p-8 space-y-6 sm:space-y-8">
 
           {/* ==================================================== */}
-          {/* MODULE 1: 📊 DASHBOARD                               */}
+          {/* MODULE 1: 📊 DASHBOARD & ANALYTICS                    */}
           {/* ==================================================== */}
-          {activeTab === 'overview' && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800">
-                  <p className="text-xs text-slate-400 font-bold uppercase font-mono">Total Companions</p>
-                  <h3 className="text-3xl font-extrabold text-white mt-2">{companions.length}</h3>
-                  <p className="text-xs text-emerald-400 mt-2">↑ 14% growth this month</p>
-                </div>
-                <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800">
-                  <p className="text-xs text-slate-400 font-bold uppercase font-mono">Escrow Vault Held</p>
-                  <h3 className="text-3xl font-extrabold text-emerald-400 mt-2">$14,850.00</h3>
-                  <p className="text-xs text-slate-400 mt-2">Locked in bank-grade escrow</p>
-                </div>
-                <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800">
-                  <p className="text-xs text-slate-400 font-bold uppercase font-mono">Platform Revenue</p>
-                  <h3 className="text-3xl font-extrabold text-purple-400 mt-2">$2,970.00</h3>
-                  <p className="text-xs text-slate-400 mt-2">At {config.platformFeePercent}% fee rate</p>
-                </div>
-                <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800">
-                  <p className="text-xs text-slate-400 font-bold uppercase font-mono">System Risk Score</p>
-                  <h3 className="text-3xl font-extrabold text-blue-400 mt-2">0.02 (Low)</h3>
-                  <p className="text-xs text-emerald-400 mt-2">✓ AI Guard Active</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
-                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-purple-400" /> Recent Booking Requests
-                  </h3>
-                  <div className="space-y-3">
-                    {MOCK_BOOKINGS.map(b => (
-                      <div key={b.id} className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800/80 flex items-center justify-between text-xs">
-                        <div>
-                          <p className="font-bold text-white">{b.bookingNumber} • {b.category}</p>
-                          <p className="text-slate-400">{b.userName} ➔ {b.companionName}</p>
-                        </div>
-                        <span className="font-mono font-bold text-emerald-400">${b.totalAmount}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
-                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                    <ShieldAlert className="w-4 h-4 text-rose-400" /> Live Trust & Safety Alerts
-                  </h3>
-                  <div className="space-y-3">
-                    {MOCK_PANIC_ALERTS.map(a => (
-                      <div key={a.id} className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-between text-xs">
-                        <div>
-                          <p className="font-bold text-rose-300">SOS Triggered: {a.userName}</p>
-                          <p className="text-rose-400/80">{a.address}</p>
-                        </div>
-                        <span className="px-2 py-0.5 rounded bg-rose-500 text-white font-bold text-[10px]">CRITICAL</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
+          {(activeTab === 'overview' || activeTab === 'executive') && (
+            <ExecutiveDashboardAdminPage />
           )}
+
+          {activeTab === 'analytics' && (
+            <AnalyticsAdminPage />
+          )}
+
 
           {/* ==================================================== */}
           {/* MODULE 2: 👥 USER MANAGEMENT                        */}
@@ -2673,95 +2627,33 @@ export default function AdminDashboardPage() {
           )}
 
           {/* ==================================================== */}
+          {/* MODULE 14: 💬 COMMUNICATION                           */}
+          {/* ==================================================== */}
+          {activeTab === 'communication' && (
+            <AdminCommunicationPage />
+          )}
+
+          {/* ==================================================== */}
           {/* MODULE 18: 📝 AUDIT LOGS                             */}
           {/* ==================================================== */}
           {activeTab === 'audit' && (
-            <div className="space-y-6">
-              <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-4">
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-purple-400" /> Immutable System Audit Logs
-                </h3>
-                <div className="space-y-2 font-mono text-xs text-slate-300">
-                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex justify-between">
-                    <span>[2026-08-05 10:45:12] ADMIN_LOGIN: User superadmin logged in from 192.168.1.1</span>
-                    <span className="text-emerald-400">SUCCESS</span>
-                  </div>
-                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex justify-between">
-                    <span>[2026-08-05 09:20:04] KYC_APPROVE: Approved Verification document doc-501</span>
-                    <span className="text-emerald-400">SUCCESS</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <AdminAuditLogsPage />
           )}
 
           {/* ==================================================== */}
           {/* MODULE 19: ⚙️ SYSTEM SETTINGS                        */}
           {/* ==================================================== */}
           {activeTab === 'settings' && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                {['general', 'booking', 'payment', 'cancellation', 'verification', 'safety', 'notifications', 'tax', 'localization'].map((s) => (
-                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
-                    {s.replace('-', ' ')}
-                  </button>
-                ))}
-              </div>
-
-              <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-4 max-w-xl">
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <Settings className="w-5 h-5 text-purple-400" /> System Operational Parameters
-                </h3>
-                <div className="space-y-3 text-xs">
-                  <div className="flex justify-between items-center p-3 rounded-xl bg-slate-950 border border-slate-800">
-                    <span>Maintenance Mode</span>
-                    <input type="checkbox" checked={config.maintenanceMode} onChange={e => updateConfig({ maintenanceMode: e.target.checked })} />
-                  </div>
-                  <div className="flex justify-between items-center p-3 rounded-xl bg-slate-950 border border-slate-800">
-                    <span>Auto SOS Dispatch</span>
-                    <input type="checkbox" checked={config.autoSOSDispatch} onChange={e => updateConfig({ autoSOSDispatch: e.target.checked })} />
-                  </div>
-                </div>
-              </div>
-            </div>
+            <AdminSystemSettingsPage />
           )}
 
           {/* ==================================================== */}
           {/* MODULE 20: 🔧 SYSTEM HEALTH                          */}
           {/* ==================================================== */}
           {activeTab === 'health' && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                {['api-health', 'database', 'redis', 'queue', 'storage', 'payment-gateway', 'external-apis'].map((s) => (
-                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
-                    {s.replace('-', ' ')}
-                  </button>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {[
-                  { name: 'API Health (Next.js App Router)', status: 'Healthy (12ms latency)', icon: Server, color: 'text-emerald-400' },
-                  { name: 'PostgreSQL Database (Prisma)', status: 'Connected (Pool: 10/10)', icon: Database, color: 'text-emerald-400' },
-                  { name: 'Redis Cache & PubSub', status: 'Operational (0.4ms)', icon: Zap, color: 'text-emerald-400' },
-                  { name: 'Background BullMQ Queue', status: '0 Jobs Waiting', icon: Activity, color: 'text-blue-400' },
-                  { name: 'Cloud File Storage (AWS S3)', status: 'Operational', icon: HardDrive, color: 'text-emerald-400' },
-                  { name: 'Payment Gateways (Stripe/Razorpay)', status: 'Live & Accepting', icon: CreditCard, color: 'text-emerald-400' }
-                ].map((item, idx) => {
-                  const Icon = item.icon;
-                  return (
-                    <div key={idx} className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-3">
-                      <div className="flex items-center gap-3">
-                        <Icon className={`w-5 h-5 ${item.color}`} />
-                        <h4 className="font-bold text-white text-sm">{item.name}</h4>
-                      </div>
-                      <p className="text-xs text-slate-400 font-mono">{item.status}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            <AdminSystemHealthPage />
           )}
+
 
         </div>
       </main>
