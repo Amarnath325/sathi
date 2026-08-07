@@ -5,7 +5,7 @@ import {
   Send, Paperclip, Mic, Video, Phone, Lock, CheckCheck, Check,
   AlertOctagon, Image as ImageIcon, Smile, X, PhoneOff, Pin,
   Archive, Ban, Bell, BellOff, MoreVertical, Search, Trash2,
-  MapPin, Clock, MessageSquare
+  MapPin, Clock, MessageSquare, ArrowLeft
 } from 'lucide-react';
 import { useCommunicationStore, Conversation, FullChatMessage, MessageStatus } from '@/lib/communicationStore';
 
@@ -263,10 +263,12 @@ export default function ChatTab() {
   const otherAvatar = activeConv ? ((activeConv.participantAvatars || [activeConv.participantAvatar]).find((_, i) => (activeConv.participantIds || [])[i] !== currentUserId) || activeConv.participantAvatar || '') : '';
 
   return (
-    <div className="glass-panel rounded-3xl border border-slate-800 overflow-hidden flex flex-col md:flex-row" style={{ height: 'calc(100vh - 10rem)' }}>
+    <div className="glass-panel rounded-2xl sm:rounded-3xl border border-slate-800 overflow-hidden flex flex-col md:flex-row h-[calc(100vh-10rem)] min-h-[500px]">
       
       {/* === LEFT SIDEBAR: Conversation List === */}
-      <div className="w-full md:w-80 border-b md:border-b-0 md:border-r border-slate-800 flex flex-col bg-slate-950/60">
+      <div className={`w-full md:w-80 border-b md:border-b-0 md:border-r border-slate-800 flex flex-col bg-slate-950/60 ${
+        activeConvId ? 'hidden md:flex' : 'flex'
+      }`}>
         
         {/* Sidebar Header */}
         <div className="p-4 border-b border-slate-800 space-y-3">
@@ -314,11 +316,21 @@ export default function ChatTab() {
 
       {/* === RIGHT: Active Chat Window === */}
       {activeConv ? (
-        <div className="flex-1 flex flex-col bg-slate-900/40 relative">
+        <div className={`flex-1 flex-col bg-slate-900/40 relative ${
+          activeConvId ? 'flex' : 'hidden md:flex'
+        }`}>
           
           {/* Chat Header */}
-          <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
+          <div className="p-3 sm:p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
             <div className="flex items-center gap-3">
+              {/* Back button for mobile */}
+              <button
+                onClick={() => setActiveConvId(null)}
+                className="md:hidden p-1.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white"
+                title="Back to conversation list"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
               <div className="relative">
                 <img src={otherAvatar} alt={otherName} className="w-10 h-10 rounded-full object-cover border border-indigo-500/40" />
                 {activeConv.isOnline && <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-slate-950 absolute bottom-0 right-0 animate-pulse" />}

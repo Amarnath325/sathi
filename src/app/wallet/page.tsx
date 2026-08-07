@@ -197,7 +197,7 @@ export default function WalletPage() {
 
           <div className="space-y-3">
             {transactions.map((tx) => (
-              <div key={tx.id} className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between">
+              <div key={tx.id} className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
                     tx.amount > 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-indigo-500/20 text-indigo-400'

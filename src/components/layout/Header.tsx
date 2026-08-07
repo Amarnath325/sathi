@@ -52,37 +52,37 @@ export function Header({ currentRole, onRoleChange, onTriggerSos }: HeaderProps)
             </div>
           </Link>
 
-          {/* Nav Links */}
-          <nav className="hidden md:flex items-center gap-6">
-            <Link href="/search" className="flex items-center gap-2 text-sm font-medium text-slate-300 hover:text-white transition-colors">
+          {/* Nav Links (Desktop & Laptop) */}
+          <nav className="hidden lg:flex items-center gap-5 xl:gap-7">
+            <Link href="/search" className="flex items-center gap-2 text-xs xl:text-sm font-semibold text-slate-300 hover:text-white transition-colors">
               <Search className="w-4 h-4 text-indigo-400" />
               Explore Companions
             </Link>
             
-            <Link href="/kyc" className="flex items-center gap-2 text-sm font-medium text-slate-300 hover:text-white transition-colors">
+            <Link href="/kyc" className="flex items-center gap-2 text-xs xl:text-sm font-semibold text-slate-300 hover:text-white transition-colors">
               <UserCheck className="w-4 h-4 text-emerald-400" />
               KYC Verification
             </Link>
 
-            <Link href="/chat" className="flex items-center gap-2 text-sm font-medium text-slate-300 hover:text-white transition-colors relative">
+            <Link href="/chat" className="flex items-center gap-2 text-xs xl:text-sm font-semibold text-slate-300 hover:text-white transition-colors relative">
               <MessageSquare className="w-4 h-4 text-cyan-400" />
               Chat
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping absolute -top-1 -right-2"></span>
             </Link>
 
-            <Link href="/wallet" className="flex items-center gap-2 text-sm font-medium text-slate-300 hover:text-white transition-colors">
+            <Link href="/wallet" className="flex items-center gap-2 text-xs xl:text-sm font-semibold text-slate-300 hover:text-white transition-colors">
               <Wallet className="w-4 h-4 text-amber-400" />
               Escrow & Wallet
             </Link>
 
-            <Link href="/safety" className="flex items-center gap-2 text-sm font-medium text-slate-300 hover:text-white transition-colors">
+            <Link href="/safety" className="flex items-center gap-2 text-xs xl:text-sm font-semibold text-slate-300 hover:text-white transition-colors">
               <ShieldAlert className="w-4 h-4 text-rose-400" />
               Safety Center
             </Link>
           </nav>
 
           {/* Header Controls (Emergency SOS + Notifications + Profile) */}
-          <div className="hidden lg:flex items-center gap-4">
+          <div className="hidden sm:flex items-center gap-3">
 
             {/* Notification Bell Component */}
             <NotificationBell />
@@ -90,50 +90,107 @@ export function Header({ currentRole, onRoleChange, onTriggerSos }: HeaderProps)
             {/* SOS Panic Trigger Button */}
             <button
               onClick={onTriggerSos}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-rose-600/20 border border-rose-500/40 text-rose-300 hover:bg-rose-600 hover:text-white text-xs font-bold transition-all shadow-lg shadow-rose-900/20 animate-pulse"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-600/20 border border-rose-500/40 text-rose-300 hover:bg-rose-600 hover:text-white text-xs font-bold transition-all shadow-lg shadow-rose-900/20 animate-pulse"
             >
-              <AlertTriangle className="w-4 h-4 text-rose-400 group-hover:text-white" />
-              EMERGENCY SOS
+              <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+              <span className="hidden md:inline">EMERGENCY SOS</span>
+              <span className="md:hidden">SOS</span>
             </button>
 
             {/* Profile Link */}
-            <Link href="/dashboard" className="flex items-center gap-2 p-1 pl-2 rounded-full bg-slate-900 border border-slate-800 hover:border-slate-700">
-              <span className="text-xs font-medium text-slate-300">My Account</span>
+            <Link href="/dashboard" className="flex items-center gap-2 p-1 pl-2.5 rounded-full bg-slate-900 border border-slate-800 hover:border-slate-700">
+              <span className="text-xs font-semibold text-slate-300 hidden md:inline">My Account</span>
               <img 
                 src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" 
                 alt="Avatar" 
-                className="w-8 h-8 rounded-full object-cover border border-emerald-500/50"
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border border-emerald-500/50"
               />
             </Link>
           </div>
 
-          {/* Mobile Menu Toggle Button */}
-          <div className="md:hidden flex items-center gap-3">
+          {/* Mobile & Tablet Menu Toggle Button */}
+          <div className="lg:hidden flex items-center gap-2">
             <button
               onClick={onTriggerSos}
-              className="p-2 rounded-xl bg-rose-600 text-white text-xs font-bold"
+              className="sm:hidden p-2 rounded-xl bg-rose-600 text-white text-xs font-bold shadow-lg shadow-rose-600/30"
             >
               SOS
             </button>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-slate-400 hover:text-white"
+              className="p-2 text-slate-300 hover:text-white bg-slate-900 border border-slate-800 rounded-xl"
+              aria-label="Toggle navigation drawer"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
 
         </div>
       </div>
 
-      {/* Mobile Drawer Navigation */}
+      {/* Mobile & Tablet Drawer Navigation */}
       {mobileMenuOpen && (
-        <div className="md:hidden glass-panel border-t border-slate-800 px-4 pt-4 pb-6 space-y-3">
-          <Link href="/search" className="block text-sm font-medium text-slate-200 py-2">Explore Companions</Link>
-          <Link href="/kyc" className="block text-sm font-medium text-slate-200 py-2">KYC Verification</Link>
-          <Link href="/chat" className="block text-sm font-medium text-slate-200 py-2">Chat & Messages</Link>
-          <Link href="/wallet" className="block text-sm font-medium text-slate-200 py-2">Escrow Wallet</Link>
-          <Link href="/safety" className="block text-sm font-medium text-slate-200 py-2">Safety & SOS</Link>
+        <div className="lg:hidden glass-panel border-t border-slate-800 px-4 pt-3 pb-6 space-y-2 animate-fadeIn max-h-[85vh] overflow-y-auto">
+          <Link 
+            href="/search" 
+            onClick={() => setMobileMenuOpen(false)} 
+            className="flex items-center gap-3 text-xs sm:text-sm font-semibold text-slate-200 py-2.5 px-3 rounded-xl hover:bg-slate-900 transition-colors"
+          >
+            <Search className="w-4 h-4 text-indigo-400" /> Explore Companions
+          </Link>
+          <Link 
+            href="/kyc" 
+            onClick={() => setMobileMenuOpen(false)} 
+            className="flex items-center gap-3 text-xs sm:text-sm font-semibold text-slate-200 py-2.5 px-3 rounded-xl hover:bg-slate-900 transition-colors"
+          >
+            <UserCheck className="w-4 h-4 text-emerald-400" /> KYC Verification
+          </Link>
+          <Link 
+            href="/chat" 
+            onClick={() => setMobileMenuOpen(false)} 
+            className="flex items-center gap-3 text-xs sm:text-sm font-semibold text-slate-200 py-2.5 px-3 rounded-xl hover:bg-slate-900 transition-colors"
+          >
+            <MessageSquare className="w-4 h-4 text-cyan-400" /> Chat & Direct Messages
+          </Link>
+          <Link 
+            href="/wallet" 
+            onClick={() => setMobileMenuOpen(false)} 
+            className="flex items-center gap-3 text-xs sm:text-sm font-semibold text-slate-200 py-2.5 px-3 rounded-xl hover:bg-slate-900 transition-colors"
+          >
+            <Wallet className="w-4 h-4 text-amber-400" /> Escrow & Wallet
+          </Link>
+          <Link 
+            href="/safety" 
+            onClick={() => setMobileMenuOpen(false)} 
+            className="flex items-center gap-3 text-xs sm:text-sm font-semibold text-slate-200 py-2.5 px-3 rounded-xl hover:bg-slate-900 transition-colors"
+          >
+            <ShieldAlert className="w-4 h-4 text-rose-400" /> Safety & Panic Center
+          </Link>
+          
+          <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
+            <Link 
+              href="/dashboard" 
+              onClick={() => setMobileMenuOpen(false)} 
+              className="flex items-center gap-2.5"
+            >
+              <img 
+                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" 
+                alt="Avatar" 
+                className="w-8 h-8 rounded-full object-cover border border-emerald-500/50" 
+              />
+              <span className="text-xs font-bold text-white">My Profile & Bookings</span>
+            </Link>
+            
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onTriggerSos();
+              }}
+              className="px-3 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-bold shadow-lg shadow-rose-600/30 flex items-center gap-1.5"
+            >
+              <AlertTriangle className="w-3.5 h-3.5" /> Emergency SOS
+            </button>
+          </div>
         </div>
       )}
     </header>

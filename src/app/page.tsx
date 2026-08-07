@@ -84,7 +84,7 @@ export default function LandingPage() {
           </div>
 
           {/* Trust Highlights */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto pt-6 text-left">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto pt-6 text-left">
             <div className="p-4 rounded-2xl glass-card border border-slate-800 flex items-start gap-3">
               <UserCheck className="w-6 h-6 text-emerald-400 shrink-0 mt-1" />
               <div>
