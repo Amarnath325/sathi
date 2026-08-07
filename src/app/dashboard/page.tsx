@@ -35,10 +35,10 @@ import {
   UserPlus
 } from 'lucide-react';
 import { MOCK_BOOKINGS, MOCK_COMPANIONS } from '@/lib/mockData';
+import { useUserAuthStore } from '@/lib/userAuthStore';
 
 export default function UserDashboardPage() {
-  // Authentication Guard State
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const { isLoggedIn, login, logout } = useUserAuthStore();
   const [authInput, setAuthInput] = useState<string>('alex.mercer@example.com');
   const [passwordInput, setPasswordInput] = useState<string>('••••••••');
   const [authError, setAuthError] = useState<string | null>(null);
@@ -109,7 +109,7 @@ export default function UserDashboardPage() {
     setTimeout(() => {
       setIsLoggingIn(false);
       if (authInput.trim().length > 0 && passwordInput.trim().length > 0) {
-        setIsAuthenticated(true);
+        login({ email: authInput });
       } else {
         setAuthError('Please enter a valid Email / Username / Mobile and Password.');
       }
@@ -129,7 +129,7 @@ export default function UserDashboardPage() {
   });
 
   // STEP 1: If User is NOT authenticated, show Credential Verification Modal / Screen
-  if (!isAuthenticated) {
+  if (!isLoggedIn) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-md w-full glass-panel p-8 rounded-3xl border border-slate-800 shadow-2xl space-y-6 relative overflow-hidden">
@@ -192,7 +192,7 @@ export default function UserDashboardPage() {
 
             <div className="pt-2 text-center">
               <span className="text-[11px] text-slate-500">
-                Demo Auth Mode: Click <strong className="text-indigo-400 cursor-pointer" onClick={() => setIsAuthenticated(true)}>Unlock My Profile</strong> to proceed.
+                Demo Auth Mode: Click <strong className="text-indigo-400 cursor-pointer" onClick={() => login({ email: authInput })}>Unlock My Profile</strong> to proceed.
               </span>
             </div>
 
@@ -255,10 +255,10 @@ export default function UserDashboardPage() {
             </div>
 
             <button
-              onClick={() => setIsAuthenticated(false)}
+              onClick={() => logout()}
               className="px-4 py-3 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 hover:border-rose-500/40 text-xs font-bold transition-all flex items-center gap-1.5"
             >
-              <LogOut className="w-4 h-4" /> Lock Profile
+              <LogOut className="w-4 h-4" /> Logout Account
             </button>
           </div>
 

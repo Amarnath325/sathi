@@ -16,9 +16,11 @@ import {
   EyeOff,
   UserCheck
 } from 'lucide-react';
+import { useUserAuthStore } from '@/lib/userAuthStore';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useUserAuthStore();
   const [loginMethod, setLoginMethod] = useState<'password' | 'otp'>('password');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,12 +40,13 @@ export default function LoginPage() {
 
     setTimeout(() => {
       setIsLoading(false);
+      login({ email: email || 'user@example.com' });
       // Simulate 2FA challenge trigger for enterprise security
       if (!show2FA && email.includes('admin')) {
         setShow2FA(true);
       } else {
         // Redirect to dashboard or landing page
-        router.push('/');
+        router.push('/dashboard');
       }
     }, 1200);
   };

@@ -16,9 +16,12 @@ import {
   ShieldAlert,
   Menu,
   X,
-  LogOut
+  LogOut,
+  LogIn,
+  UserPlus
 } from 'lucide-react';
 import { RoleType } from '@/lib/types';
+import { useUserAuthStore } from '@/lib/userAuthStore';
 
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 
@@ -30,6 +33,7 @@ interface HeaderProps {
 
 export function Header({ currentRole, onRoleChange, onTriggerSos }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isLoggedIn, user, logout } = useUserAuthStore();
 
   return (
     <header className="sticky top-0 z-50 glass-panel border-b border-slate-800 backdrop-blur-md">
@@ -82,7 +86,7 @@ export function Header({ currentRole, onRoleChange, onTriggerSos }: HeaderProps)
             </Link>
           </nav>
 
-          {/* Header Controls (Emergency SOS + Notifications + Profile) */}
+          {/* Header Controls (Emergency SOS + Notifications + Auth State) */}
           <div className="hidden sm:flex items-center gap-3">
 
             {/* Notification Bell Component */}
@@ -98,25 +102,44 @@ export function Header({ currentRole, onRoleChange, onTriggerSos }: HeaderProps)
               <span className="md:hidden">SOS</span>
             </button>
 
-            {/* Profile & Logout Links */}
-            <div className="flex items-center gap-2">
-              <Link href="/dashboard" className="flex items-center gap-2 p-1 pl-2.5 rounded-full bg-slate-900 border border-slate-800 hover:border-slate-700">
-                <span className="text-xs font-semibold text-slate-300 hidden md:inline">My Account</span>
-                <img 
-                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" 
-                  alt="Avatar" 
-                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border border-emerald-500/50"
-                />
-              </Link>
-              
-              <Link 
-                href="/dashboard"
-                title="Logout Account" 
-                className="hidden sm:flex items-center justify-center p-2 rounded-full bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 hover:border-rose-500/40 transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-              </Link>
-            </div>
+            {/* Auth Conditional Rendering */}
+            {isLoggedIn ? (
+              <div className="flex items-center gap-2">
+                <Link href="/dashboard" className="flex items-center gap-2 p-1 pl-2.5 rounded-full bg-slate-900 border border-slate-800 hover:border-slate-700">
+                  <span className="text-xs font-semibold text-slate-300 hidden md:inline">My Account</span>
+                  <img 
+                    src={user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"} 
+                    alt="Avatar" 
+                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border border-emerald-500/50"
+                  />
+                </Link>
+                
+                <button
+                  onClick={() => logout()}
+                  title="Logout Account" 
+                  className="hidden sm:flex items-center justify-center p-2 rounded-full bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 hover:border-rose-500/40 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link 
+                  href="/login" 
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-300 hover:text-white hover:border-slate-700 transition-all"
+                >
+                  <LogIn className="w-3.5 h-3.5 text-indigo-400" /> Login
+                </Link>
+
+                <Link 
+                  href="/register" 
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl gradient-bg-primary text-xs font-extrabold text-white shadow-lg shadow-indigo-600/30 hover:opacity-95 transition-all"
+                >
+                  <UserPlus className="w-3.5 h-3.5" /> Register
+                </Link>
+              </div>
+            )}
+
           </div>
 
           {/* Mobile & Tablet Menu Toggle Button */}
@@ -179,28 +202,50 @@ export function Header({ currentRole, onRoleChange, onTriggerSos }: HeaderProps)
           </Link>
           
           <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
-            <Link 
-              href="/dashboard" 
-              onClick={() => setMobileMenuOpen(false)} 
-              className="flex items-center gap-2.5"
-            >
-              <img 
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" 
-                alt="Avatar" 
-                className="w-8 h-8 rounded-full object-cover border border-emerald-500/50" 
-              />
-              <span className="text-xs font-bold text-white">My Profile & Bookings</span>
-            </Link>
-            
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                onTriggerSos();
-              }}
-              className="px-3 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-bold shadow-lg shadow-rose-600/30 flex items-center gap-1.5"
-            >
-              <AlertTriangle className="w-3.5 h-3.5" /> Emergency SOS
-            </button>
+            {isLoggedIn ? (
+              <>
+                <Link 
+                  href="/dashboard" 
+                  onClick={() => setMobileMenuOpen(false)} 
+                  className="flex items-center gap-2.5"
+                >
+                  <img 
+                    src={user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"} 
+                    alt="Avatar" 
+                    className="w-8 h-8 rounded-full object-cover border border-emerald-500/50" 
+                  />
+                  <span className="text-xs font-bold text-white">My Profile & Bookings</span>
+                </Link>
+                
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    logout();
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-rose-400 text-xs font-bold flex items-center gap-1.5"
+                >
+                  <LogOut className="w-3.5 h-3.5" /> Logout
+                </button>
+              </>
+            ) : (
+              <div className="flex items-center gap-2 w-full justify-between">
+                <Link 
+                  href="/login" 
+                  onClick={() => setMobileMenuOpen(false)} 
+                  className="flex-1 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-300 text-center"
+                >
+                  Login
+                </Link>
+
+                <Link 
+                  href="/register" 
+                  onClick={() => setMobileMenuOpen(false)} 
+                  className="flex-1 py-2 rounded-xl gradient-bg-primary text-xs font-extrabold text-white text-center shadow-lg shadow-indigo-600/30"
+                >
+                  Register
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       )}
