@@ -8,6 +8,7 @@ import { TemplateLibraryEditor } from '@/components/communication/TemplateLibrar
 import { CommunicationAnalyticsCharts } from '@/components/communication/CommunicationAnalyticsCharts';
 import { DeliveryLogStreamTable } from '@/components/communication/DeliveryLogStreamTable';
 import { useCommunicationStore } from '@/lib/communicationStore';
+import { AdminAuthGuard } from '@/components/auth/AdminAuthGuard';
 
 export default function AdminCommunicationPage() {
   const [activeTab, setActiveTab] = useState<'campaigns' | 'templates' | 'analytics' | 'logs' | 'triggers'>('campaigns');
@@ -19,6 +20,7 @@ export default function AdminCommunicationPage() {
   const totalDelivered = campaigns.reduce((acc, c) => acc + c.successCount, 0);
 
   return (
+    <AdminAuthGuard>
     <div className="w-full bg-slate-950 text-slate-100 p-4 sm:p-6 lg:p-8 space-y-8">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header Banner */}
@@ -166,5 +168,6 @@ export default function AdminCommunicationPage() {
         <NewCampaignModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       </div>
     </div>
+    </AdminAuthGuard>
   );
 }

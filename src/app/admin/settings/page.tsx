@@ -10,11 +10,14 @@ import { MaintenanceModeManager } from '@/components/settings/MaintenanceModeMan
 import { SecurityRateLimitConfig } from '@/components/settings/SecurityRateLimitConfig';
 import { useSystemSettingsStore } from '@/lib/systemSettingsStore';
 
+import { AdminAuthGuard } from '@/components/auth/AdminAuthGuard';
+
 export default function AdminSystemSettingsPage() {
   const [activeTab, setActiveTab] = useState<'general' | 'finance' | 'communication' | 'storage' | 'maintenance' | 'security'>('general');
   const { general, finance, storage, maintenance, toggleMaintenanceMode } = useSystemSettingsStore();
 
   return (
+    <AdminAuthGuard>
     <div className="w-full bg-slate-950 text-slate-100 p-4 sm:p-6 lg:p-8 space-y-8">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Maintenance Banner Alert */}
@@ -145,5 +148,6 @@ export default function AdminSystemSettingsPage() {
         </div>
       </div>
     </div>
+    </AdminAuthGuard>
   );
 }

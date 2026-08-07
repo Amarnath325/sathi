@@ -46,12 +46,21 @@ export async function POST(req: Request) {
 
     const mockAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.admin_token_session_2026';
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: 'Admin Authentication Successful. Redirecting to Command Center...',
       token: mockAccessToken,
       user: adminUser
     });
+
+    response.cookies.set('adminToken', mockAccessToken, {
+      path: '/',
+      httpOnly: false,
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7 // 7 days
+    });
+
+    return response;
 
   } catch (error) {
     return NextResponse.json(

@@ -8,6 +8,8 @@ import ReportBuilderModal from '@/components/analytics/ReportBuilderModal';
 import SavedReportsTable from '@/components/analytics/SavedReportsTable';
 import { useAnalyticsStore } from '@/lib/analyticsStore';
 
+import { AdminAuthGuard } from '@/components/auth/AdminAuthGuard';
+
 export default function AnalyticsAdminPage() {
   const [isReportBuilderOpen, setIsReportBuilderOpen] = useState(false);
   const { triggerExport } = useAnalyticsStore();
@@ -19,6 +21,7 @@ export default function AnalyticsAdminPage() {
   };
 
   return (
+    <AdminAuthGuard>
     <div className="w-full bg-slate-950 text-slate-100 p-4 md:p-8 space-y-6 max-w-7xl mx-auto pb-20">
       {/* Header Controls & Filter Tabs */}
       <AnalyticsHeaderControls
@@ -41,5 +44,6 @@ export default function AnalyticsAdminPage() {
         onClose={() => setIsReportBuilderOpen(false)}
       />
     </div>
+    </AdminAuthGuard>
   );
 }

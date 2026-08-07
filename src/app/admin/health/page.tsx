@@ -8,6 +8,7 @@ import { SystemAlertsFeed } from '@/components/health/SystemAlertsFeed';
 import { ResourceUtilizationCharts } from '@/components/health/ResourceUtilizationCharts';
 import { ChaosLoadSimulator } from '@/components/health/ChaosLoadSimulator';
 import { useSystemHealthStore } from '@/lib/systemHealthStore';
+import { AdminAuthGuard } from '@/components/auth/AdminAuthGuard';
 
 export default function AdminSystemHealthPage() {
   const [activeTab, setActiveTab] = useState<'telemetry' | 'services' | 'alerts' | 'trends' | 'chaos'>('telemetry');
@@ -16,6 +17,7 @@ export default function AdminSystemHealthPage() {
   const activeAlertsCount = alerts.filter((a) => !a.isResolved).length;
 
   return (
+    <AdminAuthGuard>
     <div className="w-full bg-slate-950 text-slate-100 p-4 sm:p-6 lg:p-8 space-y-8">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Chaos Active Banner Alert */}
@@ -135,5 +137,6 @@ export default function AdminSystemHealthPage() {
         </div>
       </div>
     </div>
+    </AdminAuthGuard>
   );
 }

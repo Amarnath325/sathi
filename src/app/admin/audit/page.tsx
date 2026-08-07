@@ -8,6 +8,7 @@ import { AuditSearchFilter } from '@/components/audit/AuditSearchFilter';
 import { ComplianceExportManager } from '@/components/audit/ComplianceExportManager';
 import { RetentionPolicyConfig } from '@/components/audit/RetentionPolicyConfig';
 import { useAuditLogsStore } from '@/lib/auditLogsStore';
+import { AdminAuthGuard } from '@/components/auth/AdminAuthGuard';
 
 export default function AdminAuditLogsPage() {
   const [activeTab, setActiveTab] = useState<'feed' | 'verify' | 'search' | 'export' | 'retention'>('feed');
@@ -37,6 +38,7 @@ export default function AdminAuditLogsPage() {
   });
 
   return (
+    <AdminAuthGuard>
     <div className="w-full bg-slate-950 text-slate-100 p-4 sm:p-6 lg:p-8 space-y-8">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header Banner */}
@@ -166,5 +168,6 @@ export default function AdminAuditLogsPage() {
         </div>
       </div>
     </div>
+    </AdminAuthGuard>
   );
 }
