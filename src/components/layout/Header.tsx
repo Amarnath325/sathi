@@ -15,7 +15,8 @@ import {
   LayoutDashboard,
   ShieldAlert,
   Menu,
-  X
+  X,
+  LogOut
 } from 'lucide-react';
 import { RoleType } from '@/lib/types';
 
@@ -97,15 +98,25 @@ export function Header({ currentRole, onRoleChange, onTriggerSos }: HeaderProps)
               <span className="md:hidden">SOS</span>
             </button>
 
-            {/* Profile Link */}
-            <Link href="/dashboard" className="flex items-center gap-2 p-1 pl-2.5 rounded-full bg-slate-900 border border-slate-800 hover:border-slate-700">
-              <span className="text-xs font-semibold text-slate-300 hidden md:inline">My Account</span>
-              <img 
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" 
-                alt="Avatar" 
-                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border border-emerald-500/50"
-              />
-            </Link>
+            {/* Profile & Logout Links */}
+            <div className="flex items-center gap-2">
+              <Link href="/dashboard" className="flex items-center gap-2 p-1 pl-2.5 rounded-full bg-slate-900 border border-slate-800 hover:border-slate-700">
+                <span className="text-xs font-semibold text-slate-300 hidden md:inline">My Account</span>
+                <img 
+                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" 
+                  alt="Avatar" 
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border border-emerald-500/50"
+                />
+              </Link>
+              
+              <Link 
+                href="/dashboard"
+                title="Logout Account" 
+                className="hidden sm:flex items-center justify-center p-2 rounded-full bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 hover:border-rose-500/40 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
 
           {/* Mobile & Tablet Menu Toggle Button */}

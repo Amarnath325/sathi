@@ -56,7 +56,7 @@ export function Footer() {
               <li><Link href="/kyc" className="hover:text-white transition-colors">KYC Verification Standard</Link></li>
               <li><Link href="/safety" className="hover:text-white transition-colors">Emergency Panic Alert</Link></li>
               <li><Link href="/wallet" className="hover:text-white transition-colors">Escrow Protection Guarantee</Link></li>
-              <li><Link href="/admin" className="hover:text-white transition-colors">AI Fraud Monitoring</Link></li>
+              <li><Link href="/safety" className="hover:text-white transition-colors">AI Fraud & Safety Protection</Link></li>
               <li><Link href="/about" className="hover:text-white transition-colors">Code of Conduct</Link></li>
             </ul>
           </div>
