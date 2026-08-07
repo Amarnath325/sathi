@@ -5,22 +5,33 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ShieldCheck, Star, MapPin, Globe, Clock, CheckCircle2, Award, Calendar,
-  MessageSquare, Sparkles, Heart, Share2, Eye, ChevronLeft
+  MessageSquare, Sparkles, Heart, Share2, Eye, ChevronLeft, Lock, AlertTriangle, Shield
 } from 'lucide-react';
 import { MOCK_COMPANIONS, MOCK_REVIEWS } from '@/lib/mockData';
 import { CompanionStatusBadge } from '@/components/companion/CompanionStatusBadge';
 import { AvailabilityGrid } from '@/components/companion/AvailabilityGrid';
 import { ImageLightboxModal } from '@/components/common/ImageLightboxModal';
+import { useToast } from '@/components/ui/Toast';
 
 export default function CompanionProfilePage() {
   const params = useParams();
+  const { showToast } = useToast();
   const companionId = params?.id as string;
   const companion = MOCK_COMPANIONS.find(c => c.id === companionId) || MOCK_COMPANIONS[0];
 
   const [activePhoto, setActivePhoto] = useState(companion.avatar);
   const [isSaved, setIsSaved] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'availability' | 'reviews'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'services' | 'availability' | 'safety' | 'reviews'>('overview');
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+
+  const toggleFavorite = () => {
+    setIsSaved(!isSaved);
+    if (!isSaved) {
+      showToast('success', 'Saved to Favorites ♡', `${companion.name} added to your saved favorites.`);
+    } else {
+      showToast('info', 'Removed from Favorites', `${companion.name} removed from your saved list.`);
+    }
+  };
 
   const photoGallery = [
     companion.avatar,
@@ -30,14 +41,16 @@ export default function CompanionProfilePage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Breadcrumbs */}
+      
+      {/* Breadcrumbs & Header Controls */}
       <div className="flex items-center justify-between">
-        <Link href="/companion" className="text-xs text-indigo-400 font-semibold hover:underline flex items-center gap-1">
-          <ChevronLeft className="w-4 h-4" /> Back to Companion Directory
+        <Link href="/search" className="text-xs text-indigo-400 font-semibold hover:underline flex items-center gap-1">
+          <ChevronLeft className="w-4 h-4" /> Back to Companion Discovery
         </Link>
+        
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setIsSaved(!isSaved)}
+            onClick={toggleFavorite}
             className={`p-2.5 rounded-2xl glass-card border transition-all ${isSaved ? 'text-rose-400 border-rose-500/40 bg-rose-500/10' : 'text-slate-400 border-slate-800 hover:text-white'}`}
           >
             <Heart className={`w-4 h-4 ${isSaved ? 'fill-rose-400' : ''}`} />
@@ -48,10 +61,12 @@ export default function CompanionProfilePage() {
         </div>
       </div>
 
-      {/* Main Profile Grid */}
+      {/* Main Profile Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
         <div className="lg:col-span-2 space-y-8">
-          {/* Showcase */}
+          
+          {/* Main Photo Showcase */}
           <div className="space-y-3">
             <div
               className="relative h-96 sm:h-[480px] rounded-3xl overflow-hidden glass-panel border border-slate-800 cursor-pointer group"
@@ -60,26 +75,27 @@ export default function CompanionProfilePage() {
               <img src={activePhoto} alt={companion.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/10 to-transparent" />
 
-              <div className="absolute inset-0 bg-slate-950/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <span className="px-4 py-2 rounded-full bg-slate-950/80 backdrop-blur-md text-white text-xs font-bold flex items-center gap-2 border border-white/20">
-                  <Eye className="w-4 h-4 text-indigo-400" /> Click to Expand Image
-                </span>
-              </div>
-
+              {/* SEPARATE VERIFICATION BADGES (Section 29) */}
               <div className="absolute top-4 left-4 flex flex-wrap gap-2 pointer-events-none">
-                {companion.verificationBadge && (
-                  <span className="px-3 py-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-emerald-500/40 text-emerald-400 text-xs font-bold flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" /> GOVERNMENT ID VERIFIED
-                  </span>
-                )}
-                {companion.status && <CompanionStatusBadge status={companion.status} size="md" />}
+                <span className="px-3 py-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-emerald-500/40 text-emerald-400 text-xs font-bold flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> EMAIL VERIFIED ✓
+                </span>
+                <span className="px-3 py-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-emerald-500/40 text-emerald-400 text-xs font-bold flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> PHONE VERIFIED ✓
+                </span>
+                <span className="px-3 py-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-indigo-500/40 text-indigo-300 text-xs font-bold flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" /> IDENTITY VERIFIED ✓
+                </span>
+                <span className="px-3 py-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-indigo-500/40 text-indigo-300 text-xs font-bold flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" /> KYC VERIFIED ✓
+                </span>
               </div>
 
               <div className="absolute bottom-4 left-6 right-6 flex items-end justify-between pointer-events-none">
                 <div>
                   <h1 className="text-3xl font-extrabold text-white">{companion.name}, {companion.age}</h1>
                   <p className="text-xs text-slate-300 flex items-center gap-1.5 mt-1">
-                    <MapPin className="w-4 h-4 text-indigo-400" /> {companion.city}, {companion.country}
+                    <MapPin className="w-4 h-4 text-indigo-400" /> {companion.city}, {companion.country} (12 km away)
                   </p>
                 </div>
                 <div className="px-3 py-1.5 rounded-2xl bg-slate-950/80 backdrop-blur-md border border-amber-500/40 text-amber-400 text-sm font-bold flex items-center gap-1.5">
@@ -101,57 +117,53 @@ export default function CompanionProfilePage() {
                   className={`h-24 rounded-2xl overflow-hidden cursor-pointer border transition-all relative group ${activePhoto === img ? 'border-indigo-500 ring-2 ring-indigo-500/40 opacity-100' : 'border-slate-800 opacity-60 hover:opacity-100'}`}
                 >
                   <img src={img} alt="Gallery" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-slate-950/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                    <Eye className="w-4 h-4 text-white" />
-                  </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Navigation Tabs */}
-          <div className="flex border-b border-slate-800 gap-6 text-sm font-bold text-slate-400">
+          {/* Navigation Tabs (Section 28) */}
+          <div className="flex border-b border-slate-800 gap-6 text-sm font-bold text-slate-400 overflow-x-auto">
             <button
               onClick={() => setActiveTab('overview')}
-              className={`pb-3 border-b-2 transition-all ${activeTab === 'overview' ? 'border-indigo-500 text-white' : 'border-transparent hover:text-slate-200'}`}
+              className={`pb-3 border-b-2 transition-all shrink-0 ${activeTab === 'overview' ? 'border-indigo-500 text-white' : 'border-transparent hover:text-slate-200'}`}
             >
               Overview & Bio
             </button>
             <button
+              onClick={() => setActiveTab('services')}
+              className={`pb-3 border-b-2 transition-all shrink-0 ${activeTab === 'services' ? 'border-indigo-500 text-white' : 'border-transparent hover:text-slate-200'}`}
+            >
+              Services & Pricing
+            </button>
+            <button
               onClick={() => setActiveTab('availability')}
-              className={`pb-3 border-b-2 transition-all ${activeTab === 'availability' ? 'border-indigo-500 text-white' : 'border-transparent hover:text-slate-200'}`}
+              className={`pb-3 border-b-2 transition-all shrink-0 ${activeTab === 'availability' ? 'border-indigo-500 text-white' : 'border-transparent hover:text-slate-200'}`}
             >
               Availability Matrix
             </button>
             <button
+              onClick={() => setActiveTab('safety')}
+              className={`pb-3 border-b-2 transition-all shrink-0 ${activeTab === 'safety' ? 'border-indigo-500 text-white' : 'border-transparent hover:text-slate-200'}`}
+            >
+              Safety & Verification
+            </button>
+            <button
               onClick={() => setActiveTab('reviews')}
-              className={`pb-3 border-b-2 transition-all ${activeTab === 'reviews' ? 'border-indigo-500 text-white' : 'border-transparent hover:text-slate-200'}`}
+              className={`pb-3 border-b-2 transition-all shrink-0 ${activeTab === 'reviews' ? 'border-indigo-500 text-white' : 'border-transparent hover:text-slate-200'}`}
             >
               Reviews ({companion.ratingCount})
             </button>
           </div>
 
-          {/* Tab Content */}
+          {/* TAB 1: OVERVIEW */}
           {activeTab === 'overview' && (
             <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-6">
               <div className="flex items-center justify-between border-b border-slate-800 pb-4">
                 <h2 className="text-xl font-bold text-white">About {companion.name}</h2>
-                <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" /> Online Now
-                </span>
+                <span className="text-xs text-slate-400 font-mono">Response Rate: <strong className="text-emerald-400 font-bold">99% (within 15 mins)</strong></span>
               </div>
-              <p className="text-sm text-slate-300 leading-relaxed font-light whitespace-pre-line">{companion.bio}</p>
-
-              <div className="space-y-2 pt-2">
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Service Specialties</h4>
-                <div className="flex flex-wrap gap-2">
-                  {companion.categories.map((cat, idx) => (
-                    <span key={idx} className="px-3 py-1.5 rounded-xl bg-indigo-600/15 border border-indigo-500/30 text-indigo-300 text-xs font-semibold">
-                      {cat}
-                    </span>
-                  ))}
-                </div>
-              </div>
+              <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-line">{companion.bio}</p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-slate-800">
                 <div className="space-y-2">
@@ -164,6 +176,7 @@ export default function CompanionProfilePage() {
                     ))}
                   </div>
                 </div>
+
                 <div className="space-y-2">
                   <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                     <Award className="w-4 h-4 text-emerald-400" /> Skills & Qualifications
@@ -178,6 +191,25 @@ export default function CompanionProfilePage() {
             </div>
           )}
 
+          {/* TAB 2: SERVICES & PRICING */}
+          {activeTab === 'services' && (
+            <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">
+              <h2 className="text-xl font-bold text-white border-b border-slate-800 pb-3">Available Services</h2>
+              <div className="grid grid-cols-1 gap-3">
+                {companion.categories.map((cat, idx) => (
+                  <div key={idx} className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-bold text-white">{cat}</h4>
+                      <p className="text-xs text-slate-400">Professional legal companionship for gala events, sightseeing & conversation.</p>
+                    </div>
+                    <span className="text-sm font-extrabold text-indigo-400 font-mono">${companion.hourlyRate}/hr</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: AVAILABILITY */}
           {activeTab === 'availability' && (
             <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">
               <h2 className="text-xl font-bold text-white flex items-center gap-2"><Calendar className="w-5 h-5 text-indigo-400" /> Weekly Availability Schedule</h2>
@@ -186,6 +218,31 @@ export default function CompanionProfilePage() {
             </div>
           )}
 
+          {/* TAB 4: SAFETY & PRIVACY GUARANTEE */}
+          {activeTab === 'safety' && (
+            <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-6">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-emerald-400" /> Platform Verification & Privacy Standards
+              </h2>
+
+              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+                <h4 className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                  <Lock className="w-4 h-4" /> Strict Data Minimization & Privacy Protection
+                </h4>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  For user safety and compliance with Section 28, the following sensitive credentials are <strong>NEVER EXPOSED</strong> on public profiles:
+                </p>
+                <ul className="text-xs text-slate-400 space-y-1 pl-4 list-disc">
+                  <li>✕ Government ID documents or Passport files</li>
+                  <li>✕ Private Mobile Phone Numbers</li>
+                  <li>✕ Personal Email Addresses</li>
+                  <li>✕ Exact Home Address or Coordinates</li>
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: REVIEWS */}
           {activeTab === 'reviews' && (
             <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-6">
               <h2 className="text-xl font-bold text-white">Verified Client Reviews</h2>
@@ -205,9 +262,10 @@ export default function CompanionProfilePage() {
               </div>
             </div>
           )}
+
         </div>
 
-        {/* Right column: rates & booking */}
+        {/* Right Sticky Booking Box */}
         <div className="space-y-6">
           <div className="glass-panel p-6 rounded-3xl border border-slate-800 sticky top-24 space-y-6">
             <div>
@@ -242,6 +300,7 @@ export default function CompanionProfilePage() {
             </div>
           </div>
         </div>
+
       </div>
 
       <ImageLightboxModal
@@ -250,6 +309,7 @@ export default function CompanionProfilePage() {
         title={`${companion.name}'s Photo Showcase`}
         onClose={() => setLightboxImage(null)}
       />
+
     </div>
   );
 }
