@@ -824,6 +824,68 @@ model CommunicationDeliveryLog {
   @@index([campaignId, status])
 }
 
+enum ExecutiveAlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum ExecutiveAlertStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+enum ExecutiveReportType {
+  WEEKLY_BOARD_DECK
+  MONTHLY_FINANCIAL_AUDIT
+  SECURITY_COMPLIANCE_SUMMARY
+  QUARTERLY_TAX_RESERVE
+}
+
+model ExecutiveKPISnapshot {
+  id                  String   @id @default(uuid())
+  snapshotDate        DateTime @default(now())
+  timeframe           String   @default("30D")
+  region              String   @default("ALL")
+  gmvAmount           Float
+  netRevenue          Float
+  escrowReserve       Float
+  activeCompanions    Int
+  companionRetention  Float
+  systemSecurityScore Int
+  clvToCacRatio       Float
+  createdAt           DateTime @default(now())
+
+  @@index([snapshotDate, timeframe])
+}
+
+model ExecutiveAlert {
+  id          String                 @id @default(uuid())
+  title       String
+  category    String
+  description String
+  severity    ExecutiveAlertSeverity @default(WARNING)
+  status      ExecutiveAlertStatus   @default(OPEN)
+  metadata    String?
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  @@index([status, severity])
+}
+
+model ExecutiveReport {
+  id            String              @id @default(uuid())
+  title         String
+  reportType    ExecutiveReportType @default(WEEKLY_BOARD_DECK)
+  fileFormat    String              @default("PDF")
+  downloadUrl   String
+  generatedBy   String
+  periodCovered String
+  createdAt     DateTime            @default(now())
+}
+
+
 
 
 
