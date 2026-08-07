@@ -641,6 +641,51 @@ model AuditExportJob {
   createdAt      DateTime @default(now())
 }
 
+enum SettingCategory {
+  GENERAL
+  FINANCE
+  COMMUNICATION
+  STORAGE
+  MAINTENANCE
+  SECURITY
+}
+
+enum SettingValueType {
+  STRING
+  NUMBER
+  BOOLEAN
+  JSON
+  ENCRYPTED_SECRET
+}
+
+model SystemSetting {
+  id          String           @id @default(uuid())
+  key         String           @unique // e.g. platform.name, escrow.commission_rate
+  category    SettingCategory  @default(GENERAL)
+  value       String           // Serialized string / JSON value
+  valueType   SettingValueType @default(STRING)
+  isEncrypted Boolean          @default(false)
+  isPublic    Boolean          @default(false)
+  description String?
+  updatedBy   String?
+  updatedAt   DateTime         @updatedAt
+
+  @@index([category, key])
+}
+
+model SystemMaintenanceSchedule {
+  id               String   @id @default(uuid())
+  title            String
+  description      String?
+  startTime        DateTime
+  endTime          DateTime
+  isLiveBanner     Boolean  @default(false)
+  affectedServices String[] // e.g. ["PAYMENTS_API", "COMPANION_SEARCH"]
+  createdBy        String
+  createdAt        DateTime @default(now())
+}
+
+
 
 
 
