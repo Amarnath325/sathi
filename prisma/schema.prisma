@@ -885,6 +885,65 @@ model ExecutiveReport {
   createdAt     DateTime            @default(now())
 }
 
+enum AnalyticsDomain {
+  OVERVIEW
+  FINANCIAL
+  USER_GROWTH
+  OPERATIONS
+  SAFETY
+}
+
+enum ReportRecurrence {
+  NONE
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+}
+
+model AnalyticsDailySnapshot {
+  id                String   @id @default(uuid())
+  snapshotDate      DateTime @default(now())
+  gmvAmount         Float
+  netRevenue        Float
+  escrowVolume      Float
+  activeUsers       Int
+  newCompanions     Int
+  totalBookings     Int
+  completedBookings Int
+  cancelledBookings Int
+  safetyIncidents   Int
+  avgRating         Float
+  createdAt         DateTime @default(now())
+
+  @@index([snapshotDate])
+}
+
+model SavedReportTemplate {
+  id           String           @id @default(uuid())
+  title        String
+  domain       AnalyticsDomain  @default(OVERVIEW)
+  metrics      String[]
+  groupBy      String           @default("DATE")
+  timeframe    String           @default("30D")
+  recurrence   ReportRecurrence @default(NONE)
+  outputFormat String           @default("PDF")
+  createdBy    String
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+model AnalyticsExportLog {
+  id          String   @id @default(uuid())
+  reportTitle String
+  format      String
+  recordCount Int
+  downloadUrl String
+  exportedBy  String
+  createdAt   DateTime @default(now())
+}
+
+
 
 
 
