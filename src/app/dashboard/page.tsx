@@ -32,7 +32,10 @@ import {
   Edit3,
   Percent,
   FileText,
-  UserPlus
+  UserPlus,
+  UploadCloud,
+  FileCheck,
+  Building
 } from 'lucide-react';
 import { MOCK_BOOKINGS, MOCK_COMPANIONS } from '@/lib/mockData';
 import { useUserAuthStore } from '@/lib/userAuthStore';
@@ -56,6 +59,8 @@ export default function UserDashboardPage() {
     phone: "+1 (415) 892-3011",
     avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
     kycStatus: "APPROVED",
+    kycDocType: "NATIONAL_ID",
+    kycDocNumber: "A92839201",
     memberSince: "March 2025",
     city: "San Francisco, CA",
     country: "USA",
@@ -63,12 +68,14 @@ export default function UserDashboardPage() {
     emergencyContact: "+1 (415) 555-0199 (Sister - Sarah)",
     walletBalance: 480.00,
     escrowLocked: 207.00,
+    payoutAccount: "alex@upi / US829103910",
     riskScore: 0.01,
     socialInstagram: "@alex_mercer_sf",
     socialLinkedin: "linkedin.com/in/alexmercersf"
   });
 
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [kycDocUploaded, setKycDocUploaded] = useState(true);
 
   // Security settings state
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
@@ -82,11 +89,11 @@ export default function UserDashboardPage() {
       { key: 'name', weight: 15, label: 'Full Name' },
       { key: 'email', weight: 15, label: 'Email Address' },
       { key: 'phone', weight: 10, label: 'Mobile Number' },
-      { key: 'avatar', weight: 15, label: 'Profile Photo' },
-      { key: 'kycStatus', weight: 20, isVerified: userProfile.kycStatus === 'APPROVED', label: 'KYC Document Verification' },
+      { key: 'avatar', weight: 10, label: 'Profile Photo' },
+      { key: 'kycDocNumber', weight: 20, isVerified: userProfile.kycStatus === 'APPROVED' || userProfile.kycDocNumber.length > 0, label: 'KYC Document Verification (Optional)' },
+      { key: 'payoutAccount', weight: 15, isVerified: userProfile.payoutAccount.length > 0, label: 'Wallet & Payout Details (Optional)' },
       { key: 'bio', weight: 10, label: 'Personal Bio' },
-      { key: 'emergencyContact', weight: 10, label: 'Emergency Contact' },
-      { key: 'socialInstagram', weight: 5, label: 'Social Media Profiles' },
+      { key: 'emergencyContact', weight: 5, label: 'Emergency Contact' },
     ];
 
     checks.forEach(item => {
@@ -356,13 +363,6 @@ export default function UserDashboardPage() {
             <Settings className="w-4 h-4 text-cyan-400" /> Security & 2FA
           </button>
         </div>
-
-        <Link 
-          href="/admin" 
-          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-[11px] font-bold text-slate-400 hover:text-white hover:border-slate-700"
-        >
-          <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-400" /> Admin Command Center
-        </Link>
       </div>
 
       {/* TAB 1: Complete User Profile Details & Completion Breakdown */}
@@ -378,12 +378,12 @@ export default function UserDashboardPage() {
                   <h3 className="text-base font-bold text-white flex items-center gap-2">
                     <User className="w-5 h-5 text-indigo-400" /> Personal Profile Information
                   </h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Your personal credentials added during registration.</p>
+                  <p className="text-xs text-slate-400 mt-0.5">Your personal credentials, KYC documents, and wallet details.</p>
                 </div>
 
                 {savedSuccess && (
                   <span className="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-400 text-xs font-mono font-bold flex items-center gap-1">
-                    <CheckCircle2 className="w-4 h-4" /> Profile Updated!
+                    <CheckCircle2 className="w-4 h-4" /> Profile Saved!
                   </span>
                 )}
               </div>
@@ -446,6 +446,79 @@ export default function UserDashboardPage() {
                     value={userProfile.emergencyContact}
                     onChange={(e) => setUserProfile({ ...userProfile, emergencyContact: e.target.value })}
                     className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
+              {/* KYC Verification Sub-Section inside Profile */}
+              <div className="p-5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <FileCheck className="w-4 h-4 text-emerald-400" />
+                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">KYC Identity Verification Document</h4>
+                  </div>
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold font-mono">
+                    STATUS: {userProfile.kycStatus}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-300">Government ID Document Type</label>
+                    <select
+                      value={userProfile.kycDocType}
+                      onChange={(e) => setUserProfile({ ...userProfile, kycDocType: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="NATIONAL_ID">National Passport / ID Card</option>
+                      <option value="DRIVING_LICENSE">Driving License</option>
+                      <option value="TAX_CARD">Government SSN / Tax Card</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-300">ID Document Number</label>
+                    <input 
+                      type="text" 
+                      value={userProfile.kycDocNumber}
+                      onChange={(e) => setUserProfile({ ...userProfile, kycDocNumber: e.target.value })}
+                      placeholder="e.g. A92839201"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div 
+                  onClick={() => setKycDocUploaded(true)}
+                  className={`p-3 rounded-xl border border-dashed text-center cursor-pointer transition-all ${kycDocUploaded ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400' : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700'}`}
+                >
+                  <UploadCloud className="w-5 h-5 mx-auto mb-1 text-indigo-400" />
+                  <span className="text-xs font-semibold block">
+                    {kycDocUploaded ? '✓ Identity Document Scan Attached & Verified' : 'Click to Upload Document Photo / ID Scan'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Wallet & Payout Sub-Section inside Profile */}
+              <div className="p-5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Wallet className="w-4 h-4 text-amber-400" />
+                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">Wallet & Bank Payout Details</h4>
+                  </div>
+                  <span className="text-xs font-extrabold text-amber-400 font-mono">
+                    BALANCE: ${userProfile.walletBalance.toFixed(2)}
+                  </span>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-300">Payout Account / Bank IBAN / Mobile Wallet UPI</label>
+                  <input 
+                    type="text" 
+                    value={userProfile.payoutAccount}
+                    onChange={(e) => setUserProfile({ ...userProfile, payoutAccount: e.target.value })}
+                    placeholder="e.g. alex@upi or Bank Routing 92019302"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
                   />
                 </div>
               </div>
