@@ -40,7 +40,7 @@ function MessageBubble({
 
   const groupedReactions = useMemo(() => {
     const map: Record<string, number> = {};
-    msg.reactions.forEach(r => { map[r.emoji] = (map[r.emoji] || 0) + 1; });
+    (msg.reactions || []).forEach(r => { map[r.emoji] = (map[r.emoji] || 0) + 1; });
     return Object.entries(map);
   }, [msg.reactions]);
 
@@ -143,8 +143,8 @@ function ConversationItem({
   onClick: () => void;
   currentUserId: string;
 }) {
-  const otherName = conv.participantNames.find(n => n !== 'Alex Thompson') || conv.participantNames[0];
-  const otherAvatar = conv.participantAvatars.find((_, i) => conv.participantIds[i] !== currentUserId);
+  const otherName = (conv.participantNames || [conv.participantName]).find(n => n !== 'Alex Thompson') || conv.participantName;
+  const otherAvatar = conv.participantAvatars ? conv.participantAvatars.find((_, i) => (conv.participantIds || [])[i] !== currentUserId) : conv.participantAvatar;
 
   return (
     <button
@@ -173,7 +173,7 @@ function ConversationItem({
             <h4 className="text-xs font-bold text-white truncate">{otherName}</h4>
           </div>
           <span className="text-[9px] text-slate-500 shrink-0 ml-1" suppressHydrationWarning>
-            {formatTime(conv.lastMessageAt)}
+            {formatTime(conv.lastMessageAt || conv.lastMessageTime || '')}
           </span>
         </div>
         <div className="flex items-center justify-between mt-0.5">
@@ -222,7 +222,7 @@ export default function ChatTab() {
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter(c =>
-        c.participantNames.some(n => n.toLowerCase().includes(q)) ||
+        (c.participantNames || [c.participantName]).some(n => (n || '').toLowerCase().includes(q)) ||
         (c.lastMessage || '').toLowerCase().includes(q) ||
         (c.bookingRef || '').toLowerCase().includes(q)
       );
@@ -231,7 +231,7 @@ export default function ChatTab() {
     return [...list].sort((a, b) => {
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
-      return new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime();
+      return new Date(b.lastMessageAt || b.lastMessageTime || 0).getTime() - new Date(a.lastMessageAt || a.lastMessageTime || 0).getTime();
     });
   }, [conversations, searchQuery, showArchived]);
 
@@ -254,15 +254,13 @@ export default function ChatTab() {
     if (!activeConvId || !activeConv) return;
     const msg = activeConv.messages.find(m => m.id === msgId);
     if (!msg) return;
-    const alreadyReacted = msg.reactions.some(r => r.userId === currentUserId && r.emoji === emoji);
+    const alreadyReacted = (msg.reactions || []).some(r => r.userId === currentUserId && r.emoji === emoji);
     if (alreadyReacted) removeReaction(activeConvId, msgId, emoji);
     else addReaction(activeConvId, msgId, emoji);
   };
 
-  const otherName = activeConv?.participantNames.find(n => n !== currentUserName) || '';
-  const otherAvatar = activeConv?.participantAvatars.find(
-    (_, i) => activeConv?.participantIds[i] !== currentUserId
-  ) || '';
+  const otherName = activeConv ? ((activeConv.participantNames || [activeConv.participantName]).find(n => n !== currentUserName) || activeConv.participantName) : '';
+  const otherAvatar = activeConv ? ((activeConv.participantAvatars || [activeConv.participantAvatar]).find((_, i) => (activeConv.participantIds || [])[i] !== currentUserId) || activeConv.participantAvatar || '') : '';
 
   return (
     <div className="glass-panel rounded-3xl border border-slate-800 overflow-hidden flex flex-col md:flex-row" style={{ height: 'calc(100vh - 10rem)' }}>

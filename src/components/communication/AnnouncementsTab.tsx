@@ -127,7 +127,7 @@ export default function AnnouncementsTab() {
           </div>
         ) : (
           filtered.map(ann => {
-            const meta = CAT_META[ann.category];
+            const meta = CAT_META[ann.category || 'SYSTEM'] || CAT_META['SYSTEM'];
             const isExpanded = expandedId === ann.id;
             return (
               <div
@@ -154,8 +154,8 @@ export default function AnnouncementsTab() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 flex-wrap">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${PRIORITY_BADGE[ann.priority]}`}>
-                            {ann.priority}
+                          <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${PRIORITY_BADGE[ann.priority || 'MEDIUM'] || PRIORITY_BADGE['MEDIUM']}`}>
+                            {ann.priority || 'MEDIUM'}
                           </span>
                           <span className={`text-[9px] px-2 py-0.5 rounded-full border font-bold ${meta.bg} ${meta.color}`}>
                             {meta.label}
@@ -164,7 +164,7 @@ export default function AnnouncementsTab() {
                             <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" />
                           )}
                         </div>
-                        <span className="text-[9px] text-slate-500 font-mono shrink-0">{timeAgo(ann.sentAt)}</span>
+                        <span className="text-[9px] text-slate-500 font-mono shrink-0">{timeAgo(ann.sentAt || ann.createdAt)}</span>
                       </div>
 
                       <h3 className={`text-xs font-bold mt-1.5 ${ann.isRead ? 'text-slate-300' : 'text-white'}`}>

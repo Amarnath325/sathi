@@ -1,598 +1,623 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
-// ============================================================
-// 📡 COMMUNICATION MODULE TYPES
-// ============================================================
-
-export type MessageStatus = 'SENDING' | 'SENT' | 'DELIVERED' | 'READ' | 'FAILED';
-export type MessageType = 'TEXT' | 'IMAGE' | 'VOICE_NOTE' | 'LOCATION' | 'BOOKING_CARD' | 'FILE' | 'EMOJI_REACTION';
-export type ConversationStatus = 'ACTIVE' | 'ARCHIVED' | 'BLOCKED' | 'MUTED';
-export type NotificationPref = 'ALL' | 'MENTIONS_ONLY' | 'MUTED';
-
-export interface Reaction {
-  emoji: string;
-  userId: string;
-  userName: string;
-}
+// User Chat & Notification Types
+export type MessageStatus = 'SENDING' | 'SENT' | 'DELIVERED' | 'READ';
+export type ConversationType = 'DIRECT' | 'SUPPORT' | 'SYSTEM';
+export type ConversationStatus = 'ACTIVE' | 'ARCHIVED' | 'BLOCKED';
 
 export interface FullChatMessage {
   id: string;
-  conversationId: string;
   senderId: string;
   senderName: string;
   senderAvatar?: string;
   content: string;
-  type: MessageType;
+  type: 'TEXT' | 'IMAGE' | 'AUDIO' | 'VIDEO' | 'LOCATION' | 'FILE';
   mediaUrl?: string;
-  mediaType?: string;
   status: MessageStatus;
-  isRead: boolean;
-  encrypted: boolean;
-  reactions: Reaction[];
-  replyToId?: string;
-  replyToContent?: string;
-  replyToSenderName?: string;
-  isEdited?: boolean;
-  editedAt?: string;
-  deletedForEveryone?: boolean;
+  reactions?: { emoji: string; userId: string }[];
   timestamp: string;
-  createdAt: string;
+  isDeleted?: boolean;
+  deletedForEveryone?: boolean;
 }
 
 export interface Conversation {
   id: string;
-  participantIds: string[];
-  participantNames: string[];
-  participantAvatars: string[];
-  lastMessage?: string;
-  lastMessageAt: string;
-  lastMessageSenderId?: string;
-  unreadCount: number;
+  participantId: string;
+  participantName: string;
+  participantAvatar?: string;
+  participantRole: string;
+  participantNames?: string[];
+  participantAvatars?: string[];
+  participantIds?: string[];
+  type: ConversationType;
   status: ConversationStatus;
-  isPinned: boolean;
-  notificationPref: NotificationPref;
-  isTyping?: boolean;
+  unreadCount: number;
+  lastMessage?: string;
+  lastMessageTime?: string;
+  lastMessageAt?: string;
+  isPinned?: boolean;
+  isMuted?: boolean;
   isOnline?: boolean;
-  bookingId?: string;
+  notificationPref?: string;
   bookingRef?: string;
   messages: FullChatMessage[];
+}
+
+export interface NotificationItem {
+  id: string;
+  title: string;
+  body?: string;
+  message?: string;
+  type: string;
+  avatar?: string;
+  actionUrl?: string;
+  isRead: boolean;
+  createdAt: string;
 }
 
 export interface AnnouncementItem {
   id: string;
   title: string;
-  body: string;
-  category: 'SYSTEM' | 'BOOKING' | 'SAFETY' | 'PROMO' | 'KYC';
-  sentAt: string;
-  isRead: boolean;
-  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  body?: string;
+  content?: string;
+  category?: string;
+  priority?: string;
+  author?: string;
+  sentAt?: string;
   actionUrl?: string;
   actionLabel?: string;
-}
-
-export interface NotificationItem {
-  id: string;
-  type: 'BOOKING_UPDATE' | 'NEW_MESSAGE' | 'REVIEW_RECEIVED' | 'PAYMENT' | 'KYC_STATUS' | 'SAFETY_ALERT' | 'PROMO';
-  title: string;
-  body: string;
   isRead: boolean;
   createdAt: string;
-  avatar?: string;
-  iconColor?: string;
-  actionUrl?: string;
 }
 
-// ============================================================
-// 🗄️ INITIAL MOCK DATA
-// ============================================================
+// Enterprise Broadcast & Campaign Types
+export type CommChannel = 'SMS' | 'EMAIL' | 'PUSH' | 'IN_APP_BANNER';
+export type CommAudience = 'ALL_USERS' | 'VERIFIED_COMPANIONS' | 'PREMIUM_CLIENTS' | 'STAFF_ONLY';
+export type CommCampaignStatus = 'DRAFT' | 'SCHEDULED' | 'SENDING' | 'COMPLETED' | 'FAILED';
+export type CommTemplateCategory = 'TRANSACTIONAL' | 'MARKETING' | 'SECURITY' | 'SYSTEM';
+export type CommDeliveryStatus = 'QUEUED' | 'DELIVERED' | 'OPENED' | 'CLICKED' | 'BOUNCED' | 'FAILED';
 
-const CURRENT_USER_ID = 'curr-user';
-const CURRENT_USER_NAME = 'Alex Thompson';
-const CURRENT_USER_AVATAR = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80';
+export interface CommunicationCampaignRecord {
+  id: string;
+  title: string;
+  channel: CommChannel;
+  targetAudience: CommAudience;
+  subject?: string;
+  body: string;
+  status: CommCampaignStatus;
+  scheduledAt: string | null;
+  sentAt: string | null;
+  totalRecipients: number;
+  successCount: number;
+  failedCount: number;
+  createdBy: string;
+  createdAt: string;
+}
 
-const makeMsg = (
-  id: string, convId: string, senderId: string, senderName: string, senderAvatar: string,
-  content: string, type: MessageType = 'TEXT', status: MessageStatus = 'READ',
-  createdAt: string, reactions: Reaction[] = []
-): FullChatMessage => ({
-  id, conversationId: convId, senderId, senderName, senderAvatar,
-  content, type, status, isRead: true, encrypted: true, reactions,
-  timestamp: new Date(createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-  createdAt
-});
+export interface CommunicationTemplateRecord {
+  id: string;
+  templateKey: string;
+  channel: CommChannel;
+  name: string;
+  subject: string;
+  bodyTemplate: string;
+  variables: string[];
+  category: CommTemplateCategory;
+  isSystemTemplate: boolean;
+  updatedAt: string;
+}
 
-export const INITIAL_CONVERSATIONS: Conversation[] = [
-  {
-    id: 'conv-1',
-    participantIds: [CURRENT_USER_ID, 'comp-101'],
-    participantNames: [CURRENT_USER_NAME, 'Sophia Chen'],
-    participantAvatars: [CURRENT_USER_AVATAR, 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80'],
-    lastMessage: "I'll arrive 15 minutes early near the fountain entrance!",
-    lastMessageAt: '2026-08-07T12:35:00Z',
-    lastMessageSenderId: 'comp-101',
-    unreadCount: 2,
-    status: 'ACTIVE',
-    isPinned: true,
-    notificationPref: 'ALL',
-    isOnline: true,
-    bookingId: 'bk-9001',
-    bookingRef: 'CC-2026-8812',
-    messages: [
-      makeMsg('m1-1', 'conv-1', 'comp-101', 'Sophia Chen', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
-        "Hi Alex! Looking forward to the Tech Gala this evening. I've noted the venue and dress code.", 'TEXT', 'READ', '2026-08-07T12:30:00Z',
-        [{ emoji: '👍', userId: CURRENT_USER_ID, userName: CURRENT_USER_NAME }]),
-      makeMsg('m1-2', 'conv-1', CURRENT_USER_ID, CURRENT_USER_NAME, CURRENT_USER_AVATAR,
-        "Great! The event starts at 6 PM at the Palace of Fine Arts. Formal black-tie required.", 'TEXT', 'READ', '2026-08-07T12:32:00Z', []),
-      makeMsg('m1-3', 'conv-1', 'comp-101', 'Sophia Chen', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
-        "Perfect! I'll prepare accordingly. Should I meet you at the main entrance or lobby?", 'TEXT', 'READ', '2026-08-07T12:33:00Z', []),
-      makeMsg('m1-4', 'conv-1', CURRENT_USER_ID, CURRENT_USER_NAME, CURRENT_USER_AVATAR,
-        "Main entrance, please. I'll be in a navy tuxedo.", 'TEXT', 'READ', '2026-08-07T12:34:00Z', []),
-      makeMsg('m1-5', 'conv-1', 'comp-101', 'Sophia Chen', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
-        "I'll arrive 15 minutes early near the fountain entrance!", 'TEXT', 'DELIVERED', '2026-08-07T12:35:00Z',
-        [{ emoji: '❤️', userId: CURRENT_USER_ID, userName: CURRENT_USER_NAME }]),
-    ]
-  },
-  {
-    id: 'conv-2',
-    participantIds: [CURRENT_USER_ID, 'comp-102'],
-    participantNames: [CURRENT_USER_NAME, 'Alexander Wright'],
-    participantAvatars: [CURRENT_USER_AVATAR, 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=80'],
-    lastMessage: "Morning workout session confirmed for 7 AM at Central Park.",
-    lastMessageAt: '2026-08-07T08:10:00Z',
-    lastMessageSenderId: 'comp-102',
-    unreadCount: 0,
-    status: 'ACTIVE',
-    isPinned: false,
-    notificationPref: 'ALL',
-    isOnline: true,
-    bookingId: 'bk-9002',
-    bookingRef: 'CC-2026-9043',
-    messages: [
-      makeMsg('m2-1', 'conv-2', CURRENT_USER_ID, CURRENT_USER_NAME, CURRENT_USER_AVATAR,
-        "Hi Alexander, I'm confirmed for the morning walk and park session tomorrow.", 'TEXT', 'READ', '2026-08-07T08:00:00Z', []),
-      makeMsg('m2-2', 'conv-2', 'comp-102', 'Alexander Wright', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=80',
-        "Morning workout session confirmed for 7 AM at Central Park.", 'TEXT', 'READ', '2026-08-07T08:10:00Z',
-        [{ emoji: '💪', userId: CURRENT_USER_ID, userName: CURRENT_USER_NAME }]),
-    ]
-  },
-  {
-    id: 'conv-3',
-    participantIds: [CURRENT_USER_ID, 'comp-105'],
-    participantNames: [CURRENT_USER_NAME, 'Priya Nair'],
-    participantAvatars: [CURRENT_USER_AVATAR, 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500&auto=format&fit=crop&q=80'],
-    lastMessage: "Namaste! Ready for our yoga and city tour tomorrow morning 🙏",
-    lastMessageAt: '2026-08-06T20:15:00Z',
-    lastMessageSenderId: 'comp-105',
-    unreadCount: 1,
-    status: 'ACTIVE',
-    isPinned: false,
-    notificationPref: 'ALL',
-    isOnline: false,
-    messages: [
-      makeMsg('m3-1', 'conv-3', 'comp-105', 'Priya Nair', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500&auto=format&fit=crop&q=80',
-        "Namaste Alex! I have finalized the Mumbai heritage walking route. Excited to guide you!", 'TEXT', 'READ', '2026-08-06T20:00:00Z', []),
-      makeMsg('m3-2', 'conv-3', CURRENT_USER_ID, CURRENT_USER_NAME, CURRENT_USER_AVATAR,
-        "Looking forward to it! Can we also do a brief yoga session in the morning before the tour?", 'TEXT', 'READ', '2026-08-06T20:10:00Z', []),
-      makeMsg('m3-3', 'conv-3', 'comp-105', 'Priya Nair', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500&auto=format&fit=crop&q=80',
-        "Namaste! Ready for our yoga and city tour tomorrow morning 🙏", 'TEXT', 'DELIVERED', '2026-08-06T20:15:00Z', []),
-    ]
-  },
-  {
-    id: 'conv-4',
-    participantIds: [CURRENT_USER_ID, 'comp-107'],
-    participantNames: [CURRENT_USER_NAME, 'Isabella Moreau'],
-    participantAvatars: [CURRENT_USER_AVATAR, 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=500&auto=format&fit=crop&q=80'],
-    lastMessage: "Bonjour! The Louvre private tour is confirmed. Dress elegantly 🎨",
-    lastMessageAt: '2026-08-05T15:30:00Z',
-    lastMessageSenderId: 'comp-107',
-    unreadCount: 0,
-    status: 'ACTIVE',
-    isPinned: false,
-    notificationPref: 'MUTED',
-    isOnline: true,
-    messages: [
-      makeMsg('m4-1', 'conv-4', 'comp-107', 'Isabella Moreau', 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=500&auto=format&fit=crop&q=80',
-        "Bonjour! The Louvre private tour is confirmed. Dress elegantly 🎨", 'TEXT', 'READ', '2026-08-05T15:30:00Z', []),
-    ]
-  },
-  {
-    id: 'conv-5',
-    participantIds: [CURRENT_USER_ID, 'comp-103'],
-    participantNames: [CURRENT_USER_NAME, 'Elena Rostova'],
-    participantAvatars: [CURRENT_USER_AVATAR, 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=80'],
-    lastMessage: "Thanks for the great review! See you on the next adventure 🎮",
-    lastMessageAt: '2026-08-04T18:00:00Z',
-    lastMessageSenderId: 'comp-103',
-    unreadCount: 0,
-    status: 'ARCHIVED',
-    isPinned: false,
-    notificationPref: 'MENTIONS_ONLY',
-    isOnline: false,
-    messages: [
-      makeMsg('m5-1', 'conv-5', 'comp-103', 'Elena Rostova', 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=80',
-        "Thanks for the great review! See you on the next adventure 🎮", 'TEXT', 'READ', '2026-08-04T18:00:00Z', []),
-    ]
-  }
-];
+export interface CommunicationDeliveryLogRecord {
+  id: string;
+  campaignId: string;
+  recipientEmail?: string;
+  recipientPhone?: string;
+  channel: CommChannel;
+  status: CommDeliveryStatus;
+  providerMessageId: string;
+  errorMessage?: string;
+  deliveredAt: string;
+}
 
-export const INITIAL_ANNOUNCEMENTS: AnnouncementItem[] = [
-  {
-    id: 'ann-1',
-    title: '🔐 Platform Security Update',
-    body: 'Sathi has upgraded end-to-end encryption from AES-128 to AES-256 Signal Protocol. All your messages and voice notes are now protected with military-grade security. No action required.',
-    category: 'SYSTEM',
-    sentAt: '2026-08-07T09:00:00Z',
-    isRead: false,
-    priority: 'HIGH',
-  },
-  {
-    id: 'ann-2',
-    title: '📅 Booking CC-2026-8812 Status Update',
-    body: 'Your booking with Sophia Chen for the Tech Gala event tonight has been confirmed. Escrow of $207 is securely held. Have a wonderful evening!',
-    category: 'BOOKING',
-    sentAt: '2026-08-07T08:30:00Z',
-    isRead: false,
-    priority: 'MEDIUM',
-    actionUrl: '/booking',
-    actionLabel: 'View Booking',
-  },
-  {
-    id: 'ann-3',
-    title: '🛡️ Safety Reminder for Tonight',
-    body: 'Your booking starts in 6 hours. Remember to share your live location with your emergency contact. The SOS button is always available in the safety menu.',
-    category: 'SAFETY',
-    sentAt: '2026-08-07T08:00:00Z',
-    isRead: true,
-    priority: 'MEDIUM',
-    actionUrl: '/safety',
-    actionLabel: 'Open Safety Center',
-  },
-  {
-    id: 'ann-4',
-    title: '🎉 15% Discount — Summer Companion Pass',
-    body: 'Use promo code SUMMER15 before August 15 to get 15% off on all bookings above $100. Applicable on Event Companion, Travel, and Fitness categories.',
-    category: 'PROMO',
-    sentAt: '2026-08-06T12:00:00Z',
-    isRead: true,
-    priority: 'LOW',
-    actionUrl: '/search',
-    actionLabel: 'Book Now',
-  },
-  {
-    id: 'ann-5',
-    title: '✅ KYC Verification Approved',
-    body: 'Your identity verification has been successfully completed. Your profile is now marked as Verified and you can access premium features.',
-    category: 'KYC',
-    sentAt: '2026-08-05T14:20:00Z',
-    isRead: true,
-    priority: 'HIGH',
-    actionUrl: '/kyc',
-    actionLabel: 'View KYC Status',
-  },
-];
+export interface EventTriggerRule {
+  id: string;
+  eventName: string;
+  description: string;
+  channels: CommChannel[];
+  templateKey: string;
+  isActive: boolean;
+}
 
-export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: 'notif-1',
-    type: 'NEW_MESSAGE',
-    title: 'New message from Sophia Chen',
-    body: "I'll arrive 15 minutes early near the fountain entrance!",
-    isRead: false,
-    createdAt: '2026-08-07T12:35:00Z',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
-    iconColor: 'text-indigo-400',
-    actionUrl: '/chat',
-  },
-  {
-    id: 'notif-2',
-    type: 'BOOKING_UPDATE',
-    title: 'Booking Confirmed ✅',
-    body: 'Your booking CC-2026-8812 with Sophia Chen has been accepted. Escrow is locked.',
-    isRead: false,
-    createdAt: '2026-08-07T08:30:00Z',
-    iconColor: 'text-emerald-400',
-    actionUrl: '/booking',
-  },
-  {
-    id: 'notif-3',
-    type: 'NEW_MESSAGE',
-    title: 'New message from Priya Nair',
-    body: "Namaste! Ready for our yoga and city tour tomorrow morning 🙏",
-    isRead: false,
-    createdAt: '2026-08-06T20:15:00Z',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500&auto=format&fit=crop&q=80',
-    iconColor: 'text-indigo-400',
-    actionUrl: '/chat',
-  },
-  {
-    id: 'notif-4',
-    type: 'REVIEW_RECEIVED',
-    title: 'New review on your profile',
-    body: 'Michael Jordan left you a 5-star review: "Phenomenal experience at the gala!"',
-    isRead: true,
-    createdAt: '2026-08-06T10:00:00Z',
-    iconColor: 'text-yellow-400',
-    actionUrl: '/reviews',
-  },
-  {
-    id: 'notif-5',
-    type: 'PAYMENT',
-    title: 'Payment Received: $207',
-    body: 'Escrow payout for booking CC-2026-8812 has been released to your wallet.',
-    isRead: true,
-    createdAt: '2026-08-05T16:00:00Z',
-    iconColor: 'text-emerald-400',
-    actionUrl: '/wallet',
-  },
-  {
-    id: 'notif-6',
-    type: 'SAFETY_ALERT',
-    title: '🛡️ Safety Check-In Reminder',
-    body: 'You have an active booking. Remember to confirm your check-in and share your location.',
-    isRead: true,
-    createdAt: '2026-08-05T18:00:00Z',
-    iconColor: 'text-rose-400',
-    actionUrl: '/safety',
-  },
-  {
-    id: 'notif-7',
-    type: 'PROMO',
-    title: '🎉 15% Summer Promo Live!',
-    body: 'Use SUMMER15 before Aug 15 to save on your next booking.',
-    isRead: true,
-    createdAt: '2026-08-06T12:00:00Z',
-    iconColor: 'text-purple-400',
-    actionUrl: '/search',
-  },
-];
-
-// ============================================================
-// 🏪 ZUSTAND STORE
-// ============================================================
-
-interface CommunicationState {
-  conversations: Conversation[];
-  announcements: AnnouncementItem[];
-  notifications: NotificationItem[];
+interface CommunicationStore {
+  // User Chat & Notification state
   currentUserId: string;
   currentUserName: string;
-  currentUserAvatar: string;
+  conversations: Conversation[];
+  notifications: NotificationItem[];
+  announcements: AnnouncementItem[];
 
-  sendMessage: (conversationId: string, content: string, type?: MessageType) => void;
-  markConversationRead: (conversationId: string) => void;
+  // Admin ERP Broadcast state
+  campaigns: CommunicationCampaignRecord[];
+  templates: CommunicationTemplateRecord[];
+  deliveryLogs: CommunicationDeliveryLogRecord[];
+  eventTriggers: EventTriggerRule[];
+
+  // User Chat Actions
+  sendMessage: (conversationId: string, content: string, type?: string, mediaUrl?: string) => void;
+  reactToMessage: (conversationId: string, messageId: string, emoji: string) => void;
   addReaction: (conversationId: string, messageId: string, emoji: string) => void;
   removeReaction: (conversationId: string, messageId: string, emoji: string) => void;
   deleteMessageForEveryone: (conversationId: string, messageId: string) => void;
+  markConversationAsRead: (conversationId: string) => void;
+  markConversationRead: (conversationId: string) => void;
   togglePinConversation: (conversationId: string) => void;
   archiveConversation: (conversationId: string) => void;
   unarchiveConversation: (conversationId: string) => void;
   blockConversation: (conversationId: string) => void;
-  setNotificationPref: (conversationId: string, pref: NotificationPref) => void;
-  markAnnouncementRead: (announcementId: string) => void;
-  markAllAnnouncementsRead: () => void;
-  markNotificationRead: (notifId: string) => void;
+  setNotificationPref: (conversationId: string, pref: string) => void;
+
+  markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
+  markAnnouncementRead: (id: string) => void;
+  markAllAnnouncementsRead: () => void;
+
+  // Admin ERP Actions
+  createCampaign: (campaign: Omit<CommunicationCampaignRecord, 'id' | 'status' | 'sentAt' | 'successCount' | 'failedCount' | 'totalRecipients' | 'createdAt'>) => string;
+  dispatchCampaign: (campaignId: string) => Promise<void>;
+  saveTemplate: (template: Omit<CommunicationTemplateRecord, 'id' | 'updatedAt'> & { id?: string }) => void;
+  deleteTemplate: (templateId: string) => void;
+  toggleEventTrigger: (triggerId: string) => void;
 }
 
-export const useCommunicationStore = create<CommunicationState>((set, get) => ({
-  conversations: INITIAL_CONVERSATIONS,
-  announcements: INITIAL_ANNOUNCEMENTS,
-  notifications: INITIAL_NOTIFICATIONS,
-  currentUserId: CURRENT_USER_ID,
-  currentUserName: CURRENT_USER_NAME,
-  currentUserAvatar: CURRENT_USER_AVATAR,
+const INITIAL_CONVERSATIONS: Conversation[] = [
+  {
+    id: 'conv-1',
+    participantId: 'usr-companion-1',
+    participantName: 'Elena Rostova',
+    participantAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+    participantRole: 'Verified VIP Companion',
+    type: 'DIRECT',
+    status: 'ACTIVE',
+    unreadCount: 1,
+    lastMessage: 'I have arrived at the venue lobby.',
+    lastMessageTime: new Date(Date.now() - 300000).toISOString(),
+    lastMessageAt: new Date(Date.now() - 300000).toISOString(),
+    isPinned: true,
+    isOnline: true,
+    bookingRef: '#BKG-9921',
+    messages: [
+      {
+        id: 'msg-101',
+        senderId: 'usr-companion-1',
+        senderName: 'Elena Rostova',
+        content: 'I have arrived at the venue lobby.',
+        type: 'TEXT',
+        status: 'DELIVERED',
+        timestamp: new Date(Date.now() - 300000).toISOString(),
+      },
+    ],
+  },
+];
 
-  sendMessage: (conversationId, content, type = 'TEXT') => {
-    const { currentUserId, currentUserName, currentUserAvatar } = get();
-    const newMsg: FullChatMessage = {
-      id: `msg-${Date.now()}`,
-      conversationId,
-      senderId: currentUserId,
-      senderName: currentUserName,
-      senderAvatar: currentUserAvatar,
-      content,
-      type,
-      status: 'SENDING',
-      isRead: false,
-      encrypted: true,
-      reactions: [],
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      createdAt: new Date().toISOString(),
-    };
+const INITIAL_NOTIFICATIONS: NotificationItem[] = [
+  {
+    id: 'notif-1',
+    title: 'Escrow Payment Released',
+    body: 'Payment of $450 released for companion booking #BKG-9921',
+    message: 'Payment of $450 released for companion booking #BKG-9921',
+    type: 'PAYMENT',
+    isRead: false,
+    createdAt: new Date(Date.now() - 1800000).toISOString(),
+  },
+];
 
-    set(state => ({
-      conversations: state.conversations.map(conv =>
-        conv.id === conversationId
-          ? { ...conv, messages: [...conv.messages, newMsg], lastMessage: content, lastMessageAt: newMsg.createdAt, lastMessageSenderId: currentUserId }
-          : conv
-      )
-    }));
+const INITIAL_ANNOUNCEMENTS: AnnouncementItem[] = [
+  {
+    id: 'ann-1',
+    title: 'Platform Security Optimization Scheduled',
+    body: 'Scheduled database & escrow optimization window on Sunday 02:00 UTC.',
+    content: 'Scheduled database & escrow optimization window on Sunday 02:00 UTC.',
+    category: 'SYSTEM',
+    priority: 'MEDIUM',
+    author: 'System Admin',
+    sentAt: new Date(Date.now() - 86400000).toISOString(),
+    isRead: false,
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+  },
+];
 
-    setTimeout(() => {
-      set(state => ({
-        conversations: state.conversations.map(conv =>
-          conv.id === conversationId
-            ? { ...conv, messages: conv.messages.map(m => m.id === newMsg.id ? { ...m, status: 'DELIVERED' as MessageStatus } : m) }
-            : conv
-        )
-      }));
-    }, 800);
+const INITIAL_CAMPAIGNS: CommunicationCampaignRecord[] = [
+  {
+    id: 'cmp-201',
+    title: 'Summer Escrow Protection & Safety Upgrade Announcement',
+    channel: 'EMAIL',
+    targetAudience: 'ALL_USERS',
+    subject: '🛡️ Important Security Notice: Sathi Escrow Protection Upgrades',
+    body: 'Dear {{user_name}}, we have upgraded our platform escrow protection rules to ensure 100% money-back guarantee on all companion bookings.',
+    status: 'COMPLETED',
+    scheduledAt: null,
+    sentAt: new Date(Date.now() - 3600000 * 24).toISOString(),
+    totalRecipients: 4250,
+    successCount: 4210,
+    failedCount: 40,
+    createdBy: 'Alexander Vance (CTO)',
+    createdAt: new Date(Date.now() - 3600000 * 48).toISOString(),
+  },
+  {
+    id: 'cmp-202',
+    title: 'Weekend Surge Payout Bonus for Verified Companions',
+    channel: 'SMS',
+    targetAudience: 'VERIFIED_COMPANIONS',
+    subject: '🔥 Earn 20% Extra Weekend Bonus',
+    body: 'Sathi Alert: Complete 3 companion bookings this weekend to receive an instant $100 escrow payout bonus! Click to opt in.',
+    status: 'COMPLETED',
+    scheduledAt: null,
+    sentAt: new Date(Date.now() - 3600000 * 12).toISOString(),
+    totalRecipients: 850,
+    successCount: 842,
+    failedCount: 8,
+    createdBy: 'Samantha Reed (Head of Operations)',
+    createdAt: new Date(Date.now() - 3600000 * 20).toISOString(),
+  },
+];
 
-    const conv = get().conversations.find(c => c.id === conversationId);
-    if (conv) {
-      const otherParticipantName = conv.participantNames.find(n => n !== currentUserName);
-      const otherAvatar = conv.participantAvatars.find(a => a !== currentUserAvatar);
-      const otherId = conv.participantIds.find(id => id !== currentUserId);
+const INITIAL_TEMPLATES: CommunicationTemplateRecord[] = [
+  {
+    id: 'tmpl-01',
+    templateKey: 'booking_confirmation',
+    channel: 'EMAIL',
+    name: 'Booking Confirmation Receipt',
+    subject: 'Booking Confirmed: {{booking_id}} with {{companion_name}}',
+    bodyTemplate: 'Hi {{user_name}},\n\nYour companion booking #{{booking_id}} for {{booking_date}} has been confirmed. Escrow amount of ${{escrow_amount}} is held securely.',
+    variables: ['user_name', 'booking_id', 'companion_name', 'booking_date', 'escrow_amount'],
+    category: 'TRANSACTIONAL',
+    isSystemTemplate: true,
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'tmpl-02',
+    templateKey: 'kyc_verified_sms',
+    channel: 'SMS',
+    name: 'KYC Badge Verified SMS',
+    subject: '',
+    bodyTemplate: 'Sathi Security: Congratulations {{user_name}}! Your identity document has been verified. Your profile now features the Verified Companion Shield.',
+    variables: ['user_name'],
+    category: 'SECURITY',
+    isSystemTemplate: true,
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'tmpl-03',
+    templateKey: 'emergency_sos_push',
+    channel: 'PUSH',
+    name: 'Emergency SOS Safety Push Alert',
+    subject: '🚨 Emergency SOS Triggered',
+    bodyTemplate: 'URGENT: Companion {{companion_name}} triggered SOS alert at {{location_coords}}. Dispatch team notified.',
+    variables: ['companion_name', 'location_coords'],
+    category: 'SYSTEM',
+    isSystemTemplate: true,
+    updatedAt: new Date().toISOString(),
+  },
+];
 
-      const replies = [
-        "Got it! I'll be ready on time.",
-        "Perfect, sounds great! Looking forward to it 😊",
-        "Understood! I've noted that down.",
-        "Sure, that works perfectly for me.",
-        "Great! See you then. Have a wonderful day!",
-        "Noted. I'll make sure everything is prepared.",
-      ];
+const INITIAL_DELIVERY_LOGS: CommunicationDeliveryLogRecord[] = [
+  {
+    id: 'log-801',
+    campaignId: 'cmp-201',
+    recipientEmail: 'client.vip@sathi.io',
+    channel: 'EMAIL',
+    status: 'OPENED',
+    providerMessageId: 'sg_msg_9018441920412',
+    deliveredAt: new Date(Date.now() - 3600000 * 22).toISOString(),
+  },
+  {
+    id: 'log-802',
+    campaignId: 'cmp-201',
+    recipientEmail: 'user.john@gmail.com',
+    channel: 'EMAIL',
+    status: 'DELIVERED',
+    providerMessageId: 'sg_msg_9018441920413',
+    deliveredAt: new Date(Date.now() - 3600000 * 23).toISOString(),
+  },
+  {
+    id: 'log-803',
+    campaignId: 'cmp-202',
+    recipientPhone: '+1 (555) 019-2831',
+    channel: 'SMS',
+    status: 'DELIVERED',
+    providerMessageId: 'tw_msg_SM990141209124',
+    deliveredAt: new Date(Date.now() - 3600000 * 11).toISOString(),
+  },
+  {
+    id: 'log-804',
+    campaignId: 'cmp-202',
+    recipientPhone: '+1 (555) 019-9988',
+    channel: 'SMS',
+    status: 'FAILED',
+    providerMessageId: 'tw_msg_SM990141209125',
+    errorMessage: 'Carrier unreachable or invalid phone number formatting',
+    deliveredAt: new Date(Date.now() - 3600000 * 11).toISOString(),
+  },
+];
 
-      setTimeout(() => {
-        const replyMsg: FullChatMessage = {
-          id: `reply-${Date.now()}`,
-          conversationId,
-          senderId: otherId || 'comp-101',
-          senderName: otherParticipantName || 'Companion',
-          senderAvatar: otherAvatar,
-          content: replies[Math.floor(Math.random() * replies.length)],
-          type: 'TEXT',
-          status: 'DELIVERED',
-          isRead: false,
-          encrypted: true,
-          reactions: [],
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+const INITIAL_TRIGGERS: EventTriggerRule[] = [
+  {
+    id: 'trg-1',
+    eventName: 'BOOKING_CONFIRMED',
+    description: 'Triggered when client locks escrow payment for companion booking',
+    channels: ['EMAIL', 'SMS', 'PUSH'],
+    templateKey: 'booking_confirmation',
+    isActive: true,
+  },
+  {
+    id: 'trg-2',
+    eventName: 'KYC_VERIFIED',
+    description: 'Triggered when admin approves companion identity verification documents',
+    channels: ['SMS', 'PUSH'],
+    templateKey: 'kyc_verified_sms',
+    isActive: true,
+  },
+  {
+    id: 'trg-3',
+    eventName: 'EMERGENCY_SOS_PANIC',
+    description: 'Triggered when companion presses live SOS button during active booking',
+    channels: ['SMS', 'PUSH', 'IN_APP_BANNER'],
+    templateKey: 'emergency_sos_push',
+    isActive: true,
+  },
+];
+
+export const useCommunicationStore = create<CommunicationStore>()(
+  persist(
+    (set, get) => ({
+      currentUserId: 'usr-me',
+      currentUserName: 'Alex Thompson',
+      conversations: INITIAL_CONVERSATIONS,
+      notifications: INITIAL_NOTIFICATIONS,
+      announcements: INITIAL_ANNOUNCEMENTS,
+
+      campaigns: INITIAL_CAMPAIGNS,
+      templates: INITIAL_TEMPLATES,
+      deliveryLogs: INITIAL_DELIVERY_LOGS,
+      eventTriggers: INITIAL_TRIGGERS,
+
+      sendMessage: (conversationId, content, type = 'TEXT', mediaUrl) => {
+        const newMsg: FullChatMessage = {
+          id: 'msg-' + Date.now(),
+          senderId: get().currentUserId,
+          senderName: get().currentUserName,
+          content,
+          type: type as any,
+          mediaUrl,
+          status: 'SENT',
+          timestamp: new Date().toISOString(),
+        };
+
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c.id === conversationId
+              ? {
+                  ...c,
+                  lastMessage: content,
+                  lastMessageTime: newMsg.timestamp,
+                  lastMessageAt: newMsg.timestamp,
+                  messages: [...c.messages, newMsg],
+                }
+              : c
+          ),
+        }));
+      },
+
+      reactToMessage: (conversationId, messageId, emoji) => {
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c.id === conversationId
+              ? {
+                  ...c,
+                  messages: c.messages.map((m) => {
+                    if (m.id !== messageId) return m;
+                    const rx = m.reactions || [];
+                    const userId = state.currentUserId;
+                    const exists = rx.some((r) => r.emoji === emoji && r.userId === userId);
+                    const next = exists
+                      ? rx.filter((r) => !(r.emoji === emoji && r.userId === userId))
+                      : [...rx, { emoji, userId }];
+                    return { ...m, reactions: next };
+                  }),
+                }
+              : c
+          ),
+        }));
+      },
+
+      addReaction: (conversationId, messageId, emoji) => {
+        get().reactToMessage(conversationId, messageId, emoji);
+      },
+
+      removeReaction: (conversationId, messageId, emoji) => {
+        get().reactToMessage(conversationId, messageId, emoji);
+      },
+
+      deleteMessageForEveryone: (conversationId, messageId) => {
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c.id === conversationId
+              ? {
+                  ...c,
+                  messages: c.messages.map((m) =>
+                    m.id === messageId ? { ...m, isDeleted: true, deletedForEveryone: true, content: 'This message was deleted' } : m
+                  ),
+                }
+              : c
+          ),
+        }));
+      },
+
+      markConversationAsRead: (conversationId) => {
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c.id === conversationId ? { ...c, unreadCount: 0 } : c
+          ),
+        }));
+      },
+
+      markConversationRead: (conversationId) => {
+        get().markConversationAsRead(conversationId);
+      },
+
+      togglePinConversation: (conversationId) => {
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c.id === conversationId ? { ...c, isPinned: !c.isPinned } : c
+          ),
+        }));
+      },
+
+      archiveConversation: (conversationId) => {
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c.id === conversationId ? { ...c, status: 'ARCHIVED' } : c
+          ),
+        }));
+      },
+
+      unarchiveConversation: (conversationId) => {
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c.id === conversationId ? { ...c, status: 'ACTIVE' } : c
+          ),
+        }));
+      },
+
+      blockConversation: (conversationId) => {
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c.id === conversationId ? { ...c, status: 'BLOCKED' } : c
+          ),
+        }));
+      },
+
+      setNotificationPref: (conversationId, pref) => {
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c.id === conversationId ? { ...c, notificationPref: pref } : c
+          ),
+        }));
+      },
+
+      markNotificationRead: (id) => {
+        set((state) => ({
+          notifications: state.notifications.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
+        }));
+      },
+
+      markAllNotificationsRead: () => {
+        set((state) => ({
+          notifications: state.notifications.map((n) => ({ ...n, isRead: true })),
+        }));
+      },
+
+      markAnnouncementRead: (id) => {
+        set((state) => ({
+          announcements: state.announcements.map((a) => (a.id === id ? { ...a, isRead: true } : a)),
+        }));
+      },
+
+      markAllAnnouncementsRead: () => {
+        set((state) => ({
+          announcements: state.announcements.map((a) => ({ ...a, isRead: true })),
+        }));
+      },
+
+      createCampaign: (data) => {
+        const id = 'cmp-' + Date.now();
+        const recipientCountMap: Record<CommAudience, number> = {
+          ALL_USERS: 4250,
+          VERIFIED_COMPANIONS: 850,
+          PREMIUM_CLIENTS: 320,
+          STAFF_ONLY: 45,
+        };
+
+        const newCampaign: CommunicationCampaignRecord = {
+          ...data,
+          id,
+          status: 'DRAFT',
+          sentAt: null,
+          totalRecipients: recipientCountMap[data.targetAudience] || 100,
+          successCount: 0,
+          failedCount: 0,
           createdAt: new Date().toISOString(),
         };
 
-        set(state => ({
-          conversations: state.conversations.map(c =>
-            c.id === conversationId
-              ? {
-                ...c,
-                messages: [...c.messages, replyMsg],
-                lastMessage: replyMsg.content,
-                lastMessageAt: replyMsg.createdAt,
-                lastMessageSenderId: replyMsg.senderId,
-                unreadCount: c.unreadCount + 1
-              }
-              : c
-          )
+        set((state) => ({ campaigns: [newCampaign, ...state.campaigns] }));
+        return id;
+      },
+
+      dispatchCampaign: async (campaignId) => {
+        set((state) => ({
+          campaigns: state.campaigns.map((c) =>
+            c.id === campaignId ? { ...c, status: 'SENDING' } : c
+          ),
         }));
-      }, 2000 + Math.random() * 1500);
+
+        await new Promise((res) => setTimeout(res, 1200));
+
+        set((state) => ({
+          campaigns: state.campaigns.map((c) => {
+            if (c.id !== campaignId) return c;
+            const successCount = Math.floor(c.totalRecipients * 0.98);
+            const failedCount = c.totalRecipients - successCount;
+            return {
+              ...c,
+              status: 'COMPLETED',
+              sentAt: new Date().toISOString(),
+              successCount,
+              failedCount,
+            };
+          }),
+        }));
+      },
+
+      saveTemplate: (data) => {
+        set((state) => {
+          if (data.id) {
+            return {
+              templates: state.templates.map((t) =>
+                t.id === data.id ? { ...t, ...data, updatedAt: new Date().toISOString() } : t
+              ),
+            };
+          }
+          const id = 'tmpl-' + Date.now();
+          return {
+            templates: [
+              {
+                ...data,
+                id,
+                updatedAt: new Date().toISOString(),
+              },
+              ...state.templates,
+            ],
+          };
+        });
+      },
+
+      deleteTemplate: (templateId) => {
+        set((state) => ({
+          templates: state.templates.filter((t) => t.id !== templateId),
+        }));
+      },
+
+      toggleEventTrigger: (triggerId) => {
+        set((state) => ({
+          eventTriggers: state.eventTriggers.map((trg) =>
+            trg.id === triggerId ? { ...trg, isActive: !trg.isActive } : trg
+          ),
+        }));
+      },
+    }),
+    {
+      name: 'companion-communication-store',
     }
-  },
-
-  markConversationRead: (conversationId) => {
-    set(state => ({
-      conversations: state.conversations.map(conv =>
-        conv.id === conversationId
-          ? { ...conv, unreadCount: 0, messages: conv.messages.map(m => ({ ...m, isRead: true, status: 'READ' as MessageStatus })) }
-          : conv
-      )
-    }));
-  },
-
-  addReaction: (conversationId, messageId, emoji) => {
-    const { currentUserId, currentUserName } = get();
-    set(state => ({
-      conversations: state.conversations.map(conv =>
-        conv.id === conversationId
-          ? {
-            ...conv,
-            messages: conv.messages.map(m =>
-              m.id === messageId
-                ? {
-                  ...m,
-                  reactions: m.reactions.find(r => r.userId === currentUserId && r.emoji === emoji)
-                    ? m.reactions
-                    : [...m.reactions, { emoji, userId: currentUserId, userName: currentUserName }]
-                }
-                : m
-            )
-          }
-          : conv
-      )
-    }));
-  },
-
-  removeReaction: (conversationId, messageId, emoji) => {
-    const { currentUserId } = get();
-    set(state => ({
-      conversations: state.conversations.map(conv =>
-        conv.id === conversationId
-          ? {
-            ...conv,
-            messages: conv.messages.map(m =>
-              m.id === messageId
-                ? { ...m, reactions: m.reactions.filter(r => !(r.userId === currentUserId && r.emoji === emoji)) }
-                : m
-            )
-          }
-          : conv
-      )
-    }));
-  },
-
-  deleteMessageForEveryone: (conversationId, messageId) => {
-    set(state => ({
-      conversations: state.conversations.map(conv =>
-        conv.id === conversationId
-          ? {
-            ...conv,
-            messages: conv.messages.map(m =>
-              m.id === messageId
-                ? { ...m, content: '🚫 This message was deleted.', deletedForEveryone: true }
-                : m
-            )
-          }
-          : conv
-      )
-    }));
-  },
-
-  togglePinConversation: (conversationId) => {
-    set(state => ({
-      conversations: state.conversations.map(conv =>
-        conv.id === conversationId ? { ...conv, isPinned: !conv.isPinned } : conv
-      )
-    }));
-  },
-
-  archiveConversation: (conversationId) => {
-    set(state => ({
-      conversations: state.conversations.map(conv =>
-        conv.id === conversationId ? { ...conv, status: 'ARCHIVED' } : conv
-      )
-    }));
-  },
-
-  unarchiveConversation: (conversationId) => {
-    set(state => ({
-      conversations: state.conversations.map(conv =>
-        conv.id === conversationId ? { ...conv, status: 'ACTIVE' } : conv
-      )
-    }));
-  },
-
-  blockConversation: (conversationId) => {
-    set(state => ({
-      conversations: state.conversations.map(conv =>
-        conv.id === conversationId ? { ...conv, status: 'BLOCKED' } : conv
-      )
-    }));
-  },
-
-  setNotificationPref: (conversationId, pref) => {
-    set(state => ({
-      conversations: state.conversations.map(conv =>
-        conv.id === conversationId ? { ...conv, notificationPref: pref } : conv
-      )
-    }));
-  },
-
-  markAnnouncementRead: (announcementId) => {
-    set(state => ({
-      announcements: state.announcements.map(a => a.id === announcementId ? { ...a, isRead: true } : a)
-    }));
-  },
-
-  markAllAnnouncementsRead: () => {
-    set(state => ({ announcements: state.announcements.map(a => ({ ...a, isRead: true })) }));
-  },
-
-  markNotificationRead: (notifId) => {
-    set(state => ({
-      notifications: state.notifications.map(n => n.id === notifId ? { ...n, isRead: true } : n)
-    }));
-  },
-
-  markAllNotificationsRead: () => {
-    set(state => ({ notifications: state.notifications.map(n => ({ ...n, isRead: true })) }));
-  },
-}));
+  )
+);

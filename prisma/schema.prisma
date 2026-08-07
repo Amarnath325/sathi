@@ -738,6 +738,93 @@ model SystemHealthAlert {
   @@index([serviceName, isResolved, severity])
 }
 
+enum CommChannel {
+  SMS
+  EMAIL
+  PUSH
+  IN_APP_BANNER
+}
+
+enum CommAudience {
+  ALL_USERS
+  VERIFIED_COMPANIONS
+  PREMIUM_CLIENTS
+  STAFF_ONLY
+}
+
+enum CommCampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  COMPLETED
+  FAILED
+}
+
+enum CommTemplateCategory {
+  TRANSACTIONAL
+  MARKETING
+  SECURITY
+  SYSTEM
+}
+
+enum CommDeliveryStatus {
+  QUEUED
+  DELIVERED
+  OPENED
+  CLICKED
+  BOUNCED
+  FAILED
+}
+
+model CommunicationCampaign {
+  id              String             @id @default(uuid())
+  title           String
+  channel         CommChannel        @default(EMAIL)
+  targetAudience  CommAudience       @default(ALL_USERS)
+  subject         String?
+  body            String
+  status          CommCampaignStatus @default(DRAFT)
+  scheduledAt     DateTime?
+  sentAt          DateTime?
+  totalRecipients Int                @default(0)
+  successCount    Int                @default(0)
+  failedCount     Int                @default(0)
+  createdBy       String
+  createdAt       DateTime           @default(now())
+
+  deliveryLogs CommunicationDeliveryLog[]
+}
+
+model CommunicationTemplate {
+  id               String               @id @default(uuid())
+  templateKey      String               @unique // e.g. booking_confirmation, kyc_approved
+  channel          CommChannel          @default(EMAIL)
+  name             String
+  subject          String?
+  bodyTemplate     String
+  variables        String[]             // e.g. ["user_name", "booking_id", "escrow_amount"]
+  category         CommTemplateCategory @default(TRANSACTIONAL)
+  isSystemTemplate Boolean              @default(false)
+  updatedAt        DateTime             @updatedAt
+}
+
+model CommunicationDeliveryLog {
+  id                String             @id @default(uuid())
+  campaignId        String
+  recipientEmail    String?
+  recipientPhone    String?
+  channel           CommChannel
+  status            CommDeliveryStatus @default(QUEUED)
+  providerMessageId String?
+  errorMessage      String?
+  deliveredAt       DateTime           @default(now())
+
+  campaign CommunicationCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId, status])
+}
+
+
 
 
 
