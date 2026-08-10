@@ -2,9 +2,22 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 // User Chat & Notification Types
-export type MessageStatus = 'SENDING' | 'SENT' | 'DELIVERED' | 'READ';
+export type MessageStatus = 'SENDING' | 'SENT' | 'DELIVERED' | 'READ' | 'PENDING_SYNC';
 export type ConversationType = 'DIRECT' | 'SUPPORT' | 'SYSTEM';
 export type ConversationStatus = 'ACTIVE' | 'ARCHIVED' | 'BLOCKED';
+
+export interface DisputeReportRecord {
+  id: string;
+  conversationId: string;
+  reporterId: string;
+  reporterName: string;
+  companionName: string;
+  category: 'SAFETY_CONCERN' | 'HARASSMENT' | 'PAYMENT_DISPUTE' | 'POLICY_VIOLATION' | 'OTHER';
+  description: string;
+  disputeCode: string;
+  createdAt: string;
+  status: 'SUBMITTED' | 'UNDER_REVIEW' | 'RESOLVED';
+}
 
 export interface FullChatMessage {
   id: string;
@@ -12,13 +25,55 @@ export interface FullChatMessage {
   senderName: string;
   senderAvatar?: string;
   content: string;
-  type: 'TEXT' | 'IMAGE' | 'AUDIO' | 'VIDEO' | 'LOCATION' | 'FILE';
+  type: 'TEXT' | 'IMAGE' | 'AUDIO' | 'VIDEO' | 'LOCATION' | 'FILE' | 'ESCROW_CARD' | 'LOCATION_TRACKER_CARD';
   mediaUrl?: string;
   status: MessageStatus;
   reactions?: { emoji: string; userId: string }[];
   timestamp: string;
   isDeleted?: boolean;
   deletedForEveryone?: boolean;
+  ephemeralExpiresAt?: string;
+  translatedText?: string;
+  translationLanguage?: string;
+  escrowState?: {
+    status: 'LOCKED' | 'RELEASED';
+    bookingRef: string;
+    amount: number;
+    tipAmount?: number;
+    extendedHours?: number;
+  };
+  liveLocationState?: {
+    distanceMeters: number;
+    etaMinutes: number;
+    venueName: string;
+    lat: number;
+    lng: number;
+  };
+}
+
+export interface SosAlertRecord {
+  id: string;
+  conversationId: string;
+  userId: string;
+  userName: string;
+  lat: number;
+  lng: number;
+  address: string;
+  status: 'ACTIVE' | 'RESOLVED';
+  triggeredAt: string;
+}
+
+export interface ScheduledMeeting {
+  id: string;
+  conversationId: string;
+  title: string;
+  scheduledDate: string;
+  scheduledTime: string;
+  durationHours: number;
+  locationAddress: string;
+  status: 'SCHEDULED' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+  createdBy: string;
+  createdAt: string;
 }
 
 export interface Conversation {
@@ -39,8 +94,10 @@ export interface Conversation {
   isPinned?: boolean;
   isMuted?: boolean;
   isOnline?: boolean;
+  isTyping?: boolean;
   notificationPref?: string;
   bookingRef?: string;
+  scheduledMeetings?: ScheduledMeeting[];
   messages: FullChatMessage[];
 }
 
@@ -143,8 +200,36 @@ interface CommunicationStore {
   deliveryLogs: CommunicationDeliveryLogRecord[];
   eventTriggers: EventTriggerRule[];
 
+  // WebRTC Call & Recording State
+  callState: {
+    activeCallType: 'VOICE' | 'VIDEO' | null;
+    isMuted: boolean;
+    isVideoOff: boolean;
+    isScreenSharing: boolean;
+    isRecording: boolean;
+    recordingSeconds: number;
+    recordedMediaUrl: string | null;
+  };
+
+  // SOS, Dispute & Security State
+  sosAlerts: SosAlertRecord[];
+  disputeReports: DisputeReportRecord[];
+  offlineQueue: FullChatMessage[];
+  isNoiseSuppressionEnabled: boolean;
+  fcmToken: string | null;
+
   // User Chat Actions
-  sendMessage: (conversationId: string, content: string, type?: string, mediaUrl?: string) => void;
+  sendMessage: (conversationId: string, content: string, type?: string, mediaUrl?: string, ephemeralMinutes?: number) => void;
+  triggerSosEmergency: (conversationId: string, location: { lat: number; lng: number; address: string }) => void;
+  releaseEscrowPayment: (conversationId: string, bookingRef: string, tipAmount?: number, extensionHours?: number) => void;
+  translateMessage: (conversationId: string, messageId: string, targetLanguage: string) => void;
+  submitDisputeReport: (conversationId: string, companionName: string, category: DisputeReportRecord['category'], description: string) => DisputeReportRecord;
+  toggleNoiseSuppression: () => void;
+  flushOfflineQueue: () => void;
+  setTypingStatus: (conversationId: string, isTyping: boolean) => void;
+  scheduleMeeting: (conversationId: string, meeting: Omit<ScheduledMeeting, 'id' | 'conversationId' | 'createdAt' | 'createdBy' | 'status'>) => ScheduledMeeting;
+  setCallState: (updater: Partial<CommunicationStore['callState']> | ((prev: CommunicationStore['callState']) => CommunicationStore['callState'])) => void;
+  registerFcmToken: (token: string) => void;
   reactToMessage: (conversationId: string, messageId: string, emoji: string) => void;
   addReaction: (conversationId: string, messageId: string, emoji: string) => void;
   removeReaction: (conversationId: string, messageId: string, emoji: string) => void;
@@ -382,7 +467,208 @@ export const useCommunicationStore = create<CommunicationStore>()(
       deliveryLogs: INITIAL_DELIVERY_LOGS,
       eventTriggers: INITIAL_TRIGGERS,
 
-      sendMessage: (conversationId, content, type = 'TEXT', mediaUrl) => {
+      callState: {
+        activeCallType: null,
+        isMuted: false,
+        isVideoOff: false,
+        isScreenSharing: false,
+        isRecording: false,
+        recordingSeconds: 0,
+        recordedMediaUrl: null,
+      },
+      fcmToken: null,
+
+      registerFcmToken: (token) => set({ fcmToken: token }),
+
+      setCallState: (updater) =>
+        set((state) => ({
+          callState:
+            typeof updater === 'function'
+              ? updater(state.callState)
+              : { ...state.callState, ...updater },
+        })),
+
+      setTypingStatus: (conversationId, isTyping) =>
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c.id === conversationId ? { ...c, isTyping } : c
+          ),
+        })),
+
+      scheduleMeeting: (conversationId, meetingData) => {
+        const id = 'mtg-' + Date.now();
+        const meeting: ScheduledMeeting = {
+          ...meetingData,
+          id,
+          conversationId,
+          createdBy: get().currentUserId,
+          createdAt: new Date().toISOString(),
+          status: 'SCHEDULED',
+        };
+
+        set((state) => ({
+          conversations: state.conversations.map((c) => {
+            if (c.id !== conversationId) return c;
+            const existing = c.scheduledMeetings || [];
+            return {
+              ...c,
+              scheduledMeetings: [...existing, meeting],
+            };
+          }),
+        }));
+
+        // Send meeting confirmation card message in chat
+        get().sendMessage(
+          conversationId,
+          `📅 Scheduled Session: ${meeting.title} on ${meeting.scheduledDate} at ${meeting.scheduledTime} (${meeting.durationHours} hrs)`,
+          'TEXT'
+        );
+
+        return meeting;
+      },
+
+      sosAlerts: [],
+
+      triggerSosEmergency: (conversationId, location) => {
+        const id = 'sos-' + Date.now();
+        const alertRecord: SosAlertRecord = {
+          id,
+          conversationId,
+          userId: get().currentUserId,
+          userName: get().currentUserName,
+          lat: location.lat,
+          lng: location.lng,
+          address: location.address,
+          status: 'ACTIVE',
+          triggeredAt: new Date().toISOString(),
+        };
+
+        set((state) => ({
+          sosAlerts: [alertRecord, ...state.sosAlerts],
+        }));
+
+        get().sendMessage(
+          conversationId,
+          `🚨 EMERGENCY SOS PANIC ALERT: User triggered emergency at ${location.address} (GPS: ${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}). Sathi Admin Dispatch Notified!`,
+          'LOCATION'
+        );
+      },
+
+      releaseEscrowPayment: (conversationId, bookingRef, tipAmount = 0, extensionHours = 0) => {
+        const content = tipAmount > 0
+          ? `💸 Escrow Payment Authorized & Released for ${bookingRef}. Added $${tipAmount} Companion Tip!`
+          : extensionHours > 0
+          ? `⏰ Escrow Released & Booking Extended +${extensionHours} Hour for ${bookingRef}!`
+          : `✅ Escrow Payment Authorized & Full Funds Released for ${bookingRef}.`;
+
+        const newMsg: FullChatMessage = {
+          id: 'escrow-' + Date.now(),
+          senderId: get().currentUserId,
+          senderName: get().currentUserName,
+          content,
+          type: 'ESCROW_CARD',
+          status: 'SENT',
+          timestamp: new Date().toISOString(),
+          escrowState: {
+            status: 'RELEASED',
+            bookingRef,
+            amount: 250 + (extensionHours * 100),
+            tipAmount,
+            extendedHours: extensionHours,
+          },
+        };
+
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c.id === conversationId ? { ...c, messages: [...c.messages, newMsg] } : c
+          ),
+        }));
+      },
+
+      translateMessage: (conversationId, messageId, targetLanguage) => {
+        const translations: Record<string, string> = {
+          'ES': 'Traducción: Todo está confirmado para nuestra reunión en el lobby.',
+          'FR': 'Traduction: Tout est confirmé pour notre sesión.',
+          'DE': 'Übersetzung: Alles ist für unser Treffen bestätigt.',
+          'HI': 'अनुवाद: हमारे सत्र और बैठक स्थान के लिए सब कुछ पक्का है।',
+          'EN': 'Translation: All details are verified and confirmed for our session.'
+        };
+
+        const translatedText = translations[targetLanguage.toUpperCase()] || 'Translation available.';
+
+        set((state) => ({
+          conversations: state.conversations.map((c) => {
+            if (c.id !== conversationId) return c;
+            return {
+              ...c,
+              messages: c.messages.map((m) =>
+                m.id === messageId ? { ...m, translatedText, translationLanguage: targetLanguage } : m
+              ),
+            };
+          }),
+        }));
+      },
+
+      disputeReports: [],
+      offlineQueue: [],
+      isNoiseSuppressionEnabled: true,
+
+      submitDisputeReport: (conversationId, companionName, category, description) => {
+        const disputeCode = '#DSP-' + Math.floor(1000 + Math.random() * 9000);
+        const report: DisputeReportRecord = {
+          id: 'dsp-' + Date.now(),
+          conversationId,
+          reporterId: get().currentUserId,
+          reporterName: get().currentUserName,
+          companionName,
+          category,
+          description,
+          disputeCode,
+          createdAt: new Date().toISOString(),
+          status: 'SUBMITTED',
+        };
+
+        set((state) => ({
+          disputeReports: [report, ...state.disputeReports],
+        }));
+
+        get().sendMessage(
+          conversationId,
+          `⚖️ Formal Incident Report Submitted: Case ${disputeCode} opened with Sathi Safety Board for review.`,
+          'TEXT'
+        );
+
+        return report;
+      },
+
+      toggleNoiseSuppression: () =>
+        set((state) => ({ isNoiseSuppressionEnabled: !state.isNoiseSuppressionEnabled })),
+
+      flushOfflineQueue: () => {
+        const { offlineQueue, conversations } = get();
+        if (offlineQueue.length === 0) return;
+
+        set((state) => ({
+          conversations: state.conversations.map((c) => {
+            const pendingForConv = offlineQueue.filter((m) => m.senderId === c.id || c.messages.some((x) => x.id === m.id));
+            if (pendingForConv.length === 0) return c;
+            return {
+              ...c,
+              messages: c.messages.map((m) =>
+                m.status === 'PENDING_SYNC' ? { ...m, status: 'SENT' } : m
+              ),
+            };
+          }),
+          offlineQueue: [],
+        }));
+      },
+
+      sendMessage: (conversationId, content, type = 'TEXT', mediaUrl, ephemeralMinutes) => {
+        const isOffline = typeof window !== 'undefined' && !navigator.onLine;
+        const ephemeralExpiresAt = ephemeralMinutes
+          ? new Date(Date.now() + ephemeralMinutes * 60000).toISOString()
+          : undefined;
+
         const newMsg: FullChatMessage = {
           id: 'msg-' + Date.now(),
           senderId: get().currentUserId,
@@ -390,8 +676,9 @@ export const useCommunicationStore = create<CommunicationStore>()(
           content,
           type: type as any,
           mediaUrl,
-          status: 'SENT',
+          status: isOffline ? 'PENDING_SYNC' : 'SENT',
           timestamp: new Date().toISOString(),
+          ephemeralExpiresAt,
         };
 
         set((state) => ({
@@ -406,6 +693,7 @@ export const useCommunicationStore = create<CommunicationStore>()(
                 }
               : c
           ),
+          offlineQueue: isOffline ? [...state.offlineQueue, newMsg] : state.offlineQueue,
         }));
       },
 

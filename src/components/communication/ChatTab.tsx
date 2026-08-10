@@ -5,10 +5,20 @@ import {
   Send, Paperclip, Mic, Video, Phone, Lock, CheckCheck, Check,
   AlertOctagon, Image as ImageIcon, Smile, X, PhoneOff, Pin,
   Archive, Ban, Bell, BellOff, MoreVertical, Search, Trash2,
-  MapPin, Clock, MessageSquare, ArrowLeft
+  MapPin, Clock, MessageSquare, ArrowLeft, Calendar, Sparkles,
+  Monitor, CircleDot, FileText, Download, Loader2, ShieldAlert,
+  Globe, Timer, Play, Volume2, Scale, WifiOff, VolumeX
 } from 'lucide-react';
 import { useCommunicationStore, Conversation, FullChatMessage, MessageStatus } from '@/lib/communicationStore';
 import { MessagingModerationEngine } from '@/lib/messagingModeration';
+import { uploadFileInChunks, ChunkUploadProgress } from '@/lib/chunkUpload';
+import MeetingSchedulerModal from './MeetingSchedulerModal';
+import AISummaryModal from './AISummaryModal';
+import SOSPanicModal from './SOSPanicModal';
+import E2EFingerprintModal from './E2EFingerprintModal';
+import DisputeReportModal from './DisputeReportModal';
+import InChatEscrowCard from './InChatEscrowCard';
+import LiveLocationTrackerCard from './LiveLocationTrackerCard';
 
 const EMOJI_QUICK = ['❤️', '👍', '😂', '😮', '😢', '🙏', '🔥', '👏'];
 
@@ -21,6 +31,7 @@ function formatTime(dateStr: string) {
 }
 
 function StatusTick({ status }: { status: MessageStatus }) {
+  if (status === 'PENDING_SYNC') return <span title="Pending Connection Sync"><Clock className="w-3 h-3 text-amber-400 animate-pulse" /></span>;
   if (status === 'SENDING') return <Clock className="w-3 h-3 text-slate-500" />;
   if (status === 'DELIVERED') return <CheckCheck className="w-3 h-3 text-slate-400" />;
   if (status === 'READ') return <CheckCheck className="w-3 h-3 text-cyan-400" />;
@@ -37,13 +48,20 @@ function MessageBubble({
 }) {
   const [showReactions, setShowReactions] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const { deleteMessageForEveryone, currentUserId } = useCommunicationStore();
+  const [audioSpeed, setAudioSpeed] = useState<number>(1.0);
+  const { deleteMessageForEveryone, translateMessage, currentUserId } = useCommunicationStore();
 
   const groupedReactions = useMemo(() => {
     const map: Record<string, number> = {};
     (msg.reactions || []).forEach(r => { map[r.emoji] = (map[r.emoji] || 0) + 1; });
     return Object.entries(map);
   }, [msg.reactions]);
+
+  const toggleAudioSpeed = () => {
+    if (audioSpeed === 1.0) setAudioSpeed(1.5);
+    else if (audioSpeed === 1.5) setAudioSpeed(2.0);
+    else setAudioSpeed(1.0);
+  };
 
   return (
     <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} group`}>
@@ -58,19 +76,29 @@ function MessageBubble({
         )}
 
         <div className="relative">
-          {/* Emoji Picker Trigger */}
-          <button
-            onClick={() => setShowReactions(v => !v)}
-            className={`absolute ${isMe ? '-left-7' : '-right-7'} top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full bg-slate-800 border border-slate-700`}
-          >
-            <Smile className="w-3 h-3 text-slate-400" />
-          </button>
+          {/* Emoji & Action Triggers */}
+          <div className={`absolute ${isMe ? '-left-16' : '-right-16'} top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1`}>
+            <button
+              onClick={() => setShowReactions(v => !v)}
+              className="p-1 rounded-full bg-slate-800 border border-slate-700 hover:border-indigo-500"
+              title="React"
+            >
+              <Smile className="w-3 h-3 text-slate-400" />
+            </button>
+            <button
+              onClick={() => translateMessage(conversationId, msg.id, 'EN')}
+              className="p-1 rounded-full bg-slate-800 border border-slate-700 hover:border-indigo-500"
+              title="Translate Message"
+            >
+              <Globe className="w-3 h-3 text-indigo-400" />
+            </button>
+          </div>
 
           {/* Context Menu */}
           {isMe && (
             <button
               onClick={() => setShowMenu(v => !v)}
-              className="absolute -left-14 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full bg-slate-800 border border-slate-700"
+              className="absolute -left-20 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full bg-slate-800 border border-slate-700"
             >
               <MoreVertical className="w-3 h-3 text-slate-400" />
             </button>
@@ -99,17 +127,61 @@ function MessageBubble({
             </div>
           )}
 
-          {/* Bubble */}
-          {msg.deletedForEveryone ? (
+          {/* Special Cards or Standard Message */}
+          {msg.type === 'ESCROW_CARD' && msg.escrowState ? (
+            <InChatEscrowCard
+              conversationId={conversationId}
+              bookingRef={msg.escrowState.bookingRef}
+              amount={msg.escrowState.amount}
+              status={msg.escrowState.status}
+              companionName="Elena Rostova"
+            />
+          ) : msg.type === 'LOCATION_TRACKER_CARD' || msg.liveLocationState ? (
+            <LiveLocationTrackerCard
+              companionName="Elena Rostova"
+              distanceMeters={msg.liveLocationState?.distanceMeters || 320}
+              etaMinutes={msg.liveLocationState?.etaMinutes || 4}
+              venueName={msg.liveLocationState?.venueName || 'Grand Hotel Lobby'}
+            />
+          ) : msg.type === 'AUDIO' ? (
+            <div className="p-3 rounded-2xl bg-slate-900 border border-indigo-500/40 space-y-2 text-white">
+              <div className="flex items-center gap-3">
+                <button className="w-8 h-8 rounded-full gradient-bg-primary flex items-center justify-center text-white shadow-md">
+                  <Play className="w-4 h-4 fill-white ml-0.5" />
+                </button>
+                <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden flex items-center">
+                  <div className="h-full bg-indigo-500 w-1/3" />
+                </div>
+                <button
+                  onClick={toggleAudioSpeed}
+                  className="px-2 py-0.5 rounded-lg bg-indigo-600/30 border border-indigo-500/40 text-[10px] font-mono font-bold text-indigo-300 hover:text-white"
+                >
+                  {audioSpeed}x
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-400 font-mono">Voice Note (00:28s) · {audioSpeed}x Speed</p>
+            </div>
+          ) : msg.deletedForEveryone ? (
             <div className="px-4 py-2.5 rounded-2xl bg-slate-900 border border-slate-800 text-slate-500 text-xs italic">
               {msg.content}
             </div>
           ) : (
-            <div className={`px-4 py-2.5 rounded-2xl text-xs leading-relaxed ${isMe
+            <div className={`px-4 py-2.5 rounded-2xl text-xs leading-relaxed space-y-1 ${isMe
               ? 'gradient-bg-primary text-white rounded-br-none shadow-lg shadow-indigo-600/20'
               : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-bl-none'
             }`}>
-              {msg.content}
+              <p>{msg.content}</p>
+              {msg.translatedText && (
+                <div className="pt-1.5 border-t border-white/20 text-[11px] font-sans text-amber-200 flex items-start gap-1">
+                  <Globe className="w-3 h-3 text-amber-300 mt-0.5 shrink-0" />
+                  <span>{msg.translatedText}</span>
+                </div>
+              )}
+              {msg.ephemeralExpiresAt && (
+                <div className="pt-1 text-[9px] font-mono text-rose-300 flex items-center gap-1">
+                  <Timer className="w-2.5 h-2.5" /> Ephemeral (Auto-destructs soon)
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -198,7 +270,8 @@ export default function ChatTab() {
     conversations, currentUserId, currentUserName,
     sendMessage, markConversationRead, addReaction, removeReaction,
     togglePinConversation, archiveConversation, unarchiveConversation,
-    blockConversation, setNotificationPref
+    blockConversation, setNotificationPref, setTypingStatus, callState, setCallState,
+    isNoiseSuppressionEnabled, toggleNoiseSuppression, flushOfflineQueue, offlineQueue
   } = useCommunicationStore();
 
   const [activeConvId, setActiveConvId] = useState<string | null>('conv-1');
@@ -208,7 +281,41 @@ export default function ChatTab() {
   const [videoCallActive, setVideoCallActive] = useState(false);
   const [voiceRecording, setVoiceRecording] = useState(false);
   const [showConvMenu, setShowConvMenu] = useState(false);
+
+  // Advanced Feature States
+  const [uploadProgress, setUploadProgress] = useState<ChunkUploadProgress | null>(null);
+  const [showSchedulerModal, setShowSchedulerModal] = useState(false);
+  const [showAISummaryModal, setShowAISummaryModal] = useState(false);
+  const [showSosModal, setShowSosModal] = useState(false);
+  const [showFingerprintModal, setShowFingerprintModal] = useState(false);
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
+  const [ephemeralMinutes, setEphemeralMinutes] = useState<number | undefined>(undefined);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [isCallRecording, setIsCallRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      flushOfflineQueue();
+    };
+    const handleOffline = () => setIsOnline(false);
+
+    setIsOnline(navigator.onLine);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [flushOfflineQueue]);
 
   const activeConv = useMemo(
     () => conversations.find(c => c.id === activeConvId) || null,
@@ -244,6 +351,79 @@ export default function ChatTab() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [activeConv?.messages]);
 
+  // Handle Typing Indicator Trigger
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setInputText(val);
+
+    if (activeConvId) {
+      setTypingStatus(activeConvId, true);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        setTypingStatus(activeConvId, false);
+      }, 2500);
+    }
+  };
+
+  // Handle File Chunk Upload Trigger
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeConvId) return;
+
+    try {
+      const result = await uploadFileInChunks(file, (progress) => {
+        setUploadProgress(progress);
+      });
+
+      // Send uploaded file payload into chat
+      sendMessage(
+        activeConvId,
+        `📎 Attached File: ${result.fileName} (${(result.fileSize / (1024 * 1024)).toFixed(2)} MB - ${result.chunkCount} Chunks Uploaded)`,
+        'FILE',
+        result.url
+      );
+    } catch (err) {
+      alert('Chunk Upload Failed. Please try again.');
+    } finally {
+      setUploadProgress(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  // Handle Screen Share Trigger
+  const toggleScreenShare = async () => {
+    try {
+      if (!isScreenSharing) {
+        if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+          await navigator.mediaDevices.getDisplayMedia({ video: true });
+        }
+        setIsScreenSharing(true);
+      } else {
+        setIsScreenSharing(false);
+      }
+    } catch (e) {
+      setIsScreenSharing(false);
+    }
+  };
+
+  // Handle Call Recording Toggle
+  const toggleCallRecording = () => {
+    if (!isCallRecording) {
+      setIsCallRecording(true);
+      setRecordingSeconds(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds(s => s + 1);
+      }, 1000);
+    } else {
+      setIsCallRecording(false);
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+
+      // Trigger automatic recording download
+      const alertMsg = `🎥 Call Recording Saved (${recordingSeconds}s). Session transcript processed for AI Summary.`;
+      alert(alertMsg);
+    }
+  };
+
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim() || !activeConvId) return;
@@ -257,7 +437,7 @@ export default function ChatTab() {
       return;
     }
 
-    sendMessage(activeConvId, modResult.sanitizedContent);
+    sendMessage(activeConvId, modResult.sanitizedContent, 'TEXT', undefined, ephemeralMinutes);
     setInputText('');
   };
 
@@ -310,7 +490,13 @@ export default function ChatTab() {
         {/* Conversation List */}
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
           {filteredConvs.length === 0 ? (
-            <div className="p-8 text-center text-slate-500 text-xs">No conversations found</div>
+            <div className="p-6 text-center space-y-2">
+              <Lock className="w-7 h-7 text-slate-600 mx-auto stroke-[1.5]" />
+              <p className="text-xs font-bold text-slate-400">No Booked Companion Chats</p>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Chat is restricted to companions with confirmed bookings. Book a companion to unlock end-to-end encrypted messaging.
+              </p>
+            </div>
           ) : (
             filteredConvs.map(conv => (
               <ConversationItem
@@ -359,6 +545,31 @@ export default function ChatTab() {
             </div>
 
             <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setShowSosModal(true)}
+                className="px-3 py-2 rounded-xl bg-rose-600/20 border border-rose-500/40 hover:bg-rose-600 text-rose-300 hover:text-white text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-lg shadow-rose-900/30 animate-pulse"
+                title="SOS Emergency Panic Alert"
+              >
+                <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+                <span className="hidden sm:inline">SOS PANIC</span>
+              </button>
+
+              <button
+                onClick={() => setShowFingerprintModal(true)}
+                className="p-2 rounded-xl bg-slate-900 border border-emerald-500/40 hover:border-emerald-500 text-emerald-400"
+                title="Verify E2E Safety Fingerprint"
+              >
+                <Lock className="w-4 h-4 text-emerald-400" />
+              </button>
+
+              <button
+                onClick={() => setShowAISummaryModal(true)}
+                className="px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-300 text-xs font-bold flex items-center gap-1.5 transition-all"
+                title="AI Chat & Meeting Summary"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span className="hidden sm:inline">AI Summary</span>
+              </button>
               <button onClick={() => setVideoCallActive(true)}
                 className="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-indigo-400"
                 title="Video Call">
@@ -395,14 +606,38 @@ export default function ChatTab() {
                       className="flex items-center gap-2 w-full px-4 py-2.5 text-xs text-rose-400 hover:bg-slate-800">
                       <Ban className="w-3.5 h-3.5" /> Block User
                     </button>
-                    <button className="flex items-center gap-2 w-full px-4 py-2.5 text-xs text-rose-400 hover:bg-slate-800">
-                      <AlertOctagon className="w-3.5 h-3.5" /> Report Chat
+                    <button onClick={() => { setShowDisputeModal(true); setShowConvMenu(false); }}
+                      className="flex items-center gap-2 w-full px-4 py-2.5 text-xs text-rose-400 hover:bg-slate-800">
+                      <Scale className="w-3.5 h-3.5 text-rose-400" /> File Dispute Report
                     </button>
                   </div>
                 )}
               </div>
             </div>
           </div>
+
+          {/* Offline Sync Banner */}
+          {!isOnline && (
+            <div className="mx-4 mt-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-300 flex items-center justify-between font-mono animate-pulse">
+              <span className="flex items-center gap-2">
+                <WifiOff className="w-3.5 h-3.5 text-amber-400" />
+                Network Disconnected · Messages will queue locally and auto-sync when online.
+              </span>
+              {offlineQueue.length > 0 && (
+                <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-[10px] font-bold">
+                  {offlineQueue.length} Queued
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Typing Indicator Animated Bar */}
+          {activeConv.isTyping && (
+            <div className="mx-4 mt-2 px-3 py-1.5 rounded-xl bg-indigo-600/10 border border-indigo-500/30 text-[10px] text-indigo-300 flex items-center gap-2 animate-pulse">
+              <span className="w-2 h-2 rounded-full bg-indigo-400 animate-ping" />
+              <span>{otherName} is typing a message...</span>
+            </div>
+          )}
 
           {/* Blocked Banner */}
           {activeConv.status === 'BLOCKED' && (
@@ -430,21 +665,58 @@ export default function ChatTab() {
             <div ref={messagesEndRef} />
           </div>
 
+          {/* Chunk File Upload Progress Banner */}
+          {uploadProgress && (
+            <div className="mx-4 mb-2 p-3 rounded-2xl bg-slate-900 border border-indigo-500/40 text-xs space-y-2">
+              <div className="flex items-center justify-between text-[11px] text-indigo-300 font-bold">
+                <span className="flex items-center gap-1.5">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+                  Uploading {uploadProgress.fileName}
+                </span>
+                <span>{uploadProgress.percentage}% (Chunk {uploadProgress.currentChunk}/{uploadProgress.totalChunks})</span>
+              </div>
+              <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                <div className="h-full bg-indigo-500 transition-all duration-200" style={{ width: `${uploadProgress.percentage}%` }} />
+              </div>
+            </div>
+          )}
+
           {/* Chat Input */}
           <form onSubmit={handleSend} className="p-4 border-t border-slate-800 bg-slate-950 flex items-center gap-2">
-            <button type="button" className="p-2 text-slate-400 hover:text-indigo-400 transition-colors">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="p-2 text-slate-400 hover:text-indigo-400 transition-colors"
+              title="Attach File (Chunk Upload)"
+            >
               <Paperclip className="w-4 h-4" />
             </button>
-            <button type="button" className="p-2 text-slate-400 hover:text-indigo-400 transition-colors">
-              <ImageIcon className="w-4 h-4" />
+            <button
+              type="button"
+              onClick={() => setShowSchedulerModal(true)}
+              className="p-2 text-slate-400 hover:text-indigo-400 transition-colors"
+              title="Schedule Session Meeting"
+            >
+              <Calendar className="w-4 h-4 text-emerald-400" />
             </button>
-            <button type="button" className="p-2 text-slate-400 hover:text-indigo-400 transition-colors">
-              <MapPin className="w-4 h-4" />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="p-2 text-slate-400 hover:text-indigo-400 transition-colors"
+              title="Share Image"
+            >
+              <ImageIcon className="w-4 h-4" />
             </button>
             
             <input
               value={inputText}
-              onChange={e => setInputText(e.target.value)}
+              onChange={handleInputChange}
               placeholder={activeConv.status === 'BLOCKED' ? 'Unblock to send messages...' : 'Type an encrypted message...'}
               disabled={activeConv.status === 'BLOCKED'}
               className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
@@ -452,8 +724,23 @@ export default function ChatTab() {
 
             <button
               type="button"
+              onClick={() => setEphemeralMinutes(m => m === undefined ? 60 : m === 60 ? 1440 : undefined)}
+              className={`p-2 rounded-xl border text-xs font-mono font-bold transition-all flex items-center gap-1 ${
+                ephemeralMinutes
+                  ? 'bg-rose-600/20 border-rose-500 text-rose-300'
+                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+              }`}
+              title="Self-Destruct Ephemeral Message Timer"
+            >
+              <Timer className="w-3.5 h-3.5" />
+              <span className="text-[10px]">{ephemeralMinutes === 60 ? '1h' : ephemeralMinutes === 1440 ? '24h' : 'Off'}</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => setVoiceRecording(v => !v)}
               className={`p-2.5 rounded-xl border transition-all ${voiceRecording ? 'bg-rose-600 text-white border-rose-500 animate-pulse' : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'}`}
+              title="Record Voice Note"
             >
               <Mic className="w-4 h-4" />
             </button>
@@ -477,7 +764,51 @@ export default function ChatTab() {
         </div>
       )}
 
-      {/* Video Call Modal */}
+      {/* Dispute Incident Report Modal */}
+      {showDisputeModal && activeConv && (
+        <DisputeReportModal
+          conversationId={activeConv.id}
+          companionName={otherName}
+          onClose={() => setShowDisputeModal(false)}
+        />
+      )}
+
+      {/* SOS Panic Emergency Modal */}
+      {showSosModal && activeConv && (
+        <SOSPanicModal
+          conversationId={activeConv.id}
+          companionName={otherName}
+          onClose={() => setShowSosModal(false)}
+        />
+      )}
+
+      {/* E2E Security Fingerprint Verification Modal */}
+      {showFingerprintModal && activeConv && (
+        <E2EFingerprintModal
+          companionName={otherName}
+          onClose={() => setShowFingerprintModal(false)}
+        />
+      )}
+
+      {/* Meeting Scheduler Modal */}
+      {showSchedulerModal && activeConv && (
+        <MeetingSchedulerModal
+          conversationId={activeConv.id}
+          companionName={otherName}
+          onClose={() => setShowSchedulerModal(false)}
+        />
+      )}
+
+      {/* AI Summary Modal */}
+      {showAISummaryModal && activeConv && (
+        <AISummaryModal
+          companionName={otherName}
+          messages={activeConv.messages}
+          onClose={() => setShowAISummaryModal(false)}
+        />
+      )}
+
+      {/* Enhanced WebRTC Video/Voice Call Modal with Screen Share, Recording & Subtitles */}
       {videoCallActive && activeConv && (
         <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl flex items-center justify-center p-4">
           <div className="max-w-2xl w-full glass-panel border border-slate-700 rounded-3xl p-6 relative flex flex-col items-center space-y-6">
@@ -486,22 +817,72 @@ export default function ChatTab() {
             </button>
             <div className="w-full h-80 rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden flex items-center justify-center relative">
               <img src={otherAvatar} alt={otherName} className="w-full h-full object-cover opacity-80" />
-              <div className="absolute inset-0 flex items-center justify-center">
+              
+              <div className="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none">
                 <span className="px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-mono font-bold animate-pulse">
-                  WebRTC HD Video Stream · E2E Encrypted
+                  {isScreenSharing ? '🖥️ Screen Sharing Active' : 'WebRTC HD Video Stream · E2E Encrypted'}
+                </span>
+                {isCallRecording && (
+                  <span className="px-3 py-1 rounded-full bg-rose-600/30 border border-rose-500 text-rose-300 text-xs font-mono font-bold flex items-center gap-1.5 animate-pulse">
+                    <CircleDot className="w-3.5 h-3.5 text-rose-400" /> Recording {Math.floor(recordingSeconds / 60)}:{(recordingSeconds % 60).toString().padStart(2, '0')}
+                  </span>
+                )}
+              </div>
+
+              {/* Live Closed Captions / Speech Subtitles Ticker */}
+              <div className="absolute bottom-4 left-4 right-32 p-2.5 rounded-xl bg-slate-950/85 border border-indigo-500/40 text-xs text-amber-200 font-sans backdrop-blur-md flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-400 shrink-0 animate-spin" />
+                <span className="truncate">
+                  <strong className="text-indigo-300">{otherName}:</strong> "Hello! I am arrived at the Grand Hotel lobby near reception."
                 </span>
               </div>
-              <div className="absolute bottom-4 right-4 w-28 h-20 rounded-xl bg-slate-950 border border-slate-700 flex items-center justify-center text-[10px] text-slate-400 font-mono">
-                Your Camera
+
+              <div className="absolute bottom-4 right-4 w-24 h-16 rounded-xl bg-slate-950 border border-slate-700 flex items-center justify-center text-[10px] text-slate-400 font-mono">
+                {isScreenSharing ? 'Screen Feed' : 'Your Camera'}
               </div>
-              <div className="absolute top-3 left-3 text-xs text-white font-bold">{otherName}</div>
             </div>
-            <div className="flex items-center gap-4">
-              <button className="p-4 rounded-full bg-slate-800 text-slate-300 hover:text-white"><Mic className="w-6 h-6" /></button>
-              <button onClick={() => setVideoCallActive(false)} className="p-5 rounded-full bg-rose-600 text-white shadow-xl shadow-rose-600/40 hover:bg-rose-500">
+
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <button
+                onClick={toggleNoiseSuppression}
+                className={`p-3.5 rounded-2xl border transition-all flex items-center gap-1.5 text-xs font-bold ${
+                  isNoiseSuppressionEnabled
+                    ? 'bg-emerald-600/20 border-emerald-500 text-emerald-300'
+                    : 'bg-slate-800 border-slate-700 text-slate-400'
+                }`}
+                title="AI Noise Suppression & Echo Filter"
+              >
+                {isNoiseSuppressionEnabled ? <Volume2 className="w-5 h-5 text-emerald-400" /> : <VolumeX className="w-5 h-5" />}
+                <span>AI Noise Filter: {isNoiseSuppressionEnabled ? 'ON' : 'OFF'}</span>
+              </button>
+
+              <button
+                onClick={toggleScreenShare}
+                className={`p-3.5 rounded-2xl border transition-all flex items-center gap-1.5 text-xs font-bold ${
+                  isScreenSharing ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'
+                }`}
+                title="Screen Share"
+              >
+                <Monitor className="w-5 h-5" /> Share Screen
+              </button>
+
+              <button
+                onClick={toggleCallRecording}
+                className={`p-3.5 rounded-2xl border transition-all flex items-center gap-1.5 text-xs font-bold ${
+                  isCallRecording ? 'bg-rose-600 border-rose-500 text-white animate-pulse' : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'
+                }`}
+                title="Record Session"
+              >
+                <CircleDot className="w-5 h-5" /> {isCallRecording ? 'Stop Recording' : 'Record Session'}
+              </button>
+
+              <button
+                onClick={() => setVideoCallActive(false)}
+                className="p-4 rounded-full bg-rose-600 text-white shadow-xl shadow-rose-600/40 hover:bg-rose-500 ml-2"
+                title="End Call"
+              >
                 <PhoneOff className="w-6 h-6" />
               </button>
-              <button className="p-4 rounded-full bg-slate-800 text-slate-300 hover:text-white"><Video className="w-6 h-6" /></button>
             </div>
           </div>
         </div>

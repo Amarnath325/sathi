@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { MessageSquare, Bell, Megaphone, ArrowLeft, Search } from 'lucide-react';
+import { MessageSquare, Bell, Megaphone, ArrowLeft, Search, LockKeyhole, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useCommunicationStore } from '@/lib/communicationStore';
+import { useUserAuthStore } from '@/lib/userAuthStore';
 import ChatTab from '@/components/communication/ChatTab';
 import NotificationsTab from '@/components/communication/NotificationsTab';
 import AnnouncementsTab from '@/components/communication/AnnouncementsTab';
@@ -12,6 +13,7 @@ type ActiveTab = 'chat' | 'notifications' | 'announcements';
 
 export default function CommunicationHub() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('chat');
+  const { isLoggedIn, login } = useUserAuthStore();
   const { conversations, notifications, announcements } = useCommunicationStore();
 
   const totalUnreadChats = useMemo(
@@ -26,6 +28,47 @@ export default function CommunicationHub() {
     { id: 'notifications', label: 'Notifications', icon: <Bell className="w-4 h-4" />, badge: totalUnreadNotifs },
     { id: 'announcements', label: 'Announcements', icon: <Megaphone className="w-4 h-4" />, badge: totalUnreadAnn },
   ];
+
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4">
+        <div className="max-w-md w-full glass-panel p-8 rounded-3xl border border-slate-800 text-center space-y-6 relative overflow-hidden shadow-2xl">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-xl shadow-indigo-600/30">
+            <LockKeyhole className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-xl font-extrabold text-white">Login Required</h2>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Communication Hub is restricted to logged-in users. Please log in to view chats with your booked companions.
+            </p>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 text-[11px] text-indigo-300 font-medium flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-indigo-400 shrink-0" />
+            <span>Chat is strictly reserved for users with active or completed companion bookings.</span>
+          </div>
+
+          <div className="pt-2 space-y-2">
+            <button
+              onClick={() => login()}
+              className="w-full py-3 rounded-2xl gradient-bg-primary text-white text-xs font-extrabold uppercase tracking-wider hover:opacity-95 transition-all shadow-lg shadow-indigo-600/30"
+            >
+              Log In / Unlock Session
+            </button>
+            <Link
+              href="/"
+              className="block w-full py-2.5 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white text-xs font-bold transition-all"
+            >
+              Return to Homepage
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
