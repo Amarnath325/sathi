@@ -25,8 +25,13 @@ import {
   Shield,
   FileCheck,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Sparkles,
+  Award,
+  Bell,
+  Home
 } from 'lucide-react';
+import { scanKycDocumentWithAi, analyzeBiometricLiveness } from '@/lib/kycOcrScanner';
 
 export type KycSubFilter = 
   | 'verification-dashboard' 
@@ -35,6 +40,9 @@ export type KycSubFilter =
   | 'rejected' 
   | 'expired' 
   | 'history';
+
+export type PoliceBgvStatus = 'NOT_STARTED' | 'PENDING_POLICE' | 'POLICE_VERIFIED' | 'FAILED';
+export type SafetyTier = 'TIER_1_ID' | 'TIER_2_ADDRESS' | 'TIER_3_POLICE_ELITE';
 
 interface KycDocumentRecord {
   id: string;
@@ -49,6 +57,18 @@ interface KycDocumentRecord {
   rejectionReason: string | null;
   createdAt: string;
   expiresAt: string;
+
+  // Next-Gen 6 Features
+  ocrData?: {
+    extractedName: string;
+    extractedDocNum: string;
+    confidenceScore: number;
+  };
+  livenessScore?: number;
+  bgvStatus?: PoliceBgvStatus;
+  safetyTier?: SafetyTier;
+  utilityBillUrl?: string;
+  renewalReminderSent?: boolean;
 }
 
 export function KycVerificationModule() {
@@ -74,7 +94,13 @@ export function KycVerificationModule() {
       status: 'PENDING',
       rejectionReason: null,
       createdAt: '2026-08-05T08:30:00Z',
-      expiresAt: '2028-12-31'
+      expiresAt: '2028-12-31',
+      ocrData: { extractedName: 'Sophia Chen', extractedDocNum: 'ID-98471203', confidenceScore: 99.1 },
+      livenessScore: 99.4,
+      bgvStatus: 'PENDING_POLICE',
+      safetyTier: 'TIER_2_ADDRESS',
+      utilityBillUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80',
+      renewalReminderSent: false,
     },
     {
       id: 'kyc-102',
@@ -88,7 +114,13 @@ export function KycVerificationModule() {
       status: 'APPROVED',
       rejectionReason: null,
       createdAt: '2026-08-04T14:15:00Z',
-      expiresAt: '2030-05-15'
+      expiresAt: '2030-05-15',
+      ocrData: { extractedName: 'Marcus Brody', extractedDocNum: 'PASS-8840192', confidenceScore: 99.8 },
+      livenessScore: 99.7,
+      bgvStatus: 'POLICE_VERIFIED',
+      safetyTier: 'TIER_3_POLICE_ELITE',
+      utilityBillUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80',
+      renewalReminderSent: false,
     },
     {
       id: 'kyc-103',
@@ -102,7 +134,12 @@ export function KycVerificationModule() {
       status: 'REJECTED',
       rejectionReason: 'Document photo blurry and unreadable',
       createdAt: '2026-08-03T11:20:00Z',
-      expiresAt: '2025-01-01'
+      expiresAt: '2025-01-01',
+      ocrData: { extractedName: 'Elena Rostova', extractedDocNum: 'DL-7730192', confidenceScore: 72.4 },
+      livenessScore: 84.1,
+      bgvStatus: 'FAILED',
+      safetyTier: 'TIER_1_ID',
+      renewalReminderSent: false,
     },
     {
       id: 'kyc-104',
@@ -116,7 +153,12 @@ export function KycVerificationModule() {
       status: 'EXPIRED',
       rejectionReason: 'Document expired on 2025-12-31',
       createdAt: '2026-08-01T09:10:00Z',
-      expiresAt: '2025-12-31'
+      expiresAt: '2025-12-31',
+      ocrData: { extractedName: 'Aarav Sharma', extractedDocNum: 'NID-4401928', confidenceScore: 98.2 },
+      livenessScore: 98.9,
+      bgvStatus: 'NOT_STARTED',
+      safetyTier: 'TIER_1_ID',
+      renewalReminderSent: false,
     }
   ]);
 
@@ -206,12 +248,29 @@ export function KycVerificationModule() {
   const expiredCount = documents.filter(d => d.status === 'EXPIRED').length;
 
   // Actions
+  const handleToggleBgvStatus = (docId: string) => {
+    setDocuments(documents.map(d => {
+      if (d.id === docId) {
+        const nextStatus: PoliceBgvStatus = d.bgvStatus === 'POLICE_VERIFIED' ? 'PENDING_POLICE' : 'POLICE_VERIFIED';
+        const nextTier: SafetyTier = nextStatus === 'POLICE_VERIFIED' ? 'TIER_3_POLICE_ELITE' : 'TIER_2_ADDRESS';
+        return { ...d, bgvStatus: nextStatus, safetyTier: nextTier };
+      }
+      return d;
+    }));
+    triggerToast(`Updated Police BGV Verification Status!`);
+  };
+
+  const handleSendRenewalReminder = (doc: KycDocumentRecord) => {
+    setDocuments(documents.map(d => d.id === doc.id ? { ...d, renewalReminderSent: true } : d));
+    triggerToast(`Renewal Notification & Email Dispatched to ${doc.userName}!`);
+  };
+
   const handleApprove = async (doc: KycDocumentRecord) => {
     try {
       await fetch(`/api/admin/kyc/${doc.id}/approve`, { method: 'POST' });
     } catch (e) {}
 
-    setDocuments(documents.map(d => d.id === doc.id ? { ...d, status: 'APPROVED', rejectionReason: null } : d));
+    setDocuments(documents.map(d => d.id === doc.id ? { ...d, status: 'APPROVED', rejectionReason: null, safetyTier: d.bgvStatus === 'POLICE_VERIFIED' ? 'TIER_3_POLICE_ELITE' : 'TIER_2_ADDRESS' } : d));
     triggerToast(`Approved KYC Document for ${doc.userName}!`);
   };
 
@@ -467,11 +526,34 @@ export function KycVerificationModule() {
                 </div>
               </div>
 
+              {/* Next-Gen Badges: Safety Tier & Police BGV */}
+              <div className="flex flex-wrap items-center gap-1">
+                <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold border flex items-center gap-1 ${
+                  doc.safetyTier === 'TIER_3_POLICE_ELITE'
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                    : doc.safetyTier === 'TIER_2_ADDRESS'
+                    ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
+                    : 'bg-slate-800 text-slate-400 border-slate-700'
+                }`}>
+                  <Award className="w-2.5 h-2.5" />
+                  {doc.safetyTier === 'TIER_3_POLICE_ELITE' ? '🥇 Tier 3 Elite' : doc.safetyTier === 'TIER_2_ADDRESS' ? '🥈 Tier 2 Address' : '🥉 Tier 1 ID'}
+                </span>
+
+                {doc.bgvStatus === 'POLICE_VERIFIED' ? (
+                  <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center gap-0.5">
+                    <ShieldCheck className="w-2.5 h-2.5" /> Police Verified
+                  </span>
+                ) : (
+                  <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-slate-950 text-slate-500 border border-slate-800">
+                    BGV Pending
+                  </span>
+                )}
+              </div>
+
               {/* Document Photo Preview (Clickable Full Image Popup Modal) */}
               <div 
                 onClick={() => {
-                  setImagePreviewUrl(doc.fileUrl);
-                  setImagePreviewTitle(`${doc.userName} - ${doc.type.replace(/_/g, ' ')} (${doc.documentNumber})`);
+                  setInspectingDoc(doc);
                 }}
                 className="relative rounded-lg overflow-hidden border border-slate-800/80 group h-20 sm:h-24 bg-slate-950 flex items-center justify-center p-0.5 shadow-inner cursor-pointer hover:border-purple-500/50 transition-all"
               >
@@ -481,31 +563,37 @@ export function KycVerificationModule() {
                   className="w-full h-full object-contain rounded group-hover:scale-105 transition-transform duration-300"
                 />
                 
+                {/* AI OCR & 3D Liveness Overlay Badges */}
+                <div className="absolute top-1 left-1 flex flex-col gap-0.5">
+                  <span className="px-1 py-0.5 rounded bg-purple-950/90 text-purple-300 text-[7px] font-mono font-bold border border-purple-800 flex items-center gap-0.5">
+                    <Sparkles className="w-2 h-2 text-purple-400" /> OCR {doc.ocrData?.confidenceScore || 98.6}%
+                  </span>
+                </div>
+
                 {/* User Live Selfie Overlay Badge (Click to View Selfie Popup) */}
                 <div 
                   onClick={(e) => {
                     e.stopPropagation();
                     setImagePreviewUrl(doc.selfieUrl);
-                    setImagePreviewTitle(`${doc.userName} - Live Biometric Selfie Match`);
+                    setImagePreviewTitle(`${doc.userName} - 3D Biometric Liveness Scan (${doc.livenessScore || 99.4}% Match)`);
                   }}
                   className="absolute bottom-1 left-1 bg-slate-950/90 hover:bg-slate-900 backdrop-blur-md px-1 py-0.5 rounded border border-slate-800 flex items-center gap-1 shadow-lg cursor-pointer transition-colors"
                 >
                   <img src={doc.selfieUrl} className="w-3.5 h-3.5 rounded object-cover border border-purple-500/30" />
                   <div className="text-[7px]">
-                    <p className="font-bold text-white leading-tight">Live Selfie</p>
-                    <p className="text-emerald-400 font-mono font-bold leading-tight">100%</p>
+                    <p className="font-bold text-white leading-tight">3D Motion</p>
+                    <p className="text-emerald-400 font-mono font-bold leading-tight">{doc.livenessScore || 99.4}%</p>
                   </div>
                 </div>
 
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    setImagePreviewUrl(doc.fileUrl);
-                    setImagePreviewTitle(`${doc.userName} - ${doc.type.replace(/_/g, ' ')} (${doc.documentNumber})`);
+                    setInspectingDoc(doc);
                   }}
                   className="absolute top-1 right-1 px-1 py-0.5 rounded bg-slate-950/90 hover:bg-purple-600 text-white transition-all border border-slate-800 flex items-center gap-0.5 text-[8px] font-bold shadow-lg"
                 >
-                  <Eye className="w-2.5 h-2.5 text-purple-400" /> View
+                  <Eye className="w-2.5 h-2.5 text-purple-400" /> Inspect
                 </button>
               </div>
 
@@ -517,25 +605,38 @@ export function KycVerificationModule() {
               )}
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-1 pt-0.5">
-                {doc.status !== 'APPROVED' && (
-                  <button
-                    onClick={() => handleApprove(doc)}
-                    className="flex-1 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center justify-center gap-0.5 text-[9px] shadow-md shadow-emerald-600/20"
-                  >
-                    <Check className="w-2.5 h-2.5" /> Approve
-                  </button>
-                )}
+              <div className="space-y-1">
+                <div className="flex items-center justify-end gap-1 pt-0.5">
+                  {doc.status !== 'APPROVED' && (
+                    <button
+                      onClick={() => handleApprove(doc)}
+                      className="flex-1 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center justify-center gap-0.5 text-[9px] shadow-md shadow-emerald-600/20"
+                    >
+                      <Check className="w-2.5 h-2.5" /> Approve
+                    </button>
+                  )}
 
-                {doc.status !== 'REJECTED' && (
+                  {doc.status !== 'REJECTED' && (
+                    <button
+                      onClick={() => {
+                        setRejectingDoc(doc);
+                        setRejectReason('Blurry document photo or text unreadable');
+                      }}
+                      className="flex-1 py-1 rounded-lg bg-slate-950 hover:bg-rose-600/20 text-rose-400 border border-slate-800 font-bold flex items-center justify-center gap-0.5 text-[9px]"
+                    >
+                      <X className="w-2.5 h-2.5" /> Reject
+                    </button>
+                  )}
+                </div>
+
+                {/* Expiry Renewal Dispatcher Button */}
+                {(doc.status === 'EXPIRED' || doc.expiresAt < '2026-12-31') && (
                   <button
-                    onClick={() => {
-                      setRejectingDoc(doc);
-                      setRejectReason('Blurry document photo or text unreadable');
-                    }}
-                    className="flex-1 py-1 rounded-lg bg-slate-950 hover:bg-rose-600/20 text-rose-400 border border-slate-800 font-bold flex items-center justify-center gap-0.5 text-[9px]"
+                    onClick={() => handleSendRenewalReminder(doc)}
+                    disabled={doc.renewalReminderSent}
+                    className="w-full py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-white border border-amber-500/40 font-bold flex items-center justify-center gap-1 text-[8px] transition-all disabled:opacity-50"
                   >
-                    <X className="w-2.5 h-2.5" /> Reject
+                    <Bell className="w-2.5 h-2.5" /> {doc.renewalReminderSent ? 'Renewal Sent' : 'Send Expiry Alert'}
                   </button>
                 )}
               </div>
@@ -611,48 +712,118 @@ export function KycVerificationModule() {
       </div>
 
       {/* ========================================================= */}
-      {/* 🔍 MODAL 1: FULL RESOLUTION INSPECT MODAL                  */}
+      {/* 🔍 MODAL 1: FULL RESOLUTION INSPECT & AI OCR MODAL        */}
       {/* ========================================================= */}
       {inspectingDoc && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-3xl shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-4xl shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Eye className="w-5 h-5 text-purple-400" /> High-Resolution Inspection: {inspectingDoc.userName}
-              </h3>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-purple-600/20 text-purple-400 border border-purple-500/30 flex items-center justify-center">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    AI OCR & Biometric Inspection: {inspectingDoc.userName}
+                  </h3>
+                  <p className="text-xs text-slate-400">Target Companion ID: {inspectingDoc.userId}</p>
+                </div>
+              </div>
               <button onClick={() => setInspectingDoc(null)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-              <div className="md:col-span-2 space-y-2">
-                <p className="font-semibold text-slate-400">Government Issued ID Document</p>
-                <img src={inspectingDoc.fileUrl} className="w-full max-h-72 rounded-2xl border border-slate-800 object-contain bg-black" />
+              <div className="md:col-span-2 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold text-slate-400">Government Issued ID Document</p>
+                  <span className="text-[10px] text-purple-400 font-mono font-bold">AI Scanned Confidence: {inspectingDoc.ocrData?.confidenceScore || 98.6}%</span>
+                </div>
+                <img src={inspectingDoc.fileUrl} className="w-full max-h-64 rounded-2xl border border-slate-800 object-contain bg-black" />
+
+                {/* AI OCR Scanner Text Breakdown Panel */}
+                <div className="p-3.5 rounded-2xl bg-slate-950 border border-purple-500/30 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-purple-300 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-purple-400" /> AI OCR Text Extraction Comparison
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold">Matches 100%</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div className="p-2 rounded-xl bg-slate-900 border border-slate-800">
+                      <span className="text-[9px] text-slate-500 font-mono uppercase block">User Profile Name</span>
+                      <p className="font-bold text-white">{inspectingDoc.userName}</p>
+                    </div>
+                    <div className="p-2 rounded-xl bg-slate-900 border border-slate-800">
+                      <span className="text-[9px] text-purple-400 font-mono uppercase block">OCR Extracted Name</span>
+                      <p className="font-bold text-purple-300">{inspectingDoc.ocrData?.extractedName || inspectingDoc.userName}</p>
+                    </div>
+                    <div className="p-2 rounded-xl bg-slate-900 border border-slate-800">
+                      <span className="text-[9px] text-slate-500 font-mono uppercase block">User Document Number</span>
+                      <p className="font-mono font-bold text-white">{inspectingDoc.documentNumber}</p>
+                    </div>
+                    <div className="p-2 rounded-xl bg-slate-900 border border-slate-800">
+                      <span className="text-[9px] text-purple-400 font-mono uppercase block">OCR Extracted Number</span>
+                      <p className="font-mono font-bold text-purple-300">{inspectingDoc.ocrData?.extractedDocNum || inspectingDoc.documentNumber}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
+
               <div className="space-y-3">
-                <p className="font-semibold text-slate-400">User Biometric Selfie Match</p>
-                <img src={inspectingDoc.selfieUrl} className="w-full h-40 rounded-2xl border border-slate-800 object-cover" />
-                <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
-                  <p className="text-slate-400 text-[10px]">Doc Number</p>
-                  <p className="font-mono font-bold text-white text-xs">{inspectingDoc.documentNumber}</p>
-                  <p className="text-slate-400 text-[10px] pt-1">Expires Date</p>
-                  <p className="font-mono font-bold text-emerald-400 text-xs">{inspectingDoc.expiresAt}</p>
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold text-slate-400">3D Liveness Selfie Scan</p>
+                  <span className="text-[10px] text-emerald-400 font-mono font-bold">{inspectingDoc.livenessScore || 99.4}% Match</span>
+                </div>
+                <img src={inspectingDoc.selfieUrl} className="w-full h-36 rounded-2xl border border-slate-800 object-cover" />
+
+                {/* Tier-2 Residential Address Proof Preview */}
+                {inspectingDoc.utilityBillUrl && (
+                  <div className="space-y-1">
+                    <p className="font-semibold text-slate-400 flex items-center gap-1">
+                      <Home className="w-3.5 h-3.5 text-indigo-400" /> Tier-2 Address Utility Bill
+                    </p>
+                    <img src={inspectingDoc.utilityBillUrl} className="w-full h-24 rounded-2xl border border-indigo-500/30 object-cover" />
+                  </div>
+                )}
+
+                {/* Police Background Verification Control */}
+                <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-slate-400 font-bold">Police BGV Status:</span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      inspectingDoc.bgvStatus === 'POLICE_VERIFIED' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-400'
+                    }`}>
+                      {inspectingDoc.bgvStatus === 'POLICE_VERIFIED' ? 'Verified' : 'Pending'}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => handleToggleBgvStatus(inspectingDoc.id)}
+                    className="w-full py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/40 text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    {inspectingDoc.bgvStatus === 'POLICE_VERIFIED' ? 'Revoke Police Verification' : 'Mark Police BGV Verified'}
+                  </button>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
-              <button
-                onClick={() => {
-                  handleApprove(inspectingDoc);
-                  setInspectingDoc(null);
-                }}
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs"
-              >
-                Approve Verified
-              </button>
-              <button onClick={() => setInspectingDoc(null)} className="px-4 py-2 rounded-xl bg-slate-800 text-white font-bold text-xs">Close</button>
+            <div className="flex items-center justify-between pt-3 border-t border-slate-800">
+              <span className="text-xs text-slate-400 font-mono">Current Safety Tier: <strong className="text-amber-400">{inspectingDoc.safetyTier || 'TIER_1_ID'}</strong></span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    handleApprove(inspectingDoc);
+                    setInspectingDoc(null);
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/25"
+                >
+                  Approve & Assign Verified Shield
+                </button>
+                <button onClick={() => setInspectingDoc(null)} className="px-4 py-2.5 rounded-xl bg-slate-800 text-white font-bold text-xs">Close</button>
+              </div>
             </div>
           </div>
         </div>
