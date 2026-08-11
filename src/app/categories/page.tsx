@@ -5,16 +5,23 @@ import Link from 'next/link';
 import { useAdminStore } from '@/lib/adminStore';
 import { CategoryCard } from '@/components/category/CategoryCard';
 import { CategoryDetailsModal } from '@/components/category/CategoryDetailsModal';
+import { AiCategoryMatchmakerModal } from '@/components/category/AiCategoryMatchmakerModal';
+import { CategoryPriceEstimator } from '@/components/category/CategoryPriceEstimator';
+import { CategorySafetyBreakdownModal } from '@/components/category/CategorySafetyBreakdownModal';
+import { SubcategoryPillFilter } from '@/components/category/SubcategoryPillFilter';
 import { ServiceCategory, RiskLevel } from '@/lib/types';
 import {
-  Search, Filter, Sparkles, Layers, ShieldCheck, Star, ArrowRight, Compass
+  Search, Filter, Sparkles, Layers, ShieldCheck, Star, ArrowRight, Compass, Calculator, Wand2
 } from 'lucide-react';
 
 export default function ServiceCategoriesCatalogPage() {
   const { categories } = useAdminStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRisk, setSelectedRisk] = useState<string>('ALL');
+  const [selectedTag, setSelectedTag] = useState<string>('ALL');
   const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | null>(null);
+  const [safetyScorecardCategory, setSafetyScorecardCategory] = useState<ServiceCategory | null>(null);
+  const [isMatchmakerOpen, setIsMatchmakerOpen] = useState(false);
 
   const activeCategories = useMemo(() => {
     return categories.filter((c: ServiceCategory) => c.isActive);
@@ -33,9 +40,15 @@ export default function ServiceCategoriesCatalogPage() {
 
       const matchesRisk = selectedRisk === 'ALL' || cat.riskLevel === selectedRisk;
 
-      return matchesSearch && matchesRisk;
+      const matchesTag =
+        selectedTag === 'ALL' ||
+        cat.name.toLowerCase().includes(selectedTag.toLowerCase()) ||
+        cat.description.toLowerCase().includes(selectedTag.toLowerCase()) ||
+        (cat.subcategories || []).some((s: { name: string }) => s.name.toLowerCase().includes(selectedTag.toLowerCase()));
+
+      return matchesSearch && matchesRisk && matchesTag;
     });
-  }, [activeCategories, searchQuery, selectedRisk]);
+  }, [activeCategories, searchQuery, selectedRisk, selectedTag]);
 
 
   return (
@@ -56,6 +69,16 @@ export default function ServiceCategoriesCatalogPage() {
         <p className="text-slate-300 text-sm sm:text-base max-w-2xl mx-auto font-light leading-relaxed">
           From high-profile corporate galas and city tours to study buddies and elderly care—find verified companions for every occasion under full escrow safety protection.
         </p>
+
+        <div className="pt-2 flex justify-center">
+          <button
+            onClick={() => setIsMatchmakerOpen(true)}
+            className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-extrabold text-xs shadow-xl shadow-indigo-600/30 flex items-center gap-2 transition-all hover:scale-105"
+          >
+            <Wand2 className="w-4 h-4" />
+            <span>Launch AI Smart Category Matchmaker Wizard</span>
+          </button>
+        </div>
 
         {/* Search & Filter Bar */}
         <div className="max-w-3xl mx-auto pt-4 flex flex-col sm:flex-row gap-3">
@@ -109,12 +132,18 @@ export default function ServiceCategoriesCatalogPage() {
 
       {/* Main Catalog Grid */}
       <div className="space-y-6">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-4 gap-3">
           <h2 className="text-xl font-black text-white flex items-center gap-2">
             <Layers className="w-5 h-5 text-indigo-400" /> Service Categories Catalog ({filteredCategories.length})
           </h2>
           <span className="text-xs text-slate-400">Escrow Protected & SOS Enabled</span>
         </div>
+
+        {/* Subcategory Tag Pill Filter Bar */}
+        <SubcategoryPillFilter
+          selectedTag={selectedTag}
+          onSelectTag={(t) => setSelectedTag(t)}
+        />
 
         {filteredCategories.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -142,12 +171,32 @@ export default function ServiceCategoriesCatalogPage() {
         )}
       </div>
 
+      {/* Dynamic Category Pricing Estimator */}
+      <CategoryPriceEstimator />
+
       {/* Details Lightbox Modal */}
       <CategoryDetailsModal
         isOpen={!!selectedCategory}
         category={selectedCategory}
         onClose={() => setSelectedCategory(null)}
       />
+
+      {/* AI Category Matchmaker Wizard Modal */}
+      {isMatchmakerOpen && (
+        <AiCategoryMatchmakerModal
+          categories={activeCategories}
+          onSelectCategory={(c) => setSelectedCategory(c)}
+          onClose={() => setIsMatchmakerOpen(false)}
+        />
+      )}
+
+      {/* Category Safety & Protocol Scorecard Modal */}
+      {safetyScorecardCategory && (
+        <CategorySafetyBreakdownModal
+          category={safetyScorecardCategory}
+          onClose={() => setSafetyScorecardCategory(null)}
+        />
+      )}
     </div>
   );
 }
