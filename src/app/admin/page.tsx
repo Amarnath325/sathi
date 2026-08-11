@@ -18,6 +18,7 @@ import {
   Star, 
   MapPin, 
   Bell, 
+  Mail,
   Tag, 
   Ticket,
   Gift,
@@ -80,6 +81,8 @@ import { SosAlertItem, IncidentReport, DisciplinaryAction, IncidentStatus } from
 
 import { UserManagementModule } from '@/components/admin/UserManagementModule';
 import { KycVerificationModule } from '@/components/admin/KycVerificationModule';
+import { SmtpConfigModule } from '@/components/admin/SmtpConfigModule';
+import { EmailTemplateModule } from '@/components/admin/EmailTemplateModule';
 import { PageSizeOption, PaginationFooter } from '@/components/common/PaginationBar';
 import { DisputeAuditModal } from '@/components/dispute/DisputeAuditModal';
 import { DisputeThreadDrawer } from '@/components/dispute/DisputeThreadDrawer';
@@ -145,7 +148,9 @@ export type ERPModuleTab =
   | 'security' 
   | 'audit' 
   | 'settings' 
-  | 'health';
+  | 'health'
+  | 'email-config'
+  | 'email-templates';
 
 interface SidebarGroup {
   groupTitle: string;
@@ -446,6 +451,8 @@ export default function AdminDashboardPage() {
       groupTitle: '⚙️ ADMINISTRATION & GOVERNANCE',
       items: [
         { id: 'notifications', label: '🔔 Notifications Engine', icon: Bell },
+        { id: 'email-config', label: '📧 SMTP Email Gateway', icon: Mail, badge: 'Active', badgeColor: 'bg-indigo-500/20 text-indigo-300' },
+        { id: 'email-templates', label: '📝 Dynamic Email Templates', icon: FileText },
         { id: 'staff', label: '👨‍💼 Staff & Access Control', icon: UserCog },
         { id: 'security', label: '🔐 Security Center', icon: Lock },
         { id: 'audit', label: '📝 Audit Logs', icon: FileText },
@@ -2694,6 +2701,20 @@ export default function AdminDashboardPage() {
           {/* ==================================================== */}
           {activeTab === 'health' && (
             <AdminSystemHealthPage />
+          )}
+
+          {/* ==================================================== */}
+          {/* MODULE 21: 📧 SMTP EMAIL CONFIGURATION               */}
+          {/* ==================================================== */}
+          {activeTab === 'email-config' && (
+            <SmtpConfigModule />
+          )}
+
+          {/* ==================================================== */}
+          {/* MODULE 22: 📝 DYNAMIC EMAIL TEMPLATES BUILDER        */}
+          {/* ==================================================== */}
+          {activeTab === 'email-templates' && (
+            <EmailTemplateModule />
           )}
 
 
