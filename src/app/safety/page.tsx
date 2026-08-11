@@ -25,6 +25,11 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useAdminStore } from '@/lib/adminStore';
+import { analyzeVoiceForSafeWord } from '@/lib/aiSafetyVoiceTelemetry';
+import { LiveSafetyTrackModal } from '@/components/safety/LiveSafetyTrackModal';
+import { SafetyZoneShield } from '@/components/safety/SafetyZoneShield';
+import { dispatchEmergencyContactsAlert } from '@/lib/emergencyDispatcher';
+import { Share2, Sparkles, Volume2 } from 'lucide-react';
 
 export default function SafetyHubPage() {
   const triggerSosAlert = useAdminStore((state) => state.triggerSosAlert);
@@ -55,6 +60,12 @@ export default function SafetyHubPage() {
   const [evidenceUrl, setEvidenceUrl] = useState('');
   const [incidentSubmitted, setIncidentSubmitted] = useState(false);
   const [submittedIncidentRef, setSubmittedIncidentRef] = useState<string | null>(null);
+
+  // Advance Safety Center State
+  const [isTrackModalOpen, setIsTrackModalOpen] = useState(false);
+  const [voiceTestInput, setVoiceTestInput] = useState('');
+  const [voiceLog, setVoiceLog] = useState<string | null>(null);
+  const [dispatchResult, setDispatchResult] = useState<any>(null);
 
   // Active Tab for live safety feeds
   const [activeTab, setActiveTab] = useState<'sos-hub' | 'incident-report' | 'live-patrol' | 'my-tickets'>('sos-hub');
@@ -110,6 +121,13 @@ export default function SafetyHubPage() {
         });
         setSosAlertRef(fallbackAlert.alertRef);
       }
+      // Trigger Emergency Contact SMS/Call Dispatcher
+      const disp = dispatchEmergencyContactsAlert(
+        reporterName || 'Active Verified Client',
+        userLocation.name,
+        sosAlertRef || 'SOS-EMERGENCY'
+      );
+      setDispatchResult(disp);
       setSosTriggered(true);
     } catch (err) {
       const fallbackAlert = triggerSosAlert({
@@ -122,9 +140,30 @@ export default function SafetyHubPage() {
         notes: 'Triggered from Client Safety Hub emergency panic button.'
       });
       setSosAlertRef(fallbackAlert.alertRef);
+
+      const disp = dispatchEmergencyContactsAlert(
+        reporterName || 'Active Verified Client',
+        userLocation.name,
+        fallbackAlert.alertRef
+      );
+      setDispatchResult(disp);
       setSosTriggered(true);
     } finally {
       setIsSubmittingSos(false);
+    }
+  };
+
+  const handleTestVoiceCommand = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!voiceTestInput.trim()) return;
+
+    const res = analyzeVoiceForSafeWord(voiceTestInput, safeWordInput);
+    setVoiceLog(res.recommendedAction);
+
+    if (res.autoTriggerSos) {
+      setTimeout(() => {
+        handlePanicTrigger();
+      }, 1000);
     }
   };
 
@@ -210,6 +249,16 @@ export default function SafetyHubPage() {
           <p className="text-slate-300 text-xs sm:text-sm md:text-base font-light leading-relaxed">
             Equipped with live GPS geofencing, encrypted audio streaming telemetry, dynamic safe-words, instant police control room integration, and automated escrow disciplinary freezes.
           </p>
+
+          <div className="pt-2 flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => setIsTrackModalOpen(true)}
+              className="px-5 py-3 rounded-2xl bg-cyan-600 hover:bg-cyan-500 text-white font-extrabold text-xs shadow-xl shadow-cyan-600/30 flex items-center gap-2 transition-all"
+            >
+              <Share2 className="w-4 h-4" />
+              <span>Share Live Track-Me Satellite Link</span>
+            </button>
+          </div>
 
           {/* Quick Metrics Bar */}
           <div className="pt-2 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
@@ -319,6 +368,37 @@ export default function SafetyHubPage() {
                     </>
                   )}
                 </button>
+
+                {/* AI Hands-Free Voice Telemetry Tester */}
+                <div className="p-4 rounded-2xl bg-purple-950/40 border border-purple-500/40 max-w-md mx-auto space-y-2 text-left">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-purple-300 flex items-center gap-1.5 font-mono">
+                      <Sparkles className="w-4 h-4 text-purple-400" /> AI Hands-Free Voice Safe-Word Acoustic Monitor
+                    </span>
+                    <span className="w-2 h-2 rounded-full bg-purple-400 animate-ping" />
+                  </div>
+                  <p className="text-[10px] text-slate-300">
+                    Sathi AI listens for voice triggers (e.g. "BLUE ORCHID", "HELP SATHI"). Test voice command below:
+                  </p>
+                  <form onSubmit={handleTestVoiceCommand} className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="e.g. Help Sathi, BLUE ORCHID"
+                      value={voiceTestInput}
+                      onChange={(e) => setVoiceTestInput(e.target.value)}
+                      className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white outline-none focus:border-purple-500"
+                    />
+                    <button type="submit" className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs">
+                      Analyze
+                    </button>
+                  </form>
+                  {voiceLog && (
+                    <p className="text-[10px] font-mono text-purple-200 bg-slate-950 p-2 rounded-lg border border-purple-500/30">
+                      {voiceLog}
+                    </p>
+                  )}
+                </div>
+
               </div>
             ) : (
               <div className="p-6 sm:p-8 rounded-2xl bg-rose-950/80 border border-rose-500/60 text-center space-y-5 animate-fadeIn">
@@ -332,6 +412,16 @@ export default function SafetyHubPage() {
                     Sathi Rapid Security Patrol and Police Command Room have received your coordinates ({userLocation.name}). Live audio telemetry streaming is active.
                   </p>
                 </div>
+
+                {/* Emergency Contact SMS/Call Dispatch Notice */}
+                {dispatchResult && (
+                  <div className="p-3.5 rounded-2xl bg-slate-950/90 border border-rose-500/40 max-w-md mx-auto text-left space-y-1.5 font-mono text-[11px]">
+                    <span className="text-rose-400 font-bold flex items-center gap-1.5">
+                      <PhoneCall className="w-4 h-4 text-emerald-400" /> Emergency SMS/Call Dispatched ({dispatchResult.contactsNotified} Contacts)
+                    </span>
+                    <p className="text-slate-300 text-[10px]">{dispatchResult.smsMessagePreview}</p>
+                  </div>
+                )}
 
                 {/* Live Audio Telemetry Stream Visualizer */}
                 <div className="bg-slate-950/90 border border-rose-500/30 rounded-2xl p-4 max-w-md mx-auto space-y-3">
@@ -362,6 +452,9 @@ export default function SafetyHubPage() {
                 </div>
               </div>
             )}
+
+            {/* Geofenced Safety Zone Shield Card */}
+            <SafetyZoneShield locationName={userLocation.name} />
           </div>
 
           {/* Right Col: Emergency Hotlines & Patrol Quick Call */}
@@ -708,6 +801,15 @@ export default function SafetyHubPage() {
           </div>
         </div>
       )}
+
+      {/* Live Track-Me Satellite Link Share Modal */}
+      {isTrackModalOpen && (
+        <LiveSafetyTrackModal
+          userLocationName={userLocation.name}
+          onClose={() => setIsTrackModalOpen(false)}
+        />
+      )}
+
     </div>
   );
 }
