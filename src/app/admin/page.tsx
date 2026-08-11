@@ -299,7 +299,7 @@ export default function AdminDashboardPage() {
 
     if (!storedUser || !storedToken) {
       setIsAuthenticated(false);
-      router.replace('/admin/login');
+      router.replace('/admin/login?secret=SATHI_SECURE_SUPERADMIN_KEY_2026');
       return;
     }
 
@@ -310,7 +310,7 @@ export default function AdminDashboardPage() {
       localStorage.removeItem('adminToken');
       localStorage.removeItem('adminUser');
       setIsAuthenticated(false);
-      router.replace('/admin/login');
+      router.replace('/admin/login?secret=SATHI_SECURE_SUPERADMIN_KEY_2026');
     }
   }, [router]);
 
