@@ -19,7 +19,7 @@ export class GoogleAuthService {
    * Reads configured Google Client ID from environment variables or returns default fallback
    */
   public static getGoogleClientId(): string {
-    return process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '1048145867356-sathi-web.apps.googleusercontent.com';
+    return process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '1048145867356-ua2i98r8an7jb3t8dlrd2jj3md30jbv8.apps.googleusercontent.com';
   }
 
   /**
