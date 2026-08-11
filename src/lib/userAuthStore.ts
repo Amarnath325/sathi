@@ -18,26 +18,46 @@ interface UserAuthState {
   logout: () => void;
 }
 
+export const PRECONFIGURED_ACCOUNTS = [
+  {
+    email: 'client@sathi.com',
+    password: 'password123',
+    name: 'Valued Client',
+    role: 'USER' as const,
+    id: 'usr-client-101',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    email: 'companion@sathi.com',
+    password: 'password123',
+    name: 'Sophia Chen',
+    role: 'VERIFIED_COMPANION' as const,
+    id: 'comp-101',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    email: 'admin@sathi.com',
+    password: 'admin123',
+    name: 'Enterprise Admin',
+    role: 'ADMIN' as const,
+    id: 'usr-admin-001',
+    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80'
+  }
+];
+
 export const useUserAuthStore = create<UserAuthState>()(
   persist(
     (set) => ({
-      isLoggedIn: true, // Default active session for demo
-      user: {
-        id: 'usr-201',
-        name: 'Alex Mercer',
-        email: 'alex.mercer@example.com',
-        phone: '+1 (415) 892-3011',
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
-        role: 'USER',
-      },
+      isLoggedIn: false,
+      user: null,
       login: (userData) =>
         set((state) => ({
           isLoggedIn: true,
           user: {
-            id: userData?.id || 'usr-201',
-            name: userData?.name || 'Alex Mercer',
-            email: userData?.email || 'alex.mercer@example.com',
-            phone: userData?.phone || '+1 (415) 892-3011',
+            id: userData?.id || 'usr-client-101',
+            name: userData?.name || 'Valued Client',
+            email: userData?.email || 'client@sathi.com',
+            phone: userData?.phone || '+91 9876543210',
             avatar: userData?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
             role: userData?.role || 'USER',
           },

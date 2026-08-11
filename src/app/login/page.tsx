@@ -13,9 +13,11 @@ import {
   ArrowRight, 
   AlertCircle,
   KeyRound,
-  CheckCircle2
+  CheckCircle2,
+  UserCheck,
+  Zap
 } from 'lucide-react';
-import { useUserAuthStore } from '@/lib/userAuthStore';
+import { useUserAuthStore, PRECONFIGURED_ACCOUNTS, UserSession } from '@/lib/userAuthStore';
 import { OtpModal } from '@/components/auth/OtpModal';
 
 export default function LoginPage() {
@@ -30,41 +32,142 @@ export default function LoginPage() {
   const [phone, setPhone] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
+  // Pending user session awaiting 2FA / OTP verification
+  const [pendingUser, setPendingUser] = useState<Partial<UserSession> | null>(null);
+
   // 2FA modal & OTP states
   const [show2faModal, setShow2faModal] = useState(false);
   const [twoFactorCode, setTwoFactorCode] = useState('');
+  const [twoFactorError, setTwoFactorError] = useState<string | null>(null);
   const [otpModalOpen, setOtpModalOpen] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Quick 1-click credential prefill
+  const fillDemoAccount = (accEmail: string, accPass: string) => {
+    setEmail(accEmail);
+    setPassword(accPass);
+    setError(null);
+  };
+
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (loginMethod === 'EMAIL' && (!email || !password)) {
-      setError('Please enter both email and password.');
+    if (loginMethod === 'EMAIL') {
+      const cleanEmail = email.trim().toLowerCase();
+      const cleanPass = password.trim();
+
+      if (!cleanEmail) {
+        setError('Email address is required. Please enter your email.');
+        return;
+      }
+
+      if (!cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+        setError('Invalid email format. Please enter a valid email (e.g. client@sathi.com).');
+        return;
+      }
+
+      if (!cleanPass) {
+        setError('Password is required. Please enter your password.');
+        return;
+      }
+
+      if (cleanPass.length < 6) {
+        setError('Password must be at least 6 characters long.');
+        return;
+      }
+
+      // Check against Preconfigured Demo Accounts
+      const matchedAccount = PRECONFIGURED_ACCOUNTS.find(a => a.email.toLowerCase() === cleanEmail);
+
+      if (matchedAccount) {
+        if (matchedAccount.password !== cleanPass) {
+          setError(`Invalid credentials! Incorrect password for ${cleanEmail}.`);
+          return;
+        }
+        setPendingUser({
+          id: matchedAccount.id,
+          name: matchedAccount.name,
+          email: matchedAccount.email,
+          role: matchedAccount.role,
+          avatar: matchedAccount.avatar
+        });
+      } else {
+        // Generic verified user fallback
+        setPendingUser({
+          id: `usr-${Math.floor(1000 + Math.random() * 9000)}`,
+          name: cleanEmail.split('@')[0].toUpperCase(),
+          email: cleanEmail,
+          role: 'USER'
+        });
+      }
+
+      setIsLoading(true);
+
+      setTimeout(() => {
+        setIsLoading(false);
+        // Trigger 2FA step
+        setShow2faModal(true);
+      }, 800);
+    }
+  };
+
+  const handleSendPhoneOtp = () => {
+    setError(null);
+    const digitsOnly = phone.replace(/\D/g, '');
+
+    if (!digitsOnly || digitsOnly.length < 10) {
+      setError('Please enter a valid 10-digit mobile phone number to receive OTP.');
       return;
     }
 
-    setIsLoading(true);
+    setPendingUser({
+      id: `usr-phone-${digitsOnly.slice(-4)}`,
+      name: `User (+91 ${digitsOnly.slice(-4)})`,
+      email: `user.${digitsOnly.slice(-4)}@sathi.com`,
+      phone: phone,
+      role: 'USER'
+    });
 
-    setTimeout(() => {
-      setIsLoading(false);
-      // Trigger 2FA
-      setShow2faModal(true);
-    }, 1000);
+    setOtpModalOpen(true);
   };
 
   const handleVerify2fa = () => {
+    setTwoFactorError(null);
+    const cleanCode = twoFactorCode.replace(/\D/g, '');
+
+    if (!cleanCode || cleanCode.length < 6) {
+      setTwoFactorError('Please enter a valid 6-digit 2FA Authenticator code (e.g. 123456).');
+      return;
+    }
+
     setShow2faModal(false);
-    login({
+    
+    // Complete authentication in userAuthStore
+    login(pendingUser || {
       id: 'USR-8821',
-      name: 'Aria Vance',
-      email: email || 'aria@companionconnect.com',
+      name: email.split('@')[0] || 'Valued Client',
+      email: email || 'client@sathi.com',
       role: 'USER'
     });
+
     router.push('/dashboard');
+  };
+
+  const handleGoogleLogin = () => {
+    setIsLoading(true);
+    setTimeout(() => {
+      setIsLoading(false);
+      login({
+        id: 'usr-google-99',
+        name: 'Google Verified User',
+        email: 'google.user@sathi.com',
+        role: 'USER'
+      });
+      router.push('/dashboard');
+    }, 1000);
   };
 
   return (
@@ -80,34 +183,69 @@ export default function LoginPage() {
           <p className="text-xs text-slate-400">Select your preferred login method.</p>
         </div>
 
-        {/* Login Method Tabs (Section 17) */}
+        {/* Login Method Tabs */}
         <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-slate-950 border border-slate-800 text-xs font-bold">
           <button
             type="button"
-            onClick={() => setLoginMethod('EMAIL')}
+            onClick={() => { setLoginMethod('EMAIL'); setError(null); }}
             className={`py-2 rounded-xl transition-all ${loginMethod === 'EMAIL' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
           >
             Email
           </button>
           <button
             type="button"
-            onClick={() => setLoginMethod('PHONE')}
+            onClick={() => { setLoginMethod('PHONE'); setError(null); }}
             className={`py-2 rounded-xl transition-all ${loginMethod === 'PHONE' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
           >
             Phone OTP
           </button>
           <button
             type="button"
-            onClick={() => setLoginMethod('GOOGLE')}
+            onClick={() => { setLoginMethod('GOOGLE'); setError(null); }}
             className={`py-2 rounded-xl transition-all ${loginMethod === 'GOOGLE' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
           >
             Google
           </button>
         </div>
 
+        {/* Demo Account Prefill Chips */}
+        {loginMethod === 'EMAIL' && (
+          <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800/80 space-y-2">
+            <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+              <span className="flex items-center gap-1"><Zap className="w-3 h-3 text-amber-400" /> Quick Demo Login:</span>
+            </div>
+            <div className="grid grid-cols-3 gap-1.5 text-[10px]">
+              <button
+                type="button"
+                onClick={() => fillDemoAccount('client@sathi.com', 'password123')}
+                className="p-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 font-bold truncate text-center"
+                title="Client Login"
+              >
+                Client
+              </button>
+              <button
+                type="button"
+                onClick={() => fillDemoAccount('companion@sathi.com', 'password123')}
+                className="p-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-emerald-300 font-bold truncate text-center"
+                title="Companion Login"
+              >
+                Companion
+              </button>
+              <button
+                type="button"
+                onClick={() => fillDemoAccount('admin@sathi.com', 'admin123')}
+                className="p-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-indigo-300 font-bold truncate text-center"
+                title="Admin Login"
+              >
+                Admin
+              </button>
+            </div>
+          </div>
+        )}
+
         {error && (
-          <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" /> {error}
+          <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold flex items-center gap-2 animate-bounce">
+            <AlertCircle className="w-4 h-4 shrink-0" /> <span>{error}</span>
           </div>
         )}
 
@@ -116,14 +254,16 @@ export default function LoginPage() {
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <div>
               <label className="text-xs font-semibold text-slate-300 block mb-1">Email Address</label>
-              <input 
-                type="email"
-                required
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="user@example.com"
-                className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500"
-              />
+              <div className="relative">
+                <input 
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="client@sathi.com"
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500 pl-10"
+                />
+                <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+              </div>
             </div>
 
             <div>
@@ -134,12 +274,12 @@ export default function LoginPage() {
               <div className="relative">
                 <input 
                   type={showPassword ? 'text' : 'password'}
-                  required
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500 pr-10"
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500 pl-10 pr-10"
                 />
+                <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -153,9 +293,9 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-4 rounded-2xl gradient-bg-primary text-white font-extrabold text-sm hover:opacity-95 shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2"
+              className="w-full py-4 rounded-2xl gradient-bg-primary text-white font-extrabold text-sm hover:opacity-95 shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all"
             >
-              {isLoading ? 'Authenticating...' : 'Sign In'} <ArrowRight className="w-4 h-4" />
+              {isLoading ? 'Authenticating Credentials...' : 'Sign In'} <ArrowRight className="w-4 h-4" />
             </button>
           </form>
         )}
@@ -165,18 +305,21 @@ export default function LoginPage() {
           <div className="space-y-4">
             <div>
               <label className="text-xs font-semibold text-slate-300 block mb-1">Mobile Phone Number</label>
-              <input 
-                type="tel"
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                placeholder="+91 9876543210"
-                className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500"
-              />
+              <div className="relative">
+                <input 
+                  type="tel"
+                  value={phone}
+                  onChange={e => setPhone(e.target.value)}
+                  placeholder="+91 9876543210"
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500 pl-10"
+                />
+                <Phone className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+              </div>
             </div>
 
             <button
               type="button"
-              onClick={() => setOtpModalOpen(true)}
+              onClick={handleSendPhoneOtp}
               className="w-full py-4 rounded-2xl gradient-bg-primary text-white font-extrabold text-sm hover:opacity-95 shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2"
             >
               Send OTP Code <Phone className="w-4 h-4" />
@@ -190,7 +333,8 @@ export default function LoginPage() {
             <p className="text-xs text-slate-400">OAuth 2.0 Secure Single Sign-On</p>
             <button
               type="button"
-              onClick={() => handleVerify2fa()}
+              onClick={handleGoogleLogin}
+              disabled={isLoading}
               className="w-full py-3.5 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">
@@ -199,7 +343,7 @@ export default function LoginPage() {
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
               </svg>
-              Sign in with Google
+              {isLoading ? 'Connecting to Google OAuth...' : 'Sign in with Google'}
             </button>
           </div>
         )}
@@ -209,7 +353,7 @@ export default function LoginPage() {
         </p>
       </div>
 
-      {/* 2FA MODAL (Section 19) */}
+      {/* 2FA MODAL */}
       {show2faModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 max-w-sm w-full space-y-5 animate-fade-in text-center shadow-2xl">
@@ -219,14 +363,21 @@ export default function LoginPage() {
             
             <div className="space-y-1">
               <h3 className="text-lg font-bold text-white">2-Factor Authentication Required</h3>
-              <p className="text-xs text-slate-400">Enter code from your Authenticator app.</p>
+              <p className="text-xs text-slate-400">Enter 6-digit code (Try: <span className="font-mono text-white font-bold">123456</span>).</p>
             </div>
+
+            {twoFactorError && (
+              <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold">
+                {twoFactorError}
+              </div>
+            )}
 
             <input 
               type="text"
+              maxLength={6}
               value={twoFactorCode}
               onChange={e => setTwoFactorCode(e.target.value)}
-              placeholder="123 456"
+              placeholder="123456"
               className="w-full text-center px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-lg font-mono tracking-widest text-white focus:outline-none focus:border-indigo-500"
             />
 
@@ -255,7 +406,15 @@ export default function LoginPage() {
         onClose={() => setOtpModalOpen(false)}
         phoneOrEmail={phone || '+91 9876543210'}
         type="PHONE"
-        onVerified={handleVerify2fa}
+        onVerified={() => {
+          login(pendingUser || {
+            id: 'usr-phone-verified',
+            name: 'Phone User',
+            email: 'phone.user@sathi.com',
+            role: 'USER'
+          });
+          router.push('/dashboard');
+        }}
       />
 
     </div>
