@@ -26,10 +26,14 @@ import { MOCK_COMPANIONS } from '@/lib/mockData';
 import { MarketplaceMatchingEngine, SearchCriteria } from '@/lib/matchingAlgorithm';
 import { SearchAndLimitBar, PaginationFooter, PageSizeOption } from '@/components/common/PaginationBar';
 import { useToast } from '@/components/ui/Toast';
+import { AiNaturalSearchInput } from '@/components/search/AiNaturalSearchInput';
+import { ExploreMapToggleWidget } from '@/components/search/ExploreMapToggleWidget';
+import { Navigation, Grid } from 'lucide-react';
 
 export default function SearchPage() {
   const { showToast } = useToast();
 
+  const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
   // 10 Search Criteria Filters (Section 27)
   const [locationQuery, setLocationQuery] = useState('Raipur');
   const [selectedCategory, setSelectedCategory] = useState<string>('Travel Companion');
@@ -164,6 +168,26 @@ export default function SearchPage() {
             </div>
 
             <div className="flex items-center gap-2">
+              {/* View Mode Toggle Switch */}
+              <div className="p-1 rounded-xl bg-slate-950 border border-slate-800 flex items-center gap-1">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold font-mono transition-all flex items-center gap-1 ${
+                    viewMode === 'grid' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Grid className="w-3.5 h-3.5" /> Grid View
+                </button>
+                <button
+                  onClick={() => setViewMode('map')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold font-mono transition-all flex items-center gap-1 ${
+                    viewMode === 'map' ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Navigation className="w-3.5 h-3.5" /> Satellite Geofence Map
+                </button>
+              </div>
+
               <Link 
                 href="/favorites"
                 className="px-3.5 py-1.5 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 hover:bg-rose-600 hover:text-white text-xs font-bold transition-all flex items-center gap-1.5"
@@ -172,6 +196,16 @@ export default function SearchPage() {
               </Link>
             </div>
           </div>
+
+          {/* AI Natural Language Prompt Input Bar */}
+          <AiNaturalSearchInput
+            onApplyFilters={(parsed) => {
+              if (parsed.location) setLocationQuery(parsed.location);
+              if (parsed.category) setSelectedCategory(parsed.category);
+              if (parsed.maxPrice) setMaxPrice(parsed.maxPrice);
+              if (parsed.language) setSelectedLanguage(parsed.language);
+            }}
+          />
 
           {/* 10-Field Search Bar (Section 27) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
@@ -363,7 +397,7 @@ export default function SearchPage() {
           </div>
         </div>
 
-        {/* Right Candidates Results Grid */}
+        {/* Right Candidates Results Grid or Satellite Map View */}
         <div className="lg:col-span-3 space-y-6">
           
           <SearchAndLimitBar 
@@ -377,7 +411,21 @@ export default function SearchPage() {
             placeholder="Search by companion name or city..."
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {viewMode === 'map' ? (
+            <ExploreMapToggleWidget
+              candidates={rankedResults.map(r => ({
+                id: r.candidate.id,
+                name: r.candidate.name,
+                avatar: r.candidate.avatar,
+                city: r.candidate.city,
+                distanceKm: r.candidate.distanceKm,
+                hourlyRate: r.candidate.hourlyRate,
+                ratingAvg: r.candidate.ratingAvg,
+                isIdentityVerified: r.candidate.isIdentityVerified
+              }))}
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {paginatedCandidates.map(({ candidate, matchResult }) => {
               const comp = candidate.rawComp;
               const isSaved = savedFavorites.includes(comp.id);
@@ -456,6 +504,7 @@ export default function SearchPage() {
               );
             })}
           </div>
+          )}
 
           <PaginationFooter 
             currentPage={currentPage}

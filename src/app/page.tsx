@@ -24,6 +24,8 @@ import {
   Users
 } from 'lucide-react';
 import { MOCK_COMPANIONS } from '@/lib/mockData';
+import { LivePlatformActivityTicker } from '@/components/common/LivePlatformActivityTicker';
+import { HomeEscrowTrustWidget } from '@/components/common/HomeEscrowTrustWidget';
 
 export default function LandingPage() {
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -38,7 +40,10 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="relative overflow-hidden space-y-24 pb-20">
+    <div className="relative overflow-hidden space-y-20 pb-20">
+      
+      {/* Live Global Platform Pulse Ticker */}
+      <LivePlatformActivityTicker />
       
       {/* Dynamic Background Glow Orbs */}
       <div className="absolute top-10 left-1/4 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none -z-10 animate-pulse-slow"></div>
@@ -231,6 +236,11 @@ export default function LandingPage() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Interactive Escrow & Safety Showcase */}
+      <section className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <HomeEscrowTrustWidget />
       </section>
 
       {/* Escrow & Trust Process Breakdown */}
