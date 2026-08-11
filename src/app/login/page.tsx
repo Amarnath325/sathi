@@ -19,10 +19,13 @@ import {
 } from 'lucide-react';
 import { useUserAuthStore, PRECONFIGURED_ACCOUNTS, UserSession } from '@/lib/userAuthStore';
 import { OtpModal } from '@/components/auth/OtpModal';
+import { OtpStore } from '@/lib/otpStore';
+import { SmsGatewayService } from '@/lib/smsGatewayService';
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useUserAuthStore();
+  const [smsToast, setSmsToast] = useState<{ text: string; code: string } | null>(null);
 
   const [loginMethod, setLoginMethod] = useState<'EMAIL' | 'PHONE' | 'GOOGLE'>('EMAIL');
   
@@ -114,13 +117,29 @@ export default function LoginPage() {
     }
   };
 
-  const handleSendPhoneOtp = () => {
+  const handleSendPhoneOtp = async () => {
     setError(null);
     const digitsOnly = phone.replace(/\D/g, '');
 
     if (!digitsOnly || digitsOnly.length < 10) {
       setError('Please enter a valid 10-digit mobile phone number to receive OTP.');
       return;
+    }
+
+    // 1. Create & Save OTP Record in Database (10 Mins Expiry)
+    const record = OtpStore.createOtpRecord(phone);
+
+    // 2. Dispatch SMS via Dove SMS API
+    if (record.otpCode) {
+      const message = `Your Sathi OTP verification code is ${record.otpCode}. Valid for 10 minutes. Do not share.`;
+      await SmsGatewayService.sendSms(phone, message);
+
+      // Trigger Toast notification with OTP code for easy testing
+      setSmsToast({
+        text: `Dove SMS Dispatched to ${phone}`,
+        code: record.otpCode
+      });
+      setTimeout(() => setSmsToast(null), 8000);
     }
 
     setPendingUser({
@@ -171,7 +190,23 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="max-w-md mx-auto px-4 py-12">
+    <div className="max-w-md mx-auto px-4 py-12 relative">
+      
+      {/* Real-time Dove SMS API Banner Toast */}
+      {smsToast && (
+        <div className="mb-4 p-4 rounded-2xl bg-indigo-600/90 border border-indigo-400 text-white font-sans shadow-2xl animate-bounce flex items-center justify-between gap-3 text-xs">
+          <div className="space-y-0.5">
+            <div className="font-bold flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+              <span>{smsToast.text}</span>
+            </div>
+            <p className="text-[11px] text-indigo-150 font-mono">
+              Sent via Dove Gateway API. Your OTP Code: <strong className="text-amber-300 text-sm font-black tracking-widest">{smsToast.code}</strong>
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="glass-panel p-8 sm:p-10 rounded-3xl border border-slate-800 space-y-6 shadow-2xl">
         
         {/* Header */}

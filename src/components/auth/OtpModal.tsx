@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ShieldCheck, X, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, X, RefreshCw, CheckCircle2, MessageSquare } from 'lucide-react';
+import { OtpStore } from '@/lib/otpStore';
+import { SmsGatewayService } from '@/lib/smsGatewayService';
 
 interface OtpModalProps {
   isOpen: boolean;
@@ -77,27 +79,43 @@ export function OtpModal({ isOpen, onClose, phoneOrEmail, type, onVerified }: Ot
   const handleVerify = () => {
     const fullCode = otp.join('');
     if (fullCode.length < 6) {
-      setError('Please enter all 6 digits');
+      setError('Please enter all 6 digits of the OTP code.');
       return;
     }
 
     setIsVerifying(true);
     setError(null);
 
-    // Simulate Server-side OTP Verification
     setTimeout(() => {
       setIsVerifying(false);
+      
+      // Perform DB OTP Verification
+      const result = OtpStore.verifyOtpCode(phoneOrEmail, fullCode);
+
+      if (!result.success) {
+        setError(result.error || 'Verification failed. Incorrect OTP code.');
+        return;
+      }
+
       onVerified();
       onClose();
-    }, 1000);
+    }, 800);
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
     if (!canResend) return;
     setTimer(30);
     setCanResend(false);
     setError(null);
     setOtp(Array(6).fill(''));
+
+    // Create fresh OTP in DB
+    const newRecord = OtpStore.createOtpRecord(phoneOrEmail);
+
+    if (newRecord.otpCode) {
+      const msg = `Your Sathi OTP verification code is ${newRecord.otpCode}. Valid for 10 minutes. Do not share.`;
+      await SmsGatewayService.sendSms(phoneOrEmail, msg);
+    }
   };
 
   return (
