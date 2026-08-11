@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { useUserAuthStore, PRECONFIGURED_ACCOUNTS, UserSession } from '@/lib/userAuthStore';
 import { OtpModal } from '@/components/auth/OtpModal';
+import { GoogleAuthModal } from '@/components/auth/GoogleAuthModal';
+import { GoogleUserProfile } from '@/lib/googleAuthService';
 import { OtpStore } from '@/lib/otpStore';
 import { SmsGatewayService } from '@/lib/smsGatewayService';
 
@@ -26,6 +28,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { login } = useUserAuthStore();
   const [smsToast, setSmsToast] = useState<{ text: string; code: string } | null>(null);
+  const [googleModalOpen, setGoogleModalOpen] = useState(false);
 
   const [loginMethod, setLoginMethod] = useState<'EMAIL' | 'PHONE' | 'GOOGLE'>('EMAIL');
   
@@ -176,17 +179,18 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      login({
-        id: 'usr-google-99',
-        name: 'Google Verified User',
-        email: 'google.user@sathi.com',
-        role: 'USER'
-      });
-      router.push('/dashboard');
-    }, 1000);
+    setGoogleModalOpen(true);
+  };
+
+  const handleCompleteGoogleAuth = (profile: GoogleUserProfile) => {
+    login({
+      id: profile.googleId,
+      name: profile.name,
+      email: profile.email,
+      avatar: profile.avatar,
+      role: 'USER'
+    });
+    router.push('/dashboard');
   };
 
   return (
@@ -450,6 +454,13 @@ export default function LoginPage() {
           });
           router.push('/dashboard');
         }}
+      />
+
+      {/* GOOGLE OAUTH 2.0 SINGLE SIGN-ON MODAL */}
+      <GoogleAuthModal
+        isOpen={googleModalOpen}
+        onClose={() => setGoogleModalOpen(false)}
+        onSelectGoogleAccount={handleCompleteGoogleAuth}
       />
 
     </div>
