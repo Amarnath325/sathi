@@ -120,16 +120,16 @@ export function CategoryPriceEstimator() {
       </div>
 
       {/* Calculated Breakdown Display */}
-      <div className="p-5 rounded-2xl bg-slate-950/80 border border-indigo-500/30 flex flex-wrap items-center justify-between gap-4 font-mono text-xs">
-        <div className="space-y-1">
+      <div className="p-5 rounded-2xl bg-slate-950/80 border border-indigo-500/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 font-mono text-xs">
+        <div className="p-4 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 text-left shrink-0">
+          <span className="text-[10px] text-emerald-300 uppercase font-bold block">Total Escrow Hold Amount</span>
+          <span className="text-2xl font-black text-white">${totalEscrowHold}.00</span>
+        </div>
+
+        <div className="space-y-1.5 md:border-l border-slate-800 md:pl-6 flex-1 text-left">
           <span className="text-slate-400 block text-[11px]">Companion Fee ({hours} hrs @ ${baseHourlyRate}/hr × {tierMultiplier}x): <strong className="text-white">${subtotal}</strong></span>
           <span className="text-slate-400 block text-[11px]">Platform Escrow Protection Fee (5%): <strong className="text-indigo-300">${platformEscrowFee}</strong></span>
           <span className="text-slate-400 block text-[11px]">SOS Safety Guarantee & Insurance: <strong className="text-emerald-300">${safetyGuaranteeFee}.00</strong></span>
-        </div>
-
-        <div className="p-4 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 text-right">
-          <span className="text-[10px] text-emerald-300 uppercase font-bold block">Total Escrow Hold Amount</span>
-          <span className="text-2xl font-black text-white">${totalEscrowHold}.00</span>
         </div>
       </div>
 
