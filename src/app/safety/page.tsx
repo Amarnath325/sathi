@@ -29,7 +29,11 @@ import { analyzeVoiceForSafeWord } from '@/lib/aiSafetyVoiceTelemetry';
 import { LiveSafetyTrackModal } from '@/components/safety/LiveSafetyTrackModal';
 import { SafetyZoneShield } from '@/components/safety/SafetyZoneShield';
 import { dispatchEmergencyContactsAlert } from '@/lib/emergencyDispatcher';
-import { Share2, Sparkles, Volume2 } from 'lucide-react';
+import { SosGestureDetectorModal } from '@/components/safety/SosGestureDetectorModal';
+import { SilentSosStealthModal } from '@/components/safety/SilentSosStealthModal';
+import { SosDispatchRadarModal } from '@/components/safety/SosDispatchRadarModal';
+import { executeEmergencyEscrowFreeze } from '@/lib/escrowFreezeEngine';
+import { Share2, Sparkles, Volume2, Smartphone, EyeOff } from 'lucide-react';
 
 export default function SafetyHubPage() {
   const triggerSosAlert = useAdminStore((state) => state.triggerSosAlert);
@@ -66,6 +70,12 @@ export default function SafetyHubPage() {
   const [voiceTestInput, setVoiceTestInput] = useState('');
   const [voiceLog, setVoiceLog] = useState<string | null>(null);
   const [dispatchResult, setDispatchResult] = useState<any>(null);
+
+  // Ultra-Advance SOS State
+  const [isGestureModalOpen, setIsGestureModalOpen] = useState(false);
+  const [isStealthModalOpen, setIsStealthModalOpen] = useState(false);
+  const [isRadarModalOpen, setIsRadarModalOpen] = useState(false);
+  const [escrowFreezeNotice, setEscrowFreezeNotice] = useState<any>(null);
 
   // Active Tab for live safety feeds
   const [activeTab, setActiveTab] = useState<'sos-hub' | 'incident-report' | 'live-patrol' | 'my-tickets'>('sos-hub');
@@ -121,13 +131,17 @@ export default function SafetyHubPage() {
         });
         setSosAlertRef(fallbackAlert.alertRef);
       }
-      // Trigger Emergency Contact SMS/Call Dispatcher
+      // Trigger Emergency Contact SMS/Call Dispatcher & Financial Escrow Freeze
       const disp = dispatchEmergencyContactsAlert(
         reporterName || 'Active Verified Client',
         userLocation.name,
         sosAlertRef || 'SOS-EMERGENCY'
       );
       setDispatchResult(disp);
+
+      const frz = executeEmergencyEscrowFreeze('usr-client-current', sosAlertRef || 'SOS-EMERGENCY', 250);
+      setEscrowFreezeNotice(frz);
+
       setSosTriggered(true);
     } catch (err) {
       const fallbackAlert = triggerSosAlert({
@@ -147,6 +161,10 @@ export default function SafetyHubPage() {
         fallbackAlert.alertRef
       );
       setDispatchResult(disp);
+
+      const frz = executeEmergencyEscrowFreeze('usr-client-current', fallbackAlert.alertRef, 250);
+      setEscrowFreezeNotice(frz);
+
       setSosTriggered(true);
     } finally {
       setIsSubmittingSos(false);
@@ -257,6 +275,22 @@ export default function SafetyHubPage() {
             >
               <Share2 className="w-4 h-4" />
               <span>Share Live Track-Me Satellite Link</span>
+            </button>
+
+            <button
+              onClick={() => setIsGestureModalOpen(true)}
+              className="px-5 py-3 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs shadow-xl shadow-rose-600/30 flex items-center gap-2 transition-all"
+            >
+              <Smartphone className="w-4 h-4" />
+              <span>Shake-to-SOS Motion Lock</span>
+            </button>
+
+            <button
+              onClick={() => setIsStealthModalOpen(true)}
+              className="px-5 py-3 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 font-extrabold text-xs flex items-center gap-2 transition-all"
+            >
+              <EyeOff className="w-4 h-4 text-purple-400" />
+              <span>Silent Covert Stealth Disguise Mode</span>
             </button>
           </div>
 
@@ -422,6 +456,27 @@ export default function SafetyHubPage() {
                     <p className="text-slate-300 text-[10px]">{dispatchResult.smsMessagePreview}</p>
                   </div>
                 )}
+
+                {/* Automatic Financial Escrow Freeze Lock Banner */}
+                {escrowFreezeNotice && (
+                  <div className="p-3.5 rounded-2xl bg-indigo-950/80 border border-indigo-500/40 max-w-md mx-auto text-left space-y-1 font-mono text-[11px]">
+                    <span className="text-indigo-300 font-bold flex items-center gap-1.5">
+                      <Lock className="w-4 h-4 text-indigo-400" /> Automatic Escrow Financial Freeze Lock
+                    </span>
+                    <p className="text-slate-300 text-[10px]">{escrowFreezeNotice.lockReason}</p>
+                  </div>
+                )}
+
+                {/* Live Radar Dispatch Map Button */}
+                <div className="pt-1">
+                  <button
+                    onClick={() => setIsRadarModalOpen(true)}
+                    className="px-6 py-3 rounded-2xl bg-gradient-to-r from-rose-600 to-indigo-600 text-white font-extrabold text-xs shadow-xl shadow-rose-600/30 flex items-center gap-2 mx-auto transition-all animate-pulse"
+                  >
+                    <Navigation className="w-4 h-4" />
+                    <span>Track Patrol Vehicle #402 Satellite Radar Map</span>
+                  </button>
+                </div>
 
                 {/* Live Audio Telemetry Stream Visualizer */}
                 <div className="bg-slate-950/90 border border-rose-500/30 rounded-2xl p-4 max-w-md mx-auto space-y-3">
@@ -807,6 +862,31 @@ export default function SafetyHubPage() {
         <LiveSafetyTrackModal
           userLocationName={userLocation.name}
           onClose={() => setIsTrackModalOpen(false)}
+        />
+      )}
+
+      {/* Shake Motion Gesture Detector Modal */}
+      {isGestureModalOpen && (
+        <SosGestureDetectorModal
+          onClose={() => setIsGestureModalOpen(false)}
+          onTriggerSos={handlePanicTrigger}
+        />
+      )}
+
+      {/* Silent Covert Stealth Disguise Screen Modal */}
+      {isStealthModalOpen && (
+        <SilentSosStealthModal
+          userLocationName={userLocation.name}
+          onClose={() => setIsStealthModalOpen(false)}
+        />
+      )}
+
+      {/* Live Responder Patrol Radar Map Modal */}
+      {isRadarModalOpen && (
+        <SosDispatchRadarModal
+          userLocationName={userLocation.name}
+          alertRef={sosAlertRef || 'SOS-DISPATCH-402'}
+          onClose={() => setIsRadarModalOpen(false)}
         />
       )}
 
