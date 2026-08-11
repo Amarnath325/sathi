@@ -7,10 +7,13 @@ import { IpWhitelistManager } from '@/components/security/IpWhitelistManager';
 import { ThreatMonitor } from '@/components/security/ThreatMonitor';
 import { SecurityPolicyConfig } from '@/components/security/SecurityPolicyConfig';
 import { TrustedDeviceManager } from '@/components/security/TrustedDeviceManager';
+import { SecurityControlCenterWidget } from '@/components/security/SecurityControlCenterWidget';
+import { SecurityAuditModal } from '@/components/security/SecurityAuditModal';
 import { useSecurityControlsStore } from '@/lib/securityControlsStore';
 
 export default function AdminSecurityControlsPage() {
   const [activeTab, setActiveTab] = useState<'2fa' | 'ip' | 'threats' | 'policy' | 'devices'>('2fa');
+  const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
   const { user2FA, policy, threats, trustedDevices, toggleEmergencyLockdown } = useSecurityControlsStore();
 
   const blockedCount = policy.blacklistedIps.length;
@@ -108,6 +111,9 @@ export default function AdminSecurityControlsPage() {
           </div>
         </div>
 
+        {/* Real-Time Security Operations Center Widget */}
+        <SecurityControlCenterWidget onOpenAuditModal={() => setIsAuditModalOpen(true)} />
+
         {/* Tab Navigation */}
         <div className="flex items-center gap-2 overflow-x-auto p-1.5 rounded-2xl bg-slate-900/60 border border-slate-800">
           {[
@@ -140,6 +146,11 @@ export default function AdminSecurityControlsPage() {
           {activeTab === 'devices' && <TrustedDeviceManager />}
         </div>
       </div>
+
+      {/* Security Event & Vulnerability Audit Modal */}
+      {isAuditModalOpen && (
+        <SecurityAuditModal onClose={() => setIsAuditModalOpen(false)} />
+      )}
     </div>
   );
 }
