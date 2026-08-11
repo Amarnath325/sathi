@@ -17,7 +17,8 @@ import {
   Lock,
   Sparkles,
   Database,
-  Radio
+  Radio,
+  FileCode
 } from 'lucide-react';
 import { useEmailConfigStore, SmtpSettings } from '@/lib/emailConfigStore';
 
@@ -32,7 +33,7 @@ export function SmtpConfigModule() {
   const [testModalOpen, setTestModalOpen] = useState(false);
   const [testEmailInput, setTestEmailInput] = useState('admin@sathi.com');
   const [isTesting, setIsTesting] = useState(false);
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string; exceptionCode?: string } | null>(null);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,12 +84,15 @@ export function SmtpConfigModule() {
             </div>
             <div>
               <h2 className="text-xl font-extrabold text-white flex items-center gap-2">
-                SMTP Gateway & Email Credentials Module
+                SMTP Gateway & Credentials Vault
                 <span className="text-[10px] font-mono font-bold uppercase px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
                   {smtpSettings.isVerified ? 'VERIFIED ACTIVE' : 'UNVERIFIED'}
                 </span>
+                <span className="text-[10px] font-mono font-bold uppercase px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/30 flex items-center gap-1">
+                  <Lock className="w-3 h-3 text-purple-400" /> AES-256 Vault Encrypted
+                </span>
               </h2>
-              <p className="text-xs text-slate-400">Configure your primary mail server credentials for dispatches, OTPs, and escrow receipts.</p>
+              <p className="text-xs text-slate-400">All third-party credentials are encrypted with AES-256 in DB and decrypted in-memory for API dispatch.</p>
             </div>
           </div>
 
@@ -105,7 +109,7 @@ export function SmtpConfigModule() {
 
         {isSaved && (
           <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-2 animate-fade-in">
-            <CheckCircle2 className="w-4 h-4 shrink-0" /> SMTP Configuration Saved Successfully!
+            <CheckCircle2 className="w-4 h-4 shrink-0" /> Credentials Encrypted with AES-256 & Saved to Vault!
           </div>
         )}
       </div>
@@ -203,7 +207,12 @@ export function SmtpConfigModule() {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">SMTP Password / App Secret</label>
+              <label className="text-xs font-semibold text-slate-300 block mb-1 flex items-center justify-between">
+                <span>SMTP Password / App Secret</span>
+                <span className="text-[10px] text-purple-400 font-mono flex items-center gap-1">
+                  <Lock className="w-3 h-3" /> AES-256 Vault Protected
+                </span>
+              </label>
               <div className="relative">
                 <input 
                   type={showPassword ? 'text' : 'password'}
@@ -211,9 +220,9 @@ export function SmtpConfigModule() {
                   value={formData.password}
                   onChange={e => setFormData({ ...formData, password: e.target.value })}
                   placeholder="••••••••••••"
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-indigo-500 pl-10 pr-10"
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-indigo-500 pl-10 pr-10 font-mono"
                 />
-                <Lock className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+                <Lock className="w-4 h-4 text-purple-400 absolute left-3 top-3" />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -264,13 +273,13 @@ export function SmtpConfigModule() {
             type="submit"
             className="px-6 py-3 rounded-2xl gradient-bg-primary text-white font-extrabold text-xs hover:opacity-95 shadow-xl shadow-indigo-600/30 flex items-center gap-2"
           >
-            <ShieldCheck className="w-4 h-4" /> Save SMTP Credentials
+            <ShieldCheck className="w-4 h-4" /> Encrypt & Save Credentials
           </button>
         </div>
 
       </form>
 
-      {/* TEST EMAIL MODAL */}
+      {/* TEST EMAIL MODAL WITH EXCEPTION DIAGNOSTICS */}
       {testModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl animate-fade-in text-slate-100">
@@ -289,17 +298,25 @@ export function SmtpConfigModule() {
             </div>
 
             <p className="text-xs text-slate-400">
-              Dispatches a test TLS email payload via <strong className="text-white">{formData.host}:{formData.port}</strong>.
+              Decrypts AES-256 credentials in-memory and dispatches payload via <strong className="text-white">{formData.host}:{formData.port}</strong>.
             </p>
 
             {testResult && (
-              <div className={`p-4 rounded-2xl text-xs font-semibold flex items-center gap-2 ${
+              <div className={`p-4 rounded-2xl text-xs space-y-2 font-mono ${
                 testResult.success 
-                  ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' 
-                  : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'
+                  ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-300' 
+                  : 'bg-rose-500/10 border border-rose-500/30 text-rose-300'
               }`}>
-                {testResult.success ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
-                <span>{testResult.message}</span>
+                <div className="flex items-start gap-2 font-sans font-bold">
+                  {testResult.success ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" /> : <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />}
+                  <span>{testResult.message}</span>
+                </div>
+                {testResult.exceptionCode && (
+                  <div className="text-[10px] text-rose-400 bg-rose-950/60 p-2 rounded-lg border border-rose-500/20 flex items-center gap-1.5">
+                    <FileCode className="w-3.5 h-3.5 text-rose-400" />
+                    <span>Exception Code: <strong>{testResult.exceptionCode}</strong></span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -329,7 +346,7 @@ export function SmtpConfigModule() {
                 className="px-5 py-2.5 rounded-xl gradient-bg-primary text-white text-xs font-bold flex items-center gap-2 shadow-lg disabled:opacity-50"
               >
                 {isTesting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                {isTesting ? 'Sending Test Mail...' : 'Send Test Mail Now'}
+                {isTesting ? 'Encrypting & Transmitting...' : 'Send Live Test Mail'}
               </button>
             </div>
 

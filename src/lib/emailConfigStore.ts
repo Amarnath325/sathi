@@ -1,17 +1,19 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { encryptCredential, decryptCredential } from '@/lib/cryptoUtils';
 
 export interface SmtpSettings {
   driver: 'SMTP' | 'GMAIL' | 'SENDGRID' | 'AWS_SES' | 'MAILGUN' | 'POSTMARK';
   host: string;
   port: number;
   username: string;
-  password: string;
+  password: string; // Encrypted in store
   encryption: 'TLS' | 'SSL' | 'NONE';
   fromName: string;
   fromEmail: string;
   isVerified: boolean;
   lastTestedAt?: string;
+  isEncryptedInDb: boolean;
 }
 
 export interface EmailTemplateSection {
@@ -39,7 +41,8 @@ interface EmailConfigState {
   smtpSettings: SmtpSettings;
   templates: EmailTemplate[];
   updateSmtpSettings: (settings: Partial<SmtpSettings>) => void;
-  verifySmtpConnection: (testEmail: string) => Promise<{ success: boolean; message: string }>;
+  getDecryptedSmtpSettings: () => SmtpSettings;
+  verifySmtpConnection: (testEmail: string) => Promise<{ success: boolean; message: string; exceptionCode?: string }>;
   addTemplate: (template: Omit<EmailTemplate, 'id' | 'updatedAt'>) => void;
   updateTemplate: (id: string, updated: Partial<EmailTemplate>) => void;
   deleteTemplate: (id: string) => void;
@@ -51,15 +54,16 @@ interface EmailConfigState {
 
 const DEFAULT_SMTP_SETTINGS: SmtpSettings = {
   driver: 'SMTP',
-  host: 'smtp.sathi-connect.com',
+  host: 'smtp.gmail.com',
   port: 587,
-  username: 'notifications@sathi.com',
-  password: '•••EncryptedPass•••',
+  username: 'notifications@sathi-connect.com',
+  password: encryptCredential('Sathi@AppPassword2026'),
   encryption: 'TLS',
   fromName: 'Sathi Companion Connect',
-  fromEmail: 'no-reply@sathi.com',
+  fromEmail: 'no-reply@sathi-connect.com',
   isVerified: true,
-  lastTestedAt: new Date().toISOString()
+  lastTestedAt: new Date().toISOString(),
+  isEncryptedInDb: true
 };
 
 const DEFAULT_EMAIL_TEMPLATES: EmailTemplate[] = [
@@ -131,33 +135,6 @@ const DEFAULT_EMAIL_TEMPLATES: EmailTemplate[] = [
       { id: 'sec-12', title: 'Escrow Lock Note', type: 'CALLOUT', content: 'Funds locked in Escrow protection', order: 3 },
       { id: 'sec-13', title: 'Action Button', type: 'BUTTON', content: 'View Booking Status', order: 4 }
     ]
-  },
-  {
-    id: 'tmpl-103',
-    code: 'PASSWORD_RESET',
-    title: 'Account Password Reset Link',
-    subject: 'Security Alert: Password Reset Request for {{user_email}}',
-    category: 'Security',
-    status: 'ACTIVE',
-    updatedAt: new Date().toISOString(),
-    variables: ['user_name', 'user_email', 'reset_link', 'company_name'],
-    bodyHtml: `
-<div style="font-family: Arial, sans-serif; background-color: #0f172a; padding: 30px; color: #f8fafc;">
-  <div style="background-color: #1e293b; padding: 24px; border-radius: 12px; border: 1px solid #f43f5e;">
-    <h3 style="color: #f43f5e; margin-top: 0;">Password Reset Request</h3>
-    <p style="color: #cbd5e1; font-size: 14px;">We received a request to reset your password for {{user_email}}.</p>
-    <div style="text-align: center; margin: 20px 0;">
-      <a href="{{reset_link}}" style="background-color: #f43f5e; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 13px;">Reset Password</a>
-    </div>
-    <p style="color: #94a3b8; font-size: 12px;">If you did not request this, please ignore this email.</p>
-  </div>
-</div>
-    `.trim(),
-    sections: [
-      { id: 'sec-20', title: 'Security Header', type: 'HEADER', content: 'Password Reset Request', order: 1 },
-      { id: 'sec-21', title: 'Reset Action Button', type: 'BUTTON', content: 'Reset Password', order: 2 },
-      { id: 'sec-22', title: 'Security Warning', type: 'FOOTER', content: 'Ignore if not requested.', order: 3 }
-    ]
   }
 ];
 
@@ -168,32 +145,73 @@ export const useEmailConfigStore = create<EmailConfigState>()(
       templates: DEFAULT_EMAIL_TEMPLATES,
 
       updateSmtpSettings: (settings) =>
-        set((state) => ({
-          smtpSettings: { ...state.smtpSettings, ...settings }
-        })),
+        set((state) => {
+          const updatedPass = settings.password
+            ? encryptCredential(settings.password)
+            : state.smtpSettings.password;
+
+          return {
+            smtpSettings: {
+              ...state.smtpSettings,
+              ...settings,
+              password: updatedPass,
+              isEncryptedInDb: true
+            }
+          };
+        }),
+
+      getDecryptedSmtpSettings: () => {
+        const current = get().smtpSettings;
+        return {
+          ...current,
+          password: decryptCredential(current.password)
+        };
+      },
 
       verifySmtpConnection: async (testEmail: string) => {
-        // Simulate SMTP TLS handshake & test email transmission
-        await new Promise((res) => setTimeout(res, 1200));
+        const decryptedSettings = get().getDecryptedSmtpSettings();
 
-        const currentSettings = get().smtpSettings;
+        try {
+          const response = await fetch('/api/email/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              toEmail: testEmail,
+              subject: '⚡ Sathi Live SMTP Connection Verification',
+              bodyHtml: `<p>SMTP Live handshake verified successfully for <strong>${decryptedSettings.fromEmail}</strong>.</p>`,
+              smtpConfig: decryptedSettings
+            })
+          });
 
-        if (!currentSettings.host || !currentSettings.username) {
-          return { success: false, message: 'SMTP Host and Username are required.' };
-        }
+          const data = await response.json();
 
-        set((state) => ({
-          smtpSettings: {
-            ...state.smtpSettings,
-            isVerified: true,
-            lastTestedAt: new Date().toISOString()
+          if (!response.ok || !data.success) {
+            return {
+              success: false,
+              message: data.message || 'SMTP Authentication / Connection Refused Exception.',
+              exceptionCode: data.exceptionCode || 'SMTP_AUTH_ERROR'
+            };
           }
-        }));
 
-        return {
-          success: true,
-          message: `Success! Test email sent to ${testEmail} via ${currentSettings.host}:${currentSettings.port} (${currentSettings.encryption}).`
-        };
+          set((state) => ({
+            smtpSettings: {
+              ...state.smtpSettings,
+              isVerified: true,
+              lastTestedAt: new Date().toISOString()
+            }
+          }));
+
+          return {
+            success: true,
+            message: `Success! Live test email dispatched to ${testEmail} via ${decryptedSettings.host}:${decryptedSettings.port} (${decryptedSettings.encryption}).`
+          };
+        } catch (err: any) {
+          return {
+            success: false,
+            message: `Exception: ${err?.message || 'Network exception while connecting to SMTP Gateway.'}`,
+            exceptionCode: 'GATEWAY_NETWORK_EXCEPTION'
+          };
+        }
       },
 
       addTemplate: (newTmpl) =>
@@ -249,12 +267,10 @@ export const useEmailConfigStore = create<EmailConfigState>()(
               if (idx === -1) return tmpl;
 
               if (direction === 'UP' && idx > 0) {
-                // Swap order with previous
                 const temp = sections[idx].order;
                 sections[idx].order = sections[idx - 1].order;
                 sections[idx - 1].order = temp;
               } else if (direction === 'DOWN' && idx < sections.length - 1) {
-                // Swap order with next
                 const temp = sections[idx].order;
                 sections[idx].order = sections[idx + 1].order;
                 sections[idx + 1].order = temp;
