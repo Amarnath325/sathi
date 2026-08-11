@@ -531,6 +531,13 @@ export interface DisputeTicket {
   adminNotes?: string;
   evidence: DisputeEvidence[];
   messages: DisputeMessage[];
+  settlementOffer?: {
+    proposedBy: 'CUSTOMER' | 'COMPANION';
+    amount: number;
+    note: string;
+    status: 'PENDING' | 'ACCEPTED' | 'REJECTED';
+    proposedAt: string;
+  };
   filedAt: string;
   updatedAt: string;
   resolvedAt?: string;

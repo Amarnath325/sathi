@@ -8,6 +8,7 @@ import { INITIAL_TRANSACTIONS, INITIAL_PAYOUTS, INITIAL_GATEWAYS } from './initi
 import { INITIAL_PROMOS } from './initialPromos';
 import { INITIAL_SOS_ALERTS, INITIAL_INCIDENT_REPORTS } from './initialSafety';
 import { MOCK_DISPUTES, MOCK_REVIEWS } from './mockData';
+import { generateEncryptedEvidenceVault } from './evidenceVault';
 
 
 
@@ -50,6 +51,8 @@ interface AdminStore {
   addDisputeMessage: (disputeId: string, message: Omit<DisputeMessage, 'id' | 'disputeId' | 'sentAt'>) => void;
   resolveDispute: (disputeId: string, outcome: ResolutionOutcome, refundAmount?: number, penaltyAmount?: number, adminNotes?: string) => void;
   escalateDispute: (disputeId: string, reason: string) => void;
+  proposeMutualSettlement: (disputeId: string, proposedBy: 'CUSTOMER' | 'COMPANION', amount: number, note: string) => void;
+  acceptMutualSettlement: (disputeId: string) => void;
 
   // Review & Moderation Actions
   submitReview: (reviewData: Omit<Review, 'id' | 'reviewRef' | 'date' | 'sentiment' | 'sentimentScore' | 'status' | 'helpfulVotes'>) => Review;
@@ -242,12 +245,15 @@ export const useAdminStore = create<AdminStore>()(
 
 
       fileDispute: (disputeData) => {
+        const disputeId = 'disp-' + Date.now();
+        const harvestedVault = generateEncryptedEvidenceVault(disputeId, disputeData.customerName, disputeData.companionName);
+
         const newDispute: DisputeTicket = {
           ...disputeData,
-          id: 'disp-' + Date.now(),
+          id: disputeId,
           disputeRef: 'DSP-2026-' + Math.floor(1000 + Math.random() * 9000),
           status: 'OPEN_LODGED',
-          evidence: [],
+          evidence: harvestedVault,
           messages: [],
           filedAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
@@ -309,6 +315,71 @@ export const useAdminStore = create<AdminStore>()(
                 }
               : d
           )
+        })),
+
+      proposeMutualSettlement: (disputeId, proposedBy, amount, note) =>
+        set((state) => ({
+          disputes: state.disputes.map((d) =>
+            d.id === disputeId
+              ? {
+                  ...d,
+                  settlementOffer: {
+                    proposedBy,
+                    amount,
+                    note,
+                    status: 'PENDING',
+                    proposedAt: new Date().toISOString()
+                  },
+                  messages: [
+                    ...d.messages,
+                    {
+                      id: 'msg-settle-' + Date.now(),
+                      disputeId,
+                      senderId: proposedBy === 'CUSTOMER' ? d.customerId : d.companionId,
+                      senderName: proposedBy === 'CUSTOMER' ? d.customerName : d.companionName,
+                      senderRole: proposedBy,
+                      message: `[MUTUAL SETTLEMENT PROPOSAL] Proposed $${amount} partial refund settlement. Note: "${note}"`,
+                      sentAt: new Date().toISOString()
+                    }
+                  ],
+                  updatedAt: new Date().toISOString()
+                }
+              : d
+          )
+        })),
+
+      acceptMutualSettlement: (disputeId) =>
+        set((state) => ({
+          disputes: state.disputes.map((d) => {
+            if (d.id !== disputeId || !d.settlementOffer) return d;
+            const offer = d.settlementOffer;
+            return {
+              ...d,
+              status: 'RESOLVED_REFUNDED',
+              resolutionOutcome: 'MUTUAL_SETTLEMENT',
+              refundAmountIssued: offer.amount,
+              escrowStatus: 'REFUNDED',
+              settlementOffer: {
+                ...offer,
+                status: 'ACCEPTED'
+              },
+              adminNotes: `${d.adminNotes || ''} | Mutual settlement of $${offer.amount} accepted by both parties.`,
+              messages: [
+                ...d.messages,
+                {
+                  id: 'msg-accept-' + Date.now(),
+                  disputeId,
+                  senderId: 'system-settlement',
+                  senderName: 'System Escrow Engine',
+                  senderRole: 'ADMIN',
+                  message: `[SETTLEMENT ACCEPTED] Mutual settlement of $${offer.amount} refund confirmed. Escrow refunded to customer. Dispute resolved.`,
+                  sentAt: new Date().toISOString()
+                }
+              ],
+              resolvedAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            };
+          })
         })),
 
 

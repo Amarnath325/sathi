@@ -1,9 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, ShieldAlert, CheckCircle2, AlertTriangle, DollarSign, FileText, Lock, User, Clock, Image as ImageIcon, Send } from 'lucide-react';
+import { X, ShieldAlert, CheckCircle2, AlertTriangle, DollarSign, FileText, Lock, User, Clock, Image as ImageIcon, Send, Sparkles, Brain } from 'lucide-react';
 import { DisputeTicket, ResolutionOutcome } from '@/lib/types';
 import { useAdminStore } from '@/lib/adminStore';
+import { analyzeDisputeWithAI } from '@/lib/aiArbitrationEngine';
+import { evaluateFraudRisk } from '@/lib/fraudRiskRadar';
+import { triggerPaymentGatewayWebhook } from '@/lib/paymentGatewayWebhook';
 
 interface DisputeAuditModalProps {
   dispute: DisputeTicket;
@@ -18,6 +21,18 @@ export function DisputeAuditModal({ dispute, onClose, onSuccessNotification }: D
   const [penaltyAmount, setPenaltyAmount] = useState<number>(0);
   const [adminNotes, setAdminNotes] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [aiApplied, setAiApplied] = useState(false);
+
+  const fraudRisk = evaluateFraudRisk(dispute);
+
+  const handleAiAutoFill = () => {
+    const res = analyzeDisputeWithAI(dispute);
+    setOutcome(res.recommendedOutcome);
+    setRefundAmount(res.recommendedRefundAmount);
+    setPenaltyAmount(res.recommendedPenaltyAmount);
+    setAdminNotes(`[AI AUDIT AUTO-RECOMMENDATION]: ${res.aiSummary} Risk score: ${res.confidenceScore}%. Findings: ${res.keyFindings.join('; ')}`);
+    setAiApplied(true);
+  };
 
   const handleResolve = (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,8 +40,16 @@ export function DisputeAuditModal({ dispute, onClose, onSuccessNotification }: D
 
     try {
       resolveDispute(dispute.id, outcome, refundAmount, penaltyAmount, adminNotes);
+
+      // Execute Payment Gateway Webhook
+      const webhookReceipt = triggerPaymentGatewayWebhook(
+        dispute.disputeRef,
+        outcome === 'FULL_REFUND_CUSTOMER' || outcome === 'PARTIAL_REFUND' ? 'PAYMENT_REFUND_SUCCESS' : 'ESCROW_DISBURSED_COMPANION',
+        refundAmount || dispute.disputedAmount
+      );
+
       if (onSuccessNotification) {
-        onSuccessNotification(`Dispute ${dispute.disputeRef} resolved successfully with status ${outcome}.`);
+        onSuccessNotification(`Dispute ${dispute.disputeRef} resolved! Payment Gateway Webhook executed (${webhookReceipt.gatewayProvider} TxHash: ${webhookReceipt.transactionHash.slice(0, 10)}...).`);
       }
       onClose();
     } catch (err: any) {
@@ -100,6 +123,56 @@ export function DisputeAuditModal({ dispute, onClose, onSuccessNotification }: D
             </div>
           </div>
 
+          {/* Fraud Risk Radar Banner */}
+          <div className={`p-4 rounded-2xl border space-y-2 ${
+            fraudRisk.riskCategory === 'HIGH_RISK_FRAUD'
+              ? 'bg-rose-950/40 border-rose-500/40 text-rose-200'
+              : fraudRisk.riskCategory === 'ELEVATED_RISK'
+              ? 'bg-amber-950/40 border-amber-500/40 text-amber-200'
+              : 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className="font-bold flex items-center gap-1.5 font-mono text-xs">
+                <ShieldAlert className="w-4 h-4" /> Fraud Risk Radar Assessment
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono border bg-slate-950">
+                Score: {fraudRisk.riskScore}% ({fraudRisk.riskCategory.replace('_', ' ')})
+              </span>
+            </div>
+
+            <p className="text-xs">{fraudRisk.recommendation}</p>
+
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {fraudRisk.riskBadges.map((badge, idx) => (
+                <span key={idx} className="px-2 py-0.5 rounded-md bg-slate-950/80 border border-slate-800 text-[10px] font-mono text-slate-300">
+                  ⚠️ {badge}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* AI Quick Auto-Fill Bar */}
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-900/40 to-indigo-900/40 border border-purple-500/40 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-300">
+                <Brain className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-bold text-white text-xs">AI Neural Arbitration Engine</h4>
+                <p className="text-[10px] text-purple-300">Analyze evidence & auto-suggest optimal refund percentage</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleAiAutoFill}
+              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition-all flex items-center gap-1.5 shrink-0"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{aiApplied ? 'Re-Apply AI Verdict' : 'Auto-Fill AI Verdict'}</span>
+            </button>
+          </div>
+
           {/* Description & Category */}
           <div className="p-4 rounded-2xl bg-slate-950/40 border border-slate-800 space-y-2">
             <div className="flex items-center justify-between">
@@ -167,28 +240,17 @@ export function DisputeAuditModal({ dispute, onClose, onSuccessNotification }: D
                 </select>
               </div>
 
-              {outcome === 'PARTIAL_REFUND' && (
+              {(outcome === 'PARTIAL_REFUND' || outcome === 'COMPANION_PENALIZED') && (
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1.5">Partial Refund Amount ($)</label>
+                  <label className="block text-[11px] font-bold text-slate-400 mb-1.5">
+                    {outcome === 'PARTIAL_REFUND' ? 'Partial Refund Amount ($)' : 'Penalty Deduction Amount ($)'}
+                  </label>
                   <input
                     type="number"
                     max={dispute.disputedAmount}
                     min={0}
-                    value={refundAmount}
-                    onChange={(e) => setRefundAmount(Number(e.target.value))}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl py-2 px-3 text-xs text-white outline-none focus:border-purple-500 font-mono"
-                  />
-                </div>
-              )}
-
-              {outcome === 'COMPANION_PENALIZED' && (
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1.5">Penalty Deduction Amount ($)</label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={penaltyAmount}
-                    onChange={(e) => setPenaltyAmount(Number(e.target.value))}
+                    value={outcome === 'PARTIAL_REFUND' ? refundAmount : penaltyAmount}
+                    onChange={(e) => outcome === 'PARTIAL_REFUND' ? setRefundAmount(Number(e.target.value)) : setPenaltyAmount(Number(e.target.value))}
                     className="w-full bg-slate-900 border border-slate-800 rounded-xl py-2 px-3 text-xs text-white outline-none focus:border-purple-500 font-mono"
                   />
                 </div>
