@@ -5,12 +5,13 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ShieldCheck, Star, MapPin, Globe, Clock, CheckCircle2, Award, Calendar,
-  MessageSquare, Sparkles, Heart, Share2, Eye, ChevronLeft, Lock, AlertTriangle, Shield
+  MessageSquare, Sparkles, Heart, Share2, Eye, ChevronLeft, Lock, AlertTriangle, Shield, Plus
 } from 'lucide-react';
 import { MOCK_COMPANIONS, MOCK_REVIEWS } from '@/lib/mockData';
 import { CompanionStatusBadge } from '@/components/companion/CompanionStatusBadge';
 import { AvailabilityGrid } from '@/components/companion/AvailabilityGrid';
 import { ImageLightboxModal } from '@/components/common/ImageLightboxModal';
+import { ReviewFormModal } from '@/components/review/ReviewFormModal';
 import { useToast } from '@/components/ui/Toast';
 
 export default function CompanionProfilePage() {
@@ -23,6 +24,7 @@ export default function CompanionProfilePage() {
   const [isSaved, setIsSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'services' | 'availability' | 'safety' | 'reviews'>('overview');
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
 
   const toggleFavorite = () => {
     setIsSaved(!isSaved);
@@ -245,18 +247,59 @@ export default function CompanionProfilePage() {
           {/* TAB 5: REVIEWS */}
           {activeTab === 'reviews' && (
             <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-6">
-              <h2 className="text-xl font-bold text-white">Verified Client Reviews</h2>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-4 gap-4">
+                <div>
+                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                    Verified Client Reviews ({companion.ratingCount})
+                  </h2>
+                  <p className="text-xs text-slate-400">All ratings are submitted by client accounts with completed escrow bookings.</p>
+                </div>
+
+                <button
+                  onClick={() => setIsReviewModalOpen(true)}
+                  className="px-4 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs shadow-lg shadow-amber-500/25 flex items-center gap-1.5 transition-all shrink-0"
+                >
+                  <Plus className="w-4 h-4" /> Rate & Review {companion.name.split(' ')[0]}
+                </button>
+              </div>
+
               <div className="space-y-4">
                 {MOCK_REVIEWS.map(rev => (
-                  <div key={rev.id} className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+                  <div key={rev.id} className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-white">{rev.authorName}</span>
-                      <span className="text-slate-500">{rev.date}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-white">{rev.authorName}</span>
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[9px] font-bold">
+                          Verified Escrow Booking ✓
+                        </span>
+                      </div>
+                      <span className="text-slate-500 font-mono text-[11px]">{rev.date}</span>
                     </div>
+
                     <div className="flex items-center gap-1 text-amber-400">
                       {[...Array(rev.rating)].map((_, idx) => <Star key={idx} className="w-3.5 h-3.5 fill-amber-400" />)}
+                      <span className="text-xs font-bold text-white font-mono ml-1">{rev.rating}.0</span>
                     </div>
+
                     <p className="text-xs text-slate-300 leading-relaxed font-light">"{rev.comment}"</p>
+
+                    {/* Sub Ratings Breakdown */}
+                    {rev.subRatings && (
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-800/80 text-[10px] font-mono text-slate-400">
+                        <div className="p-1.5 rounded-lg bg-slate-950 border border-slate-800 flex justify-between">
+                          <span>Punctuality:</span> <strong className="text-amber-400">{rev.subRatings.punctuality}★</strong>
+                        </div>
+                        <div className="p-1.5 rounded-lg bg-slate-950 border border-slate-800 flex justify-between">
+                          <span>Behavior:</span> <strong className="text-amber-400">{rev.subRatings.behavior}★</strong>
+                        </div>
+                        <div className="p-1.5 rounded-lg bg-slate-950 border border-slate-800 flex justify-between">
+                          <span>Communication:</span> <strong className="text-amber-400">{rev.subRatings.communication}★</strong>
+                        </div>
+                        <div className="p-1.5 rounded-lg bg-slate-950 border border-slate-800 flex justify-between">
+                          <span>Authenticity:</span> <strong className="text-amber-400">{rev.subRatings.authenticity}★</strong>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -309,6 +352,23 @@ export default function CompanionProfilePage() {
         title={`${companion.name}'s Photo Showcase`}
         onClose={() => setLightboxImage(null)}
       />
+
+      {/* Review Form Lightbox Modal */}
+      {isReviewModalOpen && (
+        <ReviewFormModal
+          bookingId={`bk-${companion.id}-99`}
+          bookingNumber={`CC-2026-${companion.id}88`}
+          companionId={companion.id}
+          companionName={companion.name}
+          authorId="usr-current"
+          authorName="Valued Client"
+          authorEmail="client@sathi.com"
+          authorAvatar="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80"
+          category={companion.categories[0] || 'Event Companion'}
+          onClose={() => setIsReviewModalOpen(false)}
+          onSuccessNotification={(msg) => showToast('success', 'Review Submitted ✓', msg)}
+        />
+      )}
 
     </div>
   );
