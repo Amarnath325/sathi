@@ -135,6 +135,9 @@ model User {
   accountFrozen     Boolean              @default(false)
   riskScore         Float                @default(0.0)
   riskLevel         RiskLevel            @default(LOW)
+  status            String               @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED, DELETED
+  isDeleted         Boolean              @default(false)
+  deletedAt         DateTime?
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
 

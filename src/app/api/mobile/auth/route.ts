@@ -83,6 +83,14 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: false, error: 'Invalid email or password. User not found in database.' }, { status: 401 });
       }
 
+      if (user.isDeleted) {
+        return NextResponse.json({ success: false, error: 'Your account has been deleted.' }, { status: 403 });
+      }
+
+      if (user.status === 'SUSPENDED' || user.status === 'INACTIVE') {
+        return NextResponse.json({ success: false, error: `Account is currently ${user.status.toLowerCase()}. Please contact support.` }, { status: 403 });
+      }
+
       const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
       if (!isPasswordValid && password !== 'password123' && user.passwordHash !== password) {
         return NextResponse.json({ success: false, error: 'Invalid email or password.' }, { status: 401 });
