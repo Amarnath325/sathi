@@ -25,22 +25,39 @@ export async function POST(req: Request) {
         communityGuidelinesAccepted,
       } = body;
 
-      // 1.1 Form Completeness Validation
+      // 1.1 Form Completeness & Length Validation
       if (!firstName || !firstName.trim()) {
         return NextResponse.json({ success: false, error: 'First name is required.' }, { status: 400 });
       }
+      if (firstName.trim().length > 30) {
+        return NextResponse.json({ success: false, error: 'First name cannot exceed 30 characters.' }, { status: 400 });
+      }
+
       if (!lastName || !lastName.trim()) {
         return NextResponse.json({ success: false, error: 'Last name is required.' }, { status: 400 });
       }
+      if (lastName.trim().length > 30) {
+        return NextResponse.json({ success: false, error: 'Last name cannot exceed 30 characters.' }, { status: 400 });
+      }
+
       if (!email || !email.trim()) {
         return NextResponse.json({ success: false, error: 'Email address is required.' }, { status: 400 });
       }
+      if (email.trim().length > 30) {
+        return NextResponse.json({ success: false, error: 'Email address cannot exceed 30 characters.' }, { status: 400 });
+      }
+
       if (!phone || !phone.trim()) {
         return NextResponse.json({ success: false, error: 'Phone number is required.' }, { status: 400 });
       }
+
       if (!password) {
         return NextResponse.json({ success: false, error: 'Password is required.' }, { status: 400 });
       }
+      if (password.length > 25) {
+        return NextResponse.json({ success: false, error: 'Password cannot exceed 25 characters.' }, { status: 400 });
+      }
+
       if (!dateOfBirth) {
         return NextResponse.json({ success: false, error: 'Date of birth is required.' }, { status: 400 });
       }
@@ -59,16 +76,15 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: false, error: 'Please enter a valid email address.' }, { status: 400 });
       }
 
-      // 1.4 Phone Validation (Min 10 digits E.164)
-      const cleanPhone = phone.trim().replace(/\s+/g, '');
-      const phoneRegex = /^\+?[0-9]{10,15}$/;
-      if (!phoneRegex.test(cleanPhone)) {
-        return NextResponse.json({ success: false, error: 'Please enter a valid phone number (minimum 10 digits).' }, { status: 400 });
+      // 1.4 Phone Validation (Exactly 10 digits / Max 10 digits)
+      const cleanPhone = phone.trim().replace(/\D/g, '');
+      if (cleanPhone.length !== 10) {
+        return NextResponse.json({ success: false, error: 'Phone number must be exactly 10 digits.' }, { status: 400 });
       }
 
-      // 1.5 Password Strength Validation (Min 8 chars, 1 upper, 1 lower, 1 digit/special)
-      if (password.length < 8) {
-        return NextResponse.json({ success: false, error: 'Password must be at least 8 characters long.' }, { status: 400 });
+      // 1.5 Password Strength & Length Validation (8 - 25 chars, 1 upper, 1 lower, 1 digit/special)
+      if (password.length < 8 || password.length > 25) {
+        return NextResponse.json({ success: false, error: 'Password must be between 8 and 25 characters long.' }, { status: 400 });
       }
       const hasUpper = /[A-Z]/.test(password);
       const hasLower = /[a-z]/.test(password);
