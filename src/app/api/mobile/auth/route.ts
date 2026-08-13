@@ -19,6 +19,7 @@ export async function POST(req: Request) {
         lastName,
         phone,
         dateOfBirth,
+        role = 'CUSTOMER',
         country = 'IN',
         termsAccepted,
         privacyAccepted,
@@ -137,7 +138,7 @@ export async function POST(req: Request) {
           phone: cleanPhone,
           passwordHash: hashedPassword,
           fullName,
-          role: 'CUSTOMER',
+          role: role === 'COMPANION' ? 'COMPANION' : 'CUSTOMER',
           status: 'PENDING_VERIFICATION',
           isEmailVerified: false,
           isPhoneVerified: false,
@@ -320,7 +321,7 @@ export async function GET(req: Request) {
             });
           }
         }
-      } catch (_) {}
+      } catch (_) { }
     }
 
     // Fallback to latest database user if available
