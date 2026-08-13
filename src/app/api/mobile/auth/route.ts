@@ -82,17 +82,16 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: false, error: 'Phone number must be exactly 10 digits.' }, { status: 400 });
       }
 
-      // 1.5 Password Strength & Length Validation (8 - 25 chars, 1 upper, 1 lower, 1 digit/special)
+      // 1.5 Password Length & Character Validation (8 - 25 characters, letters and numbers)
       if (password.length < 8 || password.length > 25) {
         return NextResponse.json({ success: false, error: 'Password must be between 8 and 25 characters long.' }, { status: 400 });
       }
-      const hasUpper = /[A-Z]/.test(password);
-      const hasLower = /[a-z]/.test(password);
-      const hasDigitOrSpecial = /[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
-      if (!hasUpper || !hasLower || !hasDigitOrSpecial) {
+      const hasLetter = /[a-zA-Z]/.test(password);
+      const hasDigit = /[0-9]/.test(password);
+      if (!hasLetter || !hasDigit) {
         return NextResponse.json({
           success: false,
-          error: 'Password must include uppercase, lowercase, and numbers/special characters.',
+          error: 'Password must contain both letters and numbers (8 to 25 characters).',
         }, { status: 400 });
       }
 
