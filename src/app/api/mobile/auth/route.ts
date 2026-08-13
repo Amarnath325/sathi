@@ -27,47 +27,35 @@ export async function POST(req: Request) {
       } = body;
 
       // 1.1 Form Completeness & Length Validation
-      if (!firstName || !firstName.trim()) {
-        return NextResponse.json({ success: false, error: 'First name is required.' }, { status: 400 });
-      }
-      if (firstName.trim().length > 30) {
-        return NextResponse.json({ success: false, error: 'First name cannot exceed 30 characters.' }, { status: 400 });
+      if (!firstName || !firstName.trim() || firstName.trim().length < 3 || firstName.trim().length > 20) {
+        return NextResponse.json({ success: false, error: 'First name must be between 3 and 20 characters.' }, { status: 400 });
       }
 
-      if (!lastName || !lastName.trim()) {
-        return NextResponse.json({ success: false, error: 'Last name is required.' }, { status: 400 });
-      }
-      if (lastName.trim().length > 30) {
-        return NextResponse.json({ success: false, error: 'Last name cannot exceed 30 characters.' }, { status: 400 });
+      if (!lastName || !lastName.trim() || lastName.trim().length < 3 || lastName.trim().length > 20) {
+        return NextResponse.json({ success: false, error: 'Last name must be between 3 and 20 characters.' }, { status: 400 });
       }
 
-      if (!email || !email.trim()) {
-        return NextResponse.json({ success: false, error: 'Email address is required.' }, { status: 400 });
-      }
-      if (email.trim().length > 30) {
-        return NextResponse.json({ success: false, error: 'Email address cannot exceed 30 characters.' }, { status: 400 });
+      if (!email || !email.trim() || email.trim().length < 8 || email.trim().length > 30) {
+        return NextResponse.json({ success: false, error: 'Email address must be between 8 and 30 characters.' }, { status: 400 });
       }
 
       if (!phone || !phone.trim()) {
         return NextResponse.json({ success: false, error: 'Phone number is required.' }, { status: 400 });
       }
 
-      if (!password) {
-        return NextResponse.json({ success: false, error: 'Password is required.' }, { status: 400 });
-      }
-      if (password.length > 25) {
-        return NextResponse.json({ success: false, error: 'Password cannot exceed 25 characters.' }, { status: 400 });
+      if (!password || password.length < 8 || password.length > 30) {
+        return NextResponse.json({ success: false, error: 'Password must be between 8 and 30 characters.' }, { status: 400 });
       }
 
       if (!dateOfBirth) {
         return NextResponse.json({ success: false, error: 'Date of birth is required.' }, { status: 400 });
       }
 
-      // 1.2 Terms, Privacy, Community Guidelines Validation
-      if (!termsAccepted || !privacyAccepted || !communityGuidelinesAccepted) {
+      // 1.2 Terms & Privacy Acceptance Validation
+      if (!termsAccepted) {
         return NextResponse.json({
           success: false,
-          error: 'You must accept the Terms of Service, Privacy Policy, and Community Guidelines to register.',
+          error: 'You must agree to the Terms & Conditions and Privacy Policy to register.',
         }, { status: 400 });
       }
 
@@ -77,22 +65,19 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: false, error: 'Please enter a valid email address.' }, { status: 400 });
       }
 
-      // 1.4 Phone Validation (Exactly 10 digits / Max 10 digits)
+      // 1.4 Phone Validation (Exactly 10 numeric digits)
       const cleanPhone = phone.trim().replace(/\D/g, '');
       if (cleanPhone.length !== 10) {
         return NextResponse.json({ success: false, error: 'Phone number must be exactly 10 digits.' }, { status: 400 });
       }
 
-      // 1.5 Password Length & Character Validation (8 - 25 characters, letters and numbers)
-      if (password.length < 8 || password.length > 25) {
-        return NextResponse.json({ success: false, error: 'Password must be between 8 and 25 characters long.' }, { status: 400 });
-      }
+      // 1.5 Password Character Validation (must contain letters and numbers)
       const hasLetter = /[a-zA-Z]/.test(password);
       const hasDigit = /[0-9]/.test(password);
       if (!hasLetter || !hasDigit) {
         return NextResponse.json({
           success: false,
-          error: 'Password must contain both letters and numbers (8 to 25 characters).',
+          error: 'Password must contain both letters and numbers (8 to 30 characters).',
         }, { status: 400 });
       }
 

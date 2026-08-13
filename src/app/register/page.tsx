@@ -50,11 +50,14 @@ export default function RegisterPage() {
 
   const [showPassword, setShowPassword] = useState(false);
 
-  // 4 Separate Explicit Policy Checkboxes (Section 12)
-  const [agreeTerms, setAgreeTerms] = useState(false);
-  const [agreePrivacy, setAgreePrivacy] = useState(false);
-  const [agreeGuidelines, setAgreeGuidelines] = useState(false);
-  const [agreeProhibitedPolicy, setAgreeProhibitedPolicy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Single Combined Terms & Privacy Acceptance State
+  const [agreeTermsAndPrivacy, setAgreeTermsAndPrivacy] = useState(false);
+
+  // Policy Modal State (Terms, Privacy, Guidelines, Prohibited Policy)
+  const [policyModalOpen, setPolicyModalOpen] = useState(false);
+  const [activePolicyTab, setActivePolicyTab] = useState<'TERMS' | 'PRIVACY' | 'GUIDELINES' | 'PROHIBITED'>('TERMS');
 
   // Verification & Otp States
   const [phoneVerified, setPhoneVerified] = useState(false);
@@ -68,34 +71,28 @@ export default function RegisterPage() {
   const passwordAnalysis = useMemo(() => {
     const p = password;
     const checks = {
-      minLength: p.length >= 8,
-      hasUpper: /[A-Z]/.test(p),
-      hasLower: /[a-z]/.test(p),
+      minLength: p.length >= 8 && p.length <= 30,
+      hasLetter: /[a-zA-Z]/.test(p),
       hasNumber: /\d/.test(p),
       hasSpecial: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(p),
     };
 
     let score = 0;
-    if (checks.minLength) score += 20;
-    if (checks.hasUpper) score += 20;
-    if (checks.hasLower) score += 20;
-    if (checks.hasNumber) score += 20;
-    if (checks.hasSpecial) score += 20;
+    if (checks.minLength) score += 25;
+    if (checks.hasLetter) score += 25;
+    if (checks.hasNumber) score += 25;
+    if (checks.hasSpecial) score += 25;
 
-    let label = 'Very Weak';
+    let label = 'Weak';
     let color = 'bg-rose-500';
     let textColor = 'text-rose-400';
 
-    if (score >= 40 && score < 80) {
+    if (score >= 50 && score < 75) {
       label = 'Moderate';
       color = 'bg-amber-500';
       textColor = 'text-amber-400';
-    } else if (score >= 80 && score < 100) {
-      label = 'Strong';
-      color = 'bg-indigo-500';
-      textColor = 'text-indigo-400';
-    } else if (score === 100) {
-      label = 'Enterprise Grade (Secure)';
+    } else if (score >= 75) {
+      label = 'Strong & Compliant';
       color = 'bg-emerald-500';
       textColor = 'text-emerald-400';
     }
@@ -116,17 +113,72 @@ export default function RegisterPage() {
     return age >= 18;
   }, [dob]);
 
-  // Name Validation Engine (Section 7)
-  const validateNames = () => {
-    if (!firstName.trim() || firstName.length < 2 || firstName.length > 30) {
-      return 'First Name must be between 2 and 30 characters.';
+  // Form Field Validation Engine
+  const validateForm = () => {
+    // 1. First Name (Min 3, Max 20)
+    const cleanFirst = firstName.trim();
+    if (!cleanFirst) return 'First Name is required.';
+    if (cleanFirst.length < 3 || cleanFirst.length > 20) {
+      return 'First Name must be between 3 and 20 characters.';
     }
-    if (!lastName.trim() || lastName.length < 2 || lastName.length > 30) {
-      return 'Last Name must be between 2 and 30 characters.';
+    if (!/^[a-zA-Z\s'-]+$/.test(cleanFirst)) {
+      return 'First Name can only contain letters, spaces, hyphens, and apostrophes.';
     }
-    if (!/^[a-zA-Z\s'-]+$/.test(firstName) || !/^[a-zA-Z\s'-]+$/.test(lastName)) {
-      return 'Names can only contain letters, spaces, hyphens, and apostrophes.';
+
+    // 2. Last Name (Min 3, Max 20)
+    const cleanLast = lastName.trim();
+    if (!cleanLast) return 'Last Name is required.';
+    if (cleanLast.length < 3 || cleanLast.length > 20) {
+      return 'Last Name must be between 3 and 20 characters.';
     }
+    if (!/^[a-zA-Z\s'-]+$/.test(cleanLast)) {
+      return 'Last Name can only contain letters, spaces, hyphens, and apostrophes.';
+    }
+
+    // 3. Email Address (Min 8, Max 30)
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) return 'Email address is required.';
+    if (cleanEmail.length < 8 || cleanEmail.length > 30) {
+      return 'Email Address must be between 8 and 30 characters.';
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      return 'Please enter a valid email address.';
+    }
+
+    // 4. Phone Number (Exactly 10 numeric digits)
+    const cleanPhone = phone.trim().replace(/\D/g, '');
+    if (!cleanPhone || cleanPhone.length !== 10) {
+      return 'Phone Number must be exactly 10 numeric digits.';
+    }
+
+    // 5. Password (Min 8, Max 30, Letters + Numbers compulsory)
+    if (!password) return 'Password is required.';
+    if (password.length < 8 || password.length > 30) {
+      return 'Password must be between 8 and 30 characters.';
+    }
+    const hasLetter = /[a-zA-Z]/.test(password);
+    const hasDigit = /[0-9]/.test(password);
+    if (!hasLetter || !hasDigit) {
+      return 'Password must contain both letters and numbers (8 to 30 characters).';
+    }
+
+    // 6. Confirm Password
+    if (password !== confirmPassword) {
+      return 'Passwords do not match.';
+    }
+
+    // 7. Date of Birth (18+ years old)
+    if (!dob) return 'Please provide your Date of Birth.';
+    if (!isAdultEligible) {
+      return 'You must be at least 18 years old to create an account.';
+    }
+
+    // 8. Mandatory Single Checkbox Acceptance
+    if (!agreeTermsAndPrivacy) {
+      return 'You must agree to the Terms & Conditions and Privacy Policy to proceed.';
+    }
+
     return null;
   };
 
@@ -138,36 +190,10 @@ export default function RegisterPage() {
     e.preventDefault();
     setError(null);
 
-    // Validate Name
-    const nameErr = validateNames();
-    if (nameErr) {
-      setError(nameErr);
-      return;
-    }
-
-    // Validate DOB / Age (Section 11)
-    if (!dob) {
-      setError('Please provide your Date of Birth.');
-      return;
-    }
-    if (!isAdultEligible) {
-      setError('Companion Connect is currently available only to eligible adults (18+).');
-      return;
-    }
-
-    // Validate Passwords (Section 10)
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
-    if (passwordAnalysis.score < 80) {
-      setError('Please choose a stronger password matching all security requirements.');
-      return;
-    }
-
-    // Validate 4 Separate Checkboxes (Section 12)
-    if (!agreeTerms || !agreePrivacy || !agreeGuidelines || !agreeProhibitedPolicy) {
-      setError('You must explicitly accept all 4 platform policies before creating an account.');
+    // Run Full Form Validation Engine
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -181,17 +207,17 @@ export default function RegisterPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'register',
-          firstName,
-          lastName,
-          email,
-          phone,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          email: email.trim().toLowerCase(),
+          phone: phone.trim().replace(/\D/g, ''),
           password,
           dateOfBirth: dob,
           country,
           role: selectedDbRole,
-          termsAccepted: agreeTerms,
-          privacyAccepted: agreePrivacy,
-          communityGuidelinesAccepted: agreeGuidelines,
+          termsAccepted: agreeTermsAndPrivacy,
+          privacyAccepted: agreeTermsAndPrivacy,
+          communityGuidelinesAccepted: agreeTermsAndPrivacy,
         }),
       });
 
@@ -210,22 +236,22 @@ export default function RegisterPage() {
 
       login({
         id: userId,
-        name: `${firstName} ${lastName}`,
-        email: email,
-        phone: phone,
+        name: `${firstName.trim()} ${lastName.trim()}`,
+        email: email.trim().toLowerCase(),
+        phone: phone.trim().replace(/\D/g, ''),
         role: assignedRole,
       });
 
       setIsLoading(false);
-      setStep(3); // Go to Success Checklist (Section 13)
+      setStep(3); // Go to Success Checklist
     } catch (err: any) {
       console.error('Registration submission error:', err);
       const assignedRole = accountIntent === 'COMPANION' ? 'VERIFIED_COMPANION' : 'USER';
       login({
         id: 'USR-' + Math.floor(1000 + Math.random() * 9000),
-        name: `${firstName} ${lastName}`,
-        email: email,
-        phone: phone,
+        name: `${firstName.trim()} ${lastName.trim()}`,
+        email: email.trim().toLowerCase(),
+        phone: phone.trim().replace(/\D/g, ''),
         role: assignedRole,
       });
       setIsLoading(false);
@@ -327,11 +353,14 @@ export default function RegisterPage() {
                 <input 
                   type="text"
                   required
+                  minLength={3}
+                  maxLength={20}
                   value={firstName}
                   onChange={e => setFirstName(e.target.value)}
                   placeholder="John"
                   className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500"
                 />
+                <span className="text-[10px] text-slate-500 mt-1 block">3 - 20 characters</span>
               </div>
 
               <div>
@@ -339,11 +368,14 @@ export default function RegisterPage() {
                 <input 
                   type="text"
                   required
+                  minLength={3}
+                  maxLength={20}
                   value={lastName}
                   onChange={e => setLastName(e.target.value)}
                   placeholder="Doe"
                   className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500"
                 />
+                <span className="text-[10px] text-slate-500 mt-1 block">3 - 20 characters</span>
               </div>
             </div>
 
@@ -353,11 +385,14 @@ export default function RegisterPage() {
               <input 
                 type="email"
                 required
+                minLength={8}
+                maxLength={30}
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="user@example.com"
                 className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500"
               />
+              <span className="text-[10px] text-slate-500 mt-1 block">8 - 30 characters</span>
             </div>
 
             {/* Country Code + Phone */}
@@ -378,10 +413,12 @@ export default function RegisterPage() {
                 <input 
                   type="tel"
                   required
+                  minLength={10}
+                  maxLength={10}
                   value={phone}
-                  onChange={e => setPhone(e.target.value)}
+                  onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                   placeholder="9876543210"
-                  className="flex-1 px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500"
+                  className="flex-1 px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono"
                 />
 
                 <button
@@ -396,6 +433,7 @@ export default function RegisterPage() {
                   {phoneVerified ? 'Verified ✓' : 'Send OTP'}
                 </button>
               </div>
+              <span className="text-[10px] text-slate-500 mt-1 block">Exactly 10 numeric digits</span>
               {phoneVerified && (
                 <p className="text-[10px] text-emerald-400 font-mono mt-1">
                   {countryCode} ******{phone.slice(-4)} Verified ✓
@@ -411,6 +449,8 @@ export default function RegisterPage() {
                   <input 
                     type={showPassword ? 'text' : 'password'}
                     required
+                    minLength={8}
+                    maxLength={30}
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     placeholder="••••••••"
@@ -424,6 +464,7 @@ export default function RegisterPage() {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                <span className="text-[10px] text-slate-500 mt-1 block">8 - 30 chars (letters + numbers)</span>
               </div>
 
               <div>
@@ -431,6 +472,8 @@ export default function RegisterPage() {
                 <input 
                   type="password"
                   required
+                  minLength={8}
+                  maxLength={30}
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
@@ -439,7 +482,7 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Password Strength Indicator (Section 10) */}
+            {/* Password Strength Indicator */}
             {password && (
               <div className="space-y-1.5 p-3 rounded-2xl bg-slate-950 border border-slate-800">
                 <div className="flex justify-between items-center text-[10px]">
@@ -481,48 +524,33 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* 4 Separate Explicit Policy Checkboxes (Section 12) */}
-            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3 pt-4">
-              <span className="text-xs font-bold text-white block mb-1">Mandatory Terms Acceptance:</span>
-
-              <label className="flex items-start gap-2.5 cursor-pointer text-xs text-slate-300">
+            {/* Single Combined Terms & Privacy Checkbox */}
+            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2 pt-4">
+              <label className="flex items-start gap-3 cursor-pointer text-xs text-slate-300">
                 <input 
                   type="checkbox"
-                  checked={agreeTerms}
-                  onChange={e => setAgreeTerms(e.target.checked)}
-                  className="mt-0.5 rounded border-slate-800 text-indigo-500 focus:ring-indigo-500"
+                  checked={agreeTermsAndPrivacy}
+                  onChange={e => setAgreeTermsAndPrivacy(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-slate-800 text-indigo-500 focus:ring-indigo-500"
                 />
-                <span>I agree to the Terms of Service.</span>
-              </label>
-
-              <label className="flex items-start gap-2.5 cursor-pointer text-xs text-slate-300">
-                <input 
-                  type="checkbox"
-                  checked={agreePrivacy}
-                  onChange={e => setAgreePrivacy(e.target.checked)}
-                  className="mt-0.5 rounded border-slate-800 text-indigo-500 focus:ring-indigo-500"
-                />
-                <span>I have read the Privacy Policy.</span>
-              </label>
-
-              <label className="flex items-start gap-2.5 cursor-pointer text-xs text-slate-300">
-                <input 
-                  type="checkbox"
-                  checked={agreeGuidelines}
-                  onChange={e => setAgreeGuidelines(e.target.checked)}
-                  className="mt-0.5 rounded border-slate-800 text-indigo-500 focus:ring-indigo-500"
-                />
-                <span>I agree to follow the Community Guidelines.</span>
-              </label>
-
-              <label className="flex items-start gap-2.5 cursor-pointer text-xs text-slate-300">
-                <input 
-                  type="checkbox"
-                  checked={agreeProhibitedPolicy}
-                  onChange={e => setAgreeProhibitedPolicy(e.target.checked)}
-                  className="mt-0.5 rounded border-slate-800 text-indigo-500 focus:ring-indigo-500"
-                />
-                <span>I understand the platform's prohibited-service policy.</span>
+                <span className="leading-relaxed">
+                  I agree to the{' '}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); setActivePolicyTab('TERMS'); setPolicyModalOpen(true); }}
+                    className="text-indigo-400 font-bold underline hover:text-indigo-300"
+                  >
+                    Terms & Conditions
+                  </button>
+                  {' '}and{' '}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); setActivePolicyTab('PRIVACY'); setPolicyModalOpen(true); }}
+                    className="text-indigo-400 font-bold underline hover:text-indigo-300"
+                  >
+                    Privacy Policy
+                  </button>
+                </span>
               </label>
             </div>
 
@@ -624,6 +652,163 @@ export default function RegisterPage() {
         type="PHONE"
         onVerified={() => setPhoneVerified(true)}
       />
+
+      {/* Advance Policy Popup Modal */}
+      {policyModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 max-w-2xl w-full space-y-6 animate-fade-in shadow-2xl flex flex-col max-h-[85vh]">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                  <Shield className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Platform Governance & Terms</h3>
+                  <p className="text-xs text-slate-400">Read our mandatory terms, privacy policy, and safety standards.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPolicyModalOpen(false)}
+                className="text-slate-400 hover:text-white p-2 rounded-xl bg-slate-900 border border-slate-800"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Tabs */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 rounded-2xl bg-slate-950 border border-slate-800 text-xs font-bold shrink-0">
+              <button
+                type="button"
+                onClick={() => setActivePolicyTab('TERMS')}
+                className={`py-2 px-3 rounded-xl transition-all ${activePolicyTab === 'TERMS' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
+              >
+                Terms of Service
+              </button>
+              <button
+                type="button"
+                onClick={() => setActivePolicyTab('PRIVACY')}
+                className={`py-2 px-3 rounded-xl transition-all ${activePolicyTab === 'PRIVACY' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
+              >
+                Privacy Policy
+              </button>
+              <button
+                type="button"
+                onClick={() => setActivePolicyTab('GUIDELINES')}
+                className={`py-2 px-3 rounded-xl transition-all ${activePolicyTab === 'GUIDELINES' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
+              >
+                Guidelines
+              </button>
+              <button
+                type="button"
+                onClick={() => setActivePolicyTab('PROHIBITED')}
+                className={`py-2 px-3 rounded-xl transition-all ${activePolicyTab === 'PROHIBITED' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
+              >
+                Prohibited Policy
+              </button>
+            </div>
+
+            {/* Tab Content (Scrollable) */}
+            <div className="flex-1 overflow-y-auto space-y-4 pr-2 text-xs text-slate-300 leading-relaxed bg-slate-950/60 p-5 rounded-2xl border border-slate-800/80">
+              {activePolicyTab === 'TERMS' && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-extrabold text-white flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-indigo-400" /> 1. Terms of Service Agreement
+                  </h4>
+                  <p>
+                    By accessing Companion Connect, you enter into a legally binding agreement. All services booked on Companion Connect are strictly limited to social, travel, professional event, and lifestyle companionship.
+                  </p>
+                  <p>
+                    Users must be at least 18 years of age. Accounts created by minors or providing fraudulent personal information will be terminated immediately.
+                  </p>
+                  <h5 className="font-bold text-white mt-2">Key Service Provisions:</h5>
+                  <ul className="list-disc pl-5 space-y-1 text-slate-400">
+                    <li>Payments are processed securely via Escrow protection.</li>
+                    <li>Both clients and companions agree to mutual respect and safety protocols.</li>
+                    <li>Cancellations and refunds are governed by platform dispute resolution guidelines.</li>
+                  </ul>
+                </div>
+              )}
+
+              {activePolicyTab === 'PRIVACY' && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-extrabold text-white flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-indigo-400" /> 2. Privacy & Data Protection Policy
+                  </h4>
+                  <p>
+                    Your privacy and data security are our highest priority. Companion Connect enforces minimal data collection policies under strict ISO/IEC 27001 data governance principles.
+                  </p>
+                  <h5 className="font-bold text-white mt-2">What We Protect & Collect:</h5>
+                  <ul className="list-disc pl-5 space-y-1 text-slate-400">
+                    <li>Personal identification details are stored with military-grade AES-256 encryption.</li>
+                    <li>Location data is utilized exclusively for real-time safety tracking and local companion searches.</li>
+                    <li>We never sell or disclose your private phone number or email address to third parties.</li>
+                  </ul>
+                </div>
+              )}
+
+              {activePolicyTab === 'GUIDELINES' && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-extrabold text-white flex items-center gap-2">
+                    <Users className="w-4 h-4 text-indigo-400" /> 3. Community Safety & Conduct Guidelines
+                  </h4>
+                  <p>
+                    Our community thrives on trust, dignity, and personal safety. We maintain a zero-tolerance policy against misconduct, harassment, or non-consensual behavior.
+                  </p>
+                  <h5 className="font-bold text-white mt-2">Behavior Expectations:</h5>
+                  <ul className="list-disc pl-5 space-y-1 text-slate-400">
+                    <li>Treat companions and clients with complete professional courtesy.</li>
+                    <li>Punctuality and transparent communication are strictly enforced.</li>
+                    <li>Emergency SOS panic buttons are monitored 24/7 by our Trust & Safety team.</li>
+                  </ul>
+                </div>
+              )}
+
+              {activePolicyTab === 'PROHIBITED' && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-extrabold text-white flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-rose-400" /> 4. Prohibited Services & Non-Compliance Policy
+                  </h4>
+                  <p className="text-rose-300 font-medium">
+                    Strict Prohibition Notice: Companion Connect strictly forbids any form of adult service, escorting, solicitation, illegal substance use, or off-platform cash transactions.
+                  </p>
+                  <h5 className="font-bold text-white mt-2">Enforcement & Banning Criteria:</h5>
+                  <ul className="list-disc pl-5 space-y-1 text-slate-400">
+                    <li>Soliciting non-legal or adult services results in an immediate permanent ban.</li>
+                    <li>Off-platform payment bypass attempts will result in account forfeiture.</li>
+                    <li>Violations involving illegal activity are reported directly to law enforcement authorities.</li>
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-800 pt-4 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setAgreeTermsAndPrivacy(true);
+                  setPolicyModalOpen(false);
+                }}
+                className="w-full sm:w-auto px-6 py-3 rounded-2xl gradient-bg-primary text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2"
+              >
+                <CheckCircle2 className="w-4 h-4" /> Accept Policies & Close
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPolicyModalOpen(false)}
+                className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white font-bold text-xs"
+              >
+                Close Window
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );
