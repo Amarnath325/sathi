@@ -69,9 +69,13 @@ export async function POST(req: Request) {
     }
 
     // 2. LOGIN ACTION
-    if (action === 'login' || (!action && email && password)) {
-      if (!email || !password) {
-        return NextResponse.json({ success: false, error: 'Email and password are required' }, { status: 400 });
+    if (action === 'login' || (!action && (email || password))) {
+      if (!email || !email.trim()) {
+        return NextResponse.json({ success: false, error: 'Please enter your email address.' }, { status: 400 });
+      }
+
+      if (!password) {
+        return NextResponse.json({ success: false, error: 'Please enter your password.' }, { status: 400 });
       }
 
       const formattedEmail = email.trim().toLowerCase();
@@ -79,21 +83,35 @@ export async function POST(req: Request) {
         where: { email: formattedEmail },
       });
 
+      // Condition 1: Check if user exists in Database
       if (!user) {
-        return NextResponse.json({ success: false, error: 'Invalid email or password. User not found in database.' }, { status: 401 });
+        return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
       }
 
+      // Condition 2: Check if Soft Deleted
       if (user.isDeleted) {
-        return NextResponse.json({ success: false, error: 'Your account has been deleted.' }, { status: 403 });
+        return NextResponse.json({ success: false, error: 'Your account has been deleted. Please contact support.' }, { status: 403 });
       }
 
-      if (user.status === 'SUSPENDED' || user.status === 'INACTIVE') {
-        return NextResponse.json({ success: false, error: `Account is currently ${user.status.toLowerCase()}. Please contact support.` }, { status: 403 });
+      // Condition 3: Check if Account is Inactive
+      if (user.status === 'INACTIVE') {
+        return NextResponse.json({ success: false, error: 'Your account is temporarily deactivated.' }, { status: 403 });
       }
 
+      // Condition 4: Check if Account is Suspended
+      if (user.status === 'SUSPENDED') {
+        return NextResponse.json({ success: false, error: 'Your account is suspended due to policy violation. Please contact support.' }, { status: 403 });
+      }
+
+      // Condition 5: Check if Account is Frozen
+      if (user.accountFrozen) {
+        return NextResponse.json({ success: false, error: 'Your account has been frozen due to security concerns.' }, { status: 403 });
+      }
+
+      // Condition 6: Check Password Match
       const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
       if (!isPasswordValid && password !== 'password123' && user.passwordHash !== password) {
-        return NextResponse.json({ success: false, error: 'Invalid email or password.' }, { status: 401 });
+        return NextResponse.json({ success: false, error: 'Please enter valid password' }, { status: 401 });
       }
 
       const accessToken = jwt.sign(
@@ -108,7 +126,7 @@ export async function POST(req: Request) {
 
       return NextResponse.json({
         success: true,
-        message: 'Authentication successful with Neon Database.',
+        message: 'Authentication successful',
         data: {
           accessToken,
           refreshToken: `ref_${Date.now()}_${user.id}`,
@@ -119,6 +137,7 @@ export async function POST(req: Request) {
             email: user.email,
             phone: user.phone || '+91 9876543210',
             role: user.role,
+            status: user.status,
             isEmailVerified: user.isEmailVerified,
             isPhoneVerified: user.isPhoneVerified,
             isKycVerified: true,
