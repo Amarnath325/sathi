@@ -88,18 +88,20 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
       }
 
+      const dbUser = user as any;
+
       // Condition 2: Check if Soft Deleted
-      if (user.isDeleted) {
+      if (dbUser.isDeleted) {
         return NextResponse.json({ success: false, error: 'Your account has been deleted. Please contact support.' }, { status: 403 });
       }
 
       // Condition 3: Check if Account is Inactive
-      if (user.status === 'INACTIVE') {
+      if (dbUser.status === 'INACTIVE') {
         return NextResponse.json({ success: false, error: 'Your account is temporarily deactivated.' }, { status: 403 });
       }
 
       // Condition 4: Check if Account is Suspended
-      if (user.status === 'SUSPENDED') {
+      if (dbUser.status === 'SUSPENDED') {
         return NextResponse.json({ success: false, error: 'Your account is suspended due to policy violation. Please contact support.' }, { status: 403 });
       }
 
@@ -137,7 +139,7 @@ export async function POST(req: Request) {
             email: user.email,
             phone: user.phone || '+91 9876543210',
             role: user.role,
-            status: user.status,
+            status: dbUser.status || 'ACTIVE',
             isEmailVerified: user.isEmailVerified,
             isPhoneVerified: user.isPhoneVerified,
             isKycVerified: true,
