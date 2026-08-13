@@ -50,8 +50,6 @@ export default function RegisterPage() {
 
   const [showPassword, setShowPassword] = useState(false);
 
-  const [showPassword, setShowPassword] = useState(false);
-
   // Single Combined Terms & Privacy Acceptance State
   const [agreeTermsAndPrivacy, setAgreeTermsAndPrivacy] = useState(false);
 
