@@ -138,7 +138,7 @@ export async function POST(req: Request) {
           phone: cleanPhone,
           passwordHash: hashedPassword,
           fullName,
-          role: role === 'COMPANION' ? 'COMPANION' : 'CUSTOMER',
+          role: (role === 'COMPANION' || role === 'VERIFIED_COMPANION') ? 'VERIFIED_COMPANION' : 'CUSTOMER',
           status: 'PENDING_VERIFICATION',
           isEmailVerified: false,
           isPhoneVerified: false,

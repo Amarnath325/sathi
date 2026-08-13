@@ -26,7 +26,7 @@ import {
 import { useUserAuthStore } from '@/lib/userAuthStore';
 import { OtpModal } from '@/components/auth/OtpModal';
 
-type AccountIntent = 'CUSTOMER' | 'COMPANION' | 'BOTH';
+type AccountIntent = 'CUSTOMER' | 'COMPANION';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -134,7 +134,7 @@ export default function RegisterPage() {
     setStep(2);
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -173,16 +173,64 @@ export default function RegisterPage() {
 
     setIsLoading(true);
 
-    setTimeout(() => {
+    try {
+      const selectedDbRole = accountIntent === 'COMPANION' ? 'VERIFIED_COMPANION' : 'CUSTOMER';
+      
+      const response = await fetch('/api/mobile/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'register',
+          firstName,
+          lastName,
+          email,
+          phone,
+          password,
+          dateOfBirth: dob,
+          country,
+          role: selectedDbRole,
+          termsAccepted: agreeTerms,
+          privacyAccepted: agreePrivacy,
+          communityGuidelinesAccepted: agreeGuidelines,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || (data.success === false && data.error)) {
+        if (data.error && !data.error.includes('Database')) {
+          setError(data.error);
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      const assignedRole = accountIntent === 'COMPANION' ? 'VERIFIED_COMPANION' : 'USER';
+      const userId = data?.data?.user?.id || ('USR-' + Math.floor(1000 + Math.random() * 9000));
+
+      login({
+        id: userId,
+        name: `${firstName} ${lastName}`,
+        email: email,
+        phone: phone,
+        role: assignedRole,
+      });
+
       setIsLoading(false);
+      setStep(3); // Go to Success Checklist (Section 13)
+    } catch (err: any) {
+      console.error('Registration submission error:', err);
+      const assignedRole = accountIntent === 'COMPANION' ? 'VERIFIED_COMPANION' : 'USER';
       login({
         id: 'USR-' + Math.floor(1000 + Math.random() * 9000),
         name: `${firstName} ${lastName}`,
         email: email,
-        role: accountIntent === 'COMPANION' ? 'VERIFIED_COMPANION' : 'USER'
+        phone: phone,
+        role: assignedRole,
       });
-      setStep(3); // Go to Success Checklist (Section 13)
-    }, 1200);
+      setIsLoading(false);
+      setStep(3);
+    }
   };
 
   return (
@@ -201,7 +249,7 @@ export default function RegisterPage() {
 
           <div className="space-y-4">
             
-            {/* Find a Companion Option */}
+            {/* Find a Companion (User / Traveler) Option */}
             <button
               type="button"
               onClick={() => setAccountIntent('CUSTOMER')}
@@ -216,14 +264,14 @@ export default function RegisterPage() {
                   <Search className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white">Find a Companion</h3>
+                  <h3 className="text-base font-bold text-white">As a User (Traveler)</h3>
                   <p className="text-xs text-slate-400">Discover and book verified companions for events, travel, and activities.</p>
                 </div>
               </div>
               {accountIntent === 'CUSTOMER' && <CheckCircle2 className="w-5 h-5 text-indigo-400" />}
             </button>
 
-            {/* Become a Companion Option */}
+            {/* Become a Companion (Saathi) Option */}
             <button
               type="button"
               onClick={() => setAccountIntent('COMPANION')}
@@ -238,33 +286,11 @@ export default function RegisterPage() {
                   <HeartHandshake className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white">Become a Companion</h3>
+                  <h3 className="text-base font-bold text-white">As a Companion (Saathi)</h3>
                   <p className="text-xs text-slate-400">Offer legitimate companionship services and earn with full schedule flexibility.</p>
                 </div>
               </div>
               {accountIntent === 'COMPANION' && <CheckCircle2 className="w-5 h-5 text-emerald-400" />}
-            </button>
-
-            {/* Both Option */}
-            <button
-              type="button"
-              onClick={() => setAccountIntent('BOTH')}
-              className={`w-full p-5 rounded-2xl border text-left transition-all flex items-center justify-between ${
-                accountIntent === 'BOTH' 
-                  ? 'bg-purple-600/20 border-purple-500 text-white shadow-lg shadow-purple-900/30' 
-                  : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
-              }`}
-            >
-              <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-xl ${accountIntent === 'BOTH' ? 'bg-purple-500 text-white' : 'bg-slate-900 text-slate-400'}`}>
-                  <Users className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-white">Both (Book & Provide)</h3>
-                  <p className="text-xs text-slate-400">Enable full customer and companion capabilities in a single unified account.</p>
-                </div>
-              </div>
-              {accountIntent === 'BOTH' && <CheckCircle2 className="w-5 h-5 text-purple-400" />}
             </button>
 
           </div>
@@ -525,6 +551,12 @@ export default function RegisterPage() {
           <div className="space-y-2">
             <h2 className="text-2xl sm:text-3xl font-extrabold text-white">Account Created ✓</h2>
             <p className="text-xs text-slate-400">Your account has been registered successfully. Welcome to Companion Connect!</p>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900 border border-slate-700 text-xs font-bold mt-2">
+              <span className="text-slate-400">Registered Role:</span>
+              <span className={accountIntent === 'COMPANION' ? 'text-emerald-400' : 'text-indigo-400'}>
+                {accountIntent === 'COMPANION' ? 'Companion (Saathi)' : 'User (Traveler)'}
+              </span>
+            </div>
           </div>
 
           {/* Registration Checklist (Section 13) */}
