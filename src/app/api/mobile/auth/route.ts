@@ -12,32 +12,138 @@ export async function POST(req: Request) {
 
     // 1. REGISTER ACTION
     if (action === 'register') {
-      if (!email || !password) {
-        return NextResponse.json({ success: false, error: 'Email and password are required' }, { status: 400 });
+      const {
+        email,
+        password,
+        firstName,
+        lastName,
+        phone,
+        dateOfBirth,
+        country = 'IN',
+        termsAccepted,
+        privacyAccepted,
+        communityGuidelinesAccepted,
+      } = body;
+
+      // 1.1 Form Completeness Validation
+      if (!firstName || !firstName.trim()) {
+        return NextResponse.json({ success: false, error: 'First name is required.' }, { status: 400 });
+      }
+      if (!lastName || !lastName.trim()) {
+        return NextResponse.json({ success: false, error: 'Last name is required.' }, { status: 400 });
+      }
+      if (!email || !email.trim()) {
+        return NextResponse.json({ success: false, error: 'Email address is required.' }, { status: 400 });
+      }
+      if (!phone || !phone.trim()) {
+        return NextResponse.json({ success: false, error: 'Phone number is required.' }, { status: 400 });
+      }
+      if (!password) {
+        return NextResponse.json({ success: false, error: 'Password is required.' }, { status: 400 });
+      }
+      if (!dateOfBirth) {
+        return NextResponse.json({ success: false, error: 'Date of birth is required.' }, { status: 400 });
       }
 
+      // 1.2 Terms, Privacy, Community Guidelines Validation
+      if (!termsAccepted || !privacyAccepted || !communityGuidelinesAccepted) {
+        return NextResponse.json({
+          success: false,
+          error: 'You must accept the Terms of Service, Privacy Policy, and Community Guidelines to register.',
+        }, { status: 400 });
+      }
+
+      // 1.3 Email Validation (RFC 5322 regex)
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        return NextResponse.json({ success: false, error: 'Please enter a valid email address.' }, { status: 400 });
+      }
+
+      // 1.4 Phone Validation (Min 10 digits E.164)
+      const cleanPhone = phone.trim().replace(/\s+/g, '');
+      const phoneRegex = /^\+?[0-9]{10,15}$/;
+      if (!phoneRegex.test(cleanPhone)) {
+        return NextResponse.json({ success: false, error: 'Please enter a valid phone number (minimum 10 digits).' }, { status: 400 });
+      }
+
+      // 1.5 Password Strength Validation (Min 8 chars, 1 upper, 1 lower, 1 digit/special)
+      if (password.length < 8) {
+        return NextResponse.json({ success: false, error: 'Password must be at least 8 characters long.' }, { status: 400 });
+      }
+      const hasUpper = /[A-Z]/.test(password);
+      const hasLower = /[a-z]/.test(password);
+      const hasDigitOrSpecial = /[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+      if (!hasUpper || !hasLower || !hasDigitOrSpecial) {
+        return NextResponse.json({
+          success: false,
+          error: 'Password must include uppercase, lowercase, and numbers/special characters.',
+        }, { status: 400 });
+      }
+
+      // 1.6 Age Eligibility Check (Minimum 18 years old)
+      const dobDate = new Date(dateOfBirth);
+      if (isNaN(dobDate.getTime())) {
+        return NextResponse.json({ success: false, error: 'Invalid date of birth format.' }, { status: 400 });
+      }
+      const today = new Date();
+      let age = today.getFullYear() - dobDate.getFullYear();
+      const monthDiff = today.getMonth() - dobDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dobDate.getDate())) {
+        age--;
+      }
+      if (age < 18) {
+        return NextResponse.json({ success: false, error: 'You must be at least 18 years old to create an account.' }, { status: 400 });
+      }
+
+      // 1.7 Check Duplicate Email / Phone in Database
       const formattedEmail = email.trim().toLowerCase();
-      const existingUser = await prisma.user.findUnique({
+      const existingUserByEmail = await prisma.user.findUnique({
         where: { email: formattedEmail },
       });
-
-      if (existingUser) {
-        return NextResponse.json({ success: false, error: 'User with this email already exists' }, { status: 400 });
+      if (existingUserByEmail) {
+        return NextResponse.json({ success: false, error: 'An account with this email already exists.' }, { status: 400 });
       }
 
+      const existingUserByPhone = await prisma.user.findFirst({
+        where: { phone: cleanPhone },
+      });
+      if (existingUserByPhone) {
+        return NextResponse.json({ success: false, error: 'An account with this phone number already exists.' }, { status: 400 });
+      }
+
+      // 1.8 Create User Record in Database
       const hashedPassword = await bcrypt.hash(password, 10);
-      const nameParts = [firstName, lastName].filter(Boolean).join(' ');
-      const fullName = nameParts || body.fullName || 'Sathi User';
+      const fullName = `${firstName.trim()} ${lastName.trim()}`;
+      const now = new Date();
 
       const newUser = await prisma.user.create({
         data: {
           email: formattedEmail,
-          phone: phone || null,
+          phone: cleanPhone,
           passwordHash: hashedPassword,
           fullName,
           role: 'CUSTOMER',
-          isEmailVerified: true,
-          isPhoneVerified: true,
+          status: 'PENDING_VERIFICATION',
+          isEmailVerified: false,
+          isPhoneVerified: false,
+          dateOfBirth: dobDate,
+          country: country || 'IN',
+          termsAcceptedAt: now,
+          privacyAcceptedAt: now,
+          communityGuidelinesAcceptedAt: now,
+        } as any,
+      });
+
+      // 1.9 Generate 6-Digit OTP Code in OtpCode Table
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+
+      await (prisma as any).otpCode.create({
+        data: {
+          identifier: formattedEmail,
+          code: otpCode,
+          purpose: 'REGISTRATION',
+          expiresAt,
         },
       });
 
@@ -49,20 +155,25 @@ export async function POST(req: Request) {
 
       return NextResponse.json({
         success: true,
-        message: 'Account created successfully in Neon Database.',
+        message: 'Account registered successfully. Verification OTP sent.',
         data: {
           accessToken,
-          refreshToken: `ref_${Date.now()}_${newUser.id}`,
+          otpRequired: true,
+          purpose: 'REGISTRATION',
+          identifier: formattedEmail,
+          phone: cleanPhone,
+          resendInSeconds: 60,
+          demoOtpCode: otpCode,
           user: {
             id: newUser.id,
-            firstName: firstName || fullName.split(' ')[0] || 'User',
-            lastName: lastName || fullName.split(' ')[1] || '',
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
             email: newUser.email,
             phone: newUser.phone,
             role: newUser.role,
-            isEmailVerified: newUser.isEmailVerified,
-            isPhoneVerified: newUser.isPhoneVerified,
-            createdAt: newUser.createdAt,
+            status: (newUser as any).status,
+            isEmailVerified: false,
+            isPhoneVerified: false,
           },
         },
       });

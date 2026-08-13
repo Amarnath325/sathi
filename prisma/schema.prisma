@@ -137,7 +137,11 @@ model User {
   riskLevel         RiskLevel            @default(LOW)
   status            String               @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED, DELETED
   isDeleted         Boolean              @default(false)
-  deletedAt         DateTime?
+  dateOfBirth               DateTime?
+  country                   String?              @default("IN")
+  termsAcceptedAt           DateTime?
+  privacyAcceptedAt         DateTime?
+  communityGuidelinesAcceptedAt DateTime?
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
 
@@ -998,11 +1002,27 @@ model AnalyticsExportLog {
   createdAt   DateTime @default(now())
 }
 
+model OtpCode {
+  id          String   @id @default(uuid())
+  identifier  String   // Email address or Phone number
+  code        String   // 6-digit OTP code
+  purpose     String   @default("REGISTRATION") // REGISTRATION, EMAIL_VERIFY, PHONE_VERIFY, 2FA
+  attempts    Int      @default(0)
+  isUsed      Boolean  @default(false)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
 
+  @@index([identifier, purpose, isUsed])
+}
 
+model EmailVerificationToken {
+  id          String   @id @default(uuid())
+  userId      String
+  email       String
+  token       String   @unique
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
 
-
-
-
-
+  @@index([token, userId])
+}
 
