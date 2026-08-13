@@ -330,22 +330,22 @@ export default function RegisterPage() {
 
       {/* STEP 2: LEAN BASIC INFORMATION FORM (Section 6 & 12) */}
       {step === 2 && (
-        <div className="glass-panel p-8 sm:p-10 rounded-3xl border border-slate-800 space-y-6 animate-fade-in shadow-2xl">
-          <div className="text-center space-y-2">
-            <h2 className="text-2xl font-extrabold text-white">Create Your Account</h2>
+        <div className="glass-panel p-5 sm:p-7 rounded-3xl border border-slate-800 space-y-4 animate-fade-in shadow-2xl">
+          <div className="text-center space-y-1">
+            <h2 className="text-xl sm:text-2xl font-extrabold text-white">Create Your Account</h2>
             <p className="text-xs text-slate-400">Provide basic account details. Minimal data collection policy active.</p>
           </div>
 
           {error && (
-            <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold flex items-center gap-2">
+            <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" /> {error}
             </div>
           )}
 
-          <form onSubmit={handleFormSubmit} className="space-y-4">
+          <form onSubmit={handleFormSubmit} className="space-y-3">
             
             {/* First & Last Name */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-semibold text-slate-300 block mb-1">First Name *</label>
                 <input 
@@ -356,9 +356,8 @@ export default function RegisterPage() {
                   value={firstName}
                   onChange={e => setFirstName(e.target.value)}
                   placeholder="John"
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs sm:text-sm text-white focus:outline-none focus:border-indigo-500"
                 />
-                <span className="text-[10px] text-slate-500 mt-1 block">3 - 20 characters</span>
               </div>
 
               <div>
@@ -371,9 +370,8 @@ export default function RegisterPage() {
                   value={lastName}
                   onChange={e => setLastName(e.target.value)}
                   placeholder="Doe"
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs sm:text-sm text-white focus:outline-none focus:border-indigo-500"
                 />
-                <span className="text-[10px] text-slate-500 mt-1 block">3 - 20 characters</span>
               </div>
             </div>
 
@@ -388,9 +386,8 @@ export default function RegisterPage() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="user@example.com"
-                className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500"
+                className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs sm:text-sm text-white focus:outline-none focus:border-indigo-500"
               />
-              <span className="text-[10px] text-slate-500 mt-1 block">8 - 30 characters</span>
             </div>
 
             {/* Country Code + Phone */}
@@ -400,7 +397,7 @@ export default function RegisterPage() {
                 <select
                   value={countryCode}
                   onChange={e => setCountryCode(e.target.value)}
-                  className="px-3 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-xs font-mono text-white focus:outline-none"
+                  className="px-3 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs font-mono text-white focus:outline-none"
                 >
                   <option value="+91">+91 (IN)</option>
                   <option value="+1">+1 (US)</option>
@@ -416,13 +413,13 @@ export default function RegisterPage() {
                   value={phone}
                   onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                   placeholder="9876543210"
-                  className="flex-1 px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono"
+                  className="flex-1 px-3.5 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs sm:text-sm text-white focus:outline-none focus:border-indigo-500 font-mono"
                 />
 
                 <button
                   type="button"
                   onClick={() => setOtpModalOpen(true)}
-                  className={`px-4 py-3 rounded-2xl text-xs font-bold transition-all border ${
+                  className={`px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all border ${
                     phoneVerified 
                       ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' 
                       : 'bg-slate-900 text-indigo-400 border-slate-800 hover:border-indigo-500'
@@ -431,7 +428,6 @@ export default function RegisterPage() {
                   {phoneVerified ? 'Verified ✓' : 'Send OTP'}
                 </button>
               </div>
-              <span className="text-[10px] text-slate-500 mt-1 block">Exactly 10 numeric digits</span>
               {phoneVerified && (
                 <p className="text-[10px] text-emerald-400 font-mono mt-1">
                   {countryCode} ******{phone.slice(-4)} Verified ✓
@@ -440,7 +436,7 @@ export default function RegisterPage() {
             </div>
 
             {/* Password & Confirm */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-semibold text-slate-300 block mb-1">Password *</label>
                 <div className="relative">
@@ -452,17 +448,16 @@ export default function RegisterPage() {
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500 pr-10"
+                    className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs sm:text-sm text-white focus:outline-none focus:border-indigo-500 pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3.5 text-slate-400"
+                    className="absolute right-3 top-3 text-slate-400"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                <span className="text-[10px] text-slate-500 mt-1 block">8 - 30 chars (letters + numbers)</span>
               </div>
 
               <div>
@@ -475,14 +470,14 @@ export default function RegisterPage() {
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs sm:text-sm text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
             </div>
 
             {/* Password Strength Indicator */}
             {password && (
-              <div className="space-y-1.5 p-3 rounded-2xl bg-slate-950 border border-slate-800">
+              <div className="space-y-1 p-2.5 rounded-2xl bg-slate-950 border border-slate-800">
                 <div className="flex justify-between items-center text-[10px]">
                   <span className="text-slate-400">Password Security</span>
                   <span className={`font-bold ${passwordAnalysis.textColor}`}>{passwordAnalysis.label}</span>
@@ -494,7 +489,7 @@ export default function RegisterPage() {
             )}
 
             {/* Date of Birth & Country */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-semibold text-slate-300 block mb-1">Date of Birth (18+ Required) *</label>
                 <input 
@@ -502,7 +497,7 @@ export default function RegisterPage() {
                   required
                   value={dob}
                   onChange={e => setDob(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs sm:text-sm text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
@@ -511,7 +506,7 @@ export default function RegisterPage() {
                 <select
                   value={country}
                   onChange={e => setCountry(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs sm:text-sm text-white focus:outline-none"
                 >
                   <option value="India">India</option>
                   <option value="United States">United States</option>
@@ -523,15 +518,15 @@ export default function RegisterPage() {
             </div>
 
             {/* Single Combined Terms & Privacy Checkbox */}
-            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2 pt-4">
-              <label className="flex items-start gap-3 cursor-pointer text-xs text-slate-300">
+            <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800">
+              <label className="flex items-start gap-2.5 cursor-pointer text-xs text-slate-300">
                 <input 
                   type="checkbox"
                   checked={agreeTermsAndPrivacy}
                   onChange={e => setAgreeTermsAndPrivacy(e.target.checked)}
                   className="mt-0.5 w-4 h-4 rounded border-slate-800 text-indigo-500 focus:ring-indigo-500"
                 />
-                <span className="leading-relaxed">
+                <span className="leading-tight">
                   I agree to the{' '}
                   <button
                     type="button"
@@ -555,7 +550,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-4 rounded-2xl gradient-bg-primary text-white font-extrabold text-sm hover:opacity-95 shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2"
+              className="w-full py-3.5 rounded-2xl gradient-bg-primary text-white font-extrabold text-xs sm:text-sm hover:opacity-95 shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2"
             >
               {isLoading ? 'Creating Secure Account...' : 'Create Account'} <ArrowRight className="w-4 h-4" />
             </button>
