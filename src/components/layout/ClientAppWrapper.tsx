@@ -6,6 +6,7 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { ToastProvider } from '@/components/ui/Toast';
+import { ThemeProvider } from '@/context/ThemeContext';
 import { PanicAlertModal } from '@/components/safety/PanicAlertModal';
 import { AiAssistantDrawer } from '@/components/ai/AiAssistantDrawer';
 import { RoleType } from '@/lib/types';
@@ -27,48 +28,54 @@ export function ClientAppWrapper({ children }: { children: React.ReactNode }) {
   const isAdminRoute = currentPath.includes('/admin') || pathname?.startsWith('/admin');
 
   if (isAdminRoute) {
-    return <main className="flex-1 min-h-screen bg-slate-950">{children}</main>;
+    return (
+      <ThemeProvider>
+        <main className="flex-1 min-h-screen bg-slate-950">{children}</main>
+      </ThemeProvider>
+    );
   }
 
   return (
-    <ToastProvider>
-      <Header 
-        currentRole={currentRole} 
-        onRoleChange={setCurrentRole} 
-        onTriggerSos={() => setSosModalOpen(true)} 
-      />
+    <ThemeProvider>
+      <ToastProvider>
+        <Header 
+          currentRole={currentRole} 
+          onRoleChange={setCurrentRole} 
+          onTriggerSos={() => setSosModalOpen(true)} 
+        />
 
-      <main className="flex-1 pb-16 md:pb-0">
-        {children}
-      </main>
+        <main className="flex-1 pb-16 md:pb-0">
+          {children}
+        </main>
 
-      <MobileBottomNav />
+        <MobileBottomNav />
 
-      <Footer />
+        <Footer />
 
-      {/* Global Emergency SOS Modal */}
-      <PanicAlertModal 
-        isOpen={sosModalOpen} 
-        onClose={() => setSosModalOpen(false)} 
-      />
+        {/* Global Emergency SOS Modal */}
+        <PanicAlertModal 
+          isOpen={sosModalOpen} 
+          onClose={() => setSosModalOpen(false)} 
+        />
 
-      {/* Floating AI Assistant Trigger Button */}
-      <button
-        onClick={() => setAiDrawerOpen(true)}
-        className="fixed bottom-20 md:bottom-6 right-6 z-40 p-3.5 rounded-full gradient-bg-primary text-white shadow-2xl shadow-indigo-500/40 hover:scale-110 transition-transform flex items-center gap-2 group"
-        title="Open AI Smart Assistant"
-      >
-        <Bot className="w-6 h-6 animate-pulse" />
-        <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 text-xs font-bold whitespace-nowrap pr-2">
-          Ask AI Assistant
-        </span>
-      </button>
+        {/* Floating AI Assistant Trigger Button */}
+        <button
+          onClick={() => setAiDrawerOpen(true)}
+          className="fixed bottom-20 md:bottom-6 right-6 z-40 p-3.5 rounded-full gradient-bg-primary text-white shadow-2xl shadow-indigo-500/40 hover:scale-110 transition-transform flex items-center gap-2 group"
+          title="Open AI Smart Assistant"
+        >
+          <Bot className="w-6 h-6 animate-pulse" />
+          <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 text-xs font-bold whitespace-nowrap pr-2">
+            Ask AI Assistant
+          </span>
+        </button>
 
-      {/* AI Assistant Drawer */}
-      <AiAssistantDrawer 
-        isOpen={aiDrawerOpen} 
-        onClose={() => setAiDrawerOpen(false)} 
-      />
-    </ToastProvider>
+        {/* AI Assistant Drawer */}
+        <AiAssistantDrawer 
+          isOpen={aiDrawerOpen} 
+          onClose={() => setAiDrawerOpen(false)} 
+        />
+      </ToastProvider>
+    </ThemeProvider>
   );
 }
