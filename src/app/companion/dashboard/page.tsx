@@ -309,30 +309,30 @@ export default function CompanionDashboard() {
             <button
               type="button"
               onClick={handleToggleOnline}
-              className={`px-4 py-2.5 rounded-2xl border text-xs font-bold transition-all flex items-center gap-2 shadow-lg ${
+              className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 shadow-md ${
                 isOnline 
-                  ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-400 hover:bg-emerald-900/50' 
-                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                  ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-600/20' 
+                  : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700'
               }`}
             >
-              <Power className={`w-4 h-4 ${isOnline ? 'text-emerald-400' : 'text-slate-500'}`} />
+              <Power className={`w-4 h-4 ${isOnline ? 'text-white' : 'text-slate-500'}`} />
               <span>{isOnline ? 'ONLINE & ACCEPTING' : 'OFFLINE / BUSY'}</span>
             </button>
 
             <button
               type="button"
               onClick={handleTriggerSOS}
-              className="px-4 py-2.5 rounded-2xl bg-rose-950/60 hover:bg-rose-900 border border-rose-500/50 text-rose-300 font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-rose-900/30 transition-all"
+              className="px-4 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-rose-600/20 transition-all"
             >
-              <ShieldAlert className="w-4 h-4 text-rose-400" /> SOS Emergency
+              <ShieldAlert className="w-4 h-4 text-white" /> SOS Emergency
             </button>
 
             <button
               type="button"
               onClick={() => setPayoutModalOpen(true)}
-              className="px-5 py-2.5 rounded-2xl gradient-bg-primary text-white font-bold text-xs hover:opacity-95 shadow-xl shadow-indigo-600/30 flex items-center gap-1.5 transition-all"
+              className="px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition-all"
             >
-              <DollarSign className="w-4 h-4" /> Request Payout (₹{availablePayoutBalance.toLocaleString()})
+              <DollarSign className="w-4 h-4 text-white" /> Request Payout (₹{availablePayoutBalance.toLocaleString()})
             </button>
           </div>
         </div>
@@ -453,15 +453,15 @@ export default function CompanionDashboard() {
                 onClick={() => setActiveTab(tab.id as ActiveTabType)}
                 className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 border ${
                   isActive 
-                    ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/30' 
-                    : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/20' 
+                    : 'bg-slate-100 dark:bg-slate-900/90 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <Icon className="w-4 h-4" />
                 <span>{tab.label}</span>
                 {tab.count !== undefined && (
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-slate-900 text-slate-400'
+                    isActive ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                   }`}>
                     {tab.count}
                   </span>
@@ -577,14 +577,14 @@ export default function CompanionDashboard() {
                       <button
                         type="button"
                         onClick={() => handleAction(req.id, 'ACCEPTED')}
-                        className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-lg shadow-emerald-900/30 flex items-center justify-center gap-1.5"
+                        className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/20 flex items-center justify-center gap-1.5"
                       >
                         <CheckCircle2 className="w-4 h-4" /> Accept & Lock Escrow
                       </button>
                       <button
                         type="button"
                         onClick={() => handleAction(req.id, 'DECLINED')}
-                        className="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-slate-900 hover:bg-rose-950/40 text-rose-400 border border-slate-800 text-xs font-bold transition-all flex items-center justify-center gap-1"
+                        className="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-900 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-700 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-300 dark:border-slate-800 hover:border-rose-300 text-xs font-bold transition-all flex items-center justify-center gap-1"
                       >
                         <XCircle className="w-4 h-4" /> Decline
                       </button>
@@ -593,10 +593,10 @@ export default function CompanionDashboard() {
                     <div className="flex items-center gap-2">
                       <span className={`px-4 py-2 rounded-2xl text-xs font-bold border ${
                         req.status === 'ACCEPTED' 
-                          ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' 
+                          ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-500/40' 
                           : req.status === 'COMPLETED'
-                          ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
-                          : 'bg-rose-500/20 text-rose-400 border-rose-500/40'
+                          ? 'bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/40'
+                          : 'bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border-rose-300 dark:border-rose-500/40'
                       }`}>
                         {req.status}
                       </span>

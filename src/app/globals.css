@@ -142,6 +142,30 @@ html.light .bg-slate-900\/40 {
   background-color: rgba(255, 255, 255, 0.95) !important;
 }
 
+html.light .bg-emerald-950\/40,
+html.light .bg-emerald-950\/60,
+html.light .bg-emerald-950 {
+  background-color: #ecfdf5 !important;
+  color: #047857 !important;
+  border-color: #a7f3d0 !important;
+}
+
+html.light .bg-rose-950\/60,
+html.light .bg-rose-950\/40,
+html.light .bg-rose-950 {
+  background-color: #fff1f2 !important;
+  color: #be123c !important;
+  border-color: #fecdd3 !important;
+}
+
+html.light .bg-indigo-950\/60,
+html.light .bg-indigo-950\/40,
+html.light .bg-indigo-950 {
+  background-color: #eef2ff !important;
+  color: #3730a3 !important;
+  border-color: #c7d2fe !important;
+}
+
 /* High-Contrast Text Hierarchy Overrides for Light Mode */
 html.light .text-white {
   color: #0f172a !important;
