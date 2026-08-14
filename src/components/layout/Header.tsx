@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   ShieldCheck, 
@@ -24,7 +24,9 @@ import {
   LifeBuoy,
   FileCheck,
   User,
-  Settings
+  Settings,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { RoleType } from '@/lib/types';
 import { useUserAuthStore } from '@/lib/userAuthStore';
@@ -41,6 +43,38 @@ export function Header({ currentRole, onRoleChange, onTriggerSos }: HeaderProps)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const { isLoggedIn, user, logout } = useUserAuthStore();
+
+  // Dark / Light Mode state
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('sathi_theme') as 'dark' | 'light' | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+      if (savedTheme === 'light') {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.classList.add('light');
+      } else {
+        document.documentElement.classList.remove('light');
+        document.documentElement.classList.add('dark');
+      }
+    } else {
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    localStorage.setItem('sathi_theme', newTheme);
+    if (newTheme === 'light') {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
+    } else {
+      document.documentElement.classList.remove('light');
+      document.documentElement.classList.add('dark');
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 glass-panel border-b border-slate-800 backdrop-blur-md">
@@ -98,8 +132,22 @@ export function Header({ currentRole, onRoleChange, onTriggerSos }: HeaderProps)
             </Link>
           </nav>
 
-          {/* Header Controls (Emergency SOS + Notifications + Auth State) */}
+          {/* Header Controls (Theme Toggle + Emergency SOS + Notifications + Auth State) */}
           <div className="hidden sm:flex items-center gap-3">
+
+            {/* Dark / Light Mode Icon Switcher */}
+            <button
+              onClick={toggleTheme}
+              className="w-10 h-10 rounded-2xl flex items-center justify-center bg-slate-900 border border-slate-800 hover:border-slate-700 text-amber-400 hover:scale-105 active:scale-95 transition-all shadow-md"
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              aria-label="Toggle theme mode"
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-5 h-5 text-amber-400 animate-spin-slow" />
+              ) : (
+                <Moon className="w-5 h-5 text-indigo-400" />
+              )}
+            </button>
 
             {/* Notification Bell Component */}
             <NotificationBell />
@@ -213,14 +261,27 @@ export function Header({ currentRole, onRoleChange, onTriggerSos }: HeaderProps)
 
           </div>
 
-          {/* Mobile & Tablet Menu Toggle Button */}
+          {/* Mobile & Tablet Toggle Controls (Theme Switcher + SOS + Drawer Toggle) */}
           <div className="lg:hidden flex items-center gap-2">
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-amber-400 hover:scale-105 active:scale-95 transition-all"
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Moon className="w-4 h-4 text-indigo-400" />
+              )}
+            </button>
+
             <button
               onClick={onTriggerSos}
               className="sm:hidden p-2 rounded-xl bg-rose-600 text-white text-xs font-bold shadow-lg shadow-rose-600/30"
             >
               SOS
             </button>
+
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 text-slate-300 hover:text-white bg-slate-900 border border-slate-800 rounded-xl"
@@ -283,6 +344,21 @@ export function Header({ currentRole, onRoleChange, onTriggerSos }: HeaderProps)
           >
             <LifeBuoy className="w-4 h-4 text-purple-400" /> Resolution Support & Disputes
           </Link>
+
+          {/* Theme Mode Mobile Switcher Row */}
+          <div className="py-2.5 px-3 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-300 flex items-center gap-2">
+              {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-400" />}
+              <span>Theme Mode ({theme === 'dark' ? 'Dark' : 'Light'})</span>
+            </span>
+
+            <button
+              onClick={toggleTheme}
+              className="px-3 py-1 rounded-lg bg-indigo-600 text-white text-xs font-bold shadow"
+            >
+              Toggle
+            </button>
+          </div>
           
           <div className="pt-3 border-t border-slate-800 space-y-2">
             {isLoggedIn ? (
