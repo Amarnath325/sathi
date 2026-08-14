@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
@@ -24,7 +24,8 @@ import {
   User,
   Sparkles,
   Award,
-  Globe
+  Globe,
+  KeyRound
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { ServicePolicyEngine } from '@/lib/servicePolicyEngine';
@@ -32,16 +33,26 @@ import { ServicePolicyEngine } from '@/lib/servicePolicyEngine';
 export default function CompanionOnboardingWizard() {
   const router = useRouter();
   const { showToast } = useToast();
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // ==================== STEP 1: ELIGIBILITY STATE ====================
   const [dob, setDob] = useState<string>('2000-01-15');
-  const [phone, setPhone] = useState<string>('+1 (555) 389-2910');
-  const [email, setEmail] = useState<string>('aria.vance@companion.com');
+  
+  // 10-digit India Mobile Number state
+  const [mobileNumber, setMobileNumber] = useState<string>('9876543210');
+  const [mobileOtpSent, setMobileOtpSent] = useState<boolean>(false);
+  const [mobileOtpInput, setMobileOtpInput] = useState<string>('1234');
   const [isPhoneVerified, setIsPhoneVerified] = useState<boolean>(true);
+
+  // Email & OTP state
+  const [email, setEmail] = useState<string>('aria.vance@companion.com');
+  const [emailOtpSent, setEmailOtpSent] = useState<boolean>(false);
+  const [emailOtpInput, setEmailOtpInput] = useState<string>('5678');
   const [isEmailVerified, setIsEmailVerified] = useState<boolean>(true);
+
   const [agreedEligibility, setAgreedEligibility] = useState<boolean>(true);
 
   const [step1Errors, setStep1Errors] = useState<{
@@ -66,6 +77,45 @@ export default function CompanionOnboardingWizard() {
 
   const userAge = calculateAge(dob);
 
+  // OTP Verification Handlers
+  const handleSendMobileOtp = () => {
+    if (!/^\d{10}$/.test(mobileNumber.trim())) {
+      showToast('error', 'Invalid Phone Number', 'Mobile number must be exactly 10 digits.');
+      return;
+    }
+    setMobileOtpSent(true);
+    showToast('info', 'Mobile OTP Dispatched', `A 4-digit verification code was sent to +91 ${mobileNumber}`);
+  };
+
+  const handleVerifyMobileOtp = () => {
+    if (mobileOtpInput.trim() === '1234' || mobileOtpInput.trim().length === 4) {
+      setIsPhoneVerified(true);
+      setMobileOtpSent(false);
+      showToast('success', 'Mobile Number Verified', `+91 ${mobileNumber} successfully verified with OTP!`);
+    } else {
+      showToast('error', 'Incorrect OTP', 'Please enter the correct 4-digit code (Demo code: 1234)');
+    }
+  };
+
+  const handleSendEmailOtp = () => {
+    if (!email.trim() || !email.includes('@')) {
+      showToast('error', 'Invalid Email Address', 'Please enter a valid email address.');
+      return;
+    }
+    setEmailOtpSent(true);
+    showToast('info', 'Email OTP Dispatched', `A 4-digit verification code was sent to ${email}`);
+  };
+
+  const handleVerifyEmailOtp = () => {
+    if (emailOtpInput.trim() === '5678' || emailOtpInput.trim().length === 4) {
+      setIsEmailVerified(true);
+      setEmailOtpSent(false);
+      showToast('success', 'Email Address Verified', `${email} successfully verified with OTP!`);
+    } else {
+      showToast('error', 'Incorrect OTP', 'Please enter the correct 4-digit code (Demo code: 5678)');
+    }
+  };
+
   const validateStep1 = (): boolean => {
     const errors: { dob?: string; phone?: string; email?: string; agreedEligibility?: string } = {};
 
@@ -75,12 +125,18 @@ export default function CompanionOnboardingWizard() {
       errors.dob = `You must be at least 18 years old to join as a companion (Current Age: ${userAge}).`;
     }
 
-    if (!phone.trim() || phone.trim().length < 8) {
-      errors.phone = 'Please enter a valid phone number.';
+    if (!mobileNumber.trim()) {
+      errors.phone = 'Mobile phone number is required.';
+    } else if (!/^\d{10}$/.test(mobileNumber.trim())) {
+      errors.phone = 'Mobile number must be exactly 10 digits (e.g. 9876543210).';
+    } else if (!isPhoneVerified) {
+      errors.phone = 'Please send and verify Mobile OTP before proceeding.';
     }
 
     if (!email.trim() || !email.includes('@')) {
       errors.email = 'Please enter a valid email address.';
+    } else if (!isEmailVerified) {
+      errors.email = 'Please send and verify Email OTP before proceeding.';
     }
 
     if (!agreedEligibility) {
@@ -310,7 +366,8 @@ export default function CompanionOnboardingWizard() {
 
             {/* Input Form Fields for Step 1 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Date of Birth Field */}
+              
+              {/* Date of Birth Field with Visible Calendar Icon */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
@@ -318,14 +375,28 @@ export default function CompanionOnboardingWizard() {
                   </span>
                   {userAge >= 18 && <span className="text-[10px] text-emerald-400 font-bold">✓ 18+ Eligible</span>}
                 </label>
-                <input 
-                  type="date"
-                  value={dob}
-                  onChange={e => setDob(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-2xl bg-slate-950 border text-sm text-white focus:outline-none focus:border-indigo-500 font-mono ${
-                    step1Errors.dob ? 'border-rose-500' : 'border-slate-800'
-                  }`}
-                />
+                
+                <div className="relative flex items-center">
+                  <input 
+                    ref={dateInputRef}
+                    type="date"
+                    value={dob}
+                    onChange={e => setDob(e.target.value)}
+                    style={{ colorScheme: 'dark' }}
+                    className={`w-full pl-4 pr-10 py-3 rounded-2xl bg-slate-950 border text-sm text-white focus:outline-none focus:border-indigo-500 font-mono [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-90 [&::-webkit-calendar-picker-indicator]:cursor-pointer ${
+                      step1Errors.dob ? 'border-rose-500' : 'border-slate-800'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => dateInputRef.current?.showPicker?.()}
+                    className="absolute right-3 text-indigo-400 hover:text-indigo-300 p-1"
+                    title="Open Calendar Picker"
+                  >
+                    <Calendar className="w-4 h-4" />
+                  </button>
+                </div>
+
                 {step1Errors.dob && (
                   <p className="text-[11px] text-rose-400 font-medium flex items-center gap-1">
                     <AlertTriangle className="w-3 h-3 shrink-0" /> {step1Errors.dob}
@@ -333,20 +404,28 @@ export default function CompanionOnboardingWizard() {
                 )}
               </div>
 
-              {/* Verified Email Field */}
+              {/* Verified Email Address Field with OTP Flow */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5 text-indigo-400" /> Verified Email Address *
+                    <Mail className="w-3.5 h-3.5 text-indigo-400" /> Email Address *
                   </span>
-                  <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" /> VERIFIED
-                  </span>
+                  {isEmailVerified ? (
+                    <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> VERIFIED
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-amber-400 font-bold">Verification Pending</span>
+                  )}
                 </label>
                 <input 
                   type="email"
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  onChange={e => {
+                    setEmail(e.target.value);
+                    setIsEmailVerified(false);
+                  }}
+                  placeholder="aria.vance@companion.com"
                   className={`w-full px-4 py-3 rounded-2xl bg-slate-950 border text-sm text-white focus:outline-none focus:border-indigo-500 ${
                     step1Errors.email ? 'border-rose-500' : 'border-slate-800'
                   }`}
@@ -354,28 +433,127 @@ export default function CompanionOnboardingWizard() {
                 {step1Errors.email && (
                   <p className="text-[11px] text-rose-400 font-medium">{step1Errors.email}</p>
                 )}
+
+                {/* Email OTP Verification Drawer */}
+                {!isEmailVerified && (
+                  <div className="pt-1.5">
+                    {!emailOtpSent ? (
+                      <button
+                        type="button"
+                        onClick={handleSendEmailOtp}
+                        className="px-3.5 py-1.5 rounded-xl bg-indigo-600/80 hover:bg-indigo-600 text-white font-bold text-[11px] flex items-center gap-1.5 transition-colors shadow-sm"
+                      >
+                        <Mail className="w-3.5 h-3.5" /> Send Email OTP
+                      </button>
+                    ) : (
+                      <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 space-y-2 animate-fadeIn">
+                        <p className="text-[11px] text-slate-300 font-semibold">Enter 4-Digit Email OTP (Demo: 5678):</p>
+                        <div className="flex gap-2">
+                          <input 
+                            type="text"
+                            maxLength={4}
+                            value={emailOtpInput}
+                            onChange={e => setEmailOtpInput(e.target.value)}
+                            placeholder="5678"
+                            className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-center font-mono font-bold text-white tracking-widest focus:outline-none focus:border-indigo-500 w-24"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleVerifyEmailOtp}
+                            className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1 shadow-md"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Verify OTP
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
-              {/* Phone Field */}
+              {/* Mobile Phone Field with Disabled +91 Prefix & 10-Digit Validation */}
               <div className="space-y-1.5 md:col-span-2">
                 <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 text-indigo-400" /> Mobile Phone Number *
+                    <Phone className="w-3.5 h-3.5 text-indigo-400" /> Mobile Phone Number (India) *
                   </span>
-                  <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" /> OTP VERIFIED
-                  </span>
+                  {isPhoneVerified ? (
+                    <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> OTP VERIFIED
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-amber-400 font-bold">Verification Pending</span>
+                  )}
                 </label>
-                <input 
-                  type="text"
-                  value={phone}
-                  onChange={e => setPhone(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-2xl bg-slate-950 border text-sm text-white focus:outline-none focus:border-indigo-500 font-mono ${
-                    step1Errors.phone ? 'border-rose-500' : 'border-slate-800'
-                  }`}
-                />
+
+                <div className="flex items-center">
+                  {/* Disabled +91 India Country Code */}
+                  <span className="px-4 py-3 rounded-l-2xl bg-slate-900 border border-r-0 border-slate-800 text-slate-300 font-mono font-bold text-sm select-none flex items-center gap-1 shrink-0">
+                    🇮🇳 +91
+                  </span>
+                  <input 
+                    type="text"
+                    maxLength={10}
+                    value={mobileNumber}
+                    onChange={e => {
+                      const val = e.target.value.replace(/\D/g, ''); // Numeric digits only
+                      setMobileNumber(val);
+                      if (val !== mobileNumber) setIsPhoneVerified(false);
+                    }}
+                    placeholder="9876543210"
+                    className={`w-full px-4 py-3 rounded-r-2xl bg-slate-950 border text-sm text-white focus:outline-none focus:border-indigo-500 font-mono tracking-wider ${
+                      step1Errors.phone ? 'border-rose-500' : 'border-slate-800'
+                    }`}
+                  />
+                </div>
+
+                <div className="flex justify-between items-center text-[10px] text-slate-500 font-mono pt-0.5">
+                  <span>Standard 10-digit Indian Mobile Number</span>
+                  <span className={mobileNumber.length === 10 ? 'text-emerald-400 font-bold' : 'text-slate-400'}>
+                    {mobileNumber.length} / 10 digits
+                  </span>
+                </div>
+
                 {step1Errors.phone && (
-                  <p className="text-[11px] text-rose-400 font-medium">{step1Errors.phone}</p>
+                  <p className="text-[11px] text-rose-400 font-medium flex items-center gap-1 mt-1">
+                    <AlertTriangle className="w-3 h-3 shrink-0" /> {step1Errors.phone}
+                  </p>
+                )}
+
+                {/* Mobile OTP Verification Drawer */}
+                {!isPhoneVerified && (
+                  <div className="pt-1.5">
+                    {!mobileOtpSent ? (
+                      <button
+                        type="button"
+                        onClick={handleSendMobileOtp}
+                        className="px-4 py-2 rounded-xl bg-indigo-600/90 hover:bg-indigo-600 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-md shadow-indigo-600/30"
+                      >
+                        <KeyRound className="w-3.5 h-3.5" /> Send Mobile OTP (+91 {mobileNumber})
+                      </button>
+                    ) : (
+                      <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 space-y-2 max-w-sm animate-fadeIn">
+                        <p className="text-xs text-slate-300 font-semibold">Enter 4-Digit Mobile OTP (Demo: 1234):</p>
+                        <div className="flex gap-2">
+                          <input 
+                            type="text"
+                            maxLength={4}
+                            value={mobileOtpInput}
+                            onChange={e => setMobileOtpInput(e.target.value)}
+                            placeholder="1234"
+                            className="px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm text-center font-mono font-bold text-white tracking-widest focus:outline-none focus:border-indigo-500 w-28"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleVerifyMobileOtp}
+                            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1 shadow-md shadow-emerald-900/30"
+                          >
+                            <CheckCircle2 className="w-4 h-4" /> Verify Mobile OTP
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -384,17 +562,25 @@ export default function CompanionOnboardingWizard() {
             <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-xs space-y-2">
               <span className="font-bold text-white block border-b border-slate-800/80 pb-2">Pre-Requisites Status:</span>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-900/60 text-emerald-400">
-                  <CheckCircle2 className="w-4 h-4 shrink-0" />
-                  <span>Email OTP Verified</span>
+                <div className={`flex items-center gap-2 p-2.5 rounded-xl bg-slate-900/60 border ${
+                  isEmailVerified ? 'border-emerald-500/30 text-emerald-400' : 'border-amber-500/30 text-amber-400'
+                }`}>
+                  {isEmailVerified ? <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" /> : <XCircle className="w-4 h-4 shrink-0 text-amber-400" />}
+                  <span className="font-medium">Email OTP {isEmailVerified ? 'Verified' : 'Pending'}</span>
                 </div>
-                <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-900/60 text-emerald-400">
-                  <CheckCircle2 className="w-4 h-4 shrink-0" />
-                  <span>Phone OTP Verified</span>
+
+                <div className={`flex items-center gap-2 p-2.5 rounded-xl bg-slate-900/60 border ${
+                  isPhoneVerified ? 'border-emerald-500/30 text-emerald-400' : 'border-amber-500/30 text-amber-400'
+                }`}>
+                  {isPhoneVerified ? <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" /> : <XCircle className="w-4 h-4 shrink-0 text-amber-400" />}
+                  <span className="font-medium">Phone OTP {isPhoneVerified ? 'Verified' : 'Pending'}</span>
                 </div>
-                <div className={`flex items-center gap-2 p-2 rounded-xl bg-slate-900/60 ${agreedEligibility ? 'text-emerald-400' : 'text-slate-400'}`}>
-                  {agreedEligibility ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <XCircle className="w-4 h-4 shrink-0" />}
-                  <span>Policy Agreement</span>
+
+                <div className={`flex items-center gap-2 p-2.5 rounded-xl bg-slate-900/60 border ${
+                  agreedEligibility ? 'border-emerald-500/30 text-emerald-400' : 'border-slate-800 text-slate-400'
+                }`}>
+                  {agreedEligibility ? <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" /> : <XCircle className="w-4 h-4 shrink-0" />}
+                  <span className="font-medium">Policy Agreement</span>
                 </div>
               </div>
             </div>
@@ -824,6 +1010,10 @@ export default function CompanionOnboardingWizard() {
               <div className="flex justify-between border-b border-slate-800/80 pb-1.5">
                 <span className="text-slate-400">Display Name:</span>
                 <span className="font-bold text-white">{displayName}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-800/80 pb-1.5">
+                <span className="text-slate-400">Mobile Number:</span>
+                <span className="font-mono font-bold text-white">+91 {mobileNumber} (Verified)</span>
               </div>
               <div className="flex justify-between border-b border-slate-800/80 pb-1.5">
                 <span className="text-slate-400">Category:</span>
