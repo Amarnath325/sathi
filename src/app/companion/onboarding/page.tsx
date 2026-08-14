@@ -26,7 +26,16 @@ import {
   Award,
   Globe,
   KeyRound,
-  Tag
+  Tag,
+  ShieldAlert,
+  Clock,
+  Plane,
+  Calculator,
+  Percent,
+  Navigation,
+  Sliders,
+  Briefcase,
+  PhoneCall
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { ServicePolicyEngine } from '@/lib/servicePolicyEngine';
@@ -236,27 +245,182 @@ export default function CompanionOnboardingWizard() {
     return Object.keys(errors).length === 0;
   };
 
-  // ==================== STEP 3 - 12 OTHER STATES ====================
-  const [serviceDescription, setServiceDescription] = useState('Event companion for gala dinners and sightseeing tours.');
+  // ==================== STEP 3: SERVICES & SAFETY BOUNDARY STATE ====================
+  const [offeredServices, setOfferedServices] = useState<string[]>([
+    'Event Companion',
+    'Fine Dining Companion',
+    'Sightseeing & City Guide',
+    'Language & Accent Guide'
+  ]);
+  const [serviceDescription, setServiceDescription] = useState('Professional companion for corporate galas, fine dining etiquette, language translation, art museum visits, and city tours.');
   const [policyScanResult, setPolicyScanResult] = useState<any>(null);
+  const [safetyBoundaries, setSafetyBoundaries] = useState({
+    zeroIntimacy: true,
+    publicVenueOnly: true,
+    noIllegalSubstances: true
+  });
+  const [step3Errors, setStep3Errors] = useState<{ services?: string; safety?: string; description?: string }>({});
 
-  const [hourlyRate, setHourlyRate] = useState(75);
-  const [dailyRate, setDailyRate] = useState(500);
+  const SERVICE_CATALOG_OPTIONS = [
+    'Event Companion',
+    'Fine Dining Companion',
+    'Sightseeing & City Guide',
+    'Business Gala Escort',
+    'Museum & Art Partner',
+    'Fitness & Outdoor Buddy',
+    'Virtual Study Focus Companion',
+    'Wedding Guest Companion',
+    'Language & Accent Guide',
+    'Shopping & Stylist Buddy'
+  ];
 
-  const [serviceCity, setServiceCity] = useState('New York');
-  const [maxDistanceKm, setMaxDistanceKm] = useState(25);
-
-  const [docType, setDocType] = useState('NATIONAL_ID');
-  const [idNumber, setIdNumber] = useState('ID-8821903');
-
-  const [bankAccountNumber, setBankAccountNumber] = useState('•••• 8821');
-  const [agreedToSafety, setAgreedToSafety] = useState(false);
+  const handleToggleServiceCatalog = (srv: string) => {
+    if (offeredServices.includes(srv)) {
+      if (offeredServices.length <= 1) {
+        showToast('info', 'At least 1 Service Required', 'Please keep at least one companion service selected.');
+        return;
+      }
+      setOfferedServices(prev => prev.filter(s => s !== srv));
+    } else {
+      setOfferedServices(prev => [...prev, srv]);
+    }
+  };
 
   const handleScanService = (text: string) => {
     setServiceDescription(text);
     const scan = ServicePolicyEngine.evaluateProposedService(text);
     setPolicyScanResult(scan);
   };
+
+  const validateStep3 = (): boolean => {
+    const errors: { services?: string; safety?: string; description?: string } = {};
+
+    if (offeredServices.length === 0) {
+      errors.services = 'Please select at least one offered service tag.';
+    }
+
+    if (!safetyBoundaries.zeroIntimacy || !safetyBoundaries.publicVenueOnly || !safetyBoundaries.noIllegalSubstances) {
+      errors.safety = 'You must accept all 3 mandatory safety boundary agreements to offer companion services.';
+    }
+
+    if (!serviceDescription.trim() || serviceDescription.trim().length < 20) {
+      errors.description = 'Please describe your services in at least 20 characters.';
+    }
+
+    if (policyScanResult && !policyScanResult.allowed) {
+      errors.description = 'Your service description contains prohibited content. Please revise.';
+    }
+
+    setStep3Errors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // ==================== STEP 4: PRICING & ESCROW CALCULATOR STATE ====================
+  const [hourlyRate, setHourlyRate] = useState<number>(1500); // INR per hour
+  const [dailyRate, setDailyRate] = useState<number>(8000);   // INR per day
+  const [currencySymbol, setCurrencySymbol] = useState<string>('₹');
+  const [cancellationPolicy, setCancellationPolicy] = useState<'FLEXIBLE' | 'MODERATE' | 'STRICT'>('MODERATE');
+  const [enableOvertimePremium, setEnableOvertimePremium] = useState<boolean>(true);
+  const [outstationMultiplier, setOutstationMultiplier] = useState<number>(1.5);
+  const [step4Errors, setStep4Errors] = useState<{ hourlyRate?: string; dailyRate?: string }>({});
+
+  const validateStep4 = (): boolean => {
+    const errors: { hourlyRate?: string; dailyRate?: string } = {};
+
+    if (!hourlyRate || hourlyRate < 300) {
+      errors.hourlyRate = 'Minimum hourly rate is ₹300/hr.';
+    } else if (hourlyRate > 25000) {
+      errors.hourlyRate = 'Maximum hourly rate limit is ₹25,000/hr.';
+    }
+
+    if (!dailyRate || dailyRate < hourlyRate * 3) {
+      errors.dailyRate = `Full day rate should be at least ₹${hourlyRate * 3} (3x hourly rate).`;
+    }
+
+    setStep4Errors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // ==================== STEP 5: AVAILABILITY & SAFETY GUARDIAN STATE ====================
+  const [availableDays, setAvailableDays] = useState<{ [key: string]: boolean }>({
+    Monday: true,
+    Tuesday: true,
+    Wednesday: true,
+    Thursday: true,
+    Friday: true,
+    Saturday: true,
+    Sunday: false
+  });
+  const [preferredShift, setPreferredShift] = useState<string>('Afternoon & Evening (12 PM - 10 PM)');
+  const [bookingNotice, setBookingNotice] = useState<string>('6 Hours Advance Notice');
+  const [emergencyGuardianName, setEmergencyGuardianName] = useState<string>('Rahul Vance');
+  const [emergencyGuardianPhone, setEmergencyGuardianPhone] = useState<string>('9876543210');
+  const [enableLiveGpsTracking, setEnableLiveGpsTracking] = useState<boolean>(true);
+  const [step5Errors, setStep5Errors] = useState<{ days?: string; guardianPhone?: string }>({});
+
+  const handleToggleDay = (day: string) => {
+    setAvailableDays(prev => ({ ...prev, [day]: !prev[day] }));
+  };
+
+  const validateStep5 = (): boolean => {
+    const errors: { days?: string; guardianPhone?: string } = {};
+
+    const activeDaysCount = Object.values(availableDays).filter(Boolean).length;
+    if (activeDaysCount === 0) {
+      errors.days = 'Please select at least 1 available working day.';
+    }
+
+    if (!emergencyGuardianPhone.trim() || !/^\d{10}$/.test(emergencyGuardianPhone.trim())) {
+      errors.guardianPhone = 'Please enter a valid 10-digit emergency guardian mobile number (+91).';
+    }
+
+    setStep5Errors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // ==================== STEP 6: SERVICE AREA & GEOFENCING STATE ====================
+  const [serviceCity, setServiceCity] = useState<string>('Mumbai Metro');
+  const [maxDistanceKm, setMaxDistanceKm] = useState<number>(25);
+  const [allowOutstation, setAllowOutstation] = useState<boolean>(true);
+  const [hasValidPassport, setHasValidPassport] = useState<boolean>(true);
+  const [travelAllowancePerKm, setTravelAllowancePerKm] = useState<number>(20);
+  const [step6Errors, setStep6Errors] = useState<{ city?: string; distance?: string }>({});
+
+  const CITIES_LIST = [
+    'Mumbai Metro',
+    'Delhi NCR (Gurugram/Noida)',
+    'Bengaluru',
+    'Hyderabad',
+    'Pune',
+    'Chennai',
+    'Kolkata',
+    'Ahmedabad',
+    'Jaipur',
+    'Goa',
+    'Chandigarh',
+    'International Travel Ready'
+  ];
+
+  const validateStep6 = (): boolean => {
+    const errors: { city?: string; distance?: string } = {};
+
+    if (!serviceCity.trim()) {
+      errors.city = 'Please select your base operating city.';
+    }
+
+    if (!maxDistanceKm || maxDistanceKm < 5 || maxDistanceKm > 100) {
+      errors.distance = 'Travel radius must be between 5 km and 100 km.';
+    }
+
+    setStep6Errors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Steps 7-12 states
+  const [docType, setDocType] = useState('NATIONAL_ID');
+  const [idNumber, setIdNumber] = useState('ID-8821903');
+  const [bankAccountNumber, setBankAccountNumber] = useState('•••• 8821');
+  const [agreedToSafety, setAgreedToSafety] = useState(false);
 
   const handleNext = () => {
     if (currentStep === 1) {
@@ -273,9 +437,32 @@ export default function CompanionOnboardingWizard() {
       }
     }
 
-    if (currentStep === 3 && policyScanResult && !policyScanResult.allowed) {
-      showToast('error', 'Prohibited Content Detected', 'Please revise your service description to comply with safety policies.');
-      return;
+    if (currentStep === 3) {
+      if (!validateStep3()) {
+        showToast('error', 'Services Validation Failed', 'Please select services and accept all safety boundary terms.');
+        return;
+      }
+    }
+
+    if (currentStep === 4) {
+      if (!validateStep4()) {
+        showToast('error', 'Pricing Validation Failed', 'Please enter valid hourly and daily rates.');
+        return;
+      }
+    }
+
+    if (currentStep === 5) {
+      if (!validateStep5()) {
+        showToast('error', 'Availability Validation Failed', 'Please select working days and a valid emergency contact.');
+        return;
+      }
+    }
+
+    if (currentStep === 6) {
+      if (!validateStep6()) {
+        showToast('error', 'Location Validation Failed', 'Please select your operating city and valid radius.');
+        return;
+      }
     }
 
     if (currentStep < 12) {
@@ -840,109 +1027,498 @@ export default function CompanionOnboardingWizard() {
           </div>
         )}
 
-        {/* ==================== STEP 3: SERVICES & PROHIBITED SERVICE SCANNER ==================== */}
+        {/* ==================== STEP 3: SERVICES & SAFETY SHIELD ==================== */}
         {currentStep === 3 && (
-          <div className="space-y-4 animate-fadeIn">
-            <h3 className="text-base font-bold text-white border-b border-slate-800 pb-3 flex items-center justify-between">
-              <span>Step 3: Service Catalog & Policy Scanner</span>
-              <span className="text-[10px] font-mono text-indigo-400">REAL-TIME MODERATION</span>
-            </h3>
+          <div className="space-y-6 animate-fadeIn">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                <Briefcase className="w-5 h-5 text-indigo-400 shrink-0" /> Step 3: Offered Services & Safety Boundary Protocol
+              </h3>
+              <span className="hidden sm:inline-block px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-xs font-mono font-bold border border-indigo-500/20">
+                SERVICE BOUNDARIES
+              </span>
+            </div>
 
-            <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1.5">Proposed Service Description</label>
+            {/* Service Catalog Tag Selection */}
+            <div className="space-y-3 p-4 rounded-2xl bg-slate-950 border border-slate-800">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-slate-300 flex items-center gap-2">
+                  <span>Select Companion Services You Offer *</span>
+                  <span className="text-[10px] text-slate-400 font-normal">(Select all that apply)</span>
+                </label>
+                <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/30">
+                  {offeredServices.length} Selected
+                </span>
+              </div>
+
+              <div className="flex flex-wrap gap-2 pt-1">
+                {SERVICE_CATALOG_OPTIONS.map((srv, idx) => {
+                  const isSelected = offeredServices.includes(srv);
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleToggleServiceCatalog(srv)}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border ${
+                        isSelected
+                          ? 'bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-600/30'
+                          : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white'
+                      }`}
+                    >
+                      {isSelected ? <CheckCircle2 className="w-3.5 h-3.5 text-white shrink-0" /> : <Tag className="w-3.5 h-3.5 text-slate-500 shrink-0" />}
+                      <span>{srv}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {step3Errors.services && (
+                <p className="text-[11px] text-rose-400 font-medium flex items-center gap-1 mt-1">
+                  <AlertTriangle className="w-3 h-3 shrink-0" /> {step3Errors.services}
+                </p>
+              )}
+            </div>
+
+            {/* Detailed Service Description & Real-Time Policy Scanner */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-xs font-semibold">
+                <label className="text-slate-300">Detailed Service Description & Specialization *</label>
+                <span className="text-[10px] font-mono text-indigo-400">REAL-TIME MODERATION SCANNER</span>
+              </div>
               <textarea 
                 rows={3}
                 value={serviceDescription}
                 onChange={e => handleScanService(e.target.value)}
-                placeholder="Describe your companionship services (e.g., event companion, city travel guide)..."
-                className="w-full p-4 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-indigo-500"
+                placeholder="Describe your companionship offerings in detail..."
+                className={`w-full p-4 rounded-2xl bg-slate-950 border text-xs sm:text-sm text-white focus:outline-none focus:border-indigo-500 leading-relaxed ${
+                  step3Errors.description ? 'border-rose-500' : 'border-slate-800'
+                }`}
               ></textarea>
+              
+              {policyScanResult && (
+                <div className={`p-3.5 rounded-2xl border text-xs space-y-1 ${policyScanResult.allowed ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-300' : 'bg-rose-950/30 border-rose-500/30 text-rose-300'}`}>
+                  <div className="font-bold flex items-center gap-1.5">
+                    {policyScanResult.allowed ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> : <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />}
+                    {policyScanResult.allowed ? 'Service Policy Scan Passed' : 'Prohibited Content Violation Detected'}
+                  </div>
+                  <p className="text-[11px] opacity-80">{policyScanResult.summary || 'Complies with platform zero-tolerance companionship rules.'}</p>
+                </div>
+              )}
+
+              {step3Errors.description && (
+                <p className="text-[11px] text-rose-400 font-medium flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3 shrink-0" /> {step3Errors.description}
+                </p>
+              )}
             </div>
 
-            {policyScanResult && (
-              <div className={`p-4 rounded-2xl border text-xs space-y-1 ${policyScanResult.allowed ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-300' : 'bg-rose-950/30 border-rose-500/30 text-rose-300'}`}>
-                <div className="font-bold flex items-center gap-1.5">
-                  {policyScanResult.allowed ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <AlertTriangle className="w-4 h-4 text-rose-400" />}
-                  {policyScanResult.allowed ? 'Service Policy Scan Passed!' : 'Policy Violation Detected'}
-                </div>
-                <p className="text-[11px] opacity-80">{policyScanResult.summary || 'Content complies with legal companionship rules.'}</p>
+            {/* Mandatory Safety Boundaries (3 Checkboxes) */}
+            <div className={`p-4 rounded-2xl border space-y-3 ${
+              step3Errors.safety ? 'bg-rose-950/20 border-rose-500/40' : 'bg-slate-950 border-slate-800'
+            }`}>
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0" /> Mandatory Platform Safety Boundary Terms *
+                </span>
+                <span className="text-[10px] text-rose-400 font-mono font-bold">ZERO TOLERANCE</span>
               </div>
-            )}
+
+              <div className="space-y-2.5 text-xs text-slate-300">
+                <label className="flex items-start gap-2.5 cursor-pointer">
+                  <input 
+                    type="checkbox"
+                    checked={safetyBoundaries.zeroIntimacy}
+                    onChange={e => setSafetyBoundaries(prev => ({ ...prev, zeroIntimacy: e.target.checked }))}
+                    className="mt-0.5 w-4 h-4 rounded border-slate-800 text-indigo-500 focus:ring-indigo-500 accent-indigo-500 shrink-0"
+                  />
+                  <span><strong>Zero Physical Intimacy:</strong> All companionship services are strictly non-sexual. Off-platform solicitations lead to immediate permanent ban.</span>
+                </label>
+
+                <label className="flex items-start gap-2.5 cursor-pointer">
+                  <input 
+                    type="checkbox"
+                    checked={safetyBoundaries.publicVenueOnly}
+                    onChange={e => setSafetyBoundaries(prev => ({ ...prev, publicVenueOnly: e.target.checked }))}
+                    className="mt-0.5 w-4 h-4 rounded border-slate-800 text-indigo-500 focus:ring-indigo-500 accent-indigo-500 shrink-0"
+                  />
+                  <span><strong>Public Venue Meeting Requirement:</strong> All initial client engagements must occur in verified public venues (restaurants, events, museums).</span>
+                </label>
+
+                <label className="flex items-start gap-2.5 cursor-pointer">
+                  <input 
+                    type="checkbox"
+                    checked={safetyBoundaries.noIllegalSubstances}
+                    onChange={e => setSafetyBoundaries(prev => ({ ...prev, noIllegalSubstances: e.target.checked }))}
+                    className="mt-0.5 w-4 h-4 rounded border-slate-800 text-indigo-500 focus:ring-indigo-500 accent-indigo-500 shrink-0"
+                  />
+                  <span><strong>Substance Prohibition:</strong> Strictly refrain from illegal substance use or excessive intoxication during active booking hours.</span>
+                </label>
+              </div>
+
+              {step3Errors.safety && (
+                <p className="text-[11px] text-rose-400 font-medium pt-1 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3 shrink-0" /> {step3Errors.safety}
+                </p>
+              )}
+            </div>
           </div>
         )}
 
-        {/* ==================== STEP 4: PRICING ==================== */}
+        {/* ==================== STEP 4: PRICING & ESCROW CALCULATOR ==================== */}
         {currentStep === 4 && (
-          <div className="space-y-4 animate-fadeIn">
-            <h3 className="text-base font-bold text-white border-b border-slate-800 pb-3">
-              Step 4: Hourly & Daily Rates
-            </h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1.5">Hourly Rate ($ USD)</label>
-                <input 
-                  type="number" 
-                  value={hourlyRate}
-                  onChange={e => setHourlyRate(Number(e.target.value))}
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono font-bold"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1.5">Full Day Rate ($ USD)</label>
-                <input 
-                  type="number" 
-                  value={dailyRate}
-                  onChange={e => setDailyRate(Number(e.target.value))}
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono font-bold"
-                />
-              </div>
+          <div className="space-y-6 animate-fadeIn">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-emerald-400 shrink-0" /> Step 4: Service Rates & Escrow Earnings Calculator
+              </h3>
+              <span className="hidden sm:inline-block px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-mono font-bold border border-emerald-500/20">
+                DYNAMIC EARNINGS
+              </span>
             </div>
-          </div>
-        )}
 
-        {/* ==================== STEP 5: AVAILABILITY ==================== */}
-        {currentStep === 5 && (
-          <div className="space-y-4 animate-fadeIn">
-            <h3 className="text-base font-bold text-white border-b border-slate-800 pb-3">
-              Step 5: Weekly Availability Schedule
-            </h3>
-            <p className="text-xs text-slate-400">Set your default available working days and times.</p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day, idx) => (
-                <div key={idx} className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-center space-y-1">
-                  <span className="font-bold text-white block">{day}</span>
-                  <span className="text-[10px] text-emerald-400">09:00 AM - 08:00 PM</span>
+            {/* Rate Input Fields */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
+                  <span>Base Hourly Rate ({currencySymbol} / hr) *</span>
+                  <span className="text-[10px] text-slate-500">Min ₹300 - Max ₹25,000</span>
+                </label>
+                <div className="relative flex items-center">
+                  <span className="absolute left-4 font-mono font-bold text-slate-400">{currencySymbol}</span>
+                  <input 
+                    type="number" 
+                    value={hourlyRate}
+                    onChange={e => setHourlyRate(Number(e.target.value))}
+                    className={`w-full pl-9 pr-4 py-3 rounded-2xl bg-slate-950 border text-sm text-white focus:outline-none focus:border-indigo-500 font-mono font-bold ${
+                      step4Errors.hourlyRate ? 'border-rose-500' : 'border-slate-800'
+                    }`}
+                  />
                 </div>
-              ))}
+                {step4Errors.hourlyRate && (
+                  <p className="text-[11px] text-rose-400 font-medium flex items-center gap-1 mt-1">
+                    <AlertTriangle className="w-3 h-3 shrink-0" /> {step4Errors.hourlyRate}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
+                  <span>Full Day Package Rate (8 Hours) *</span>
+                  <span className="text-[10px] text-slate-500">Recommended Discounted Day Rate</span>
+                </label>
+                <div className="relative flex items-center">
+                  <span className="absolute left-4 font-mono font-bold text-slate-400">{currencySymbol}</span>
+                  <input 
+                    type="number" 
+                    value={dailyRate}
+                    onChange={e => setDailyRate(Number(e.target.value))}
+                    className={`w-full pl-9 pr-4 py-3 rounded-2xl bg-slate-950 border text-sm text-white focus:outline-none focus:border-indigo-500 font-mono font-bold ${
+                      step4Errors.dailyRate ? 'border-rose-500' : 'border-slate-800'
+                    }`}
+                  />
+                </div>
+                {step4Errors.dailyRate && (
+                  <p className="text-[11px] text-rose-400 font-medium flex items-center gap-1 mt-1">
+                    <AlertTriangle className="w-3 h-3 shrink-0" /> {step4Errors.dailyRate}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Escrow Payout Breakdown Calculator Box */}
+            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <Calculator className="w-4 h-4 text-indigo-400 shrink-0" /> Live Escrow Payout Breakdown (Per 1-Hour Booking)
+                </span>
+                <span className="text-[10px] font-mono text-emerald-400 font-bold">100% ESCROW PROTECTED</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                  <span className="text-slate-400 block text-[11px]">Client Total Charged</span>
+                  <span className="font-mono font-bold text-white text-base">₹{Math.round(hourlyRate * 1.10)}</span>
+                  <span className="text-[10px] text-slate-500 block">Includes 10% Trust & Escrow Fee</span>
+                </div>
+
+                <div className="p-3 rounded-xl bg-indigo-950/30 border border-indigo-500/30 space-y-1">
+                  <span className="text-indigo-300 block text-[11px]">Your Net Payout (85%)</span>
+                  <span className="font-mono font-bold text-emerald-400 text-base">₹{Math.round(hourlyRate * 0.85)} / hr</span>
+                  <span className="text-[10px] text-emerald-400/80 block">Direct Bank Deposit</span>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                  <span className="text-slate-400 block text-[11px]">Platform Commission</span>
+                  <span className="font-mono font-bold text-slate-300 text-base">₹{Math.round(hourlyRate * 0.15)}</span>
+                  <span className="text-[10px] text-slate-500 block">15% Safety & Verification</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Cancellation Policy Selection Cards */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-slate-300 block">Cancellation & Refund Policy *</label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {[
+                  { key: 'FLEXIBLE', title: 'Flexible', desc: '100% refund up to 12 hours before booking starts.' },
+                  { key: 'MODERATE', title: 'Moderate (Recommended)', desc: '100% refund up to 24h, 50% refund within 24h.' },
+                  { key: 'STRICT', title: 'Strict', desc: '50% non-refundable deposit for cancellations.' }
+                ].map(pol => (
+                  <button
+                    key={pol.key}
+                    type="button"
+                    onClick={() => setCancellationPolicy(pol.key as any)}
+                    className={`p-3.5 rounded-2xl border text-left space-y-1 transition-all ${
+                      cancellationPolicy === pol.key
+                        ? 'bg-indigo-950/40 border-indigo-500 text-white shadow-lg'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <div className="font-bold text-xs flex items-center justify-between">
+                      <span>{pol.title}</span>
+                      {cancellationPolicy === pol.key && <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />}
+                    </div>
+                    <p className="text-[10px] leading-relaxed text-slate-400">{pol.desc}</p>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
-        {/* ==================== STEP 6: SERVICE AREA ==================== */}
-        {currentStep === 6 && (
-          <div className="space-y-4 animate-fadeIn">
-            <h3 className="text-base font-bold text-white border-b border-slate-800 pb-3">
-              Step 6: Location & Service Radius
-            </h3>
+        {/* ==================== STEP 5: AVAILABILITY & SAFETY GUARDIAN ==================== */}
+        {currentStep === 5 && (
+          <div className="space-y-6 animate-fadeIn">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                <Clock className="w-5 h-5 text-indigo-400 shrink-0" /> Step 5: Weekly Schedule & Safety Guardian Setup
+              </h3>
+              <span className="hidden sm:inline-block px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-xs font-mono font-bold border border-indigo-500/20">
+                LIVE SCHEDULE
+              </span>
+            </div>
+
+            {/* Weekly Days Selector */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-xs font-semibold">
+                <label className="text-slate-300">Working Days Selection *</label>
+                <span className="text-[10px] font-mono text-emerald-400">
+                  {Object.values(availableDays).filter(Boolean).length} / 7 Days Active
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+                {Object.keys(availableDays).map((day) => {
+                  const isActive = availableDays[day];
+                  return (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => handleToggleDay(day)}
+                      className={`p-3 rounded-2xl border text-center font-bold text-xs transition-all ${
+                        isActive
+                          ? 'bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-600/30'
+                          : 'bg-slate-950 border-slate-800 text-slate-500 hover:text-slate-300'
+                      }`}
+                    >
+                      <span className="block text-[10px] uppercase font-mono tracking-wider opacity-80">{day.substring(0, 3)}</span>
+                      <span className="text-xs">{day}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {step5Errors.days && (
+                <p className="text-[11px] text-rose-400 font-medium flex items-center gap-1 mt-1">
+                  <AlertTriangle className="w-3 h-3 shrink-0" /> {step5Errors.days}
+                </p>
+              )}
+            </div>
+
+            {/* Preferred Working Shift & Booking Notice */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1.5">Base Operating City</label>
-                <input 
-                  type="text"
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300 block">Preferred Working Shift *</label>
+                <select 
+                  value={preferredShift}
+                  onChange={e => setPreferredShift(e.target.value)}
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="Morning & Afternoon (8 AM - 4 PM)">Morning & Afternoon (8 AM - 4 PM)</option>
+                  <option value="Afternoon & Evening (12 PM - 10 PM)">Afternoon & Evening (12 PM - 10 PM)</option>
+                  <option value="Evening & Late Night (4 PM - 1 AM)">Evening & Late Night (4 PM - 1 AM)</option>
+                  <option value="Full Day Flexible (8 AM - 11 PM)">Full Day Flexible (8 AM - 11 PM)</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300 block">Minimum Advance Booking Notice *</label>
+                <select 
+                  value={bookingNotice}
+                  onChange={e => setBookingNotice(e.target.value)}
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="2 Hours Advance Notice">Immediate (2 Hours Notice)</option>
+                  <option value="6 Hours Advance Notice">Same Day (6 Hours Notice)</option>
+                  <option value="24 Hours Advance Notice">Standard (24 Hours Notice)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Emergency SOS Guardian Setup (Safety Shield) */}
+            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                <div className="flex items-center gap-2">
+                  <PhoneCall className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span className="text-xs font-bold text-white">Emergency Safety Guardian Contact (+91) *</span>
+                </div>
+                <span className="text-[10px] font-mono text-emerald-400 font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                  LIVE SOS PROTECTED
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Designate a trusted family member or friend's mobile number. They receive real-time location alerts if you trigger the 1-Tap Emergency SOS button during active bookings.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-300 block">Guardian Full Name *</label>
+                  <input 
+                    type="text" 
+                    value={emergencyGuardianName}
+                    onChange={e => setEmergencyGuardianName(e.target.value)}
+                    placeholder="e.g. Rahul Vance"
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-300 block">Guardian Mobile Number (+91) *</label>
+                  <div className="flex">
+                    <span className="px-3.5 py-3 rounded-l-2xl bg-slate-900 border border-r-0 border-slate-800 text-xs font-mono font-bold text-indigo-400 flex items-center">
+                      +91
+                    </span>
+                    <input 
+                      type="text" 
+                      maxLength={10}
+                      value={emergencyGuardianPhone}
+                      onChange={e => setEmergencyGuardianPhone(e.target.value.replace(/\D/g, ''))}
+                      placeholder="9876543210"
+                      className={`w-full px-4 py-3 rounded-r-2xl bg-slate-950 border text-sm text-white focus:outline-none focus:border-indigo-500 font-mono ${
+                        step5Errors.guardianPhone ? 'border-rose-500' : 'border-slate-800'
+                      }`}
+                    />
+                  </div>
+                  {step5Errors.guardianPhone && (
+                    <p className="text-[11px] text-rose-400 font-medium flex items-center gap-1 mt-1">
+                      <AlertTriangle className="w-3 h-3 shrink-0" /> {step5Errors.guardianPhone}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ==================== STEP 6: SERVICE AREA & GEOFENCING ==================== */}
+        {currentStep === 6 && (
+          <div className="space-y-6 animate-fadeIn">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                <Navigation className="w-5 h-5 text-indigo-400 shrink-0" /> Step 6: Operating City & Geofence Travel Radius
+              </h3>
+              <span className="hidden sm:inline-block px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-xs font-mono font-bold border border-indigo-500/20">
+                GEOFENCE RADIUS
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Base City Dropdown */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300 block">Base Operating City *</label>
+                <select 
                   value={serviceCity}
                   onChange={e => setServiceCity(e.target.value)}
                   className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500"
+                >
+                  {CITIES_LIST.map((city, idx) => (
+                    <option key={idx} value={city}>{city}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Travel Allowance Rate */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300 block">Travel Allowance Fee (Beyond 10km)</label>
+                <div className="relative flex items-center">
+                  <span className="absolute left-4 font-mono font-bold text-slate-400">₹</span>
+                  <input 
+                    type="number" 
+                    value={travelAllowancePerKm}
+                    onChange={e => setTravelAllowancePerKm(Number(e.target.value))}
+                    className="w-full pl-9 pr-12 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono font-bold"
+                  />
+                  <span className="absolute right-4 text-xs font-mono text-slate-400">/ km</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Travel Distance Geofence Range Slider */}
+            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+              <div className="flex justify-between items-center text-xs font-semibold">
+                <label className="text-slate-300 flex items-center gap-1.5">
+                  <Sliders className="w-4 h-4 text-indigo-400" /> Maximum Travel Radius Geofence *
+                </label>
+                <span className="font-mono font-bold text-indigo-400 text-sm">
+                  {maxDistanceKm} Km Radius
+                </span>
+              </div>
+
+              <input 
+                type="range" 
+                min={5}
+                max={100}
+                step={5}
+                value={maxDistanceKm}
+                onChange={e => setMaxDistanceKm(Number(e.target.value))}
+                className="w-full h-2 rounded-lg bg-slate-900 appearance-none cursor-pointer accent-indigo-500"
+              />
+
+              <div className="flex justify-between text-[10px] font-mono text-slate-500 pt-1">
+                <span>5 Km (Local District)</span>
+                <span>25 Km (City-Wide)</span>
+                <span>50 Km (Metropolitan)</span>
+                <span>100 Km (Outstation)</span>
+              </div>
+            </div>
+
+            {/* Outstation & Travel Readiness Toggles */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <span className="text-xs font-bold text-white block">Outstation Travel Willingness</span>
+                  <span className="text-[10px] text-slate-400 block">Available for inter-city travel bookings</span>
+                </div>
+                <input 
+                  type="checkbox"
+                  checked={allowOutstation}
+                  onChange={e => setAllowOutstation(e.target.checked)}
+                  className="w-5 h-5 rounded border-slate-800 text-indigo-500 focus:ring-indigo-500 accent-indigo-500"
                 />
               </div>
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1.5">Max Travel Distance (Km)</label>
+
+              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Plane className="w-3.5 h-3.5 text-indigo-400" /> Valid Passport Availability
+                  </span>
+                  <span className="text-[10px] text-slate-400 block">Ready for international travel companionships</span>
+                </div>
                 <input 
-                  type="number"
-                  value={maxDistanceKm}
-                  onChange={e => setMaxDistanceKm(Number(e.target.value))}
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono"
+                  type="checkbox"
+                  checked={hasValidPassport}
+                  onChange={e => setHasValidPassport(e.target.checked)}
+                  className="w-5 h-5 rounded border-slate-800 text-indigo-500 focus:ring-indigo-500 accent-indigo-500"
                 />
               </div>
             </div>
