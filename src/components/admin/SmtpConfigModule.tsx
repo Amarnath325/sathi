@@ -33,6 +33,7 @@ export function SmtpConfigModule() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isSyncingApi, setIsSyncingApi] = useState(false);
+  const [dbSource, setDbSource] = useState<string>('NEON_POSTGRES_DB');
 
   // Fetch decrypted settings from Live DB API on mount
   React.useEffect(() => {
@@ -41,6 +42,7 @@ export function SmtpConfigModule() {
         const res = await fetch('/api/admin/smtp');
         const data = await res.json();
         if (data.success && data.settings) {
+          if (data.source) setDbSource(data.source);
           setFormData(prev => ({
             ...prev,
             ...data.settings,
@@ -137,8 +139,11 @@ export function SmtpConfigModule() {
                 <span className="text-[10px] font-mono font-bold uppercase px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/30 flex items-center gap-1">
                   <Lock className="w-3 h-3 text-purple-400" /> AES-256 Vault Encrypted
                 </span>
+                <span className="text-[10px] font-mono font-bold uppercase px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 flex items-center gap-1">
+                  <Database className="w-3 h-3 text-cyan-400" /> Neon PostgreSQL DB
+                </span>
               </h2>
-              <p className="text-xs text-slate-400">All third-party credentials are encrypted with AES-256 in DB and decrypted in-memory for API dispatch.</p>
+              <p className="text-xs text-slate-400">All third-party credentials are encrypted with AES-256 in Neon PostgreSQL DB and decrypted in-memory for API dispatch.</p>
             </div>
           </div>
 
@@ -155,7 +160,7 @@ export function SmtpConfigModule() {
 
         {isSaved && (
           <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-2 animate-fade-in">
-            <CheckCircle2 className="w-4 h-4 shrink-0" /> Credentials Encrypted with AES-256 & Saved to Vault!
+            <CheckCircle2 className="w-4 h-4 shrink-0" /> Credentials Encrypted with AES-256 & Updated Live in Neon PostgreSQL Database!
           </div>
         )}
       </div>

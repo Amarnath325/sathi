@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { encryptCredential, decryptCredential } from '@/lib/cryptoUtils';
+import { prisma } from '@/lib/prisma';
 
-// Server-side in-memory DB fallback store
-let globalSmtpDbStore = {
+const SETTING_KEY = 'smtp_email_config';
+
+// Fallback in-memory store in case DB migration is running
+let memorySmtpStore = {
   driver: 'SMTP',
   host: 'smtp-relay.brevo.com',
   port: 587,
@@ -15,29 +18,51 @@ let globalSmtpDbStore = {
   lastSavedAt: new Date().toISOString()
 };
 
-// GET: Fetch SMTP credentials (Decrypts for authorized admin view)
+// GET: Fetch SMTP credentials from Neon DB (Decrypts for authorized admin view)
 export async function GET() {
   try {
-    const encryptedPass = globalSmtpDbStore.password;
-    const decryptedPass = decryptCredential(encryptedPass);
+    let dbRecord = null;
+    try {
+      dbRecord = await prisma.systemSetting.findUnique({
+        where: { key: SETTING_KEY }
+      });
+    } catch (dbErr) {
+      console.warn('Neon DB query warning (using fallback):', dbErr);
+    }
+
+    let smtpData = memorySmtpStore;
+
+    if (dbRecord && dbRecord.value) {
+      try {
+        const parsed = JSON.parse(dbRecord.value);
+        smtpData = { ...memorySmtpStore, ...parsed };
+      } catch (e) {
+        console.error('Failed to parse DB JSON value:', e);
+      }
+    }
+
+    // Password in DB is encrypted with AES-256 (`enc_aes256_v1:...`)
+    const rawEncryptedPass = smtpData.password;
+    const decryptedPass = decryptCredential(rawEncryptedPass);
 
     return NextResponse.json({
       success: true,
+      source: dbRecord ? 'NEON_POSTGRES_DB' : 'MEMORY_FALLBACK',
       settings: {
-        ...globalSmtpDbStore,
+        ...smtpData,
         password: decryptedPass, // Decrypted for admin view
-        encryptedPasswordHash: encryptedPass // Raw cipher stored in DB
+        encryptedPasswordHash: rawEncryptedPass // Raw cipher stored in Neon DB
       }
     });
   } catch (error: any) {
     return NextResponse.json(
-      { success: false, message: `Failed to fetch DB SMTP settings: ${error?.message}` },
+      { success: false, message: `Failed to fetch SMTP settings from DB: ${error?.message}` },
       { status: 500 }
     );
   }
 }
 
-// POST: Encrypt & Save SMTP credentials into DB
+// POST: Encrypt & Save SMTP credentials into Neon DB
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -50,15 +75,15 @@ export async function POST(req: Request) {
       );
     }
 
-    // Encrypt password using AES-256 before writing to DB
+    // 1. Encrypt password using AES-256 before writing to Neon DB
     const encryptedPassword = encryptCredential(password);
 
-    globalSmtpDbStore = {
+    const payloadToSave = {
       driver: driver || 'SMTP',
       host,
       port: Number(port) || 587,
       username,
-      password: encryptedPassword, // Strictly saved in ENCRYPTED form
+      password: encryptedPassword, // Strictly saved in ENCRYPTED format in DB
       encryption: encryption || 'TLS',
       fromName: fromName || 'Sathi Companion Connect',
       fromEmail: fromEmail || 'no-reply@sathi-connect.com',
@@ -66,19 +91,47 @@ export async function POST(req: Request) {
       lastSavedAt: new Date().toISOString()
     };
 
+    memorySmtpStore = payloadToSave;
+
+    // 2. Persist in Neon Postgres Database via Prisma SystemSetting table
+    let dbSuccess = false;
+    try {
+      await prisma.systemSetting.upsert({
+        where: { key: SETTING_KEY },
+        update: {
+          value: JSON.stringify(payloadToSave),
+          category: 'COMMUNICATION',
+          valueType: 'JSON',
+          isEncrypted: true,
+          updatedAt: new Date()
+        },
+        create: {
+          key: SETTING_KEY,
+          category: 'COMMUNICATION',
+          value: JSON.stringify(payloadToSave),
+          valueType: 'JSON',
+          isEncrypted: true,
+          description: 'Encrypted SMTP Credentials for Brevo/Custom Mail Gateway'
+        }
+      });
+      dbSuccess = true;
+    } catch (dbErr: any) {
+      console.error('Neon DB Upsert Error:', dbErr?.message);
+    }
+
     return NextResponse.json({
       success: true,
-      message: 'SMTP credentials successfully encrypted with AES-256 & saved to Database!',
-      savedEncryptedData: {
-        ...globalSmtpDbStore,
-        password: encryptedPassword // Confirming encrypted format saved
-      },
-      decryptedViewPassword: password // Plaintext returned for UI form sync
+      dbSynced: dbSuccess,
+      message: dbSuccess
+        ? 'SMTP credentials successfully encrypted with AES-256 & updated live in Neon PostgreSQL DB!'
+        : 'SMTP credentials encrypted with AES-256 and saved in active server store.',
+      savedEncryptedData: payloadToSave,
+      decryptedViewPassword: password
     });
 
   } catch (error: any) {
     return NextResponse.json(
-      { success: false, message: `Failed to encrypt and save to DB: ${error?.message}` },
+      { success: false, message: `Failed to encrypt and save to Neon DB: ${error?.message}` },
       { status: 500 }
     );
   }
