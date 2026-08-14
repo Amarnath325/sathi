@@ -4,21 +4,10 @@ import { prisma } from '@/lib/prisma';
 
 const SETTING_KEY = 'smtp_email_config';
 
-// Fallback in-memory store in case DB migration is running
-let memorySmtpStore = {
-  driver: 'SMTP',
-  host: 'smtp-relay.brevo.com',
-  port: 587,
-  username: 'b57a23001@smtp-brevo.com',
-  password: encryptCredential('xsmtpsib-7a2010ec3452cd9b655a0f238bd2eccdbc3847a9+10bdb821db38d558cb495bd-vw16czybY2hcYf5L'),
-  encryption: 'TLS',
-  fromName: 'Sathi Companion Connect',
-  fromEmail: 'no-reply@sathi-connect.com',
-  isVerified: true,
-  lastSavedAt: new Date().toISOString()
-};
+// In-memory runtime cache (populates only when form is submitted or fetched from DB)
+let memorySmtpStore: any = null;
 
-// GET: Fetch SMTP credentials from Neon DB (Decrypts for authorized admin view)
+// GET: Fetch real SMTP credentials from Neon DB
 export async function GET() {
   try {
     let dbRecord = null;
@@ -27,31 +16,42 @@ export async function GET() {
         where: { key: SETTING_KEY }
       });
     } catch (dbErr) {
-      console.warn('Neon DB query warning (using fallback):', dbErr);
+      console.warn('Neon DB query warning:', dbErr);
     }
 
-    let smtpData = memorySmtpStore;
+    let smtpData = null;
 
     if (dbRecord && dbRecord.value) {
       try {
-        const parsed = JSON.parse(dbRecord.value);
-        smtpData = { ...memorySmtpStore, ...parsed };
+        smtpData = JSON.parse(dbRecord.value);
       } catch (e) {
         console.error('Failed to parse DB JSON value:', e);
       }
+    } else if (memorySmtpStore) {
+      smtpData = memorySmtpStore;
     }
 
-    // Password in DB is encrypted with AES-256 (`enc_aes256_v1:...`)
-    const rawEncryptedPass = smtpData.password;
+    if (!smtpData) {
+      return NextResponse.json({
+        success: true,
+        configured: false,
+        source: 'NO_CONFIG_FOUND',
+        settings: null
+      });
+    }
+
+    // Password in DB is stored encrypted with AES-256 (`enc_aes256_v1:...`)
+    const rawEncryptedPass = smtpData.password || '';
     const decryptedPass = decryptCredential(rawEncryptedPass);
 
     return NextResponse.json({
       success: true,
-      source: dbRecord ? 'NEON_POSTGRES_DB' : 'MEMORY_FALLBACK',
+      configured: true,
+      source: dbRecord ? 'NEON_POSTGRES_DB' : 'MEMORY_CACHE',
       settings: {
         ...smtpData,
         password: decryptedPass, // Decrypted for admin view
-        encryptedPasswordHash: rawEncryptedPass // Raw cipher stored in Neon DB
+        encryptedPasswordHash: rawEncryptedPass // Raw ciphertext saved in Neon DB
       }
     });
   } catch (error: any) {
@@ -62,7 +62,7 @@ export async function GET() {
   }
 }
 
-// POST: Encrypt & Save SMTP credentials into Neon DB
+// POST: Encrypt & Save user's form data into Neon DB
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -75,18 +75,19 @@ export async function POST(req: Request) {
       );
     }
 
-    // 1. Encrypt password using AES-256 before writing to Neon DB
+    // 1. Encrypt password using AES-256 before saving to DB
     const encryptedPassword = encryptCredential(password);
 
+    // Dynamic payload directly constructed from form inputs
     const payloadToSave = {
       driver: driver || 'SMTP',
-      host,
+      host: host.trim(),
       port: Number(port) || 587,
-      username,
+      username: username.trim(),
       password: encryptedPassword, // Strictly saved in ENCRYPTED format in DB
       encryption: encryption || 'TLS',
-      fromName: fromName || 'Sathi Companion Connect',
-      fromEmail: fromEmail || 'no-reply@sathi-connect.com',
+      fromName: fromName ? fromName.trim() : 'Sathi Companion Connect',
+      fromEmail: fromEmail ? fromEmail.trim() : username.trim(),
       isVerified: true,
       lastSavedAt: new Date().toISOString()
     };

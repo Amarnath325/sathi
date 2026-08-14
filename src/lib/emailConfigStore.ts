@@ -54,16 +54,15 @@ interface EmailConfigState {
 
 const DEFAULT_SMTP_SETTINGS: SmtpSettings = {
   driver: 'SMTP',
-  host: 'smtp.gmail.com',
+  host: '',
   port: 587,
-  username: 'notifications@sathi-connect.com',
-  password: encryptCredential('Sathi@AppPassword2026'),
+  username: '',
+  password: '',
   encryption: 'TLS',
   fromName: 'Sathi Companion Connect',
-  fromEmail: 'no-reply@sathi-connect.com',
-  isVerified: true,
-  lastTestedAt: new Date().toISOString(),
-  isEncryptedInDb: true
+  fromEmail: '',
+  isVerified: false,
+  isEncryptedInDb: false
 };
 
 const DEFAULT_EMAIL_TEMPLATES: EmailTemplate[] = [
