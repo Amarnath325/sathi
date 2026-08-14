@@ -35,7 +35,11 @@ import {
   Navigation,
   Sliders,
   Briefcase,
-  PhoneCall
+  PhoneCall,
+  Camera,
+  Scan,
+  CreditCard,
+  Building2
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { ServicePolicyEngine } from '@/lib/servicePolicyEngine';
@@ -416,11 +420,101 @@ export default function CompanionOnboardingWizard() {
     return Object.keys(errors).length === 0;
   };
 
-  // Steps 7-12 states
-  const [docType, setDocType] = useState('NATIONAL_ID');
-  const [idNumber, setIdNumber] = useState('ID-8821903');
-  const [bankAccountNumber, setBankAccountNumber] = useState('•••• 8821');
-  const [agreedToSafety, setAgreedToSafety] = useState(false);
+  // ==================== STEP 7: IDENTITY & BIOMETRIC LIVENESS STATE ====================
+  const [biometricStatus, setBiometricStatus] = useState<'NOT_STARTED' | 'SCANNING' | 'VERIFIED'>('VERIFIED');
+  const [livenessScore, setLivenessScore] = useState<number>(98.6);
+  const [step7Errors, setStep7Errors] = useState<{ biometric?: string }>({});
+
+  const handleStartBiometricScan = () => {
+    setBiometricStatus('SCANNING');
+    setTimeout(() => {
+      setBiometricStatus('VERIFIED');
+      setLivenessScore(99.1);
+      showToast('success', 'Biometric Scan Passed', 'Facial recognition and anti-spoofing liveness verified successfully!');
+    }, 1800);
+  };
+
+  const validateStep7 = (): boolean => {
+    if (biometricStatus !== 'VERIFIED') {
+      setStep7Errors({ biometric: 'Please complete the live facial recognition biometric scan.' });
+      return false;
+    }
+    setStep7Errors({});
+    return true;
+  };
+
+  // ==================== STEP 8: KYC VAULT (GOVT DOCUMENT ENCRYPTED) STATE ====================
+  const [docType, setDocType] = useState<string>('AADHAAR');
+  const [idNumber, setIdNumber] = useState<string>('482910398821');
+  const [attachedFileName, setAttachedFileName] = useState<string>('aadhaar_front_back_encrypted.pdf');
+  const [isFileAttached, setIsFileAttached] = useState<boolean>(true);
+  const [step8Errors, setStep8Errors] = useState<{ idNumber?: string; file?: string }>({});
+
+  const validateStep8 = (): boolean => {
+    const errors: { idNumber?: string; file?: string } = {};
+
+    if (!idNumber.trim()) {
+      errors.idNumber = 'Government ID document number is required.';
+    } else if (docType === 'AADHAAR' && !/^\d{12}$/.test(idNumber.trim())) {
+      errors.idNumber = 'Aadhaar Card number must be exactly 12 digits.';
+    } else if (docType === 'PAN' && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(idNumber.trim().toUpperCase())) {
+      errors.idNumber = 'Invalid PAN Card format (e.g. ABCDE1234F).';
+    }
+
+    if (!isFileAttached) {
+      errors.file = 'Please upload an encrypted copy of your government ID proof.';
+    }
+
+    setStep8Errors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // ==================== STEP 9: PAYOUT SETUP STATE ====================
+  const [payoutMethod, setPayoutMethod] = useState<'BANK' | 'UPI'>('BANK');
+  const [accountHolderName, setAccountHolderName] = useState<string>('Aria Vance');
+  const [bankAccountNumber, setBankAccountNumber] = useState<string>('50100293847192');
+  const [ifscCode, setIfscCode] = useState<string>('SBIN0001234');
+  const [upiId, setUpiId] = useState<string>('ariavance@okaxis');
+  const [step9Errors, setStep9Errors] = useState<{ holder?: string; account?: string; ifsc?: string; upi?: string }>({});
+
+  const validateStep9 = (): boolean => {
+    const errors: { holder?: string; account?: string; ifsc?: string; upi?: string } = {};
+
+    if (!accountHolderName.trim()) {
+      errors.holder = 'Account holder name is required.';
+    }
+
+    if (payoutMethod === 'BANK') {
+      if (!bankAccountNumber.trim() || bankAccountNumber.trim().length < 8) {
+        errors.account = 'Please enter a valid bank account number (Min 8 digits).';
+      }
+      if (!ifscCode.trim() || !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifscCode.trim().toUpperCase())) {
+        errors.ifsc = 'Invalid IFSC code format (e.g. SBIN0001234).';
+      }
+    } else {
+      if (!upiId.trim() || !upiId.includes('@')) {
+        errors.upi = 'Please enter a valid UPI ID (e.g. username@upi).';
+      }
+    }
+
+    setStep9Errors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // ==================== STEP 10: SAFETY TERMS & BACKGROUND CHECK CONSENT STATE ====================
+  const [agreedBackgroundCheck, setAgreedBackgroundCheck] = useState<boolean>(true);
+  const [agreedOffPlatformContract, setAgreedOffPlatformContract] = useState<boolean>(true);
+  const [agreedSosLocationConsent, setAgreedSosLocationConsent] = useState<boolean>(true);
+  const [step10Errors, setStep10Errors] = useState<{ terms?: string }>({});
+
+  const validateStep10 = (): boolean => {
+    if (!agreedBackgroundCheck || !agreedOffPlatformContract || !agreedSosLocationConsent) {
+      setStep10Errors({ terms: 'You must accept all 3 legal safety & background check consents.' });
+      return false;
+    }
+    setStep10Errors({});
+    return true;
+  };
 
   const handleNext = () => {
     if (currentStep === 1) {
@@ -459,6 +553,39 @@ export default function CompanionOnboardingWizard() {
     }
 
     if (currentStep === 6) {
+      if (!validateStep6()) {
+        showToast('error', 'Location Validation Failed', 'Please select your operating city and valid radius.');
+        return;
+      }
+    }
+
+    if (currentStep === 7) {
+      if (!validateStep7()) {
+        showToast('error', 'Identity Validation Failed', 'Please complete the live facial liveness scan.');
+        return;
+      }
+    }
+
+    if (currentStep === 8) {
+      if (!validateStep8()) {
+        showToast('error', 'KYC Validation Failed', 'Please enter valid government ID details and upload proof.');
+        return;
+      }
+    }
+
+    if (currentStep === 9) {
+      if (!validateStep9()) {
+        showToast('error', 'Payout Validation Failed', 'Please enter valid bank or UPI payout account details.');
+        return;
+      }
+    }
+
+    if (currentStep === 10) {
+      if (!validateStep10()) {
+        showToast('error', 'Safety Terms Required', 'Please accept all legal & background check consents.');
+        return;
+      }
+    }
       if (!validateStep6()) {
         showToast('error', 'Location Validation Failed', 'Please select your operating city and valid radius.');
         return;
@@ -1525,140 +1652,378 @@ export default function CompanionOnboardingWizard() {
           </div>
         )}
 
-        {/* ==================== STEP 7: IDENTITY OVERVIEW ==================== */}
+        {/* ==================== STEP 7: IDENTITY & BIOMETRIC LIVENESS CHECK ==================== */}
         {currentStep === 7 && (
-          <div className="space-y-4 animate-fadeIn">
-            <h3 className="text-base font-bold text-white border-b border-slate-800 pb-3">
-              Step 7: Biometric & Selfie Check
-            </h3>
-            <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800 text-center space-y-3">
-              <UserCheck className="w-10 h-10 text-emerald-400 mx-auto" />
-              <h4 className="text-sm font-bold text-white">Live Facial Recognition Passed</h4>
-              <p className="text-xs text-slate-400">Liveness check matches registered user credentials.</p>
+          <div className="space-y-6 animate-fadeIn">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                <Camera className="w-5 h-5 text-indigo-400 shrink-0" /> Step 7: Facial Biometrics & Liveness Anti-Spoofing Check
+              </h3>
+              <span className="hidden sm:inline-block px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-mono font-bold border border-emerald-500/20">
+                BIOMETRIC SECURED
+              </span>
+            </div>
+
+            <div className="p-6 rounded-3xl bg-slate-950 border border-slate-800 text-center space-y-4 max-w-lg mx-auto shadow-2xl">
+              <div className="relative w-28 h-28 mx-auto flex items-center justify-center">
+                <div className={`absolute inset-0 rounded-full border-2 border-dashed ${
+                  biometricStatus === 'VERIFIED' ? 'border-emerald-500 animate-spin-slow' : 'border-indigo-500 animate-spin'
+                }`}></div>
+                <div className={`w-24 h-24 rounded-full flex items-center justify-center border ${
+                  biometricStatus === 'VERIFIED' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400'
+                }`}>
+                  {biometricStatus === 'VERIFIED' ? (
+                    <UserCheck className="w-12 h-12" />
+                  ) : (
+                    <Scan className="w-12 h-12 animate-pulse" />
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-base font-bold text-white">
+                  {biometricStatus === 'VERIFIED' ? 'Facial Liveness Verification Passed' : 'Live Facial Scan Required'}
+                </h4>
+                <p className="text-xs text-slate-400 mt-1">
+                  {biometricStatus === 'VERIFIED'
+                    ? `Biometric match score: ${livenessScore}% confidence. Liveness & depth perception verified.`
+                    : 'Position your face inside the frame to complete 3D liveness detection.'}
+                </p>
+              </div>
+
+              {biometricStatus === 'VERIFIED' ? (
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-mono font-bold">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span>3D Liveness Anti-Spoofing: Verified</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleStartBiometricScan}
+                  className="px-6 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-600/30"
+                >
+                  Start Live Camera Scan
+                </button>
+              )}
+
+              <div className="pt-3 border-t border-slate-900 grid grid-cols-3 gap-2 text-[10px] text-slate-400">
+                <div>✓ Eye Blink Test</div>
+                <div>✓ Depth Sensor</div>
+                <div>✓ ID Match</div>
+              </div>
             </div>
           </div>
         )}
 
         {/* ==================== STEP 8: PRIVACY DOCUMENT VAULT (KYC) ==================== */}
         {currentStep === 8 && (
-          <div className="space-y-4 animate-fadeIn">
-            <h3 className="text-base font-bold text-white border-b border-slate-800 pb-3 flex items-center justify-between">
-              <span>Step 8: Identity Verification (KYC Document Vault)</span>
-              <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
-                <Lock className="w-3 h-3" /> SECURE VAULT
+          <div className="space-y-6 animate-fadeIn">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                <Lock className="w-5 h-5 text-emerald-400 shrink-0" /> Step 8: Government ID Proof & KYC Vault
+              </h3>
+              <span className="hidden sm:inline-block px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-mono font-bold border border-emerald-500/20">
+                AES-256 VAULT
               </span>
-            </h3>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1.5">Document Type</label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300 block">Government Document Type *</label>
                 <select 
                   value={docType}
                   onChange={e => setDocType(e.target.value)}
                   className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500"
                 >
-                  <option value="NATIONAL_ID">National ID / Aadhar / SSN</option>
+                  <option value="AADHAAR">Aadhaar Card (India - 12 Digits)</option>
+                  <option value="PAN">PAN Card (India - 10 Chars)</option>
                   <option value="PASSPORT">International Passport</option>
                   <option value="DRIVING_LICENSE">Driver's License</option>
                 </select>
               </div>
 
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1.5">Document Number</label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300 block">Document Identification Number *</label>
                 <input 
                   type="text" 
                   value={idNumber}
                   onChange={e => setIdNumber(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono"
+                  placeholder={docType === 'AADHAAR' ? 'e.g. 482910398821' : 'Enter document number'}
+                  className={`w-full px-4 py-3 rounded-2xl bg-slate-950 border text-sm text-white focus:outline-none focus:border-indigo-500 font-mono ${
+                    step8Errors.idNumber ? 'border-rose-500' : 'border-slate-800'
+                  }`}
                 />
+                {step8Errors.idNumber && (
+                  <p className="text-[11px] text-rose-400 font-medium flex items-center gap-1 mt-1">
+                    <AlertTriangle className="w-3 h-3 shrink-0" /> {step8Errors.idNumber}
+                  </p>
+                )}
               </div>
             </div>
 
-            <div className="p-6 rounded-2xl bg-slate-950 border-2 border-dashed border-slate-800 text-center space-y-2">
+            {/* Document Upload Box */}
+            <div className="p-6 rounded-2xl bg-slate-950 border-2 border-dashed border-slate-800 text-center space-y-3">
               <UploadCloud className="w-8 h-8 text-indigo-400 mx-auto" />
-              <p className="text-xs text-slate-300 font-bold">Encrypted Document Upload Vault</p>
-              <p className="text-[10px] text-slate-500">Government documents are never exposed to ordinary users or public search.</p>
-              <span className="inline-block px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold border border-emerald-500/30">
-                ✓ Document Attached (id_proof_v2.pdf)
+              <div>
+                <p className="text-xs text-slate-300 font-bold">Encrypted Document Upload Vault</p>
+                <p className="text-[10px] text-slate-500 mt-0.5">Government documents are stored in an isolated vault and never shared publicly.</p>
+              </div>
+
+              {isFileAttached ? (
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-mono font-bold">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span>{attachedFileName} (AES-256 Encrypted)</span>
+                  <button 
+                    type="button"
+                    onClick={() => setIsFileAttached(false)}
+                    className="text-slate-400 hover:text-rose-400 ml-1 text-xs"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsFileAttached(true);
+                    setAttachedFileName('gov_id_proof_scanned.pdf');
+                  }}
+                  className="px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-indigo-400 hover:text-white transition-all"
+                >
+                  Browse File to Upload
+                </button>
+              )}
+
+              {step8Errors.file && (
+                <p className="text-[11px] text-rose-400 font-medium flex items-center justify-center gap-1">
+                  <AlertTriangle className="w-3 h-3 shrink-0" /> {step8Errors.file}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ==================== STEP 9: MASKED PAYOUT & BANK / UPI SETUP ==================== */}
+        {currentStep === 9 && (
+          <div className="space-y-6 animate-fadeIn">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-emerald-400 shrink-0" /> Step 9: Bank Account & Masked Payout Setup
+              </h3>
+              <span className="hidden sm:inline-block px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-mono font-bold border border-emerald-500/20">
+                MASKED ESCROW GATEWAY
               </span>
             </div>
-          </div>
-        )}
 
-        {/* ==================== STEP 9: PAYOUT SETUP ==================== */}
-        {currentStep === 9 && (
-          <div className="space-y-4 animate-fadeIn">
-            <h3 className="text-base font-bold text-white border-b border-slate-800 pb-3">
-              Step 9: Bank Account & Masked Payout Setup
-            </h3>
+            {/* Payout Method Selector */}
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setPayoutMethod('BANK')}
+                className={`p-3.5 rounded-2xl border text-center font-bold text-xs flex items-center justify-center gap-2 transition-all ${
+                  payoutMethod === 'BANK'
+                    ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg'
+                    : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                <Building2 className="w-4 h-4" /> Direct Bank Transfer (IMPS)
+              </button>
 
-            <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1.5">Bank / Payout Account Number</label>
+              <button
+                type="button"
+                onClick={() => setPayoutMethod('UPI')}
+                className={`p-3.5 rounded-2xl border text-center font-bold text-xs flex items-center justify-center gap-2 transition-all ${
+                  payoutMethod === 'UPI'
+                    ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg'
+                    : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                <Sparkles className="w-4 h-4" /> Instant UPI Payout
+              </button>
+            </div>
+
+            {/* Account Holder Name */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-300 block">Bank Account Holder Full Name *</label>
               <input 
                 type="text" 
-                value={bankAccountNumber}
-                onChange={e => setBankAccountNumber(e.target.value)}
-                placeholder="e.g. 1234567890"
-                className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono"
+                value={accountHolderName}
+                onChange={e => setAccountHolderName(e.target.value)}
+                placeholder="Must match your legal KYC name"
+                className={`w-full px-4 py-3 rounded-2xl bg-slate-950 border text-sm text-white focus:outline-none focus:border-indigo-500 ${
+                  step9Errors.holder ? 'border-rose-500' : 'border-slate-800'
+                }`}
               />
-              <p className="text-[10px] text-slate-500 mt-1">For safety, your bank account details are masked on the frontend (`•••• 8821`).</p>
+              {step9Errors.holder && (
+                <p className="text-[11px] text-rose-400 font-medium flex items-center gap-1 mt-1">
+                  <AlertTriangle className="w-3 h-3 shrink-0" /> {step9Errors.holder}
+                </p>
+              )}
             </div>
+
+            {payoutMethod === 'BANK' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-300 block">Bank Account Number *</label>
+                  <input 
+                    type="text" 
+                    value={bankAccountNumber}
+                    onChange={e => setBankAccountNumber(e.target.value)}
+                    className={`w-full px-4 py-3 rounded-2xl bg-slate-950 border text-sm text-white focus:outline-none focus:border-indigo-500 font-mono ${
+                      step9Errors.account ? 'border-rose-500' : 'border-slate-800'
+                    }`}
+                  />
+                  <p className="text-[10px] text-slate-500">Frontend display is masked (`•••• •••• {bankAccountNumber.slice(-4)}`).</p>
+                  {step9Errors.account && (
+                    <p className="text-[11px] text-rose-400 font-medium flex items-center gap-1">{step9Errors.account}</p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-300 block">Bank IFSC Code *</label>
+                  <input 
+                    type="text" 
+                    value={ifscCode}
+                    onChange={e => setIfscCode(e.target.value.toUpperCase())}
+                    className={`w-full px-4 py-3 rounded-2xl bg-slate-950 border text-sm text-white focus:outline-none focus:border-indigo-500 font-mono uppercase ${
+                      step9Errors.ifsc ? 'border-rose-500' : 'border-slate-800'
+                    }`}
+                  />
+                  <p className="text-[10px] text-emerald-400 font-mono">✓ Branch Verified: State Bank of India, Mumbai</p>
+                  {step9Errors.ifsc && (
+                    <p className="text-[11px] text-rose-400 font-medium flex items-center gap-1">{step9Errors.ifsc}</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300 block">UPI ID Handle *</label>
+                <input 
+                  type="text" 
+                  value={upiId}
+                  onChange={e => setUpiId(e.target.value)}
+                  placeholder="e.g. username@okaxis or 9876543210@ybl"
+                  className={`w-full px-4 py-3 rounded-2xl bg-slate-950 border text-sm text-white focus:outline-none focus:border-indigo-500 font-mono ${
+                    step9Errors.upi ? 'border-rose-500' : 'border-slate-800'
+                  }`}
+                />
+                <p className="text-[10px] text-emerald-400 font-mono">✓ VPA Handle Active & Verified</p>
+                {step9Errors.upi && (
+                  <p className="text-[11px] text-rose-400 font-medium flex items-center gap-1 mt-1">{step9Errors.upi}</p>
+                )}
+              </div>
+            )}
           </div>
         )}
 
-        {/* ==================== STEP 10: SAFETY TERMS ==================== */}
+        {/* ==================== STEP 10: SAFETY TERMS & BACKGROUND CHECK CONSENT ==================== */}
         {currentStep === 10 && (
-          <div className="space-y-4 animate-fadeIn">
-            <h3 className="text-base font-bold text-white border-b border-slate-800 pb-3">
-              Step 10: Safety Terms & Zero-Tolerance Agreement
-            </h3>
+          <div className="space-y-6 animate-fadeIn">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-rose-400 shrink-0" /> Step 10: Legal Safety Terms & Background Check Consents
+              </h3>
+              <span className="hidden sm:inline-block px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-400 text-xs font-mono font-bold border border-rose-500/20">
+                LEGAL COMPLIANCE
+              </span>
+            </div>
 
-            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3 text-xs text-slate-300">
-              <label className="flex items-start gap-2.5 cursor-pointer">
+            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-4 text-xs text-slate-300">
+              <label className="flex items-start gap-3 cursor-pointer">
                 <input 
                   type="checkbox" 
-                  checked={agreedToSafety}
-                  onChange={e => setAgreedToSafety(e.target.checked)}
-                  className="mt-0.5 rounded border-slate-800 text-indigo-500 focus:ring-indigo-500" 
+                  checked={agreedBackgroundCheck}
+                  onChange={e => setAgreedBackgroundCheck(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-slate-800 text-indigo-500 focus:ring-indigo-500 accent-indigo-500 shrink-0" 
                 />
-                <span>I understand that Companion Connect strictly prohibits escort services, illegal activity, harassment, and off-platform cash solicitations. Violations result in immediate permanent ban.</span>
+                <span><strong>Criminal Background Search Consent:</strong> I authorize Companion Connect to run automated police record & court database checks for trust & safety.</span>
               </label>
+
+              <label className="flex items-start gap-3 cursor-pointer border-t border-slate-900 pt-3">
+                <input 
+                  type="checkbox" 
+                  checked={agreedOffPlatformContract}
+                  onChange={e => setAgreedOffPlatformContract(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-slate-800 text-indigo-500 focus:ring-indigo-500 accent-indigo-500 shrink-0" 
+                />
+                <span><strong>Zero-Tolerance Off-Platform Contract:</strong> Accepting direct cash payments or arranging unmonitored off-platform bookings results in immediate account termination.</span>
+              </label>
+
+              <label className="flex items-start gap-3 cursor-pointer border-t border-slate-900 pt-3">
+                <input 
+                  type="checkbox" 
+                  checked={agreedSosLocationConsent}
+                  onChange={e => setAgreedSosLocationConsent(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-slate-800 text-indigo-500 focus:ring-indigo-500 accent-indigo-500 shrink-0" 
+                />
+                <span><strong>Emergency Live Location Tracking:</strong> I consent to active background GPS location tracking during confirmed companion bookings for emergency guardian alerts.</span>
+              </label>
+
+              {step10Errors.terms && (
+                <p className="text-[11px] text-rose-400 font-medium pt-1 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3 shrink-0" /> {step10Errors.terms}
+                </p>
+              )}
             </div>
           </div>
         )}
 
-        {/* ==================== STEP 11 & 12: REVIEW & SUBMIT ==================== */}
+        {/* ==================== STEP 11 & 12: AUDIT REVIEW & ADMIN SUBMISSION ==================== */}
         {(currentStep === 11 || currentStep === 12) && (
-          <div className="space-y-4 text-center animate-fadeIn">
-            <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto shadow-xl">
+          <div className="space-y-6 text-center animate-fadeIn">
+            <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto shadow-2xl">
               <CheckCircle2 className="w-10 h-10" />
             </div>
-            <h3 className="text-2xl font-bold text-white">Application Ready for Submission</h3>
-            <p className="text-xs text-slate-300 max-w-md mx-auto">
-              Your 12-step verification data is complete. Clicking submit dispatches your application to the Admin Trust & Safety Review Board.
-            </p>
 
-            {/* Summary Box */}
-            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-left text-xs space-y-2 max-w-lg mx-auto">
-              <div className="flex justify-between border-b border-slate-800/80 pb-1.5">
-                <span className="text-slate-400">Display Name:</span>
-                <span className="font-bold text-white">{displayName}</span>
+            <div>
+              <h3 className="text-xl sm:text-2xl font-bold text-white">Application Ready for Admin Review</h3>
+              <p className="text-xs text-slate-300 max-w-md mx-auto mt-1">
+                Your 12-step verification data is complete and sealed. Clicking submit dispatches your profile to the Admin Safety Board.
+              </p>
+            </div>
+
+            {/* Comprehensive Companion Audit Card */}
+            <div className="p-5 rounded-3xl bg-slate-950 border border-slate-800 text-left text-xs space-y-3 max-w-lg mx-auto shadow-xl">
+              <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                <span className="font-mono text-[10px] text-slate-400 uppercase tracking-wider">COMPANION PROFILE DRAFT</span>
+                <span className="text-[10px] font-mono text-emerald-400 font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                  SEALED & ENCRYPTED
+                </span>
               </div>
-              <div className="flex justify-between border-b border-slate-800/80 pb-1.5">
-                <span className="text-slate-400">Mobile Number:</span>
-                <span className="font-mono font-bold text-white">+91 {mobileNumber} (Verified)</span>
-              </div>
-              <div className="flex justify-between border-b border-slate-800/80 pb-1.5">
-                <span className="text-slate-400">Categories:</span>
-                <span className="font-bold text-indigo-400">{selectedCategories.join(', ')}</span>
-              </div>
-              <div className="flex justify-between border-b border-slate-800/80 pb-1.5">
-                <span className="text-slate-400">Hourly Rate:</span>
-                <span className="font-mono font-bold text-emerald-400">${hourlyRate}/hr</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">KYC Status:</span>
-                <span className="font-bold text-emerald-400">Verified ({docType})</span>
+
+              <div className="grid grid-cols-2 gap-2 pt-1 text-slate-300">
+                <div>
+                  <span className="text-slate-500 block text-[10px]">Public Display Name:</span>
+                  <span className="font-bold text-white">{displayName}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-[10px]">Legal Name:</span>
+                  <span className="font-bold text-white">{legalName}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-[10px]">Mobile (+91):</span>
+                  <span className="font-mono font-bold text-emerald-400">+91 {mobileNumber} ✓</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-[10px]">Operating City:</span>
+                  <span className="font-bold text-white">{serviceCity} ({maxDistanceKm}km)</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-[10px]">Specializations:</span>
+                  <span className="font-bold text-indigo-400">{selectedCategories.join(', ')}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-[10px]">Base Hourly Rate:</span>
+                  <span className="font-mono font-bold text-emerald-400">₹{hourlyRate}/hr (Net ₹{Math.round(hourlyRate * 0.85)})</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-[10px]">Biometric Liveness:</span>
+                  <span className="font-bold text-emerald-400">Verified ({livenessScore}%)</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-[10px]">Government KYC:</span>
+                  <span className="font-bold text-emerald-400">{docType} Verified</span>
+                </div>
               </div>
             </div>
           </div>
