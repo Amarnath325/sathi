@@ -58,13 +58,15 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* ==================== LIGHT MODE ENGINE OVERRIDES ==================== */
+/* ========================================================================== */
+/* 🌟 ENTERPRISE HIGH-CONTRAST LIGHT MODE ENGINE                             */
+/* ========================================================================== */
 html.light body {
   background-color: #f8fafc !important;
   color: #0f172a !important;
 }
 
-/* Glassmorphism Styles - Dark */
+/* Glassmorphism Panels - Light Mode */
 .glass-panel {
   background: rgba(15, 23, 42, 0.8);
   backdrop-filter: blur(16px);
@@ -73,13 +75,12 @@ html.light body {
   transition: background 0.3s ease, border-color 0.3s ease;
 }
 
-/* Glassmorphism Styles - Light */
 html.light .glass-panel {
-  background: rgba(255, 255, 255, 0.9) !important;
+  background: #ffffff !important;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(203, 213, 225, 0.8) !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04) !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01) !important;
   color: #0f172a !important;
 }
 
@@ -92,10 +93,10 @@ html.light .glass-panel {
 }
 
 html.light .glass-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(241, 245, 249, 0.9) 100%) !important;
+  background: #ffffff !important;
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(203, 213, 225, 0.8) !important;
-  box-shadow: 0 8px 30px 0 rgba(0, 0, 0, 0.05) !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03) !important;
   color: #0f172a !important;
 }
 
@@ -104,36 +105,44 @@ html.light .glass-card {
   box-shadow: 0 12px 40px 0 rgba(99, 102, 241, 0.15);
 }
 
-/* Hardcoded Dark Background Overrides for Light Mode */
+html.light .glass-card:hover {
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Background Surface Overrides for Light Mode */
 html.light .bg-slate-950 {
-  background-color: #ffffff !important;
-  color: #0f172a;
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
 }
 
 html.light .bg-slate-900 {
-  background-color: #f1f5f9 !important;
-  color: #0f172a;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0;
 }
 
 html.light .bg-slate-800 {
-  background-color: #e2e8f0 !important;
+  background-color: #f1f5f9 !important;
+  color: #1e293b !important;
+  border-color: #cbd5e1;
 }
 
 html.light .bg-slate-950\/90,
 html.light .bg-slate-950\/80,
 html.light .bg-slate-950\/60,
 html.light .bg-slate-950\/40 {
-  background-color: rgba(255, 255, 255, 0.92) !important;
+  background-color: rgba(255, 255, 255, 0.95) !important;
 }
 
 html.light .bg-slate-900\/90,
 html.light .bg-slate-900\/80,
 html.light .bg-slate-900\/60,
 html.light .bg-slate-900\/40 {
-  background-color: rgba(241, 245, 249, 0.92) !important;
+  background-color: rgba(255, 255, 255, 0.95) !important;
 }
 
-/* Hardcoded Text Color Overrides for Light Mode */
+/* High-Contrast Text Hierarchy Overrides for Light Mode */
 html.light .text-white {
   color: #0f172a !important;
 }
@@ -158,21 +167,114 @@ html.light .text-slate-500 {
   color: #64748b !important;
 }
 
+/* Rich High-Contrast Accent Colors for Light Mode (Fixes washed-out neon text) */
+html.light .text-emerald-400,
+html.light .text-emerald-300,
+html.light .text-emerald-500 {
+  color: #059669 !important;
+}
+
+html.light .text-cyan-400,
+html.light .text-cyan-300,
+html.light .text-cyan-500 {
+  color: #0284c7 !important;
+}
+
+html.light .text-amber-400,
+html.light .text-amber-300,
+html.light .text-amber-500 {
+  color: #d97706 !important;
+}
+
+html.light .text-indigo-400,
+html.light .text-indigo-300,
+html.light .text-indigo-500 {
+  color: #4f46e5 !important;
+}
+
+html.light .text-purple-400,
+html.light .text-purple-300,
+html.light .text-purple-500 {
+  color: #7c3aed !important;
+}
+
+html.light .text-rose-400,
+html.light .text-rose-300,
+html.light .text-rose-500 {
+  color: #e11d48 !important;
+}
+
+/* Translucent Pill & Badge Backgrounds for Light Mode */
+html.light .bg-emerald-500\/10,
+html.light .bg-emerald-500\/20,
+html.light .bg-emerald-400\/10,
+html.light .bg-emerald-400\/20 {
+  background-color: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+  color: #047857 !important;
+}
+
+html.light .bg-cyan-500\/10,
+html.light .bg-cyan-500\/20,
+html.light .bg-cyan-400\/10,
+html.light .bg-cyan-400\/20 {
+  background-color: #f0f9ff !important;
+  border-color: #bae6fd !important;
+  color: #0369a1 !important;
+}
+
+html.light .bg-amber-500\/10,
+html.light .bg-amber-500\/20,
+html.light .bg-amber-400\/10,
+html.light .bg-amber-400\/20 {
+  background-color: #fffbeb !important;
+  border-color: #fde68a !important;
+  color: #b45309 !important;
+}
+
+html.light .bg-purple-500\/10,
+html.light .bg-purple-500\/20,
+html.light .bg-purple-400\/10,
+html.light .bg-purple-400\/20 {
+  background-color: #faf5ff !important;
+  border-color: #e9d5ff !important;
+  color: #6b21a8 !important;
+}
+
+html.light .bg-indigo-500\/10,
+html.light .bg-indigo-500\/20,
+html.light .bg-indigo-400\/10,
+html.light .bg-indigo-400\/20 {
+  background-color: #eef2ff !important;
+  border-color: #c7d2fe !important;
+  color: #3730a3 !important;
+}
+
+html.light .bg-rose-500\/10,
+html.light .bg-rose-500\/20,
+html.light .bg-rose-400\/10,
+html.light .bg-rose-400\/20 {
+  background-color: #fff1f2 !important;
+  border-color: #fecdd3 !important;
+  color: #be123c !important;
+}
+
 /* Hardcoded Border Overrides for Light Mode */
 html.light .border-slate-800,
 html.light .border-slate-900,
 html.light .border-slate-700,
 html.light .border-slate-800\/80 {
-  border-color: #cbd5e1 !important;
+  border-color: #e2e8f0 !important;
 }
 
-/* Form Controls in Light Mode */
+/* Form Controls & Inputs in Light Mode */
 html.light input:not([type="checkbox"]):not([type="radio"]),
 html.light select,
 html.light textarea {
   background-color: #ffffff !important;
   color: #0f172a !important;
   border-color: #cbd5e1 !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
 }
 
 html.light input::placeholder,
@@ -180,8 +282,16 @@ html.light textarea::placeholder {
   color: #94a3b8 !important;
 }
 
+/* Gradients */
 .gradient-text {
   background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+html.light .gradient-text {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #db2777 100%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
