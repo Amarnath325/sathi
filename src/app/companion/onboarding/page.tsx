@@ -1073,8 +1073,8 @@ export default function CompanionOnboardingWizard() {
                 <span className="font-mono font-bold text-white">+91 {mobileNumber} (Verified)</span>
               </div>
               <div className="flex justify-between border-b border-slate-800/80 pb-1.5">
-                <span className="text-slate-400">Category:</span>
-                <span className="font-bold text-indigo-400">{primaryCategory}</span>
+                <span className="text-slate-400">Categories:</span>
+                <span className="font-bold text-indigo-400">{selectedCategories.join(', ')}</span>
               </div>
               <div className="flex justify-between border-b border-slate-800/80 pb-1.5">
                 <span className="text-slate-400">Hourly Rate:</span>
