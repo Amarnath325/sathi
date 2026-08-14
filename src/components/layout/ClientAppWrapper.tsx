@@ -30,7 +30,7 @@ export function ClientAppWrapper({ children }: { children: React.ReactNode }) {
   if (isAdminRoute) {
     return (
       <ThemeProvider>
-        <main className="flex-1 min-h-screen bg-slate-950">{children}</main>
+        <main className="flex-1 min-h-screen">{children}</main>
       </ThemeProvider>
     );
   }

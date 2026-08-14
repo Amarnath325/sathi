@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { 
   ShieldCheck, 
@@ -9,9 +9,7 @@ import {
   Wallet, 
   UserCheck, 
   AlertTriangle, 
-  Bell, 
   ChevronDown, 
-  Sparkles,
   LayoutDashboard,
   ShieldAlert,
   Menu,
@@ -23,7 +21,6 @@ import {
   HeartHandshake,
   LifeBuoy,
   FileCheck,
-  User,
   Settings,
   Sun,
   Moon
@@ -31,7 +28,6 @@ import {
 import { RoleType } from '@/lib/types';
 import { useUserAuthStore } from '@/lib/userAuthStore';
 import { useTheme } from '@/context/ThemeContext';
-
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 interface HeaderProps {
@@ -47,73 +43,91 @@ export function Header({ currentRole, onRoleChange, onTriggerSos }: HeaderProps)
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <header className="sticky top-0 z-50 glass-panel border-b border-slate-800 backdrop-blur-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+    <header className="sticky top-0 z-50 glass-panel border-b border-slate-800/80 backdrop-blur-xl transition-colors">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-20 gap-4">
           
           {/* Logo & Platform Name */}
           <Link href="/" className="flex items-center gap-3 group shrink-0">
-            <div className="w-11 h-11 rounded-2xl gradient-bg-primary flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 rounded-2xl gradient-bg-primary flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-all">
               <ShieldCheck className="w-6 h-6 text-white" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xl font-bold tracking-tight text-white font-sans">Companion</span>
-                <span className="text-xl font-bold tracking-tight gradient-text">Connect</span>
+            <div className="hidden sm:block">
+              <div className="flex items-center gap-1.5">
+                <span className="text-lg font-bold tracking-tight text-white font-sans">Companion</span>
+                <span className="text-lg font-bold tracking-tight gradient-text">Connect</span>
               </div>
               <p className="text-[10px] text-slate-400 font-mono uppercase tracking-widest flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                Trust & Safety Verified Platform
+                Trust & Safety Verified
               </p>
             </div>
           </Link>
 
-          {/* Nav Links (Desktop & Laptop) */}
-          <nav className="hidden lg:flex items-center gap-4 xl:gap-6">
-            <Link href="/search" className="flex items-center gap-1.5 text-xs xl:text-sm font-semibold text-slate-300 hover:text-white transition-colors">
+          {/* Navigation Links (Desktop & Laptop) */}
+          <nav className="hidden lg:flex items-center gap-1 xl:gap-2">
+            <Link 
+              href="/search" 
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs xl:text-sm font-semibold text-slate-300 hover:text-white hover:bg-slate-800/50 transition-all"
+            >
               <Search className="w-4 h-4 text-indigo-400" />
-              Explore
+              <span>Explore</span>
             </Link>
 
-            <Link href="/categories" className="flex items-center gap-1.5 text-xs xl:text-sm font-semibold text-slate-300 hover:text-white transition-colors">
+            <Link 
+              href="/categories" 
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs xl:text-sm font-semibold text-slate-300 hover:text-white hover:bg-slate-800/50 transition-all"
+            >
               <Grid className="w-4 h-4 text-amber-400" />
-              Categories
+              <span>Categories</span>
             </Link>
 
-            <Link href="/become-companion" className="flex items-center gap-1.5 text-xs xl:text-sm font-semibold text-slate-300 hover:text-white transition-colors">
+            <Link 
+              href="/become-companion" 
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs xl:text-sm font-semibold text-slate-300 hover:text-white hover:bg-slate-800/50 transition-all"
+            >
               <HeartHandshake className="w-4 h-4 text-emerald-400" />
-              Become a Companion
+              <span>Become Companion</span>
             </Link>
 
-            <Link href="/chat" className="flex items-center gap-1.5 text-xs xl:text-sm font-semibold text-slate-300 hover:text-white transition-colors relative">
+            <Link 
+              href="/chat" 
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs xl:text-sm font-semibold text-slate-300 hover:text-white hover:bg-slate-800/50 transition-all relative"
+            >
               <MessageSquare className="w-4 h-4 text-cyan-400" />
-              Chat
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping absolute -top-1 -right-2"></span>
+              <span>Chat</span>
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping absolute top-1.5 right-1.5"></span>
             </Link>
 
-            <Link href="/safety" className="flex items-center gap-1.5 text-xs xl:text-sm font-semibold text-slate-300 hover:text-white transition-colors">
+            <Link 
+              href="/safety" 
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs xl:text-sm font-semibold text-slate-300 hover:text-white hover:bg-slate-800/50 transition-all"
+            >
               <ShieldAlert className="w-4 h-4 text-rose-400" />
-              Safety Center
+              <span>Safety</span>
             </Link>
 
-            <Link href="/disputes" className="flex items-center gap-1.5 text-xs xl:text-sm font-semibold text-slate-300 hover:text-white transition-colors">
+            <Link 
+              href="/disputes" 
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs xl:text-sm font-semibold text-slate-300 hover:text-white hover:bg-slate-800/50 transition-all"
+            >
               <LifeBuoy className="w-4 h-4 text-purple-400" />
-              Support
+              <span>Support</span>
             </Link>
           </nav>
 
           {/* Header Controls (Theme Toggle + Emergency SOS + Notifications + Auth State) */}
-          <div className="hidden sm:flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-2.5">
 
             {/* Dark / Light Mode Icon Switcher */}
             <button
               onClick={toggleTheme}
-              className="w-10 h-10 rounded-2xl flex items-center justify-center bg-slate-900 border border-slate-800 hover:border-slate-700 text-amber-400 hover:scale-105 active:scale-95 transition-all shadow-md"
+              className="w-10 h-10 rounded-2xl flex items-center justify-center bg-slate-900/90 border border-slate-800 hover:border-slate-700 text-amber-400 hover:scale-105 active:scale-95 transition-all shadow-sm"
               title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
               aria-label="Toggle theme mode"
             >
               {theme === 'dark' ? (
-                <Sun className="w-5 h-5 text-amber-400 animate-spin-slow" />
+                <Sun className="w-5 h-5 text-amber-400" />
               ) : (
                 <Moon className="w-5 h-5 text-indigo-400" />
               )}
@@ -125,9 +139,9 @@ export function Header({ currentRole, onRoleChange, onTriggerSos }: HeaderProps)
             {/* SOS Panic Trigger Button */}
             <button
               onClick={onTriggerSos}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-600/20 border border-rose-500/40 text-rose-300 hover:bg-rose-600 hover:text-white text-xs font-bold transition-all shadow-lg shadow-rose-900/20 animate-pulse"
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 hover:bg-rose-600 hover:text-white text-xs font-bold transition-all shadow-md shadow-rose-900/20"
             >
-              <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+              <AlertTriangle className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
               <span className="hidden md:inline">EMERGENCY SOS</span>
               <span className="md:hidden">SOS</span>
             </button>
@@ -137,13 +151,13 @@ export function Header({ currentRole, onRoleChange, onTriggerSos }: HeaderProps)
               <div className="relative">
                 <button
                   onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                  className="flex items-center gap-2 p-1.5 pl-3 rounded-full bg-slate-900 border border-slate-800 hover:border-slate-700 transition-all"
+                  className="flex items-center gap-2.5 p-1.5 pl-3 rounded-2xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition-all"
                 >
                   <span className="text-xs font-semibold text-slate-200 hidden md:inline">My Account</span>
                   <img 
                     src={user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"} 
                     alt="Avatar" 
-                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border border-emerald-500/50"
+                    className="w-8 h-8 rounded-xl object-cover border border-emerald-500/50"
                   />
                   <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden md:inline" />
                 </button>
@@ -164,7 +178,7 @@ export function Header({ currentRole, onRoleChange, onTriggerSos }: HeaderProps)
                       onClick={() => setUserDropdownOpen(false)}
                       className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-300 hover:text-white hover:bg-slate-900 font-medium"
                     >
-                      <LayoutDashboard className="w-4 h-4 text-indigo-400" /> My Dashboard & Bookings
+                      <LayoutDashboard className="w-4 h-4 text-indigo-400" /> Customer Dashboard
                     </Link>
 
                     <Link 
@@ -215,14 +229,14 @@ export function Header({ currentRole, onRoleChange, onTriggerSos }: HeaderProps)
               <div className="flex items-center gap-2">
                 <Link 
                   href="/login" 
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-300 hover:text-white hover:border-slate-700 transition-all"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-300 hover:text-white hover:border-slate-700 transition-all shadow-sm"
                 >
                   <LogIn className="w-3.5 h-3.5 text-indigo-400" /> Login
                 </Link>
 
                 <Link 
                   href="/register" 
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl gradient-bg-primary text-xs font-extrabold text-white shadow-lg shadow-indigo-600/30 hover:opacity-95 transition-all"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl gradient-bg-primary text-xs font-extrabold text-white shadow-lg shadow-indigo-600/25 hover:opacity-95 transition-all"
                 >
                   <UserPlus className="w-3.5 h-3.5" /> Register
                 </Link>

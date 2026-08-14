@@ -67,9 +67,12 @@ import {
   Layers,
   ArrowUpRight,
   ChevronDown,
-  ExternalLink
+  ExternalLink,
+  Sun,
+  Moon
 } from 'lucide-react';
 
+import { useTheme } from '@/context/ThemeContext';
 import { useAdminStore } from '@/lib/adminStore';
 import { useCrudStore, DynamicCompanionItem } from '@/lib/crudStore';
 import { MOCK_BOOKINGS, MOCK_KYC_QUEUE, MOCK_PANIC_ALERTS, MOCK_REVIEWS, MOCK_MESSAGES, MOCK_COMPANIONS } from '@/lib/mockData';
@@ -249,6 +252,8 @@ export default function AdminDashboardPage() {
     clearSelection,
     importCompanionsFromCSV
   } = useCrudStore();
+
+  const { theme, toggleTheme } = useTheme();
 
   const [activeTab, setActiveTab] = useState<ERPModuleTab>('overview');
   const [subFilter, setSubFilter] = useState<string>('all');
@@ -741,6 +746,19 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
+
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-amber-400 hover:border-purple-500/40 hover:scale-105 transition-all shadow-sm"
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Moon className="w-4 h-4 text-indigo-400" />
+              )}
+            </button>
 
             {/* Sync Button */}
             <button 
