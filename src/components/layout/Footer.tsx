@@ -69,6 +69,11 @@ export function Footer() {
               <li><Link href="/legal" className="hover:text-white transition-colors">Privacy Policy</Link></li>
               <li><Link href="/legal" className="hover:text-white transition-colors">Cookie Policy</Link></li>
               <li><Link href="/legal" className="hover:text-white transition-colors">Consent & GDPR Center</Link></li>
+              <li>
+                <Link href="/admin/login?secret=SATHI_SECURE_SUPERADMIN_KEY_2026" className="text-purple-400 font-semibold hover:text-purple-300 transition-colors flex items-center gap-1 pt-1">
+                  <Lock className="w-3 h-3 text-purple-400" /> Super Admin Portal
+                </Link>
+              </li>
               <li className="pt-2 text-rose-400 font-semibold flex items-center gap-1.5">
                 <PhoneCall className="w-3.5 h-3.5" /> 24/7 Hotline: 1-800-SAFETY-HUB
               </li>

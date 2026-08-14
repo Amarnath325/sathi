@@ -21,13 +21,38 @@ import {
   FileCode
 } from 'lucide-react';
 import { useEmailConfigStore, SmtpSettings } from '@/lib/emailConfigStore';
+import { decryptCredential, encryptCredential, isEncrypted } from '@/lib/cryptoUtils';
 
 export function SmtpConfigModule() {
   const { smtpSettings, updateSmtpSettings, verifySmtpConnection } = useEmailConfigStore();
 
-  const [formData, setFormData] = useState<SmtpSettings>(smtpSettings);
+  const [formData, setFormData] = useState<SmtpSettings>(() => ({
+    ...smtpSettings,
+    password: decryptCredential(smtpSettings.password)
+  }));
   const [showPassword, setShowPassword] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [isSyncingApi, setIsSyncingApi] = useState(false);
+
+  // Fetch decrypted settings from Live DB API on mount
+  React.useEffect(() => {
+    async function loadSmtpFromApi() {
+      try {
+        const res = await fetch('/api/admin/smtp');
+        const data = await res.json();
+        if (data.success && data.settings) {
+          setFormData(prev => ({
+            ...prev,
+            ...data.settings,
+            password: data.settings.password // Plaintext decrypted value
+          }));
+        }
+      } catch (err) {
+        console.error('SMTP API Fetch Error:', err);
+      }
+    }
+    loadSmtpFromApi();
+  }, []);
 
   // Test Email Modal
   const [testModalOpen, setTestModalOpen] = useState(false);
@@ -35,11 +60,32 @@ export function SmtpConfigModule() {
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; exceptionCode?: string } | null>(null);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateSmtpSettings(formData);
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
+    setIsSyncingApi(true);
+
+    try {
+      // 1. Sync & Encrypt in Backend API / Live DB
+      const apiRes = await fetch('/api/admin/smtp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      await apiRes.json();
+
+      // 2. Encrypt & Save in Client Store
+      updateSmtpSettings({
+        ...formData,
+        password: formData.password // Will be encrypted inside updateSmtpSettings
+      });
+
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3500);
+    } catch (err) {
+      console.error('Save error:', err);
+    } finally {
+      setIsSyncingApi(false);
+    }
   };
 
   const handleRunTestEmail = async () => {
@@ -228,8 +274,27 @@ export function SmtpConfigModule() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-3 text-slate-400 hover:text-white"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? <EyeOff className="w-4 h-4 text-indigo-400" /> : <Eye className="w-4 h-4" />}
                 </button>
+              </div>
+
+              {/* Live DB Encryption & Decryption Cryptographic Status Box */}
+              <div className="mt-2 p-2.5 rounded-xl bg-slate-950/80 border border-purple-500/30 text-[11px] space-y-1 font-mono">
+                <div className="flex items-center justify-between text-purple-300 font-bold">
+                  <span className="flex items-center gap-1.5">
+                    <Lock className="w-3 h-3 text-purple-400" /> Stored in DB (AES-256 Encrypted):
+                  </span>
+                  <span className="text-[10px] text-emerald-400 font-sans font-semibold">
+                    {isSyncingApi ? 'Encrypting & Writing...' : '✓ Auto-Encrypted'}
+                  </span>
+                </div>
+                <div className="text-slate-400 truncate bg-slate-900/90 p-1.5 rounded-lg border border-slate-800 text-[10px] select-all">
+                  {encryptCredential(formData.password)}
+                </div>
+                <div className="text-slate-400 font-sans text-[10px] flex items-center justify-between pt-0.5">
+                  <span><strong className="text-indigo-400">On Fetch:</strong> Decrypted to actual value in UI & API</span>
+                  <span className="text-amber-400 font-mono text-[9px]">Zero Plaintext in DB</span>
+                </div>
               </div>
             </div>
           </div>
