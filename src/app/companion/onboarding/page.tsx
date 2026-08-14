@@ -586,11 +586,6 @@ export default function CompanionOnboardingWizard() {
         return;
       }
     }
-      if (!validateStep6()) {
-        showToast('error', 'Location Validation Failed', 'Please select your operating city and valid radius.');
-        return;
-      }
-    }
 
     if (currentStep < 12) {
       setCurrentStep(prev => prev + 1);
