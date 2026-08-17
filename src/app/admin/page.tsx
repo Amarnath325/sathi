@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   BarChart3, 
@@ -308,12 +308,31 @@ export default function AdminDashboardPage() {
   }, []);
 
   const [subFilter, setSubFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [pageSize, setPageSize] = useState<PageSizeOption>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [notification, setNotification] = useState<string | null>(null);
+
+  const filteredCategoriesList = useMemo(() => {
+    return categories.filter((cat: ServiceCategory) => {
+      const matchesSearch = !searchQuery ||
+        cat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        cat.description.toLowerCase().includes(searchQuery.toLowerCase());
+
+      if (!matchesSearch) return false;
+
+      if (categoryFilter === 'low') return cat.riskLevel === 'LOW';
+      if (categoryFilter === 'medium') return cat.riskLevel === 'MEDIUM';
+      if (categoryFilter === 'high') return cat.riskLevel === 'HIGH' || cat.riskLevel === 'CRITICAL';
+      if (categoryFilter === 'featured') return !!cat.isFeatured;
+      if (categoryFilter === 'active') return !!cat.isActive;
+
+      return true;
+    });
+  }, [categories, categoryFilter, searchQuery]);
 
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
@@ -1045,14 +1064,19 @@ export default function AdminDashboardPage() {
 
                 <div className="flex items-center gap-3">
                   {/* Category Filter Dropdown */}
-                  <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 shadow-sm">
-                    <select className="bg-transparent outline-none cursor-pointer text-xs font-semibold">
-                      <option value="all">All Categories</option>
-                      <option value="low">Low Risk</option>
-                      <option value="medium">Medium Risk</option>
-                      <option value="featured">Featured Only</option>
+                  <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full px-4 py-2.5 text-xs font-semibold text-slate-800 dark:text-slate-100 shadow-sm hover:border-indigo-400 dark:hover:border-indigo-500/50 transition-all">
+                    <select
+                      value={categoryFilter}
+                      onChange={(e) => setCategoryFilter(e.target.value)}
+                      className="bg-transparent text-slate-800 dark:text-slate-100 font-semibold text-xs outline-none cursor-pointer pr-1"
+                    >
+                      <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">All Categories</option>
+                      <option value="low" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Low Risk</option>
+                      <option value="medium" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Medium Risk</option>
+                      <option value="featured" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Featured Only</option>
+                      <option value="active" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Active Only</option>
                     </select>
-                    <Filter className="w-3.5 h-3.5 text-slate-400" />
+                    <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   </div>
 
                   {/* Add New Category Button */}
@@ -1061,9 +1085,10 @@ export default function AdminDashboardPage() {
                       setEditingCategory(null);
                       setIsCategoryModalOpen(true);
                     }}
-                    className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-lg shadow-indigo-600/25 flex items-center gap-2 transition-all"
+                    className="px-5 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition-all hover:scale-105 active:scale-95 border border-indigo-400/20"
                   >
-                    <Plus className="w-4 h-4" /> Add New Category
+                    <Plus className="w-4 h-4 text-white stroke-[2.5]" />
+                    <span className="text-white font-bold tracking-wide">Add New Category</span>
                   </button>
                 </div>
               </div>
@@ -1096,35 +1121,48 @@ export default function AdminDashboardPage() {
 
               {/* SUB-VIEW 1: Category Cards Grid */}
               {(subFilter === 'categories' || subFilter === 'all') && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {categories.map((cat: ServiceCategory) => (
-
-                    <CategoryCard
-                      key={cat.id}
-                      category={cat}
-                      isAdmin={true}
-                      onEdit={(c) => {
-                        setEditingCategory(c);
-                        setIsCategoryModalOpen(true);
-                      }}
-                      onDelete={(id) => {
-                        if (confirm(`Are you sure you want to delete category "${cat.name}"?`)) {
-                          deleteCategory(id);
-                          setNotification(`Category "${cat.name}" deleted.`);
-                        }
-                      }}
-                      onToggleActive={(id) => {
-                        toggleCategory(id);
-                        setNotification(`Category status updated.`);
-                      }}
-                      onToggleFeatured={(id) => {
-                        toggleCategoryFeatured(id);
-                        setNotification(`Featured status toggled.`);
-                      }}
-                      onViewDetails={(c) => setViewingCategory(c)}
-                    />
-                  ))}
-                </div>
+                filteredCategoriesList.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredCategoriesList.map((cat: ServiceCategory) => (
+                      <CategoryCard
+                        key={cat.id}
+                        category={cat}
+                        isAdmin={true}
+                        onEdit={(c) => {
+                          setEditingCategory(c);
+                          setIsCategoryModalOpen(true);
+                        }}
+                        onDelete={(id) => {
+                          if (confirm(`Are you sure you want to delete category "${cat.name}"?`)) {
+                            deleteCategory(id);
+                            setNotification(`Category "${cat.name}" deleted.`);
+                          }
+                        }}
+                        onToggleActive={(id) => {
+                          toggleCategory(id);
+                          setNotification(`Category status updated.`);
+                        }}
+                        onToggleFeatured={(id) => {
+                          toggleCategoryFeatured(id);
+                          setNotification(`Featured status toggled.`);
+                        }}
+                        onViewDetails={(c) => setViewingCategory(c)}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-12 text-center rounded-3xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-3">
+                    <Filter className="w-8 h-8 text-slate-400 mx-auto" />
+                    <h4 className="font-bold text-slate-800 dark:text-white text-sm">No Categories Match Filter</h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Try changing the category filter dropdown above to view all categories.</p>
+                    <button
+                      onClick={() => setCategoryFilter('all')}
+                      className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs"
+                    >
+                      Reset Filter to All
+                    </button>
+                  </div>
+                )
               )}
 
               {/* SUB-VIEW 2: Flattened Services Table */}
