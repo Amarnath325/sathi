@@ -49,11 +49,11 @@ export function CategoryCard({
   return (
     <div className={`glass-card rounded-3xl border transition-all duration-300 flex flex-col overflow-hidden group hover:shadow-2xl ${category.isActive ? 'border-slate-800 hover:border-indigo-500/50' : 'border-rose-900/40 opacity-70 bg-rose-950/10'}`}>
       {/* Banner / Header */}
-      <div className="relative h-44 overflow-hidden bg-slate-900">
+      <div className="relative h-56 sm:h-64 overflow-hidden bg-slate-900">
         <img
           src={category.bannerUrl || 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=80'}
           alt={category.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
 

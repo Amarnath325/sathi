@@ -32,11 +32,11 @@ export function LocationCard({ location, onViewDetails, onToggleActive, onEditLo
       location.isActive ? 'border-slate-800 hover:border-indigo-500/40' : 'border-rose-900/40 opacity-70 bg-slate-950/80'
     }`}>
       {/* Cover Image & Header Badges */}
-      <div className="relative h-44 w-full bg-slate-900 overflow-hidden">
+      <div className="relative h-56 sm:h-64 w-full bg-slate-900 overflow-hidden">
         <img
           src={location.coverImageUrl || 'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=800&auto=format&fit=crop&q=80'}
           alt={location.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
 

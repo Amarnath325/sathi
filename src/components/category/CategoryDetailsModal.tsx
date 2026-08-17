@@ -21,11 +21,11 @@ export function CategoryDetailsModal({ isOpen, category, onClose }: CategoryDeta
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-xl w-full flex flex-col shadow-2xl overflow-hidden animate-fade-in">
         {/* Banner */}
-        <div className="relative h-48 bg-slate-950">
+        <div className="relative h-60 sm:h-72 bg-slate-950">
           <img
             src={category.bannerUrl || 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=80'}
             alt={category.name}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-top"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
 
