@@ -1059,3 +1059,220 @@ model EmailVerificationToken {
   @@index([token, userId])
 }
 
+enum ServicePublishStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  PUBLISHED
+  SUSPENDED
+  ARCHIVED
+}
+
+model HubCategory {
+  id                              String       @id @default(uuid())
+  name                            String       @unique
+  slug                            String       @unique
+  short_description               String?
+  description                     String
+  icon                            String       @default("Users")
+  image                           String?
+  banner_image                    String?
+  display_order                   Int          @default(0)
+  status                          String       @default("ACTIVE")
+  is_featured                     Boolean      @default(false)
+  minimum_age                     Int          @default(18)
+  default_pricing_profile_id      String?
+  default_rules_id                String?
+  default_policy_id               String?
+  default_risk_level_id           String?
+  default_verification_profile_id String?
+  default_safety_profile_id       String?
+  default_booking_rule_id         String?
+  default_eligibility_profile_id  String?
+  created_by                      String?      @default("SUPER_ADMIN")
+  updated_by                      String?      @default("SUPER_ADMIN")
+  createdAt                       DateTime     @default(now())
+  updatedAt                       DateTime     @updatedAt
+  deletedAt                       DateTime?
+
+  services                        HubService[]
+}
+
+model HubService {
+  id                       String               @id @default(uuid())
+  category_id              String
+  category                 HubCategory          @relation(fields: [category_id], references: [id], onDelete: Cascade)
+  name                     String
+  slug                     String               @unique
+  short_description        String?
+  description              String
+  icon                     String               @default("Sparkles")
+  image                    String?
+  display_order            Int                  @default(0)
+  status                   ServicePublishStatus @default(DRAFT)
+  is_featured              Boolean              @default(false)
+  minimum_age              Int                  @default(18)
+  maximum_age              Int                  @default(75)
+  online_allowed           Boolean              @default(false)
+  offline_allowed          Boolean              @default(true)
+  location_required        Boolean              @default(true)
+  duration_required        Boolean              @default(true)
+  risk_level_id            String?
+  pricing_profile_id       String?
+  rules_profile_id         String?
+  policy_id                String?
+  verification_profile_id  String?
+  safety_profile_id        String?
+  booking_rule_id          String?
+  cancellation_policy_id   String?
+  eligibility_profile_id   String?
+  createdAt                DateTime             @default(now())
+  updatedAt                DateTime             @updatedAt
+
+  @@index([category_id, status])
+}
+
+model HubPricingProfile {
+  id                   String   @id @default(uuid())
+  name                 String
+  pricing_type         String   @default("Hourly") // Hourly, Half Day, Full Day, Per Session, Per Event, Per KM, Fixed Price, Custom Quote
+  base_price           Float    @default(50.0)
+  currency             String   @default("INR")
+  minimum_duration     Float    @default(1.0)
+  maximum_duration     Float    @default(24.0)
+  extra_hour_price     Float    @default(45.0)
+  travel_charge        Float    @default(0.0)
+  platform_fee         Float    @default(15.0)
+  companion_commission Float    @default(85.0)
+  tax                  Float    @default(18.0)
+  weekend_multiplier   Float    @default(1.15)
+  holiday_multiplier   Float    @default(1.25)
+  surge_enabled        Boolean  @default(false)
+  surge_rules          Json?
+  cancellation_fee     Float    @default(0.0)
+  no_show_fee          Float    @default(100.0)
+  status               String   @default("ACTIVE")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model HubRulesProfile {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  status      String   @default("ACTIVE")
+  rules_json  Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model HubPolicy {
+  id                           String   @id @default(uuid())
+  name                         String
+  description                  String
+  version                      Int      @default(1)
+  status                       String   @default("PUBLISHED")
+  effective_from               DateTime @default(now())
+  effective_until              DateTime?
+  minimum_age                  Int      @default(18)
+  kyc_required                 Boolean  @default(true)
+  background_check_required    Boolean  @default(false)
+  emergency_contact_required   Boolean  @default(true)
+  public_location_only         Boolean  @default(true)
+  live_location_required       Boolean  @default(true)
+  sos_required                 Boolean  @default(true)
+  chat_moderation_required     Boolean  @default(true)
+  incident_reporting_enabled   Boolean  @default(true)
+  consent_required             Boolean  @default(true)
+  prohibited_activity_text     String?
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+}
+
+model HubRiskLevel {
+  id                         String   @id @default(uuid())
+  name                       String
+  code                       String   @unique // LOW, MEDIUM, HIGH, CRITICAL
+  score                      Int      @default(10)
+  description                String
+  color                      String   @default("emerald")
+  verification_level         String   @default("Basic")
+  monitoring_level           String   @default("Standard")
+  manual_approval_required   Boolean  @default(false)
+  live_location_required     Boolean  @default(true)
+  emergency_contact_required Boolean  @default(true)
+  sos_required               Boolean  @default(true)
+  maximum_booking_duration   Float    @default(12.0)
+  status                     String   @default("ACTIVE")
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+}
+
+model HubVerificationProfile {
+  id                 String   @id @default(uuid())
+  name               String
+  description        String
+  verification_level String   @default("Basic") // Basic, Standard, Enhanced, Restricted
+  requirements_json  Json
+  status             String   @default("ACTIVE")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model HubSafetyProfile {
+  id            String   @id @default(uuid())
+  name          String
+  description   String
+  controls_json Json
+  status        String   @default("ACTIVE")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model HubBookingRuleProfile {
+  id                          String   @id @default(uuid())
+  name                        String
+  min_advance_hours           Int      @default(2)
+  max_advance_days            Int      @default(30)
+  min_duration_hours          Float    @default(1.0)
+  max_duration_hours          Float    @default(12.0)
+  same_day_allowed            Boolean  @default(true)
+  instant_booking_allowed     Boolean  @default(false)
+  companion_approval_required Boolean  @default(true)
+  user_approval_required      Boolean  @default(false)
+  cancellation_rules_json     Json
+  status                      String   @default("ACTIVE")
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+}
+
+model HubEligibilityProfile {
+  id                     String   @id @default(uuid())
+  name                   String
+  description            String
+  minimum_age            Int      @default(18)
+  maximum_age            Int      @default(75)
+  minimum_rating         Float    @default(4.0)
+  minimum_bookings_done  Int      @default(0)
+  required_documents     Json
+  status                 String   @default("ACTIVE")
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
+model HubAuditLog {
+  id          String   @id @default(uuid())
+  admin_id    String   @default("SUPER_ADMIN")
+  module      String   // Categories, Services, Pricing, Rules, Policies, Risk Levels, Verification Requirements, Safety & Trust, Booking & Cancellation, Service Eligibility
+  entity_id   String
+  action      String   // CREATE, UPDATE, DELETE, PUBLISH, SUSPEND, REORDER, DUPLICATE
+  old_value   Json?
+  new_value   Json?
+  ip_address  String?  @default("127.0.0.1")
+  user_agent  String?
+  timestamp   DateTime @default(now())
+
+  @@index([module, entity_id, timestamp])
+}
+
+
