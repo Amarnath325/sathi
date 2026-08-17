@@ -5,12 +5,16 @@ import { ServiceCategory } from '@/lib/types';
 
 let inMemoryStore: ServiceCategory[] = [...INITIAL_CATEGORIES];
 
-// Helper to seed initial categories into DB if DB is connected & empty
+// Helper to seed initial categories into DB if DB is connected
 async function seedInitialCategoriesIfEmpty() {
   try {
-    const count = await prisma.category.count();
-    if (count === 0) {
-      for (const cat of INITIAL_CATEGORIES) {
+    for (const cat of INITIAL_CATEGORIES) {
+      const existing = await prisma.category.findFirst({
+        where: { OR: [{ id: cat.id }, { name: cat.name }] },
+        include: { subcategories: true }
+      });
+
+      if (!existing) {
         await prisma.category.create({
           data: {
             id: cat.id,
@@ -27,7 +31,7 @@ async function seedInitialCategoriesIfEmpty() {
             companionCount: cat.companionCount || 0,
             safetyPolicy: cat.safetyPolicy || null,
             subcategories: {
-              create: (cat.subcategories || []).map(s => ({
+              create: (cat.subcategories || []).map((s: any) => ({
                 id: s.id.startsWith('sub-') ? s.id : undefined,
                 name: s.name,
                 description: s.description,
@@ -37,6 +41,22 @@ async function seedInitialCategoriesIfEmpty() {
             }
           }
         });
+      } else {
+        // Sync any missing subcategories into DB
+        for (const sub of cat.subcategories || []) {
+          const subExists = existing.subcategories.some((s: any) => s.name.toLowerCase() === sub.name.toLowerCase());
+          if (!subExists) {
+            await prisma.subService.create({
+              data: {
+                name: sub.name,
+                description: sub.description,
+                basePrice: sub.basePrice,
+                requiredVerification: sub.requiredVerification,
+                categoryId: existing.id
+              }
+            });
+          }
+        }
       }
     }
   } catch (err) {

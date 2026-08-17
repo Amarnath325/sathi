@@ -3,9 +3,9 @@ import { ServiceCategory } from './types';
 export const INITIAL_CATEGORIES: ServiceCategory[] = [
   {
     id: 'c-1',
-    name: 'Event & Hospitality',
-    slug: 'event-hospitality',
-    description: 'Professional support for events, gatherings and hospitality needs.',
+    name: 'Events & Social',
+    slug: 'events-social',
+    description: 'Professional companion support for events, parties, weddings, and social gatherings.',
     iconName: 'Users',
     bannerUrl: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=80',
     riskLevel: 'LOW',
@@ -17,59 +17,69 @@ export const INITIAL_CATEGORIES: ServiceCategory[] = [
     safetyPolicy: 'Public venues only. Mandatory emergency check-in every 2 hours.',
     createdAt: '2026-01-10',
     subcategories: [
-      { id: 'sub-101', name: 'Event Setup', description: 'Professional setup & venue assistance', basePrice: 80, requiredVerification: true },
-      { id: 'sub-102', name: 'Guest Relations', description: 'Polite guest welcoming and social presence', basePrice: 73, requiredVerification: true }
+      { id: 'sub-101', name: 'Event Companion', description: 'Professional setup & event presence assistance', basePrice: 80, requiredVerification: true },
+      { id: 'sub-102', name: 'Party Companion', description: 'Lively, polite party companion & host assistance', basePrice: 75, requiredVerification: true },
+      { id: 'sub-103', name: 'Wedding Companion', description: 'Elegant wedding guest & event assistant', basePrice: 90, requiredVerification: true },
+      { id: 'sub-104', name: 'Celebration Companion', description: 'Celebration, anniversary & party partner', basePrice: 70, requiredVerification: false },
+      { id: 'sub-105', name: 'Social Gathering', description: 'Friendly accompaniment at social gatherings', basePrice: 65, requiredVerification: false }
     ]
   },
   {
     id: 'c-2',
     name: 'Travel & Exploration',
     slug: 'travel-exploration',
-    description: 'Assistance for trips, tours and exploration experiences.',
-    iconName: 'MapPin',
+    description: 'Local guidance, road trips, sightseeing, and tourist assistance.',
+    iconName: 'Compass',
     bannerUrl: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&auto=format&fit=crop&q=80',
     riskLevel: 'MEDIUM',
     baseRateMultiplier: 1.15,
     minAgeLimit: 21,
     isFeatured: true,
     isActive: true,
-    companionCount: 15,
+    companionCount: 18,
     safetyPolicy: 'GPS live tracking enabled during city tours. Emergency SOS button active.',
     createdAt: '2026-01-15',
     subcategories: [
-      { id: 'sub-201', name: 'Local Guidance', description: 'In-depth local sightseeing and neighborhood tours', basePrice: 77, requiredVerification: true },
-      { id: 'sub-202', name: 'Trip Planning', description: 'Itinerary assistance & route guidance', basePrice: 86, requiredVerification: true }
+      { id: 'sub-201', name: 'Travel Companion', description: 'Long distance travel buddy & trip escort', basePrice: 85, requiredVerification: true },
+      { id: 'sub-202', name: 'City Guide', description: 'In-depth local sightseeing & city neighborhood tour guide', basePrice: 77, requiredVerification: true },
+      { id: 'sub-203', name: 'Road Trip', description: 'Experienced driving & road trip companion', basePrice: 95, requiredVerification: true },
+      { id: 'sub-204', name: 'Local Experience', description: 'Authentic local culture & food exploration guide', basePrice: 70, requiredVerification: false },
+      { id: 'sub-205', name: 'Shopping Tour', description: 'Local market & shopping assistant', basePrice: 60, requiredVerification: false },
+      { id: 'sub-206', name: 'Tourist Assistance', description: 'Navigational & language assistance for tourists', basePrice: 68, requiredVerification: true }
     ]
   },
   {
     id: 'c-3',
-    name: 'Elderly Care',
-    slug: 'elderly-care',
-    description: 'Compassionate care and support senior citizens.',
+    name: 'Care & Assistance',
+    slug: 'care-assistance',
+    description: 'Compassionate assistance for senior citizens, hospital visits, and daily activities.',
     iconName: 'Heart',
     bannerUrl: 'https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=800&auto=format&fit=crop&q=80',
     riskLevel: 'LOW',
     baseRateMultiplier: 1.0,
-    minAgeLimit: 25,
+    minAgeLimit: 22,
     isFeatured: true,
     isActive: true,
     companionCount: 16,
     safetyPolicy: 'Police verification & medical background check mandatory.',
     createdAt: '2026-02-01',
     subcategories: [
-      { id: 'sub-301', name: 'Personal Care', description: 'Doctor visit escort and practical assistance', basePrice: 86, requiredVerification: true },
-      { id: 'sub-302', name: 'Companionship', description: 'Outdoor walking & friendly conversation', basePrice: 66, requiredVerification: false }
+      { id: 'sub-301', name: 'Elderly Assistance', description: 'Attentive care & companionship for senior citizens', basePrice: 86, requiredVerification: true },
+      { id: 'sub-302', name: 'Hospital Companion', description: 'Escort & support during clinic or hospital visits', basePrice: 90, requiredVerification: true },
+      { id: 'sub-303', name: 'Appointment Companion', description: 'Punctual companion for official & medical appointments', basePrice: 70, requiredVerification: true },
+      { id: 'sub-304', name: 'Daily Life Assistance', description: 'Help with daily errands & household tasks', basePrice: 60, requiredVerification: false },
+      { id: 'sub-305', name: 'Accessibility Assistance', description: 'Dedicated mobility & wheelchair support assistant', basePrice: 85, requiredVerification: true }
     ]
   },
   {
     id: 'c-4',
-    name: 'Education Support',
-    slug: 'education-support',
-    description: 'Academic help, tutoring and assistance.',
-    iconName: 'GraduationCap',
+    name: 'Study, Career & Work',
+    slug: 'study-career-work',
+    description: 'Academic tutoring, co-working buddies, interview practice, and networking support.',
+    iconName: 'BookOpen',
     bannerUrl: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&auto=format&fit=crop&q=80',
-    riskLevel: 'MEDIUM',
-    baseRateMultiplier: 0.9,
+    riskLevel: 'LOW',
+    baseRateMultiplier: 0.95,
     minAgeLimit: 18,
     isFeatured: true,
     isActive: true,
@@ -77,16 +87,20 @@ export const INITIAL_CATEGORIES: ServiceCategory[] = [
     safetyPolicy: 'Public cafe / library co-working environments only.',
     createdAt: '2026-02-12',
     subcategories: [
-      { id: 'sub-401', name: 'Homework Help', description: 'Academic subject tutoring & problem solving', basePrice: 60, requiredVerification: false },
-      { id: 'sub-402', name: 'Exam Prep', description: 'Test preparation and quiet study partner', basePrice: 80, requiredVerification: true }
+      { id: 'sub-401', name: 'Study Buddy', description: 'Focused study partner & subject tutoring', basePrice: 60, requiredVerification: false },
+      { id: 'sub-402', name: 'Work Buddy', description: 'Productivity partner for co-working & remote work', basePrice: 65, requiredVerification: false },
+      { id: 'sub-403', name: 'Co-working', description: 'Shared desk & office collaboration partner', basePrice: 70, requiredVerification: false },
+      { id: 'sub-404', name: 'Interview Buddy', description: 'Mock interview practice & feedback session', basePrice: 85, requiredVerification: true },
+      { id: 'sub-405', name: 'Career Discussion', description: 'Mentorship & career strategy brainstorming', basePrice: 90, requiredVerification: true },
+      { id: 'sub-406', name: 'Professional Networking', description: 'Networking event partner & industry connector', basePrice: 88, requiredVerification: true }
     ]
   },
   {
     id: 'c-5',
-    name: 'Fitness & Wellness',
-    slug: 'fitness-wellness',
-    description: 'Health, fitness and wellness support services.',
-    iconName: 'Dumbbell',
+    name: 'Fitness, Sports & Outdoor',
+    slug: 'fitness-sports-outdoor',
+    description: 'Workout spotting, running, cycling, sports partners, and outdoor hiking.',
+    iconName: 'Activity',
     bannerUrl: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800&auto=format&fit=crop&q=80',
     riskLevel: 'LOW',
     baseRateMultiplier: 1.05,
@@ -97,16 +111,20 @@ export const INITIAL_CATEGORIES: ServiceCategory[] = [
     safetyPolicy: 'Verified outdoor trails or registered gym facilities.',
     createdAt: '2026-03-01',
     subcategories: [
-      { id: 'sub-501', name: 'Personal Training', description: 'Workout spotting & pacing partner', basePrice: 93, requiredVerification: true },
-      { id: 'sub-502', name: 'Yoga Session', description: 'Outdoor yoga & stretching companion', basePrice: 73, requiredVerification: false }
+      { id: 'sub-501', name: 'Fitness Buddy', description: 'Gym workout spotting & motivation partner', basePrice: 75, requiredVerification: true },
+      { id: 'sub-502', name: 'Running', description: 'Pacing partner for morning or evening runs', basePrice: 65, requiredVerification: false },
+      { id: 'sub-503', name: 'Walking', description: 'Brisk walking & casual park stroll partner', basePrice: 50, requiredVerification: false },
+      { id: 'sub-504', name: 'Cycling', description: 'Cycling buddy for city routes or scenic trails', basePrice: 70, requiredVerification: false },
+      { id: 'sub-505', name: 'Sports Partner', description: 'Badminton, tennis, football or basketball partner', basePrice: 80, requiredVerification: true },
+      { id: 'sub-506', name: 'Hiking/Trekking', description: 'Experienced companion for outdoor hiking & trekking', basePrice: 95, requiredVerification: true }
     ]
   },
   {
     id: 'c-6',
     name: 'Gaming & Entertainment',
     slug: 'gaming-entertainment',
-    description: 'Gaming assistance and entertainment support.',
-    iconName: 'Gamepad2',
+    description: 'Co-op gaming, esports, movie companions, and concert buddies.',
+    iconName: 'Gamepad',
     bannerUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&auto=format&fit=crop&q=80',
     riskLevel: 'MEDIUM',
     baseRateMultiplier: 0.85,
@@ -117,8 +135,104 @@ export const INITIAL_CATEGORIES: ServiceCategory[] = [
     safetyPolicy: 'Online platform monitoring & chat moderation filters enabled.',
     createdAt: '2026-03-10',
     subcategories: [
-      { id: 'sub-601', name: 'Game Coaching', description: 'Ranked FPS gaming buddy & strategy coaching', basePrice: 83, requiredVerification: false },
-      { id: 'sub-602', name: 'Live Streaming', description: 'Co-op gaming & streaming partner', basePrice: 90, requiredVerification: false }
+      { id: 'sub-601', name: 'Gaming Buddy', description: 'Ranked FPS gaming partner & strategy coaching', basePrice: 70, requiredVerification: false },
+      { id: 'sub-602', name: 'Esports', description: 'Competitive esports co-op & tournament partner', basePrice: 85, requiredVerification: false },
+      { id: 'sub-603', name: 'Movie Companion', description: 'Cinema & movie theatre partner', basePrice: 55, requiredVerification: false },
+      { id: 'sub-604', name: 'Concert Companion', description: 'Live music festival & concert buddy', basePrice: 80, requiredVerification: true },
+      { id: 'sub-605', name: 'Music Buddy', description: 'Jamming session & music enthusiasm partner', basePrice: 65, requiredVerification: false },
+      { id: 'sub-606', name: 'Theatre/Show Companion', description: 'Theatre play & cultural show companion', basePrice: 75, requiredVerification: false }
+    ]
+  },
+  {
+    id: 'c-7',
+    name: 'Social & Lifestyle',
+    slug: 'social-lifestyle',
+    description: 'Coffee conversations, dining partners, shopping companions, and hobby discussions.',
+    iconName: 'Users',
+    bannerUrl: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&auto=format&fit=crop&q=80',
+    riskLevel: 'LOW',
+    baseRateMultiplier: 1.0,
+    minAgeLimit: 18,
+    isFeatured: true,
+    isActive: true,
+    companionCount: 25,
+    safetyPolicy: 'Public cafes, restaurants & commercial shopping malls only.',
+    createdAt: '2026-03-15',
+    subcategories: [
+      { id: 'sub-701', name: 'Conversation Buddy', description: 'Engaging, friendly conversation & active listening', basePrice: 55, requiredVerification: false },
+      { id: 'sub-702', name: 'Coffee Companion', description: 'Relaxing cafe & coffee hangout partner', basePrice: 50, requiredVerification: false },
+      { id: 'sub-703', name: 'Dining Companion', description: 'Fine dining & culinary exploration partner', basePrice: 75, requiredVerification: false },
+      { id: 'sub-704', name: 'Shopping Companion', description: 'Fashion, retail & personal shopping buddy', basePrice: 65, requiredVerification: false },
+      { id: 'sub-705', name: 'Hobby Partner', description: 'Shared interest & pastime discussion partner', basePrice: 60, requiredVerification: false },
+      { id: 'sub-706', name: 'Reading Buddy', description: 'Book club & quiet reading companion', basePrice: 45, requiredVerification: false }
+    ]
+  },
+  {
+    id: 'c-8',
+    name: 'Pets & Hobbies',
+    slug: 'pets-hobbies',
+    description: 'Pet walking, photography companions, art & cooking hobby buddies.',
+    iconName: 'Heart',
+    bannerUrl: 'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=800&auto=format&fit=crop&q=80',
+    riskLevel: 'LOW',
+    baseRateMultiplier: 0.9,
+    minAgeLimit: 18,
+    isFeatured: true,
+    isActive: true,
+    companionCount: 14,
+    safetyPolicy: 'Pet handling safety protocols & verified outdoor spaces.',
+    createdAt: '2026-03-20',
+    subcategories: [
+      { id: 'sub-801', name: 'Pet Companion', description: 'Loving pet care & playmate companion', basePrice: 55, requiredVerification: true },
+      { id: 'sub-802', name: 'Pet Walking', description: 'Daily dog walking & outdoor exercise escort', basePrice: 45, requiredVerification: false },
+      { id: 'sub-803', name: 'Photography', description: 'Outdoor photo shoot & camera assistant', basePrice: 80, requiredVerification: true },
+      { id: 'sub-804', name: 'Art & Creativity', description: 'Painting, crafting & art gallery companion', basePrice: 65, requiredVerification: false },
+      { id: 'sub-805', name: 'Music', description: 'Instrument practice & music listening partner', basePrice: 70, requiredVerification: false },
+      { id: 'sub-806', name: 'Cooking/Hobby Partner', description: 'Culinary workshop & recipe experiment buddy', basePrice: 60, requiredVerification: false }
+    ]
+  },
+  {
+    id: 'c-9',
+    name: 'Technology & Digital',
+    slug: 'technology-digital',
+    description: 'Smartphone help, computer troubleshooting, and digital services guidance.',
+    iconName: 'Activity',
+    bannerUrl: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800&auto=format&fit=crop&q=80',
+    riskLevel: 'LOW',
+    baseRateMultiplier: 1.1,
+    minAgeLimit: 18,
+    isFeatured: true,
+    isActive: true,
+    companionCount: 12,
+    safetyPolicy: 'Data privacy compliance & no credential sharing policy.',
+    createdAt: '2026-03-25',
+    subcategories: [
+      { id: 'sub-901', name: 'Tech Help', description: 'General tech troubleshooting & device setup', basePrice: 70, requiredVerification: true },
+      { id: 'sub-902', name: 'Smartphone Assistance', description: 'Mobile app navigation & phone settings tutor', basePrice: 55, requiredVerification: false },
+      { id: 'sub-903', name: 'Computer Assistance', description: 'PC/Mac software guidance & desktop support', basePrice: 75, requiredVerification: true },
+      { id: 'sub-904', name: 'Digital Services Assistance', description: 'Online banking, booking & portal assistance', basePrice: 65, requiredVerification: true }
+    ]
+  },
+  {
+    id: 'c-10',
+    name: 'Wellness & Mindfulness',
+    slug: 'wellness-mindfulness',
+    description: 'Yoga practice, meditation partners, nature walks, and wellness activities.',
+    iconName: 'Heart',
+    bannerUrl: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&auto=format&fit=crop&q=80',
+    riskLevel: 'LOW',
+    baseRateMultiplier: 1.0,
+    minAgeLimit: 18,
+    isFeatured: true,
+    isActive: true,
+    companionCount: 17,
+    safetyPolicy: 'Certified mindfulness practices & serene public park venues.',
+    createdAt: '2026-04-01',
+    subcategories: [
+      { id: 'sub-1001', name: 'Yoga Buddy', description: 'Outdoor yoga & mindfulness stretching partner', basePrice: 65, requiredVerification: false },
+      { id: 'sub-1002', name: 'Meditation Partner', description: 'Guided meditation & peaceful focus session buddy', basePrice: 60, requiredVerification: false },
+      { id: 'sub-1003', name: 'Nature Walk', description: 'Scenic park stroll & forest bathing companion', basePrice: 50, requiredVerification: false },
+      { id: 'sub-1004', name: 'Wellness Activities', description: 'Spa, wellness retreat & healthy lifestyle partner', basePrice: 75, requiredVerification: false }
     ]
   }
 ];
