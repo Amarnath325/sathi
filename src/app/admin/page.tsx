@@ -1127,21 +1127,21 @@ export default function AdminDashboardPage() {
           {/* MODULE 5: 🛎️ SERVICES & CATEGORIES                   */}
           {/* ==================================================== */}
           {activeTab === 'categories' && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Header Bar */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-1">
                 <div>
-                  <h3 className="font-extrabold text-slate-900 dark:text-white text-2xl tracking-tight">
+                  <h3 className="font-extrabold text-slate-900 dark:text-white text-xl sm:text-2xl tracking-tight">
                     Service & Category Management Hub
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     Organize, manage, and optimize services and categories across your platform.
                   </p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5">
                   {/* Category Filter Dropdown */}
-                  <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full px-4 py-2.5 text-xs font-semibold text-slate-800 dark:text-slate-100 shadow-sm hover:border-indigo-400 dark:hover:border-indigo-500/50 transition-all">
+                  <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full px-3.5 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-100 shadow-sm hover:border-indigo-400 dark:hover:border-indigo-500/50 transition-all">
                     <select
                       value={categoryFilter}
                       onChange={(e) => setCategoryFilter(e.target.value)}
@@ -1162,16 +1162,16 @@ export default function AdminDashboardPage() {
                       setEditingCategory(null);
                       setIsCategoryModalOpen(true);
                     }}
-                    className="px-5 py-2.5 rounded-full gradient-bg-primary text-white font-bold text-xs shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition-all hover:scale-105 active:scale-95 border border-purple-400/30"
+                    className="px-4 py-1.5 rounded-full gradient-bg-primary text-white font-bold text-xs shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95 border border-purple-400/30"
                   >
-                    <Plus className="w-4 h-4 text-white stroke-[2.5]" />
+                    <Plus className="w-3.5 h-3.5 text-white stroke-[2.5]" />
                     <span className="text-white font-bold tracking-wide">Add New Category</span>
                   </button>
                 </div>
               </div>
 
               {/* Sub-Navigation Tabs */}
-              <div className="flex items-center gap-6 border-b border-slate-200 dark:border-slate-800 text-xs font-medium pb-1 overflow-x-auto">
+              <div className="flex items-center gap-5 border-b border-slate-200 dark:border-slate-800 text-xs font-medium pb-0.5 overflow-x-auto">
                 {[
                   { key: 'categories', label: 'Categories' },
                   { key: 'services', label: 'Services' },
@@ -1184,7 +1184,7 @@ export default function AdminDashboardPage() {
                     <button
                       key={tab.key}
                       onClick={() => setSubFilter(tab.key)}
-                      className={`pb-2.5 transition-all whitespace-nowrap ${
+                      className={`pb-2 transition-all whitespace-nowrap ${
                         isActive
                           ? 'border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 font-bold'
                           : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -1199,7 +1199,7 @@ export default function AdminDashboardPage() {
               {/* SUB-VIEW 1: Category Cards Grid */}
               {(subFilter === 'categories' || subFilter === 'all') && (
                 paginatedCategoriesList.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                     {paginatedCategoriesList.map((cat: ServiceCategory) => (
                       <CategoryCard
                         key={cat.id}
@@ -1245,13 +1245,13 @@ export default function AdminDashboardPage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="p-12 text-center rounded-3xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-3">
-                    <Filter className="w-8 h-8 text-slate-400 mx-auto" />
-                    <h4 className="font-bold text-slate-800 dark:text-white text-sm">No Categories Match Filter</h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Try changing the category filter dropdown above to view all categories.</p>
+                  <div className="p-8 text-center rounded-3xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-2">
+                    <Filter className="w-6 h-6 text-slate-400 mx-auto" />
+                    <h4 className="font-bold text-slate-800 dark:text-white text-xs">No Categories Match Filter</h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Try changing the category filter dropdown above to view all categories.</p>
                     <button
                       onClick={() => setCategoryFilter('all')}
-                      className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs"
+                      className="px-3 py-1.5 rounded-xl bg-indigo-600 text-white font-bold text-[11px]"
                     >
                       Reset Filter to All
                     </button>
@@ -1262,9 +1262,9 @@ export default function AdminDashboardPage() {
               {/* SUB-VIEW 2: Flattened Services Table (Matches User Screenshot UI) */}
               {subFilter === 'services' && (
                 <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-all">
-                  <div className="p-5 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
-                    <h4 className="font-bold text-slate-900 dark:text-white text-base tracking-tight">All Sub-Service Offerings</h4>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                  <div className="py-3 px-5 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+                    <h4 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base tracking-tight">All Sub-Service Offerings</h4>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                       {filteredSubServices.length} Total Sub-Services
                     </span>
                   </div>
@@ -1273,34 +1273,34 @@ export default function AdminDashboardPage() {
                       <table className="w-full text-left border-collapse text-xs">
                         <thead>
                           <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/80 text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                            <th className="py-3.5 px-6">SUB-SERVICE NAME</th>
-                            <th className="py-3.5 px-6">CATEGORY</th>
-                            <th className="py-3.5 px-6">BASE RATE ($/HR)</th>
-                            <th className="py-3.5 px-6">VERIFICATION NEEDED</th>
-                            <th className="py-3.5 px-6">DESCRIPTION</th>
-                            <th className="py-3.5 px-6 text-right">ACTIONS</th>
+                            <th className="py-2.5 px-5">SUB-SERVICE NAME</th>
+                            <th className="py-2.5 px-5">CATEGORY</th>
+                            <th className="py-2.5 px-5">BASE RATE ($/HR)</th>
+                            <th className="py-2.5 px-5">VERIFICATION NEEDED</th>
+                            <th className="py-2.5 px-5">DESCRIPTION</th>
+                            <th className="py-2.5 px-5 text-right">ACTIONS</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                           {paginatedSubServices.map((sub) => (
                             <tr key={sub.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
-                              <td className="py-4 px-6 font-bold text-slate-900 dark:text-white text-xs">{sub.name}</td>
-                              <td className="py-4 px-6 text-purple-600 dark:text-purple-400 font-semibold text-xs">{sub.categoryName}</td>
-                              <td className="py-4 px-6 font-bold font-mono text-emerald-600 dark:text-emerald-400 text-xs">${sub.basePrice}/hr</td>
-                              <td className="py-4 px-6">
+                              <td className="py-2.5 px-5 font-bold text-slate-900 dark:text-white text-xs">{sub.name}</td>
+                              <td className="py-2.5 px-5 text-purple-600 dark:text-purple-400 font-semibold text-xs">{sub.categoryName}</td>
+                              <td className="py-2.5 px-5 font-bold font-mono text-emerald-600 dark:text-emerald-400 text-xs">${sub.basePrice}/hr</td>
+                              <td className="py-2.5 px-5">
                                 {sub.requiredVerification ? (
-                                  <span className="px-3.5 py-1 rounded-full bg-emerald-600 text-white font-bold text-[10px] inline-flex items-center justify-center shadow-sm">
+                                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-600 text-white font-bold text-[10px] inline-flex items-center justify-center shadow-sm">
                                     Required
                                   </span>
                                 ) : (
-                                  <span className="px-3.5 py-1 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold text-[10px] inline-flex items-center justify-center">
+                                  <span className="px-2.5 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold text-[10px] inline-flex items-center justify-center">
                                     Optional
                                   </span>
                                 )}
                               </td>
-                              <td className="py-4 px-6 text-slate-600 dark:text-slate-400 max-w-sm text-xs leading-relaxed">{sub.description}</td>
-                              <td className="py-4 px-6 text-right">
-                                <div className="flex items-center justify-end gap-2">
+                              <td className="py-2.5 px-5 text-slate-600 dark:text-slate-400 max-w-sm text-xs leading-tight truncate">{sub.description}</td>
+                              <td className="py-2.5 px-5 text-right">
+                                <div className="flex items-center justify-end gap-1.5">
                                   <button
                                     onClick={() => {
                                       const cat = categories.find(c => c.name === sub.categoryName);
@@ -1309,7 +1309,7 @@ export default function AdminDashboardPage() {
                                         setIsCategoryModalOpen(true);
                                       }
                                     }}
-                                    className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-950/40 dark:hover:text-indigo-400 transition-colors"
+                                    className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-950/40 dark:hover:text-indigo-400 transition-colors"
                                     title="Edit Sub-Service"
                                   >
                                     <Pencil className="w-3.5 h-3.5" />
@@ -1334,7 +1334,7 @@ export default function AdminDashboardPage() {
                                         }
                                       }
                                     }}
-                                    className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition-colors"
+                                    className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition-colors"
                                     title="Delete Sub-Service"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
@@ -1347,7 +1347,7 @@ export default function AdminDashboardPage() {
                       </table>
                     </div>
                   ) : (
-                    <div className="p-12 text-center text-slate-500 text-xs font-medium">
+                    <div className="p-8 text-center text-slate-500 text-xs font-medium">
                       No sub-services found matching your filter criteria.
                     </div>
                   )}
