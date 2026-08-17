@@ -23,3 +23,5 @@ yarn-error.log*
 *.pem
 .vscode/
 .idea/
+
+.vercel

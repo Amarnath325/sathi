@@ -255,7 +255,58 @@ export default function AdminDashboardPage() {
 
   const { theme, toggleTheme } = useTheme();
 
-  const [activeTab, setActiveTab] = useState<ERPModuleTab>('overview');
+  const validTabs: ERPModuleTab[] = [
+    'overview', 'executive', 'users', 'verification', 'companions', 
+    'categories', 'bookings', 'payments', 'communication', 'safety', 
+    'disputes', 'reviews', 'location', 'notifications', 'promotions', 
+    'analytics', 'staff', 'security', 'audit', 'settings', 'health', 
+    'email-config', 'email-templates'
+  ];
+
+  const [activeTabState, setActiveTabState] = useState<ERPModuleTab>('overview');
+
+  const setActiveTab = (tab: ERPModuleTab) => {
+    setActiveTabState(tab);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('sathi_admin_active_tab', tab);
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', tab);
+        window.history.replaceState(null, '', url.pathname + url.search);
+      } catch (e) {
+        // Fallback
+      }
+    }
+  };
+
+  const activeTab = activeTabState;
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const urlTab = searchParams.get('tab') as ERPModuleTab | null;
+      const storedTab = localStorage.getItem('sathi_admin_active_tab') as ERPModuleTab | null;
+
+      const targetTab = (urlTab && validTabs.includes(urlTab))
+        ? urlTab
+        : (storedTab && validTabs.includes(storedTab))
+          ? storedTab
+          : null;
+
+      if (targetTab) {
+        setActiveTabState(targetTab);
+        const url = new URL(window.location.href);
+        if (url.searchParams.get('tab') !== targetTab) {
+          url.searchParams.set('tab', targetTab);
+          window.history.replaceState(null, '', url.pathname + url.search);
+        }
+      }
+    } catch (e) {
+      // Fallback
+    }
+  }, []);
+
   const [subFilter, setSubFilter] = useState<string>('all');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
