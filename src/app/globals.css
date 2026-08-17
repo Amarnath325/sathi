@@ -171,6 +171,30 @@ html.light .text-white {
   color: #0f172a !important;
 }
 
+/* 🌟 CRITICAL EXCEPTION: Buttons and Primary Colored Containers must ALWAYS retain pure white text */
+html.light button.text-white,
+html.light button.text-white *,
+html.light button[class*="gradient-bg-primary"],
+html.light button[class*="gradient-bg-primary"] *,
+html.light .gradient-bg-primary,
+html.light .gradient-bg-primary *,
+html.light .gradient-bg-danger,
+html.light .gradient-bg-danger *,
+html.light [class*="bg-indigo-600"],
+html.light [class*="bg-indigo-600"] *,
+html.light [class*="bg-indigo-700"],
+html.light [class*="bg-indigo-700"] *,
+html.light [class*="bg-purple-600"],
+html.light [class*="bg-purple-600"] *,
+html.light [class*="bg-purple-700"],
+html.light [class*="bg-purple-700"] *,
+html.light [class*="bg-emerald-600"],
+html.light [class*="bg-emerald-600"] *,
+html.light [class*="bg-rose-600"],
+html.light [class*="bg-rose-600"] * {
+  color: #ffffff !important;
+}
+
 html.light .text-slate-100 {
   color: #0f172a !important;
 }

@@ -1085,7 +1085,7 @@ export default function AdminDashboardPage() {
                       setEditingCategory(null);
                       setIsCategoryModalOpen(true);
                     }}
-                    className="px-5 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition-all hover:scale-105 active:scale-95 border border-indigo-400/20"
+                    className="px-5 py-2.5 rounded-full gradient-bg-primary text-white font-bold text-xs shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition-all hover:scale-105 active:scale-95 border border-purple-400/30"
                   >
                     <Plus className="w-4 h-4 text-white stroke-[2.5]" />
                     <span className="text-white font-bold tracking-wide">Add New Category</span>
