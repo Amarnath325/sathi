@@ -1196,11 +1196,11 @@ export default function AdminDashboardPage() {
                 })}
               </div>
 
-              {/* SUB-VIEW 1: Category Cards Grid */}
+              {/* SUB-VIEW 1: Category Cards Grid (Renders ALL categories directly without pagination) */}
               {(subFilter === 'categories' || subFilter === 'all') && (
-                paginatedCategoriesList.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-                    {paginatedCategoriesList.map((cat: ServiceCategory) => (
+                filteredCategoriesList.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+                    {filteredCategoriesList.map((cat: ServiceCategory) => (
                       <CategoryCard
                         key={cat.id}
                         category={cat}
@@ -1354,17 +1354,19 @@ export default function AdminDashboardPage() {
                 </div>
               )}
 
-              {/* 🌟 GLOBAL PAGINATION FOOTER BAR */}
-              <div className="pt-2">
-                <PaginationFooter
-                  currentPage={currentPage}
-                  totalItems={subFilter === 'services' ? filteredSubServices.length : filteredCategoriesList.length}
-                  pageSize={pageSize}
-                  onPageChange={(page) => setCurrentPage(page)}
-                  labelSingular={subFilter === 'services' ? 'sub-service' : 'category'}
-                  labelPlural={subFilter === 'services' ? 'sub-services' : 'categories'}
-                />
-              </div>
+              {/* 🌟 PAGINATION FOOTER BAR (Only displayed for paginated sub-services table) */}
+              {subFilter === 'services' && (
+                <div className="pt-2">
+                  <PaginationFooter
+                    currentPage={currentPage}
+                    totalItems={filteredSubServices.length}
+                    pageSize={pageSize}
+                    onPageChange={(page) => setCurrentPage(page)}
+                    labelSingular="sub-service"
+                    labelPlural="sub-services"
+                  />
+                </div>
+              )}
 
               {/* SUB-VIEW 3: Service Policies */}
               {subFilter === 'service-policies' && (
