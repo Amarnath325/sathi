@@ -1033,47 +1033,65 @@ export default function AdminDashboardPage() {
           {activeTab === 'categories' && (
             <div className="space-y-6">
               {/* Header Bar */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-3xl bg-slate-900 border border-slate-800">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
                 <div>
-                  <h3 className="font-extrabold text-white text-lg flex items-center gap-2">
-                    <Layers className="w-5 h-5 text-indigo-400" /> Service & Category Management Hub
+                  <h3 className="font-extrabold text-slate-900 dark:text-white text-2xl tracking-tight">
+                    Service & Category Management Hub
                   </h3>
-                  <p className="text-xs text-slate-400">
-                    Manage service catalog, pricing multipliers, risk assessment levels & compliance rules ({categories.length} Total Categories)
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Organize, manage, and optimize services and categories across your platform.
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Link
-                    href="/categories"
-                    target="_blank"
-                    className="px-3.5 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5"
-                  >
-                    Public Catalog <ExternalLink className="w-3.5 h-3.5" />
-                  </Link>
+                <div className="flex items-center gap-3">
+                  {/* Category Filter Dropdown */}
+                  <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 shadow-sm">
+                    <select className="bg-transparent outline-none cursor-pointer text-xs font-semibold">
+                      <option value="all">All Categories</option>
+                      <option value="low">Low Risk</option>
+                      <option value="medium">Medium Risk</option>
+                      <option value="featured">Featured Only</option>
+                    </select>
+                    <Filter className="w-3.5 h-3.5 text-slate-400" />
+                  </div>
+
+                  {/* Add New Category Button */}
                   <button
                     onClick={() => {
                       setEditingCategory(null);
                       setIsCategoryModalOpen(true);
                     }}
-                    className="px-4 py-2 rounded-xl gradient-bg-primary text-white font-bold text-xs hover:opacity-90 shadow-lg shadow-indigo-600/30 flex items-center gap-1.5"
+                    className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-lg shadow-indigo-600/25 flex items-center gap-2 transition-all"
                   >
                     <Plus className="w-4 h-4" /> Add New Category
                   </button>
                 </div>
               </div>
 
-              {/* Sub-Filters */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                {['categories', 'services', 'service-policies', 'pricing-rules', 'risk-levels'].map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => setSubFilter(s)}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold capitalize transition-all shrink-0 ${subFilter === s || (subFilter === 'all' && s === 'categories') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-slate-200'}`}
-                  >
-                    {s.replace('-', ' ')}
-                  </button>
-                ))}
+              {/* Sub-Navigation Tabs */}
+              <div className="flex items-center gap-6 border-b border-slate-200 dark:border-slate-800 text-xs font-medium pb-1 overflow-x-auto">
+                {[
+                  { key: 'categories', label: 'Categories' },
+                  { key: 'services', label: 'Services' },
+                  { key: 'pricing-rules', label: 'Pricing Rules' },
+                  { key: 'service-policies', label: 'Policies' },
+                  { key: 'risk-levels', label: 'Risk Levels' },
+                ].map((tab) => {
+                  const isActive = subFilter === tab.key || (subFilter === 'all' && tab.key === 'categories');
+                  return (
+                    <button
+                      key={tab.key}
+                      onClick={() => setSubFilter(tab.key)}
+                      className={`pb-2.5 transition-all whitespace-nowrap ${
+                        isActive
+                          ? 'border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 font-bold'
+                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* SUB-VIEW 1: Category Cards Grid */}
