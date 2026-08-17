@@ -1,11 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { ServiceCategory } from '@/lib/types';
+import { ImageLightboxModal } from '@/components/common/ImageLightboxModal';
 import {
   X, ShieldCheck, AlertTriangle, Shield, CheckCircle, ArrowRight,
-  DollarSign, Users, Calendar, Info, Layers
+  DollarSign, Users, Calendar, Info, Layers, Maximize2
 } from 'lucide-react';
 
 interface CategoryDetailsModalProps {
@@ -15,19 +16,35 @@ interface CategoryDetailsModalProps {
 }
 
 export function CategoryDetailsModal({ isOpen, category, onClose }: CategoryDetailsModalProps) {
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+
   if (!isOpen || !category) return null;
 
+  const bannerImg = category.bannerUrl || 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=80';
+
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-xl w-full flex flex-col shadow-2xl overflow-hidden animate-fade-in">
-        {/* Banner */}
-        <div className="relative h-60 sm:h-72 bg-slate-950">
-          <img
-            src={category.bannerUrl || 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=80'}
-            alt={category.name}
-            className="w-full h-full object-cover object-top"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+    <>
+      <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-xl w-full flex flex-col shadow-2xl overflow-hidden animate-fade-in">
+          {/* Banner */}
+          <div
+            className="relative h-60 sm:h-72 bg-slate-950 cursor-pointer group"
+            onClick={() => setLightboxImage(bannerImg)}
+            title="Click to preview full size image"
+          >
+            <img
+              src={bannerImg}
+              alt={category.name}
+              className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+
+            {/* Hover Badge */}
+            <div className="absolute inset-0 bg-slate-950/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+              <span className="px-3 py-1.5 rounded-full bg-slate-950/85 backdrop-blur-md text-white text-xs font-bold flex items-center gap-1.5 border border-white/20 shadow-xl">
+                <Maximize2 className="w-3.5 h-3.5 text-indigo-400" /> Click to Preview Full Size
+              </span>
+            </div>
 
           <button
             onClick={onClose}
@@ -126,5 +143,15 @@ export function CategoryDetailsModal({ isOpen, category, onClose }: CategoryDeta
         </div>
       </div>
     </div>
+
+    {lightboxImage && (
+      <ImageLightboxModal
+        isOpen={!!lightboxImage}
+        imageUrl={lightboxImage}
+        title={`${category.name} Banner`}
+        onClose={() => setLightboxImage(null)}
+      />
+    )}
+  </>
   );
 }

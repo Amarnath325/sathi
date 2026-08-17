@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { LocationItem, LocationRiskTier } from '@/lib/types';
-import { MapPin, ShieldCheck, Zap, Users, ShieldAlert, Eye, Settings, Power, CheckCircle2, AlertTriangle, Building } from 'lucide-react';
+import { ImageLightboxModal } from '@/components/common/ImageLightboxModal';
+import { MapPin, ShieldCheck, Zap, Users, ShieldAlert, Eye, Settings, Power, CheckCircle2, AlertTriangle, Building, Maximize2 } from 'lucide-react';
 
 interface LocationCardProps {
   location: LocationItem;
@@ -12,6 +13,8 @@ interface LocationCardProps {
 }
 
 export function LocationCard({ location, onViewDetails, onToggleActive, onEditLocation }: LocationCardProps) {
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+
   const getRiskBadge = (risk: LocationRiskTier) => {
     switch (risk) {
       case 'LOW':
@@ -27,17 +30,32 @@ export function LocationCard({ location, onViewDetails, onToggleActive, onEditLo
     }
   };
 
+  const coverImg = location.coverImageUrl || 'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=800&auto=format&fit=crop&q=80';
+
   return (
-    <div className={`glass-panel rounded-3xl overflow-hidden border transition-all duration-300 shadow-xl flex flex-col justify-between ${
-      location.isActive ? 'border-slate-800 hover:border-indigo-500/40' : 'border-rose-900/40 opacity-70 bg-slate-950/80'
-    }`}>
-      {/* Cover Image & Header Badges */}
-      <div className="relative h-56 sm:h-64 w-full bg-slate-900 overflow-hidden">
-        <img
-          src={location.coverImageUrl || 'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=800&auto=format&fit=crop&q=80'}
-          alt={location.name}
-          className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
-        />
+    <>
+      <div className={`glass-panel rounded-3xl overflow-hidden border transition-all duration-300 shadow-xl flex flex-col justify-between group ${
+        location.isActive ? 'border-slate-800 hover:border-indigo-500/40' : 'border-rose-900/40 opacity-70 bg-slate-950/80'
+      }`}>
+        {/* Cover Image & Header Badges - Click to preview */}
+        <div
+          className="relative h-56 sm:h-64 w-full bg-slate-900 overflow-hidden cursor-pointer"
+          onClick={() => setLightboxImage(coverImg)}
+          title="Click to preview image"
+        >
+          <img
+            src={coverImg}
+            alt={location.name}
+            className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+
+          {/* Hover Preview Overlay */}
+          <div className="absolute inset-0 bg-slate-950/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none z-10">
+            <span className="px-3 py-1.5 rounded-full bg-slate-950/85 backdrop-blur-md text-white text-xs font-bold flex items-center gap-1.5 border border-white/20 shadow-xl">
+              <Maximize2 className="w-3.5 h-3.5 text-indigo-400" /> Click to Preview Image
+            </span>
+          </div>
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
 
         {/* Top Floating Badges */}
@@ -128,5 +146,15 @@ export function LocationCard({ location, onViewDetails, onToggleActive, onEditLo
         )}
       </div>
     </div>
+
+    {lightboxImage && (
+      <ImageLightboxModal
+        isOpen={!!lightboxImage}
+        imageUrl={lightboxImage}
+        title={`${location.name} Cover Photo`}
+        onClose={() => setLightboxImage(null)}
+      />
+    )}
+  </>
   );
 }
