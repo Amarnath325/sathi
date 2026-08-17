@@ -1170,23 +1170,28 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
-              {/* Sub-Navigation Tabs */}
-              <div className="flex items-center gap-5 border-b border-slate-200 dark:border-slate-800 text-xs font-medium pb-0.5 overflow-x-auto">
+              {/* Sub-Navigation Tabs — Complete 10 Enterprise Modules */}
+              <div className="flex items-center gap-4 border-b border-slate-200 dark:border-slate-800 text-xs font-medium pb-0.5 overflow-x-auto">
                 {[
                   { key: 'categories', label: 'Categories' },
                   { key: 'services', label: 'Services' },
-                  { key: 'pricing-rules', label: 'Pricing Rules' },
+                  { key: 'pricing-rules', label: 'Pricing' },
+                  { key: 'operational-rules', label: 'Rules' },
                   { key: 'service-policies', label: 'Policies' },
                   { key: 'risk-levels', label: 'Risk Levels' },
+                  { key: 'verification-reqs', label: 'Verification Requirements' },
+                  { key: 'safety-trust', label: 'Safety & Trust' },
+                  { key: 'booking-cancellation', label: 'Booking & Cancellation' },
+                  { key: 'service-eligibility', label: 'Service Eligibility' },
                 ].map((tab) => {
                   const isActive = subFilter === tab.key || (subFilter === 'all' && tab.key === 'categories');
                   return (
                     <button
                       key={tab.key}
                       onClick={() => setSubFilter(tab.key)}
-                      className={`pb-2 transition-all whitespace-nowrap ${
+                      className={`pb-2 transition-all whitespace-nowrap font-semibold ${
                         isActive
-                          ? 'border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 font-bold'
+                          ? 'border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 font-extrabold'
                           : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                       }`}
                     >
@@ -1416,62 +1421,384 @@ export default function AdminDashboardPage() {
                 </div>
               )}
 
-              {/* SUB-VIEW 4: Pricing Rules & Multipliers */}
+              {/* SUB-VIEW 3: Pricing Engine */}
               {subFilter === 'pricing-rules' && (
-                <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-3">
-                    <div>
-                      <h4 className="font-extrabold text-slate-900 dark:text-white text-sm sm:text-base">Category Base Rate Multiplier Matrix</h4>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">Dynamic multipliers applied during companion booking calculations.</p>
+                <div className="space-y-4">
+                  {/* Supported Pricing Models Header */}
+                  <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+                    <h4 className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm flex items-center gap-2">
+                      <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Multi-Model Pricing Architecture
+                    </h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+                      {['Hourly', 'Half Day', 'Full Day', 'Per Session', 'Per Event', 'Per KM', 'Fixed Price', 'Custom Quote'].map((m) => (
+                        <div key={m} className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-center">
+                          <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block">{m}</span>
+                          <span className="text-[8px] text-emerald-600 dark:text-emerald-400 font-mono font-semibold">Active Model</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {categories.map((cat: ServiceCategory) => (
-                      <div key={cat.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <span className="font-bold text-slate-900 dark:text-white text-xs block truncate" title={cat.name}>{cat.name}</span>
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">{cat.companionCount || 15} Companions</span>
+                  {/* Financial Controls & Multipliers Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Category Multipliers */}
+                    <div className="md:col-span-2 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+                      <h4 className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm">Category Multiplier Matrix</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                        {categories.map((cat: ServiceCategory) => (
+                          <div key={cat.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                            <span className="font-bold text-slate-800 dark:text-slate-200 text-xs truncate max-w-[120px]">{cat.name}</span>
+                            <span className="text-xs font-mono font-black text-emerald-600 dark:text-emerald-400">{cat.baseRateMultiplier || 1.0}x</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Platform Commission & Dynamic Pricing Rules */}
+                    <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+                      <h4 className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm">Financial & Fee Rules</h4>
+                      <div className="space-y-2 text-xs">
+                        <div className="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                          <span className="text-slate-600 dark:text-slate-400">Platform Commission</span>
+                          <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">15.0%</span>
                         </div>
-                        <div className="text-right pl-2">
-                          <span className="text-base font-mono font-black text-emerald-600 dark:text-emerald-400 block">{cat.baseRateMultiplier || 1.0}x</span>
-                          <span className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider block">Multiplier</span>
+                        <div className="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                          <span className="text-slate-600 dark:text-slate-400">Companion Earnings</span>
+                          <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">85.0%</span>
+                        </div>
+                        <div className="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                          <span className="text-slate-600 dark:text-slate-400">Weekend Surge Multiplier</span>
+                          <span className="font-mono font-bold text-amber-600 dark:text-amber-400">1.20x</span>
+                        </div>
+                        <div className="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                          <span className="text-slate-600 dark:text-slate-400">Holiday Surge Multiplier</span>
+                          <span className="font-mono font-bold text-rose-600 dark:text-rose-400">1.50x</span>
+                        </div>
+                        <div className="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                          <span className="text-slate-600 dark:text-slate-400">Travel Transport Allowance</span>
+                          <span className="font-mono font-bold text-slate-800 dark:text-slate-200">₹15 / km</span>
                         </div>
                       </div>
-                    ))}
+                    </div>
                   </div>
                 </div>
               )}
 
-              {/* SUB-VIEW 5: Risk Levels Matrix */}
-              {subFilter === 'risk-levels' && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {['LOW', 'MEDIUM', 'HIGH'].map((risk) => {
-                    const matched = categories.filter((c: ServiceCategory) => (c.riskLevel || 'LOW') === risk);
-
-                    return (
-                      <div key={risk} className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
-                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-2.5">
-                          <span className="font-extrabold text-slate-900 dark:text-white text-xs uppercase tracking-wider flex items-center gap-1.5">
-                            <ShieldAlert className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> {risk} Risk Tier
+              {/* SUB-VIEW 4: Operational Rules */}
+              {subFilter === 'operational-rules' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
+                  {[
+                    { title: 'Travel & Exploration Rules', maxHours: '12h/day', advance: 'Min 2 hours', publicOnly: true, gps: true, sos: true },
+                    { title: 'Care & Assistance Rules', maxHours: '8h/day', advance: 'Min 4 hours', publicOnly: false, gps: true, sos: true },
+                    { title: 'Events & Social Rules', maxHours: '10h/day', advance: 'Min 1 hour', publicOnly: true, gps: true, sos: true },
+                    { title: 'Study & Work Rules', maxHours: '6h/day', advance: 'Instant Allowed', publicOnly: true, gps: false, sos: true },
+                    { title: 'Fitness & Outdoor Rules', maxHours: '4h/day', advance: 'Min 1 hour', publicOnly: true, gps: true, sos: true },
+                    { title: 'Gaming & Remote Rules', maxHours: '8h/day', advance: 'Instant Allowed', publicOnly: false, gps: false, sos: false },
+                  ].map((rule, idx) => (
+                    <div key={idx} className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+                      <h4 className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm flex items-center gap-1.5">
+                        <Sliders className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> {rule.title}
+                      </h4>
+                      <div className="space-y-1.5 text-[11px]">
+                        <div className="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-950">
+                          <span className="text-slate-500">Max Duration Limit:</span>
+                          <span className="font-bold font-mono text-indigo-600 dark:text-indigo-400">{rule.maxHours}</span>
+                        </div>
+                        <div className="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-950">
+                          <span className="text-slate-500">Advance Booking:</span>
+                          <span className="font-bold text-slate-800 dark:text-slate-200">{rule.advance}</span>
+                        </div>
+                        <div className="flex items-center justify-between pt-1 text-[10px]">
+                          <span className={rule.publicOnly ? 'text-emerald-600 font-bold' : 'text-slate-400'}>
+                            {rule.publicOnly ? '✓ Public Venues Only' : '• Private/Home Allowed'}
                           </span>
-                          <span className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-bold font-mono text-[10px]">
-                            {matched.length} Categories
+                          <span className={rule.gps ? 'text-indigo-600 font-bold' : 'text-slate-400'}>
+                            {rule.gps ? '✓ Live GPS Required' : '• GPS Optional'}
                           </span>
                         </div>
-                        <div className="space-y-1.5">
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* SUB-VIEW 6: Risk Levels Matrix */}
+              {subFilter === 'risk-levels' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[
+                    { level: 'LOW', label: '🟢 Low Risk', badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400', desc: 'Basic KYC & standard telemetry', approval: 'Auto-Publish' },
+                    { level: 'MEDIUM', label: '🟡 Medium Risk', badge: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400', desc: 'KYC + Live GPS Location tracking', approval: 'Auto-Publish' },
+                    { level: 'HIGH', label: '🟠 High Risk', badge: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400', desc: 'Enhanced verification + Background check', approval: 'Auto-Publish' },
+                    { level: 'CRITICAL', label: '🔴 Critical Risk', badge: 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400', desc: 'Sensitive assistance & Escort services', approval: 'Manual Admin Approval Required' },
+                  ].map((tier) => {
+                    const matched = categories.filter((c: ServiceCategory) => (c.riskLevel || 'LOW').toUpperCase() === tier.level);
+
+                    return (
+                      <div key={tier.level} className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+                        <div className="border-b border-slate-100 dark:border-slate-800 pb-2">
+                          <span className="font-black text-slate-900 dark:text-white text-xs block">{tier.label}</span>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-0.5">{tier.desc}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-[10px]">
+                          <span className="text-slate-500">Publish Mode:</span>
+                          <span className={`font-bold px-2 py-0.5 rounded-full ${tier.approval.includes('Manual') ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'}`}>
+                            {tier.approval}
+                          </span>
+                        </div>
+                        <div className="space-y-1.5 pt-1">
                           {matched.length > 0 ? matched.map((m: ServiceCategory) => (
-                            <div key={m.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-xs">
-                              <span className="font-bold text-slate-800 dark:text-slate-200 truncate">{m.name}</span>
-                              <span className="text-slate-500 dark:text-slate-400 font-mono text-[10px] shrink-0 ml-2">{m.subcategories?.length || 0} Sub-services</span>
+                            <div key={m.id} className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
+                              <span className="font-bold text-slate-800 dark:text-slate-200 truncate text-[11px]">{m.name}</span>
+                              <span className="text-slate-500 font-mono text-[10px]">{m.subcategories?.length || 0} services</span>
                             </div>
                           )) : (
-                            <p className="text-[11px] text-slate-400 italic py-2">No categories assigned to this risk tier.</p>
+                            <p className="text-[10px] text-slate-400 italic">No active categories</p>
                           )}
                         </div>
                       </div>
                     );
                   })}
+                </div>
+              )}
+
+              {/* SUB-VIEW 7: Verification Requirements ⭐⭐⭐⭐⭐ */}
+              {subFilter === 'verification-reqs' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[
+                    { name: 'Basic Profile', reqs: ['Email Verification', 'Mobile OTP', 'Govt ID Upload'], target: 'Study & Remote Gaming' },
+                    { name: 'Standard Profile', reqs: ['Email & Mobile', 'Govt ID (Aadhaar/PAN)', 'Selfie + Face Match', 'Address Check'], target: 'Social & Lifestyle' },
+                    { name: 'Enhanced Profile', reqs: ['Govt ID', 'Selfie + Face Match', 'Address Verification', 'Full Background Check', 'Emergency Contact'], target: 'Travel & Events' },
+                    { name: 'Medical & Escort Profile', reqs: ['Enhanced Profile Reqs', 'Reference Checks', 'Police Verification', 'Manual Admin Sign-off'], target: 'Care & Assistance' },
+                  ].map((p, idx) => (
+                    <div key={idx} className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 flex flex-col justify-between">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                          <h4 className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm flex items-center gap-1.5">
+                            <UserCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> {p.name}
+                          </h4>
+                          <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-bold text-[9px]">
+                            Level {idx + 1}
+                          </span>
+                        </div>
+                        <ul className="space-y-1.5">
+                          {p.reqs.map((r, i) => (
+                            <li key={i} className="text-[11px] text-slate-700 dark:text-slate-300 flex items-center gap-1.5 font-medium">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                              <span>{r}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-[10px] text-slate-500">
+                        Assigned To: <strong className="text-slate-800 dark:text-slate-200">{p.target}</strong>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* SUB-VIEW 8: Safety & Trust Center ⭐⭐⭐⭐⭐ */}
+              {subFilter === 'safety-trust' && (
+                <div className="space-y-4">
+                  {/* Top Status Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider block">Live SOS Dispatch</span>
+                        <span className="text-lg font-black text-slate-900 dark:text-white font-mono">100% Operational</span>
+                      </div>
+                      <Zap className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider block">Check-in Frequency</span>
+                        <span className="text-lg font-black text-slate-900 dark:text-white font-mono">Every 45 Minutes</span>
+                      </div>
+                      <Clock className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider block">Active Incidents</span>
+                        <span className="text-lg font-black text-slate-900 dark:text-white font-mono">0 Flagged</span>
+                      </div>
+                      <ShieldAlert className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                    </div>
+                  </div>
+
+                  {/* Trust Telemetry Control Panels */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+                      <h4 className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm flex items-center gap-2">
+                        <Shield className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> Safety & Geofence Telemetry
+                      </h4>
+                      <div className="space-y-2 text-xs">
+                        <div className="flex justify-between items-center p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950">
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">Start/End Booking Selfie Confirmation</span>
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-bold text-[10px]">ENFORCED</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950">
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">Geofence Safe-Zone Radius</span>
+                          <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">50 km Limit</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950">
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">Police Emergency Hotline Link (112)</span>
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-bold text-[10px]">CONNECTED</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+                      <h4 className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm flex items-center gap-2">
+                        <UserX className="w-4 h-4 text-rose-600 dark:text-rose-400" /> Incident & Blacklist Protocol
+                      </h4>
+                      <div className="space-y-2 text-xs">
+                        <div className="flex justify-between items-center p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950">
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">Auto-Suspend on 2 Incident Reports</span>
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-bold text-[10px]">ACTIVE</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950">
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">Evidence Upload Lock (Photos/Audio)</span>
+                          <span className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-bold text-[10px]">ENABLED</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SUB-VIEW 9: Booking & Cancellation Rules ⭐⭐⭐⭐ */}
+              {subFilter === 'booking-cancellation' && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Booking Rules */}
+                  <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+                    <h4 className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+                      <Calendar className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> Booking Constraints
+                    </h4>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-950">
+                        <span className="text-slate-500">Min Advance Booking:</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200">2 Hours Prior</span>
+                      </div>
+                      <div className="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-950">
+                        <span className="text-slate-500">Max Advance Booking:</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200">30 Days Max</span>
+                      </div>
+                      <div className="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-950">
+                        <span className="text-slate-500">Instant Booking Allowed:</span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400">Yes (Low-Risk)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cancellation Rules */}
+                  <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+                    <h4 className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+                      <XCircle className="w-4 h-4 text-rose-600 dark:text-rose-400" /> Cancellation Matrix
+                    </h4>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-950">
+                        <span className="text-slate-500">Free Cancellation Window:</span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400">Up to 4h Prior</span>
+                      </div>
+                      <div className="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-950">
+                        <span className="text-slate-500">Late Cancellation Fee:</span>
+                        <span className="font-bold text-amber-600 dark:text-amber-400">50% Charge</span>
+                      </div>
+                      <div className="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-950">
+                        <span className="text-slate-500">No-Show Penalty:</span>
+                        <span className="font-bold text-rose-600 dark:text-rose-400">100% Retained</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Reschedule Rules */}
+                  <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+                    <h4 className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+                      <RotateCcw className="w-4 h-4 text-purple-600 dark:text-purple-400" /> Reschedule Policy
+                    </h4>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-950">
+                        <span className="text-slate-500">Reschedule Window:</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200">Up to 2h Prior</span>
+                      </div>
+                      <div className="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-950">
+                        <span className="text-slate-500">Max Reschedules / Booking:</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200">2 Times</span>
+                      </div>
+                      <div className="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-950">
+                        <span className="text-slate-500">Price Adjustment:</span>
+                        <span className="font-bold text-indigo-600 dark:text-indigo-400">Automated</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SUB-VIEW 10: Service Eligibility ⭐⭐⭐⭐ */}
+              {subFilter === 'service-eligibility' && (
+                <div className="space-y-4">
+                  {/* Qualification Pipeline Header */}
+                  <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+                    <h4 className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm">Companion Qualification Pipeline</h4>
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-slate-600 dark:text-slate-400 overflow-x-auto py-1">
+                      <span className="px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 whitespace-nowrap">1. SERVICE REQUEST</span>
+                      <span>→</span>
+                      <span className="px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 whitespace-nowrap">2. REQUIRED SKILLS</span>
+                      <span>→</span>
+                      <span className="px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 whitespace-nowrap">3. VERIFICATION LEVEL</span>
+                      <span>→</span>
+                      <span className="px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 whitespace-nowrap">4. DOCUMENTS & EXP</span>
+                      <span>→</span>
+                      <span className="px-2 py-1 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 whitespace-nowrap">5. ELIGIBILITY MATCH ✅</span>
+                    </div>
+                  </div>
+
+                  {/* Sample Eligibility Audit Matrix */}
+                  <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                    <div className="py-3 px-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                      <h4 className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm">Live Companion Eligibility Audit Matrix</h4>
+                      <span className="text-[10px] text-slate-500">Automated System Audit</span>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/80 text-[10px] font-extrabold text-slate-500 uppercase">
+                            <th className="py-2.5 px-5">SERVICE</th>
+                            <th className="py-2.5 px-5">REQUIRED VERIFICATION</th>
+                            <th className="py-2.5 px-5">MIN EXPERIENCE</th>
+                            <th className="py-2.5 px-5">COMPANION STATUS</th>
+                            <th className="py-2.5 px-5 text-right">SYSTEM AUDIT</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                          {[
+                            { service: 'City Guide & Local Tour', req: 'Standard Profile', exp: '1+ Years Local', status: 'Approved', result: '✅ ELIGIBLE' },
+                            { service: 'Elderly Assistance', req: 'Enhanced + Background Check', exp: '2+ Years Care', status: 'Pending Background Check', result: '❌ INELIGIBLE (KYC Pending)' },
+                            { service: 'Wedding Companion', req: 'Enhanced Profile', exp: '6+ Months', status: 'Approved', result: '✅ ELIGIBLE' },
+                            { service: 'Hospital Companion', req: 'Medical & Escort Profile', exp: '1+ Years Health', status: 'Under Admin Review', result: '⚠️ PENDING ADMIN APPROVAL' },
+                          ].map((row, idx) => (
+                            <tr key={idx} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+                              <td className="py-2.5 px-5 font-bold text-slate-900 dark:text-white">{row.service}</td>
+                              <td className="py-2.5 px-5 text-indigo-600 dark:text-indigo-400 font-semibold">{row.req}</td>
+                              <td className="py-2.5 px-5 text-slate-600 dark:text-slate-400 font-mono text-[11px]">{row.exp}</td>
+                              <td className="py-2.5 px-5 text-slate-600 dark:text-slate-400 text-[11px]">{row.status}</td>
+                              <td className="py-2.5 px-5 text-right font-extrabold text-xs">
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] ${
+                                  row.result.includes('✅')
+                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400'
+                                    : row.result.includes('❌')
+                                    ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400'
+                                    : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400'
+                                }`}>
+                                  {row.result}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
