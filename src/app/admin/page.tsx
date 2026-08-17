@@ -33,7 +33,8 @@ import {
   Search, 
   Filter, 
   Trash2, 
-  Edit2, 
+  Edit2,
+  Pencil,
   RotateCcw, 
   XCircle, 
   CheckCircle2, 
@@ -305,6 +306,22 @@ export default function AdminDashboardPage() {
     } catch (e) {
       // Fallback
     }
+  }, []);
+
+  // Sync Categories & Sub-Services dynamically from Neon PostgreSQL DB API
+  useEffect(() => {
+    async function loadDbCategories() {
+      try {
+        const res = await fetch('/api/categories');
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          useAdminStore.setState({ categories: json.data });
+        }
+      } catch (e) {
+        console.warn('Failed to sync categories from Neon DB:', e);
+      }
+    }
+    loadDbCategories();
   }, []);
 
   const [subFilter, setSubFilter] = useState<string>('all');
@@ -1192,18 +1209,35 @@ export default function AdminDashboardPage() {
                           setEditingCategory(c);
                           setIsCategoryModalOpen(true);
                         }}
-                        onDelete={(id) => {
+                        onDelete={async (id) => {
                           if (confirm(`Are you sure you want to delete category "${cat.name}"?`)) {
                             deleteCategory(id);
+                            try {
+                              await fetch(`/api/categories/${id}`, { method: 'DELETE' });
+                            } catch (e) { console.warn('Category delete error:', e); }
                             setNotification(`Category "${cat.name}" deleted.`);
                           }
                         }}
-                        onToggleActive={(id) => {
+                        onToggleActive={async (id) => {
                           toggleCategory(id);
+                          try {
+                            await fetch(`/api/categories/${id}`, {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ isActive: !cat.isActive })
+                            });
+                          } catch (e) { console.warn('Category toggle active error:', e); }
                           setNotification(`Category status updated.`);
                         }}
-                        onToggleFeatured={(id) => {
+                        onToggleFeatured={async (id) => {
                           toggleCategoryFeatured(id);
+                          try {
+                            await fetch(`/api/categories/${id}`, {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ isFeatured: !cat.isFeatured })
+                            });
+                          } catch (e) { console.warn('Category toggle featured error:', e); }
                           setNotification(`Featured status toggled.`);
                         }}
                         onViewDetails={(c) => setViewingCategory(c)}
@@ -1244,6 +1278,7 @@ export default function AdminDashboardPage() {
                             <th className="py-3.5 px-6">BASE RATE ($/HR)</th>
                             <th className="py-3.5 px-6">VERIFICATION NEEDED</th>
                             <th className="py-3.5 px-6">DESCRIPTION</th>
+                            <th className="py-3.5 px-6 text-right">ACTIONS</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
@@ -1264,6 +1299,48 @@ export default function AdminDashboardPage() {
                                 )}
                               </td>
                               <td className="py-4 px-6 text-slate-600 dark:text-slate-400 max-w-sm text-xs leading-relaxed">{sub.description}</td>
+                              <td className="py-4 px-6 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    onClick={() => {
+                                      const cat = categories.find(c => c.name === sub.categoryName);
+                                      if (cat) {
+                                        setEditingCategory(cat);
+                                        setIsCategoryModalOpen(true);
+                                      }
+                                    }}
+                                    className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-950/40 dark:hover:text-indigo-400 transition-colors"
+                                    title="Edit Sub-Service"
+                                  >
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      if (confirm(`Are you sure you want to delete sub-service "${sub.name}"?`)) {
+                                        const cat = categories.find(c => c.name === sub.categoryName);
+                                        if (cat) {
+                                          const updatedSubcats = (cat.subcategories || []).filter(s => s.id !== sub.id);
+                                          updateCategory(cat.id, { subcategories: updatedSubcats });
+                                          try {
+                                            await fetch(`/api/categories/${cat.id}`, {
+                                              method: 'PATCH',
+                                              headers: { 'Content-Type': 'application/json' },
+                                              body: JSON.stringify({ subcategories: updatedSubcats })
+                                            });
+                                          } catch (e) {
+                                            console.warn('Sub-service delete DB error:', e);
+                                          }
+                                          setNotification(`Sub-service "${sub.name}" deleted successfully.`);
+                                        }
+                                      }
+                                    }}
+                                    className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition-colors"
+                                    title="Delete Sub-Service"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -3056,12 +3133,34 @@ export default function AdminDashboardPage() {
           setIsCategoryModalOpen(false);
           setEditingCategory(null);
         }}
-        onSave={(catData) => {
+        onSave={async (catData) => {
           if (catData.id) {
             updateCategory(catData.id, catData);
+            try {
+              await fetch(`/api/categories/${catData.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(catData)
+              });
+            } catch (e) {
+              console.warn('Neon DB update error:', e);
+            }
             setNotification(`Category "${catData.name}" updated successfully.`);
           } else {
             addCategory(catData);
+            try {
+              const res = await fetch('/api/categories', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(catData)
+              });
+              const json = await res.json();
+              if (json.data && json.data.id) {
+                updateCategory(json.data.id, json.data);
+              }
+            } catch (e) {
+              console.warn('Neon DB create error:', e);
+            }
             setNotification(`Category "${catData.name}" created successfully.`);
           }
         }}
