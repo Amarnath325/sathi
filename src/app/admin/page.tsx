@@ -334,6 +334,51 @@ export default function AdminDashboardPage() {
     });
   }, [categories, categoryFilter, searchQuery]);
 
+  // Reset page number whenever filter or search query changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [categoryFilter, subFilter, searchQuery, pageSize]);
+
+  // Flattened Sub-Services List
+  const allSubServices = useMemo(() => {
+    return categories.flatMap((cat: ServiceCategory) =>
+      (cat.subcategories || []).map((sub: SubCategoryItem) => ({
+        ...sub,
+        categoryName: cat.name,
+        categoryRisk: cat.riskLevel,
+      }))
+    );
+  }, [categories]);
+
+  const filteredSubServices = useMemo(() => {
+    return allSubServices.filter((sub) => {
+      const matchesSearch = !searchQuery ||
+        sub.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        sub.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        sub.categoryName.toLowerCase().includes(searchQuery.toLowerCase());
+
+      if (!matchesSearch) return false;
+
+      if (categoryFilter === 'low') return sub.categoryRisk === 'LOW';
+      if (categoryFilter === 'medium') return sub.categoryRisk === 'MEDIUM';
+      if (categoryFilter === 'high') return sub.categoryRisk === 'HIGH' || sub.categoryRisk === 'CRITICAL';
+
+      return true;
+    });
+  }, [allSubServices, categoryFilter, searchQuery]);
+
+  const paginatedCategoriesList = useMemo(() => {
+    if (pageSize === 'All') return filteredCategoriesList;
+    const start = (currentPage - 1) * pageSize;
+    return filteredCategoriesList.slice(start, start + pageSize);
+  }, [filteredCategoriesList, currentPage, pageSize]);
+
+  const paginatedSubServices = useMemo(() => {
+    if (pageSize === 'All') return filteredSubServices;
+    const start = (currentPage - 1) * pageSize;
+    return filteredSubServices.slice(start, start + pageSize);
+  }, [filteredSubServices, currentPage, pageSize]);
+
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   // Category Modal States
@@ -967,79 +1012,94 @@ export default function AdminDashboardPage() {
                   );
                 }
 
+                const paginatedList = pageSize === 'All'
+                  ? list
+                  : list.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
                 return (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {list.map((comp) => (
-                      <div key={comp.id} className="p-6 rounded-3xl bg-slate-900 border border-slate-800 hover:border-purple-500/40 transition-all space-y-4 flex flex-col">
-                        <div className="flex items-center gap-4">
-                          <img
-                            src={comp.avatar}
-                            alt={comp.name}
-                            onClick={() => setLightboxImage(comp.avatar)}
-                            className="w-14 h-14 rounded-2xl object-cover border-2 border-purple-500/30 shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-                            title="Click to view image popup"
-                          />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-extrabold text-white text-base truncate">{comp.name}, {comp.age}</h4>
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {paginatedList.map((comp) => (
+                        <div key={comp.id} className="p-6 rounded-3xl bg-slate-900 border border-slate-800 hover:border-purple-500/40 transition-all space-y-4 flex flex-col">
+                          <div className="flex items-center gap-4">
+                            <img
+                              src={comp.avatar}
+                              alt={comp.name}
+                              onClick={() => setLightboxImage(comp.avatar)}
+                              className="w-14 h-14 rounded-2xl object-cover border-2 border-purple-500/30 shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                              title="Click to view image popup"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-extrabold text-white text-base truncate">{comp.name}, {comp.age}</h4>
+                              </div>
+                              <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                                <MapPin className="w-3.5 h-3.5 text-purple-400 shrink-0" /> {comp.city}, {comp.country}
+                              </p>
                             </div>
-                            <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                              <MapPin className="w-3.5 h-3.5 text-purple-400 shrink-0" /> {comp.city}, {comp.country}
-                            </p>
+                          </div>
+
+                          {/* Status Badge & Rating */}
+                          <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs">
+                            {comp.status && <CompanionStatusBadge status={comp.status} size="md" />}
+                            <div className="flex items-center gap-1 text-amber-400 font-bold">
+                              <Star className="w-3.5 h-3.5 fill-amber-400" /> {comp.ratingAvg}
+                              <span className="text-slate-500 text-[10px] font-normal">({comp.ratingCount})</span>
+                            </div>
+                          </div>
+
+                          {/* Pricing & Bookings */}
+                          <div className="grid grid-cols-2 gap-2 p-3 rounded-2xl bg-slate-950/60 border border-slate-800 text-xs">
+                            <div>
+                              <span className="text-[10px] text-slate-500 block uppercase font-mono">Hourly Rate</span>
+                              <span className="font-mono font-bold text-emerald-400">${comp.hourlyRate}/hr</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-500 block uppercase font-mono">Bookings</span>
+                              <span className="font-bold text-white">{comp.completedBookings} Done</span>
+                            </div>
+                          </div>
+
+                          {/* Categories */}
+                          <div className="flex flex-wrap gap-1">
+                            {comp.categories.slice(0, 2).map((cat, idx) => (
+                              <span key={idx} className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 font-medium">
+                                {cat}
+                              </span>
+                            ))}
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex items-center gap-2 pt-2 border-t border-slate-800/80 mt-auto">
+                            <Link
+                              href={`/companion/${comp.id}`}
+                              className="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold text-center transition-all"
+                            >
+                              View Profile
+                            </Link>
+                            <button
+                              onClick={() => toggleCompanionActive(comp.id)}
+                              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                                comp.status === 'ACTIVE'
+                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30'
+                                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
+                              }`}
+                            >
+                              {comp.status === 'ACTIVE' ? 'Active' : 'Toggle Active'}
+                            </button>
                           </div>
                         </div>
+                      ))}
+                    </div>
 
-                        {/* Status Badge & Rating */}
-                        <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs">
-                          {comp.status && <CompanionStatusBadge status={comp.status} size="md" />}
-                          <div className="flex items-center gap-1 text-amber-400 font-bold">
-                            <Star className="w-3.5 h-3.5 fill-amber-400" /> {comp.ratingAvg}
-                            <span className="text-slate-500 text-[10px] font-normal">({comp.ratingCount})</span>
-                          </div>
-                        </div>
-
-                        {/* Pricing & Bookings */}
-                        <div className="grid grid-cols-2 gap-2 p-3 rounded-2xl bg-slate-950/60 border border-slate-800 text-xs">
-                          <div>
-                            <span className="text-[10px] text-slate-500 block uppercase font-mono">Hourly Rate</span>
-                            <span className="font-mono font-bold text-emerald-400">${comp.hourlyRate}/hr</span>
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-slate-500 block uppercase font-mono">Bookings</span>
-                            <span className="font-bold text-white">{comp.completedBookings} Done</span>
-                          </div>
-                        </div>
-
-                        {/* Categories */}
-                        <div className="flex flex-wrap gap-1">
-                          {comp.categories.slice(0, 2).map((cat, idx) => (
-                            <span key={idx} className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 font-medium">
-                              {cat}
-                            </span>
-                          ))}
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center gap-2 pt-2 border-t border-slate-800/80 mt-auto">
-                          <Link
-                            href={`/companion/${comp.id}`}
-                            className="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold text-center transition-all"
-                          >
-                            View Profile
-                          </Link>
-                          <button
-                            onClick={() => toggleCompanionActive(comp.id)}
-                            className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                              comp.status === 'ACTIVE'
-                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30'
-                                : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
-                            }`}
-                          >
-                            {comp.status === 'ACTIVE' ? 'Active' : 'Toggle Active'}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                    <PaginationFooter
+                      currentPage={currentPage}
+                      totalItems={list.length}
+                      pageSize={pageSize}
+                      onPageChange={(page) => setCurrentPage(page)}
+                      labelSingular="companion"
+                      labelPlural="companions"
+                    />
                   </div>
                 );
               })()}
@@ -1121,9 +1181,9 @@ export default function AdminDashboardPage() {
 
               {/* SUB-VIEW 1: Category Cards Grid */}
               {(subFilter === 'categories' || subFilter === 'all') && (
-                filteredCategoriesList.length > 0 ? (
+                paginatedCategoriesList.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredCategoriesList.map((cat: ServiceCategory) => (
+                    {paginatedCategoriesList.map((cat: ServiceCategory) => (
                       <CategoryCard
                         key={cat.id}
                         category={cat}
@@ -1165,49 +1225,69 @@ export default function AdminDashboardPage() {
                 )
               )}
 
-              {/* SUB-VIEW 2: Flattened Services Table */}
+              {/* SUB-VIEW 2: Flattened Services Table (Matches User Screenshot UI) */}
               {subFilter === 'services' && (
-                <div className="rounded-3xl bg-slate-900 border border-slate-800 overflow-hidden">
-                  <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-                    <h4 className="font-bold text-white text-sm">All Sub-Service Offerings</h4>
-                    <span className="text-xs text-slate-400 font-mono">
-                      {categories.reduce((acc: number, c: ServiceCategory) => acc + (c.subcategories?.length || 0), 0)} Total Sub-Services
+                <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-all">
+                  <div className="p-5 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+                    <h4 className="font-bold text-slate-900 dark:text-white text-base tracking-tight">All Sub-Service Offerings</h4>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                      {filteredSubServices.length} Total Sub-Services
                     </span>
-
                   </div>
-                  <table className="w-full text-left border-collapse text-xs">
-                    <thead>
-                      <tr className="border-b border-slate-800 bg-slate-950 text-[10px] font-mono text-slate-400 uppercase">
-                        <th className="py-3.5 px-4">Sub-Service Name</th>
-                        <th className="py-3.5 px-4">Category</th>
-                        <th className="py-3.5 px-4">Base Rate ($/hr)</th>
-                        <th className="py-3.5 px-4">Verification Needed</th>
-                        <th className="py-3.5 px-4">Description</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800">
-                      {categories.flatMap((cat: ServiceCategory) =>
-                        (cat.subcategories || []).map((sub: SubCategoryItem) => (
-
-                          <tr key={sub.id} className="hover:bg-slate-800/40">
-                            <td className="py-3 px-4 font-bold text-white">{sub.name}</td>
-                            <td className="py-3 px-4 text-indigo-400 font-semibold">{cat.name}</td>
-                            <td className="py-3 px-4 font-mono font-bold text-emerald-400">${sub.basePrice}/hr</td>
-                            <td className="py-3 px-4">
-                              {sub.requiredVerification ? (
-                                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">Required</span>
-                              ) : (
-                                <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 text-[10px]">Optional</span>
-                              )}
-                            </td>
-                            <td className="py-3 px-4 text-slate-400 max-w-xs truncate">{sub.description}</td>
+                  {paginatedSubServices.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/80 text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                            <th className="py-3.5 px-6">SUB-SERVICE NAME</th>
+                            <th className="py-3.5 px-6">CATEGORY</th>
+                            <th className="py-3.5 px-6">BASE RATE ($/HR)</th>
+                            <th className="py-3.5 px-6">VERIFICATION NEEDED</th>
+                            <th className="py-3.5 px-6">DESCRIPTION</th>
                           </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                          {paginatedSubServices.map((sub) => (
+                            <tr key={sub.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                              <td className="py-4 px-6 font-bold text-slate-900 dark:text-white text-xs">{sub.name}</td>
+                              <td className="py-4 px-6 text-purple-600 dark:text-purple-400 font-semibold text-xs">{sub.categoryName}</td>
+                              <td className="py-4 px-6 font-bold font-mono text-emerald-600 dark:text-emerald-400 text-xs">${sub.basePrice}/hr</td>
+                              <td className="py-4 px-6">
+                                {sub.requiredVerification ? (
+                                  <span className="px-3.5 py-1 rounded-full bg-emerald-600 text-white font-bold text-[10px] inline-flex items-center justify-center shadow-sm">
+                                    Required
+                                  </span>
+                                ) : (
+                                  <span className="px-3.5 py-1 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold text-[10px] inline-flex items-center justify-center">
+                                    Optional
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-4 px-6 text-slate-600 dark:text-slate-400 max-w-sm text-xs leading-relaxed">{sub.description}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="p-12 text-center text-slate-500 text-xs font-medium">
+                      No sub-services found matching your filter criteria.
+                    </div>
+                  )}
                 </div>
               )}
+
+              {/* 🌟 GLOBAL PAGINATION FOOTER BAR */}
+              <div className="pt-2">
+                <PaginationFooter
+                  currentPage={currentPage}
+                  totalItems={subFilter === 'services' ? filteredSubServices.length : filteredCategoriesList.length}
+                  pageSize={pageSize}
+                  onPageChange={(page) => setCurrentPage(page)}
+                  labelSingular={subFilter === 'services' ? 'sub-service' : 'category'}
+                  labelPlural={subFilter === 'services' ? 'sub-services' : 'categories'}
+                />
+              </div>
 
               {/* SUB-VIEW 3: Service Policies */}
               {subFilter === 'service-policies' && (
