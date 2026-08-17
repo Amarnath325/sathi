@@ -82,6 +82,39 @@ model ServicePolicy {
   updatedAt               DateTime  @updatedAt
 }
 
+model Category {
+  id                   String       @id @default(uuid())
+  name                 String       @unique
+  slug                 String       @unique
+  description          String
+  iconName             String       @default("Users")
+  bannerUrl            String?
+  riskLevel            RiskLevel    @default(LOW)
+  baseRateMultiplier   Float        @default(1.0)
+  minAgeLimit          Int          @default(18)
+  isFeatured           Boolean      @default(false)
+  isActive             Boolean      @default(true)
+  companionCount       Int          @default(0)
+  safetyPolicy         String?
+  subcategories        SubService[]
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+}
+
+model SubService {
+  id                   String   @id @default(uuid())
+  categoryId           String
+  category             Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name                 String
+  basePrice            Float    @default(50.0)
+  requiredVerification Boolean  @default(false)
+  description          String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([categoryId])
+}
+
 model FinancialLedger {
   id                   String              @id @default(uuid())
   bookingId            String?

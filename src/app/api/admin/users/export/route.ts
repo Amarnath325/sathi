@@ -25,7 +25,7 @@ export async function GET(request: Request) {
       xmlTable += `<Cell><Data ss:Type="String">City</Data></Cell>`;
       xmlTable += `</Row>`;
 
-      users.forEach((u) => {
+      users.forEach((u: any) => {
         xmlTable += `<Row>`;
         xmlTable += `<Cell><Data ss:Type="String">${u.id}</Data></Cell>`;
         xmlTable += `<Cell><Data ss:Type="String">${u.fullName}</Data></Cell>`;
@@ -48,7 +48,7 @@ export async function GET(request: Request) {
     const headers = ['ID', 'FullName', 'Email', 'Role', 'City', 'CreatedAt'];
     const lines = [headers.join(',')];
 
-    users.forEach((u) => {
+    users.forEach((u: any) => {
       lines.push(`"${u.id}","${u.fullName}","${u.email}","${u.role}","${u.profile?.city || 'N/A'}","${u.createdAt.toISOString()}"`);
     });
 
