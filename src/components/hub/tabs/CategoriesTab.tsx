@@ -142,68 +142,55 @@ export function CategoriesTab() {
   return (
     <div className="space-y-5">
       {/* Search & Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-center gap-2.5 p-3 rounded-xl bg-slate-900 border border-slate-800">
+      <div className="flex flex-col sm:flex-row items-center gap-3">
         {/* Local Search */}
         <div className="relative flex-1 w-full">
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={localSearch}
             onChange={e => handleFilterChange(() => setLocalSearch(e.target.value))}
             placeholder="Search categories by name or description..."
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors"
+            className="w-full bg-white border border-slate-200/90 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 outline-none focus:border-purple-500 shadow-xs transition-colors"
           />
         </div>
         {/* Status Filter */}
-        <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs shrink-0">
-          <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
+        <div className="flex items-center gap-2 bg-white border border-slate-200/90 rounded-xl px-3.5 py-2.5 text-xs shrink-0 shadow-xs">
+          <SlidersHorizontal className="w-4 h-4 text-slate-500" />
           <select
             value={statusFilter}
             onChange={e => handleFilterChange(() => setStatusFilter(e.target.value as any))}
-            className="bg-transparent text-slate-200 outline-none font-semibold cursor-pointer"
+            className="bg-transparent text-slate-700 font-medium outline-none cursor-pointer text-xs"
           >
-            <option value="ALL" className="bg-slate-900">All Status</option>
-            <option value="ACTIVE" className="bg-slate-900">Active Only</option>
-            <option value="INACTIVE" className="bg-slate-900">Inactive Only</option>
+            <option value="ALL">All Status</option>
+            <option value="ACTIVE">Active Only</option>
+            <option value="INACTIVE">Inactive Only</option>
           </select>
         </div>
         {/* Featured Filter */}
-        <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs shrink-0">
-          <Star className="w-3.5 h-3.5 text-amber-400" />
+        <div className="flex items-center gap-2 bg-white border border-slate-200/90 rounded-xl px-3.5 py-2.5 text-xs shrink-0 shadow-xs">
+          <Star className="w-4 h-4 text-amber-500" />
           <select
             value={featuredFilter}
             onChange={e => handleFilterChange(() => setFeaturedFilter(e.target.value as any))}
-            className="bg-transparent text-slate-200 outline-none font-semibold cursor-pointer"
+            className="bg-transparent text-slate-700 font-medium outline-none cursor-pointer text-xs"
           >
-            <option value="ALL" className="bg-slate-900">All Types</option>
-            <option value="FEATURED" className="bg-slate-900">Featured Only</option>
-            <option value="STANDARD" className="bg-slate-900">Standard Only</option>
+            <option value="ALL">All Types</option>
+            <option value="FEATURED">Featured Only</option>
+            <option value="STANDARD">Standard Only</option>
           </select>
         </div>
         {/* Page Size */}
-        <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs shrink-0">
-          <span className="text-slate-400 font-medium">Show</span>
+        <div className="flex items-center gap-2 bg-white border border-slate-200/90 rounded-xl px-3.5 py-2.5 text-xs shrink-0 shadow-xs">
+          <span className="text-slate-700 font-medium">Show</span>
           <select
             value={pageSize}
             onChange={e => { setPageSize(Number(e.target.value) as any); setCurrentPage(1); }}
-            className="bg-transparent text-slate-200 outline-none font-bold cursor-pointer"
+            className="bg-transparent text-slate-900 font-bold outline-none cursor-pointer text-xs"
           >
-            {PAGE_SIZE_OPTIONS.map(s => <option key={s} value={s} className="bg-slate-900">{s}</option>)}
+            {PAGE_SIZE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
-      </div>
-
-      {/* Results count */}
-      <div className="flex items-center justify-between text-[11px] text-slate-400 px-1">
-        <span>Showing <span className="text-white font-bold">{paginatedCategories.length}</span> of <span className="text-white font-bold">{filteredCategories.length}</span> categories</span>
-        {(localSearch || globalSearch || statusFilter !== 'ALL' || featuredFilter !== 'ALL') && (
-          <button
-            onClick={() => { setLocalSearch(''); setStatusFilter('ALL'); setFeaturedFilter('ALL'); setCurrentPage(1); }}
-            className="text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1"
-          >
-            ✕ Clear Filters
-          </button>
-        )}
       </div>
 
       {/* Grid of Categories */}
@@ -215,8 +202,8 @@ export function CategoriesTab() {
             return (
               <div
                 key={cat.id}
-                className={`rounded-2xl border transition-all flex flex-col overflow-hidden group hover:shadow-xl hover:-translate-y-0.5 ${
-                  cat.status === 'ACTIVE' ? 'bg-slate-900 border-slate-800 hover:border-indigo-500/50' : 'bg-slate-950/80 border-slate-900 opacity-60'
+                className={`rounded-2xl border transition-all flex flex-col overflow-hidden group hover:shadow-md hover:-translate-y-0.5 ${
+                  cat.status === 'ACTIVE' ? 'bg-white border-slate-200/90 hover:border-purple-300' : 'bg-slate-50 border-slate-200 opacity-60'
                 }`}
               >
                 {/* Banner */}
