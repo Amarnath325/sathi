@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useServiceHubStore } from '@/lib/serviceHubStore';
-import { Shield, GitCommit, CheckCircle2, Search, Download } from 'lucide-react';
+import { Shield, GitCommit, CheckCircle2, Search, Upload, ArrowUpRight } from 'lucide-react';
 
 export function PoliciesTab() {
   const { policies, publishNewPolicyVersion } = useServiceHubStore();
@@ -14,112 +14,116 @@ export function PoliciesTab() {
     !searchTerm || p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handlePublishVersion = (polId: string) => {
+  const handlePublishVersion = (polId: string, nextVersion: number) => {
     if (!versionNote.trim()) { alert('Please enter release notes for the new version.'); return; }
     publishNewPolicyVersion(polId, versionNote.trim());
     setVersionNote('');
-    alert('New policy version published successfully!');
+    alert(`Policy version v${nextVersion}.0 published successfully!`);
   };
 
-  const handleExport = () => {
-    const blob = new Blob([JSON.stringify(policies, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `policies_export_${Date.now()}.json`;
-    a.click(); URL.revokeObjectURL(url);
-  };
-
-  const PARAM_LABELS: Record<string, string> = {
-    kyc_required: 'KYC Required',
-    live_location_required: 'Live GPS',
-    sos_required: 'SOS Active',
-    public_location_only: 'Public Places Only',
-  };
+  const PARAM_CONFIG = [
+    { key: 'kyc_required', label: 'KYC Required' },
+    { key: 'live_location_required', label: 'Live GPS' },
+    { key: 'sos_required', label: 'SOS Active' },
+    { key: 'public_location_only', label: 'Public Places Only' },
+  ] as const;
 
   return (
     <div className="space-y-5">
-      {/* Search */}
+      {/* Search Bar */}
       <div className="relative">
-        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
         <input
           type="text"
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
           placeholder="Search policies by name or description..."
-          className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors"
+          className="w-full bg-white border border-slate-200/90 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 outline-none focus:border-purple-500 shadow-xs transition-colors"
         />
       </div>
 
-      {/* Policies */}
-      <div className="space-y-4">
+      {/* Policies List */}
+      <div className="space-y-5">
         {filteredPolicies.length > 0 ? filteredPolicies.map(pol => (
-          <div key={pol.id} className="p-5 rounded-3xl bg-slate-900 border border-slate-800 hover:border-slate-700 space-y-4 transition-all">
-            <div className="flex items-start justify-between gap-3">
+          <div key={pol.id} className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-xs hover:shadow-md transition-all space-y-6">
+            
+            {/* Header Row */}
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
               <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h4 className="font-extrabold text-white text-base">{pol.name}</h4>
-                  <span className="px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 text-[10px] font-extrabold">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h4 className="font-extrabold text-slate-900 text-xl tracking-tight">{pol.name}</h4>
+                  <span className="px-3 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/90 text-xs font-bold flex items-center gap-1.5 shadow-2xs">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                     v{pol.version}.0 Active
                   </span>
                 </div>
-                <p className="text-xs text-slate-400 mt-1">{pol.description}</p>
+                <p className="text-xs text-slate-500 font-medium mt-1">{pol.description}</p>
               </div>
-              <span className="text-[10px] font-mono text-slate-400 shrink-0">
+              <span className="text-xs font-semibold text-slate-500 shrink-0">
                 Effective: {new Date(pol.effective_from).toLocaleDateString()}
               </span>
             </div>
 
-            {/* Parameters Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs bg-slate-950 p-3 rounded-2xl border border-slate-800">
-              {(Object.entries({ kyc_required: pol.kyc_required, live_location_required: pol.live_location_required, sos_required: pol.sos_required, public_location_only: pol.public_location_only }) as [string, boolean][]).map(([key, val]) => (
-                <div key={key} className={`p-2.5 rounded-xl border flex items-center justify-between ${val ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-slate-900 border-slate-800'}`}>
-                  <span className={`text-[10px] font-bold ${val ? 'text-emerald-300' : 'text-slate-500'}`}>{PARAM_LABELS[key] || key}</span>
-                  {val
-                    ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    : <span className="text-slate-600 text-[10px] font-mono">OFF</span>
-                  }
-                </div>
-              ))}
+            {/* Feature Pills Row */}
+            <div className="flex flex-wrap items-center gap-3">
+              {PARAM_CONFIG.map(({ key, label }) => {
+                const isActive = Boolean(pol[key as keyof typeof pol]);
+                if (!isActive) return null;
+                return (
+                  <div
+                    key={key}
+                    className="px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-900 text-xs font-bold border border-emerald-200/80 flex items-center gap-2 shadow-2xs"
+                  >
+                    <span className="w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-extrabold">✓</span>
+                    {label}
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Version History */}
-            <div className="space-y-2 border-t border-slate-800 pt-3">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                <GitCommit className="w-3.5 h-3.5 text-indigo-400" /> Immutable Version History
-              </span>
-              <div className="space-y-1.5 max-h-40 overflow-y-auto">
+            {/* Separator & Immutable Version History */}
+            <div className="pt-5 border-t border-slate-100 space-y-3">
+              <h5 className="font-extrabold text-purple-700 text-xs tracking-wider uppercase flex items-center gap-1.5">
+                <ArrowUpRight className="w-4 h-4 text-purple-700" /> IMMUTABLE VERSION HISTORY
+              </h5>
+              
+              <div className="space-y-2 max-h-48 overflow-y-auto">
                 {(pol.versions || []).map((ver, idx) => (
-                  <div key={idx} className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-xs flex items-center justify-between text-slate-300">
+                  <div key={idx} className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200/80 text-xs flex items-center justify-between text-slate-700">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-indigo-400 font-mono">v{ver.version}.0</span>
-                      <span className="text-slate-400">—</span>
-                      <span>{ver.description}</span>
+                      <span className="font-extrabold text-slate-900 font-mono">v{ver.version}.0</span>
+                      <span className="text-slate-400 font-normal">—</span>
+                      <span className="text-slate-700 font-medium">{ver.description}</span>
                     </div>
-                    <span className="text-[10px] text-slate-500 font-mono shrink-0">{new Date(ver.effective_from).toLocaleDateString()}</span>
+                    <span className="text-xs text-slate-500 font-medium shrink-0">
+                      Date: {new Date(ver.effective_from).toLocaleDateString()}
+                    </span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Publish New Version */}
-            <div className="pt-3 border-t border-slate-800 flex items-center gap-2">
+            {/* Version Publish Row */}
+            <div className="flex items-center gap-3 pt-2">
               <input
                 type="text"
                 value={pol.id === selectedPolId ? versionNote : ''}
                 onFocus={() => setSelectedPolId(pol.id)}
                 onChange={e => { setSelectedPolId(pol.id); setVersionNote(e.target.value); }}
                 placeholder="Enter version release notes..."
-                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white outline-none focus:border-purple-500 transition-colors"
+                className="flex-1 bg-white border border-slate-200/90 rounded-xl px-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 outline-none focus:border-purple-500 shadow-xs transition-colors"
               />
               <button
-                onClick={() => handlePublishVersion(pol.id)}
-                className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shrink-0 transition-colors"
+                onClick={() => handlePublishVersion(pol.id, pol.version + 1)}
+                className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shrink-0 flex items-center gap-2 shadow-xs transition-colors"
               >
-                Publish v{pol.version + 1}.0
+                <Upload className="w-3.5 h-3.5" /> Publish v{pol.version + 1}.0
               </button>
             </div>
+
           </div>
         )) : (
-          <div className="p-8 text-center text-slate-500 text-xs bg-slate-900 border border-slate-800 rounded-2xl">
+          <div className="p-8 text-center text-slate-500 text-xs bg-white border border-slate-200/90 rounded-2xl shadow-xs">
             No policies match your search.
           </div>
         )}
