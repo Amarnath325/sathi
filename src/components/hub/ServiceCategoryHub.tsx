@@ -95,29 +95,32 @@ export function ServiceCategoryHub() {
     <div className="space-y-6">
 
 
-      {/* Top Schema Actions Bar (Dedicated Button Line) */}
-      <div className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-slate-900 border border-slate-800">
-        <div className="flex items-center gap-2">
-          <span className="font-extrabold text-white text-sm tracking-tight flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-indigo-400" /> Service & Category Management Engine
+      {/* Top Schema Actions Bar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-purple-600 text-white shadow-sm shadow-purple-200">
+            <Sparkles className="w-5 h-5" />
+          </div>
+          <span className="font-extrabold text-slate-900 text-base sm:text-lg tracking-tight">
+            Service & Category Management Engine
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <label className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center gap-1.5 border border-slate-700 cursor-pointer transition-colors">
-            <Upload className="w-3.5 h-3.5 text-indigo-400" /> Import Schema
+        <div className="flex items-center gap-2 flex-wrap">
+          <label className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center gap-1.5 border border-slate-200/90 cursor-pointer shadow-xs transition-colors">
+            <Upload className="w-3.5 h-3.5 text-slate-600" /> Import Schema
             <input type="file" accept=".json" className="hidden" onChange={handleImportData} />
           </label>
           <button
             onClick={handleExportData}
-            className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center gap-1.5 border border-slate-700 transition-colors"
+            className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center gap-1.5 border border-slate-200/90 shadow-xs transition-colors"
           >
-            <Download className="w-3.5 h-3.5 text-emerald-400" /> Export All
+            <Download className="w-3.5 h-3.5 text-slate-600" /> Export All
           </button>
           {activeTab === 'categories' && (
             <button
               onClick={() => setCategoryFormOpen(true)}
-              className="px-4 py-2 rounded-xl gradient-bg-primary text-white font-bold text-xs hover:opacity-90 shadow-lg flex items-center gap-1.5 transition-all ml-1"
+              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm shadow-purple-200 flex items-center gap-1.5 transition-all ml-1"
             >
               <Plus className="w-4 h-4" /> Add Category
             </button>
@@ -125,7 +128,7 @@ export function ServiceCategoryHub() {
           {activeTab === 'services' && (
             <button
               onClick={() => setServiceWizardOpen(true)}
-              className="px-4 py-2 rounded-xl gradient-bg-primary text-white font-bold text-xs hover:opacity-90 shadow-lg flex items-center gap-1.5 transition-all ml-1"
+              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm shadow-purple-200 flex items-center gap-1.5 transition-all ml-1"
             >
               <Plus className="w-4 h-4" /> Create New Service
             </button>
@@ -133,29 +136,27 @@ export function ServiceCategoryHub() {
         </div>
       </div>
 
-      {/* Primary 10 Interconnected Top-Level Navigation Module Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-800">
+      {/* Primary 10 Navigation Tabs */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1">
         {tabs.map((t) => {
-          const Icon = t.icon;
           const isActive = activeTab === t.id;
 
           return (
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id)}
-              className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 border ${
+              className={`px-3.5 py-2 rounded-xl text-xs transition-all flex items-center gap-1.5 shrink-0 border ${
                 isActive
-                  ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg shadow-indigo-600/30'
-                  : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700'
+                  ? 'bg-purple-50/90 border-purple-400 text-purple-700 font-bold shadow-xs'
+                  : 'bg-white text-slate-600 border-slate-200/90 hover:text-slate-900 hover:bg-slate-50 font-medium'
               }`}
             >
-              <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-indigo-400'}`} />
               <span>{t.label}</span>
               {t.count !== undefined && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
-                  isActive ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+                <span className={`text-[11px] font-mono ${
+                  isActive ? 'text-purple-700 font-bold' : 'text-slate-500'
                 }`}>
-                  {t.count}
+                  ({t.count})
                 </span>
               )}
             </button>
