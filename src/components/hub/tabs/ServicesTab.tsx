@@ -52,17 +52,23 @@ export function ServicesTab() {
 
   const searchTerm = localSearch || globalSearch;
 
+  const { syncFromNeonDB } = useServiceHubStore();
+
+  React.useEffect(() => {
+    syncFromNeonDB();
+  }, [syncFromNeonDB]);
+
+  const activeCategoryFilter = categoryFilter !== 'ALL' ? categoryFilter : selectedCategoryFilter;
+
   const filteredServices = useMemo(() => {
     return services.filter(srv => {
-      if ((categoryFilter !== 'ALL' && srv.category_id !== categoryFilter) &&
-          (selectedCategoryFilter !== 'ALL' && srv.category_id !== selectedCategoryFilter)) return false;
-      if (categoryFilter !== 'ALL' && srv.category_id !== categoryFilter) return false;
+      if (activeCategoryFilter !== 'ALL' && srv.category_id !== activeCategoryFilter) return false;
       if (subStatusFilter !== 'ALL' && srv.status !== subStatusFilter) return false;
       if (!searchTerm) return true;
       const q = searchTerm.toLowerCase();
       return srv.name.toLowerCase().includes(q) || srv.description.toLowerCase().includes(q);
     });
-  }, [services, categoryFilter, subStatusFilter, searchTerm, selectedCategoryFilter]);
+  }, [services, activeCategoryFilter, subStatusFilter, searchTerm]);
 
   const totalPages = Math.max(1, Math.ceil(filteredServices.length / pageSize));
   const safePage = Math.min(currentPage, totalPages);

@@ -109,6 +109,8 @@ interface ServiceHubStore {
   bulkUpdateServiceStatus: (ids: string[], status: ServicePublishStatus) => void;
   bulkAssignRiskLevel: (ids: string[], riskId: string) => void;
   bulkAssignPolicy: (ids: string[], policyId: string) => void;
+  syncFromNeonDB: () => Promise<void>;
+  resetAllData: () => void;
 
   // Audit Logging
   addAuditLog: (module: string, entityId: string, action: string, oldValue?: any, newValue?: any) => void;
@@ -460,6 +462,35 @@ export const useServiceHubStore = create<ServiceHubStore>()(
         get().addAuditLog('Services', 'bulk', 'BULK_ASSIGN_POLICY', { ids }, { policyId });
       },
 
+      syncFromNeonDB: async () => {
+        try {
+          const res = await fetch('/api/hub/services');
+          const data = await res.json();
+          if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+            set({ services: data.data });
+          } else {
+            set({ services: INITIAL_SERVICES });
+          }
+        } catch (e) {
+          set({ services: INITIAL_SERVICES });
+        }
+      },
+
+      resetAllData: () => {
+        set({
+          categories: INITIAL_CATEGORIES,
+          services: INITIAL_SERVICES,
+          pricingProfiles: DEFAULT_PRICING_PROFILES,
+          rulesProfiles: DEFAULT_RULES_PROFILES,
+          policies: DEFAULT_POLICIES,
+          riskLevels: DEFAULT_RISK_LEVELS,
+          verificationProfiles: DEFAULT_VERIFICATION_PROFILES,
+          safetyProfiles: DEFAULT_SAFETY_PROFILES,
+          bookingRules: DEFAULT_BOOKING_RULES,
+          eligibilityProfiles: DEFAULT_ELIGIBILITY_PROFILES
+        });
+      },
+
       // Audit Logging
       addAuditLog: (module, entityId, action, oldValue, newValue) => {
         const entry: ServiceHubAuditEntry = {
@@ -477,7 +508,7 @@ export const useServiceHubStore = create<ServiceHubStore>()(
       }
     }),
     {
-      name: 'sathi-service-hub-store'
+      name: 'sathi-service-hub-store-v2'
     }
   )
 );

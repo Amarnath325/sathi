@@ -31,7 +31,8 @@ export function ServiceCategoryHub() {
     addCategory,
     addService,
     setCategoryFormOpen,
-    setServiceWizardOpen
+    setServiceWizardOpen,
+    syncFromNeonDB
   } = useServiceHubStore();
 
   const tabs: { id: HubTabId; label: string; count?: number; icon: any }[] = [
@@ -107,6 +108,13 @@ export function ServiceCategoryHub() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => syncFromNeonDB()}
+            className="px-3.5 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold text-xs flex items-center gap-1.5 border border-purple-200 shadow-xs transition-colors"
+            title="Sync live records directly from Neon PostgreSQL Database"
+          >
+            <RefreshCw className="w-3.5 h-3.5 text-purple-600 animate-spin-hover" /> Sync Neon DB ({services.length})
+          </button>
           <label className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center gap-1.5 border border-slate-200/90 cursor-pointer shadow-xs transition-colors">
             <Upload className="w-3.5 h-3.5 text-slate-600" /> Import Schema
             <input type="file" accept=".json" className="hidden" onChange={handleImportData} />
