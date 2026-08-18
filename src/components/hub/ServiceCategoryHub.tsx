@@ -35,12 +35,6 @@ export function ServiceCategoryHub() {
     bulkUpdateServiceStatus
   } = useServiceHubStore();
 
-  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
-  const [showBulkMenu, setShowBulkMenu] = useState(false);
-
-  const publishedServicesCount = services.filter(s => s.status === 'PUBLISHED').length;
-  const draftServicesCount = services.filter(s => s.status === 'DRAFT').length;
-
   const tabs: { id: HubTabId; label: string; count?: number; icon: any }[] = [
     { id: 'categories', label: 'Categories', count: categories.length, icon: Layers },
     { id: 'services', label: 'Services', count: services.length, icon: Sparkles },
@@ -72,47 +66,7 @@ export function ServiceCategoryHub() {
 
   return (
     <div className="space-y-6">
-      {/* Centralized Hub Dashboard Banner */}
-      <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl relative overflow-hidden">
-        <div className="absolute -right-10 -bottom-10 w-80 h-80 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
-        
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-extrabold flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" /> Companion Connect ERP
-              </span>
-              <span className="text-xs font-mono text-slate-500">v2.4 Enterprise Edition</span>
-            </div>
-            <h2 className="font-extrabold text-white text-2xl sm:text-3xl tracking-tight mt-2">
-              Service & Category Management Hub
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-400 max-w-2xl mt-1 leading-relaxed">
-              Centralized 10-module configuration engine orchestrating categories, service offerings, multi-type pricing, dynamic rules, versioned policies, risk scores, verification, safety controls, booking rules, and companion service eligibility.
-            </p>
-          </div>
 
-          {/* Quick Metrics */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0">
-            <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 text-center">
-              <span className="text-[10px] font-mono text-slate-500 uppercase block">Categories</span>
-              <span className="font-extrabold text-white text-xl">{categories.length}</span>
-            </div>
-            <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 text-center">
-              <span className="text-[10px] font-mono text-slate-500 uppercase block">Total Services</span>
-              <span className="font-extrabold text-indigo-400 text-xl">{services.length}</span>
-            </div>
-            <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 text-center">
-              <span className="text-[10px] font-mono text-slate-500 uppercase block">Published</span>
-              <span className="font-extrabold text-emerald-400 text-xl">{publishedServicesCount}</span>
-            </div>
-            <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 text-center">
-              <span className="text-[10px] font-mono text-slate-500 uppercase block">Drafts</span>
-              <span className="font-extrabold text-amber-400 text-xl">{draftServicesCount}</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Global Search & Filter Bar */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-3 p-3 rounded-2xl bg-slate-900 border border-slate-800">
