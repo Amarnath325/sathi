@@ -92,28 +92,28 @@ export function ServiceCategoryHub() {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-hidden">
-      {/* Top Schema Actions Bar */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3.5 p-3.5 sm:p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs">
-        <div className="flex items-center gap-3">
-          <div className="p-2 sm:p-2.5 rounded-xl bg-purple-600 text-white shadow-sm shadow-purple-200 shrink-0">
-            <Sparkles className="w-5 h-5" />
+    <div className="space-y-3.5 w-full max-w-full">
+      {/* Streamlined Top Schema Actions Bar */}
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 p-3 rounded-2xl bg-white border border-slate-200/90 shadow-2xs">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-xl bg-purple-600 text-white shadow-sm shadow-purple-200 shrink-0">
+            <Sparkles className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="font-extrabold text-slate-900 text-base sm:text-lg tracking-tight leading-snug">
+            <h2 className="font-extrabold text-slate-900 text-base tracking-tight leading-none">
               Service & Category
             </h2>
-            <p className="text-[11px] sm:text-xs text-slate-500 font-medium">
+            <p className="text-[11px] text-slate-500 font-medium mt-0.5">
               Centralized Enterprise Hub • 10 Interconnected Modules
             </p>
           </div>
         </div>
 
-        {/* Action Controls */}
+        {/* Compact Action Controls */}
         <div className="flex items-center gap-2 flex-wrap w-full lg:w-auto justify-start sm:justify-end">
           <button
             onClick={() => syncFromNeonDB()}
-            className="px-3 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold text-xs flex items-center gap-1.5 border border-purple-200 shadow-xs transition-colors"
+            className="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold text-xs flex items-center gap-1.5 border border-purple-200/90 shadow-2xs transition-colors"
             title="Sync live records directly from Neon PostgreSQL Database"
           >
             <RefreshCw className="w-3.5 h-3.5 text-purple-600" />
@@ -122,14 +122,14 @@ export function ServiceCategoryHub() {
               {services.length}
             </span>
           </button>
-          <label className="px-3 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center gap-1.5 border border-slate-200/90 cursor-pointer shadow-xs transition-colors">
+          <label className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center gap-1.5 border border-slate-200/90 cursor-pointer shadow-2xs transition-colors">
             <Upload className="w-3.5 h-3.5 text-slate-600" />
             <span>Import</span>
             <input type="file" accept=".json" className="hidden" onChange={handleImportData} />
           </label>
           <button
             onClick={handleExportData}
-            className="px-3 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center gap-1.5 border border-slate-200/90 shadow-xs transition-colors"
+            className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center gap-1.5 border border-slate-200/90 shadow-2xs transition-colors"
           >
             <Download className="w-3.5 h-3.5 text-slate-600" />
             <span>Export</span>
@@ -137,7 +137,7 @@ export function ServiceCategoryHub() {
           {activeTab === 'categories' && (
             <button
               onClick={() => setCategoryFormOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm shadow-purple-200 flex items-center gap-1.5 transition-all"
+              className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm shadow-purple-200 flex items-center gap-1.5 transition-all"
             >
               <Plus className="w-4 h-4" />
               <span>Add Category</span>
@@ -146,7 +146,7 @@ export function ServiceCategoryHub() {
           {activeTab === 'services' && (
             <button
               onClick={() => setServiceWizardOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm shadow-purple-200 flex items-center gap-1.5 transition-all"
+              className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm shadow-purple-200 flex items-center gap-1.5 transition-all"
             >
               <Plus className="w-4 h-4" />
               <span>Create Service</span>
@@ -155,8 +155,8 @@ export function ServiceCategoryHub() {
         </div>
       </div>
 
-      {/* Primary 10 Navigation Tabs with Smooth Mobile/Tablet Horizontal Scroll */}
-      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 pt-0.5 no-scrollbar scroll-smooth w-full">
+      {/* Primary 10 Navigation Tabs without Unnecessary Scroll */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar scroll-smooth w-full">
         {tabs.map((t) => {
           const isActive = activeTab === t.id;
           const Icon = t.icon;
@@ -165,16 +165,16 @@ export function ServiceCategoryHub() {
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id)}
-              className={`px-3 sm:px-3.5 py-2 rounded-xl text-xs transition-all flex items-center gap-1.5 shrink-0 border ${
+              className={`px-3 py-1.5 rounded-xl text-xs transition-all flex items-center gap-1.5 shrink-0 border ${
                 isActive
-                  ? 'bg-purple-50/90 border-purple-400 text-purple-700 font-bold shadow-xs'
+                  ? 'bg-purple-50/90 border-purple-400 text-purple-700 font-bold shadow-2xs'
                   : 'bg-white text-slate-600 border-slate-200/90 hover:text-slate-900 hover:bg-slate-50 font-medium'
               }`}
             >
               <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-purple-600' : 'text-slate-400'}`} />
               <span className="whitespace-nowrap">{t.label}</span>
               {t.count !== undefined && (
-                <span className={`text-[10px] sm:text-[11px] font-mono px-1.5 py-0.2 rounded-md ${
+                <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-md ${
                   isActive ? 'bg-purple-200/60 text-purple-800 font-bold' : 'bg-slate-100 text-slate-500'
                 }`}>
                   {t.count}
