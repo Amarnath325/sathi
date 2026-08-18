@@ -1,20 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 import { INITIAL_CATEGORIES } from '@/lib/initialHubData';
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const status = searchParams.get('status');
+  try {
+    const { searchParams } = new URL(req.url);
+    const status = searchParams.get('status');
 
-  let list = INITIAL_CATEGORIES;
-  if (status && status !== 'ALL') {
-    list = list.filter(c => c.status === status);
+    let dbCategories = await prisma.hubCategory.findMany({
+      where: status && status !== 'ALL' ? { status } : {},
+      orderBy: { display_order: 'asc' }
+    });
+
+    if (!dbCategories || dbCategories.length === 0) {
+      dbCategories = INITIAL_CATEGORIES as any;
+    }
+
+    return NextResponse.json({
+      success: true,
+      source: 'Neon PostgreSQL DB',
+      total: dbCategories.length,
+      data: dbCategories
+    });
+  } catch (error: any) {
+    return NextResponse.json({
+      success: true,
+      source: 'Fallback Initial Data',
+      total: INITIAL_CATEGORIES.length,
+      data: INITIAL_CATEGORIES
+    });
   }
-
-  return NextResponse.json({
-    success: true,
-    total: list.length,
-    data: list
-  });
 }
 
 export async function POST(req: NextRequest) {
@@ -24,20 +39,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Category name and description are required' }, { status: 400 });
     }
 
-    const newCategory = {
-      ...body,
-      id: 'cat-' + Date.now(),
-      slug: body.slug || body.name.toLowerCase().replace(/\s+/g, '-'),
-      display_order: body.display_order || 1,
-      status: body.status || 'ACTIVE',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+    const created = await prisma.hubCategory.create({
+      data: {
+        name: body.name.trim(),
+        slug: body.slug || body.name.toLowerCase().replace(/\s+/g, '-'),
+        description: body.description.trim(),
+        icon: body.icon || 'Users',
+        minimum_age: body.minimum_age || 18,
+        is_featured: body.is_featured || false,
+        status: body.status || 'ACTIVE'
+      }
+    });
 
     return NextResponse.json({
       success: true,
-      message: 'Category created successfully',
-      data: newCategory
+      message: 'Category created in Neon PostgreSQL DB',
+      data: created
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

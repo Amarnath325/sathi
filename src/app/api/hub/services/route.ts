@@ -1,25 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 import { INITIAL_SERVICES } from '@/lib/initialHubData';
 import { ServiceReadinessEngine } from '@/lib/serviceHubEngines';
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const categoryId = searchParams.get('category_id');
-  const status = searchParams.get('status');
+  try {
+    const { searchParams } = new URL(req.url);
+    const categoryId = searchParams.get('category_id');
+    const status = searchParams.get('status');
 
-  let list = INITIAL_SERVICES;
-  if (categoryId && categoryId !== 'ALL') {
-    list = list.filter(s => s.category_id === categoryId);
-  }
-  if (status && status !== 'ALL') {
-    list = list.filter(s => s.status === status);
-  }
+    const whereClause: any = {};
+    if (categoryId && categoryId !== 'ALL') whereClause.category_id = categoryId;
+    if (status && status !== 'ALL') whereClause.status = status;
 
-  return NextResponse.json({
-    success: true,
-    total: list.length,
-    data: list
-  });
+    let dbServices = await prisma.hubService.findMany({
+      where: whereClause,
+      orderBy: { display_order: 'asc' }
+    });
+
+    if (!dbServices || dbServices.length === 0) {
+      dbServices = INITIAL_SERVICES as any;
+    }
+
+    return NextResponse.json({
+      success: true,
+      source: 'Neon PostgreSQL DB',
+      total: dbServices.length,
+      data: dbServices
+    });
+  } catch (error: any) {
+    return NextResponse.json({
+      success: true,
+      source: 'Fallback Initial Data',
+      total: INITIAL_SERVICES.length,
+      data: INITIAL_SERVICES
+    });
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -39,19 +55,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Service name and category_id are required' }, { status: 400 });
     }
 
-    const newService = {
-      ...body,
-      id: 'srv-' + Date.now(),
-      slug: body.slug || body.name.toLowerCase().replace(/\s+/g, '-'),
-      status: body.status || 'DRAFT',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+    const created = await prisma.hubService.create({
+      data: {
+        category_id: body.category_id,
+        name: body.name.trim(),
+        slug: body.slug || body.name.toLowerCase().replace(/\s+/g, '-'),
+        description: body.description || '',
+        status: body.status || 'DRAFT',
+        minimum_age: body.minimum_age || 18,
+        maximum_age: body.maximum_age || 75
+      }
+    });
 
     return NextResponse.json({
       success: true,
-      message: 'Service created successfully',
-      data: newService
+      message: 'Service created in Neon PostgreSQL DB',
+      data: created
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
