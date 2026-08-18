@@ -51,13 +51,20 @@ export function ServicesTab() {
 
   const filteredServices = useMemo(() => {
     return services.filter(srv => {
+      const cat = categories.find(c => c.id === srv.category_id);
       if (activeCategoryFilter !== 'ALL' && srv.category_id !== activeCategoryFilter) return false;
       if (subStatusFilter !== 'ALL' && srv.status !== subStatusFilter) return false;
       if (!searchTerm) return true;
       const q = searchTerm.toLowerCase();
-      return srv.name.toLowerCase().includes(q) || srv.description.toLowerCase().includes(q);
+      return (
+        srv.name.toLowerCase().includes(q) ||
+        (srv.description && srv.description.toLowerCase().includes(q)) ||
+        (cat && cat.name.toLowerCase().includes(q)) ||
+        (srv.category_name && srv.category_name.toLowerCase().includes(q)) ||
+        srv.status.toLowerCase().includes(q)
+      );
     });
-  }, [services, activeCategoryFilter, subStatusFilter, searchTerm]);
+  }, [services, categories, activeCategoryFilter, subStatusFilter, searchTerm]);
 
   const totalPages = Math.max(1, Math.ceil(filteredServices.length / pageSize));
   const safePage = Math.min(currentPage, totalPages);
@@ -95,7 +102,7 @@ export function ServicesTab() {
     <div className="space-y-3 w-full">
       {/* Status Filter Sub-Tabs without Scrollbars */}
       <div
-        className="flex items-center gap-1 overflow-x-auto pb-0.5 w-full select-none"
+        className="flex items-center gap-1.5 overflow-x-auto pb-0.5 w-full select-none"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {STATUS_TABS.map(st => {
@@ -103,14 +110,12 @@ export function ServicesTab() {
           const count = st === 'ALL' ? services.length : services.filter(s => s.status === st).length;
           const isSelected = subStatusFilter === st;
 
-          let badgeStyle = "bg-white border-slate-200/90 text-slate-600 font-medium hover:bg-slate-50";
+          let badgeStyle = "bg-white border-slate-200 text-slate-700 font-semibold hover:bg-purple-50 hover:text-purple-700";
           if (isSelected) {
             if (st === 'PUBLISHED') {
-              badgeStyle = "bg-emerald-50 border-emerald-300 text-emerald-700 font-extrabold shadow-2xs";
-            } else if (st === 'ALL') {
-              badgeStyle = "bg-slate-900 text-white font-extrabold border-slate-900 shadow-2xs";
+              badgeStyle = "bg-emerald-600 border-emerald-600 text-white font-extrabold shadow-xs";
             } else {
-              badgeStyle = "bg-purple-600 text-white font-extrabold border-purple-600 shadow-2xs";
+              badgeStyle = "bg-purple-600 border-purple-600 text-white font-extrabold shadow-xs";
             }
           }
 
@@ -120,7 +125,7 @@ export function ServicesTab() {
             <button
               key={st}
               onClick={() => handleFilterChange(() => setSubStatusFilter(st))}
-              className={`px-2.5 py-1 rounded-full text-[11px] transition-all shrink-0 border whitespace-nowrap ${badgeStyle}`}
+              className={`px-3 py-1 rounded-full text-[11px] transition-all shrink-0 border whitespace-nowrap ${badgeStyle}`}
             >
               {labelText} ({count})
             </button>

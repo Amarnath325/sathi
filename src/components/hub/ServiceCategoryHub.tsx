@@ -109,19 +109,8 @@ export function ServiceCategoryHub() {
           </div>
         </div>
 
-        {/* Action Controls */}
+        {/* Compact Action Controls */}
         <div className="flex items-center gap-1.5 flex-wrap w-full lg:w-auto justify-start sm:justify-end text-[11px]">
-          <button
-            onClick={() => syncFromNeonDB()}
-            className="px-2.5 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold flex items-center gap-1 border border-purple-200/90 shadow-2xs transition-colors"
-            title="Sync live records directly from Neon PostgreSQL Database"
-          >
-            <RefreshCw className="w-3 h-3 text-purple-600" />
-            <span>Sync Neon DB</span>
-            <span className="px-1 py-0.1 rounded bg-purple-200/70 text-purple-900 text-[10px] font-bold font-mono">
-              {services.length}
-            </span>
-          </button>
           <label className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 font-semibold flex items-center gap-1 border border-slate-200/90 cursor-pointer shadow-2xs transition-colors">
             <Upload className="w-3 h-3 text-slate-600" />
             <span>Import</span>
