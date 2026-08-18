@@ -202,72 +202,89 @@ export function CategoriesTab() {
             return (
               <div
                 key={cat.id}
-                className={`rounded-2xl border transition-all flex flex-col overflow-hidden group hover:shadow-md hover:-translate-y-0.5 ${
+                className={`rounded-2xl border transition-all flex flex-col overflow-hidden group hover:shadow-lg hover:-translate-y-0.5 ${
                   cat.status === 'ACTIVE' ? 'bg-white border-slate-200/90 hover:border-purple-300' : 'bg-slate-50 border-slate-200 opacity-60'
                 }`}
               >
-                {/* Banner */}
+                {/* Banner Image Section */}
                 <div
-                  className="relative h-44 overflow-hidden bg-slate-950 cursor-pointer"
+                  className="relative h-44 overflow-hidden bg-slate-900 cursor-pointer"
                   onClick={() => setLightboxImage(banner)}
                   title="Click to preview image"
                 >
-                  <img src={banner} alt={cat.name} className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent" />
+                  <img src={banner} alt={cat.name} className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/30 to-transparent" />
                   <div className="absolute inset-0 bg-slate-950/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none z-10">
                     <span className="px-3 py-1.5 rounded-full bg-slate-950/85 backdrop-blur-md text-white text-xs font-bold flex items-center gap-1.5 border border-white/20 shadow-xl">
-                      <Maximize2 className="w-3.5 h-3.5 text-indigo-400" /> Click to Preview
+                      <Maximize2 className="w-3.5 h-3.5 text-purple-400" /> Click to Preview
                     </span>
                   </div>
-                  {/* Badges */}
-                  <div className="absolute top-2 left-2 right-2 flex items-center justify-between z-10">
-                    <span className="px-2.5 py-0.5 rounded-full bg-slate-950/80 backdrop-blur-md text-slate-300 text-[10px] font-bold border border-slate-700">
-                      Min Age: {cat.minimum_age}+
+                  {/* Badges Overlay */}
+                  <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between z-10">
+                    <span className="px-2.5 py-0.5 rounded-full bg-purple-100/90 text-purple-800 text-[10px] font-extrabold border border-purple-200/80 shadow-xs backdrop-blur-xs">
+                      Min Age: {cat.minimum_age || 18}+
                     </span>
                     {cat.is_featured && (
-                      <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 backdrop-blur-md text-[10px] font-extrabold border border-amber-500/40 flex items-center gap-1">
-                        <Star className="w-3 h-3 fill-amber-400" /> Featured
+                      <span className="px-2.5 py-0.5 rounded-full bg-amber-400 text-amber-950 text-[10px] font-extrabold flex items-center gap-1 shadow-xs">
+                        <Star className="w-3 h-3 fill-amber-950" /> Featured
                       </span>
                     )}
                   </div>
+                  {/* Title & Count Overlay at Bottom */}
                   <div className="absolute bottom-3 left-4 right-4 z-10">
-                    <h4 className="font-extrabold text-white text-sm leading-tight truncate">{cat.name}</h4>
-                    <p className="text-[11px] text-slate-300 font-medium">{serviceCount} Active Services</p>
+                    <h4 className="font-extrabold text-white text-base leading-tight drop-shadow-sm truncate">{cat.name}</h4>
+                    <p className="text-xs text-slate-200 font-medium drop-shadow-sm">{serviceCount} Active Services</p>
                   </div>
                 </div>
 
-                {/* Body */}
+                {/* Card Body */}
                 <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
-                  <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">{cat.description}</p>
+                  <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">{cat.description}</p>
 
-                  <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5">
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      {/* Active Toggle */}
                       <button
                         onClick={() => toggleCategoryActive(cat.id)}
-                        className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border transition-all ${
-                          cat.status === 'ACTIVE' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-400'
+                        className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all border ${
+                          cat.status === 'ACTIVE'
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                            : 'bg-slate-100 border-slate-200 text-slate-500'
                         }`}
                       >
-                        {cat.status === 'ACTIVE' ? '● Active' : '○ Disabled'}
-                      </button>
-                      <button
-                        onClick={() => toggleCategoryFeatured(cat.id)}
-                        className={`p-1.5 rounded-xl border text-xs transition-all ${
-                          cat.is_featured ? 'bg-amber-500/20 border-amber-500/40 text-amber-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
-                        }`}
-                        title="Toggle Featured"
-                      >
-                        <Star className={`w-3.5 h-3.5 ${cat.is_featured ? 'fill-amber-400' : ''}`} />
+                        <span className={`w-2 h-2 rounded-full ${cat.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
+                        {cat.status === 'ACTIVE' ? 'Active' : 'Disabled'}
                       </button>
                     </div>
+
+                    {/* Right Icon Actions */}
                     <div className="flex items-center gap-1">
-                      <button onClick={() => duplicateCategory(cat.id)} className="p-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 hover:text-white text-xs transition-colors" title="Duplicate">
+                      <button
+                        onClick={() => toggleCategoryFeatured(cat.id)}
+                        className={`p-1.5 rounded-lg transition-colors ${cat.is_featured ? 'text-amber-500 bg-amber-50' : 'text-slate-400 hover:text-amber-500 hover:bg-slate-50'}`}
+                        title="Toggle Featured"
+                      >
+                        <Star className={`w-3.5 h-3.5 ${cat.is_featured ? 'fill-amber-500' : ''}`} />
+                      </button>
+                      <button
+                        onClick={() => duplicateCategory(cat.id)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors"
+                        title="Duplicate"
+                      >
                         <Copy className="w-3.5 h-3.5" />
                       </button>
-                      <button onClick={() => handleOpenEdit(cat)} className="p-1.5 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-600/30 text-xs transition-colors" title="Edit">
+                      <button
+                        onClick={() => handleOpenEdit(cat)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition-colors"
+                        title="Edit"
+                      >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
-                      <button onClick={() => handleDeleteAttempt(cat)} className="p-1.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 text-xs transition-colors" title="Delete">
+                      <button
+                        onClick={() => handleDeleteAttempt(cat)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                        title="Delete"
+                      >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -278,11 +295,11 @@ export function CategoriesTab() {
           })}
         </div>
       ) : (
-        <div className="p-12 text-center rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
-          <Layers className="w-8 h-8 text-slate-600 mx-auto" />
-          <h4 className="font-bold text-white text-sm">No Categories Found</h4>
-          <p className="text-xs text-slate-400">Try adjusting your search or filter, or add a new category.</p>
-          <button onClick={handleOpenCreate} className="px-4 py-2 rounded-xl gradient-bg-primary text-white font-bold text-xs inline-flex items-center gap-1.5">
+        <div className="p-12 text-center rounded-2xl bg-white border border-slate-200/90 space-y-3 shadow-xs">
+          <Layers className="w-8 h-8 text-slate-400 mx-auto" />
+          <h4 className="font-bold text-slate-900 text-sm">No Categories Found</h4>
+          <p className="text-xs text-slate-500">Try adjusting your search or filter, or add a new category.</p>
+          <button onClick={handleOpenCreate} className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-xs transition-colors">
             <Plus className="w-3.5 h-3.5" /> Add First Category
           </button>
         </div>
@@ -290,16 +307,16 @@ export function CategoriesTab() {
 
       {/* Pagination Footer */}
       {filteredCategories.length > pageSize && (
-        <div className="flex items-center justify-between px-2 py-3 bg-slate-900 border border-slate-800 rounded-2xl text-xs">
-          <span className="text-slate-400">
-            Page <span className="text-white font-bold">{safePage}</span> of <span className="text-white font-bold">{totalPages}</span>
-            <span className="ml-2 text-slate-500">({filteredCategories.length} total)</span>
+        <div className="flex items-center justify-between px-3 py-3 bg-white border border-slate-200/90 rounded-2xl text-xs shadow-2xs">
+          <span className="text-slate-500 font-medium">
+            Page <span className="text-slate-900 font-bold">{safePage}</span> of <span className="text-slate-900 font-bold">{totalPages}</span>
+            <span className="ml-2 text-slate-400">({filteredCategories.length} total)</span>
           </span>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={safePage <= 1}
-              className="p-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -310,7 +327,7 @@ export function CategoriesTab() {
                   key={pg}
                   onClick={() => setCurrentPage(pg)}
                   className={`w-7 h-7 rounded-lg text-[11px] font-bold transition-colors ${
-                    pg === safePage ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700'
+                    pg === safePage ? 'bg-purple-600 text-white shadow-2xs' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
                   }`}
                 >
                   {pg}
@@ -320,7 +337,7 @@ export function CategoriesTab() {
             <button
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={safePage >= totalPages}
-              className="p-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
