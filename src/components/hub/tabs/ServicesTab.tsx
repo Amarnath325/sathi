@@ -2,25 +2,16 @@
 
 import React, { useState, useMemo } from 'react';
 import { useServiceHubStore } from '@/lib/serviceHubStore';
-import { ServiceItem, ServicePublishStatus } from '@/lib/types/serviceHub';
+import { ServiceItem } from '@/lib/types/serviceHub';
 import { ServiceConfigDrawer } from './ServiceConfigDrawer';
 import {
-  Sparkles, Plus, Edit2, Trash2, Copy, ShieldAlert, CheckCircle2, Layers, Sliders, Play,
+  Sparkles, Plus, Edit2, Trash2, Copy, ShieldAlert, CheckCircle2, Layers, Sliders,
   AlertTriangle, Download, Upload, Search, ChevronLeft, ChevronRight, SlidersHorizontal,
-  User, Folder, Star, Settings
+  User, Folder, Star, Settings, X
 } from 'lucide-react';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 const STATUS_TABS = ['ALL', 'DRAFT', 'PENDING_REVIEW', 'APPROVED', 'PUBLISHED', 'SUSPENDED', 'ARCHIVED'] as const;
-
-const STATUS_COLORS: Record<string, string> = {
-  PUBLISHED:      'bg-emerald-500/10 border-emerald-500/30 text-emerald-400',
-  DRAFT:          'bg-slate-500/10 border-slate-500/30 text-slate-400',
-  PENDING_REVIEW: 'bg-amber-500/10 border-amber-500/30 text-amber-400',
-  APPROVED:       'bg-blue-500/10 border-blue-500/30 text-blue-400',
-  SUSPENDED:      'bg-rose-500/10 border-rose-500/30 text-rose-400',
-  ARCHIVED:       'bg-slate-800/60 border-slate-700 text-slate-500',
-};
 
 export function ServicesTab() {
   const {
@@ -30,13 +21,13 @@ export function ServicesTab() {
     deleteService,
     duplicateService,
     suspendService,
-    publishService,
     setSelectedServiceForConfig,
     selectedServiceForConfig,
     searchQuery: globalSearch,
     selectedCategoryFilter,
     isServiceWizardOpen,
-    setServiceWizardOpen
+    setServiceWizardOpen,
+    syncFromNeonDB
   } = useServiceHubStore();
 
   const [subStatusFilter, setSubStatusFilter] = useState<string>('ALL');
@@ -51,8 +42,6 @@ export function ServicesTab() {
   const [description, setDescription] = useState('');
 
   const searchTerm = localSearch || globalSearch;
-
-  const { syncFromNeonDB } = useServiceHubStore();
 
   React.useEffect(() => {
     syncFromNeonDB();
@@ -102,34 +91,10 @@ export function ServicesTab() {
     setSelectedServiceForConfig(created);
   };
 
-  const handleExport = () => {
-    const blob = new Blob([JSON.stringify(filteredServices, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `services_export_${Date.now()}.json`;
-    a.click(); URL.revokeObjectURL(url);
-  };
-
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const data = JSON.parse(ev.target?.result as string);
-        const items = Array.isArray(data) ? data : [data];
-        items.forEach((srv: any) => {
-          const cat = categories.find(c => c.id === srv.category_id || c.name === srv.category_name);
-          if (cat) addService({ ...srv, category_id: cat.id, category_name: cat.name, status: 'DRAFT', display_order: services.length + 1 });
-        });
-      } catch { alert('Invalid JSON format.'); }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  };
-
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 sm:space-y-5 w-full">
       {/* Status Filter Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 no-scrollbar scroll-smooth w-full">
         {STATUS_TABS.map(st => {
           const count = st === 'ALL' ? services.length : services.filter(s => s.status === st).length;
           const isSelected = subStatusFilter === st;
@@ -149,7 +114,7 @@ export function ServicesTab() {
             <button
               key={st}
               onClick={() => handleFilterChange(() => setSubStatusFilter(st))}
-              className={`px-3.5 py-1.5 rounded-full text-xs transition-all shrink-0 border ${badgeStyle}`}
+              className={`px-3 py-1.5 rounded-full text-xs transition-all shrink-0 border whitespace-nowrap ${badgeStyle}`}
             >
               {st.replace(/_/g, ' ')} ({count})
             </button>
@@ -158,7 +123,7 @@ export function ServicesTab() {
       </div>
 
       {/* Search & Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-center gap-3">
+      <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2.5 sm:gap-3 w-full">
         {/* Search Input */}
         <div className="relative flex-1 w-full">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -166,40 +131,42 @@ export function ServicesTab() {
             type="text"
             value={localSearch}
             onChange={e => handleFilterChange(() => setLocalSearch(e.target.value))}
-            placeholder="Search services by name or description..."
+            placeholder="Search services..."
             className="w-full bg-white border border-slate-200/90 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 outline-none focus:border-purple-500 shadow-xs transition-colors"
           />
         </div>
 
-        {/* Category Filter Dropdown */}
-        <div className="flex items-center gap-2 bg-white border border-slate-200/90 rounded-xl px-3.5 py-2.5 text-xs shrink-0 shadow-xs">
-          <Folder className="w-4 h-4 text-slate-500" />
-          <select
-            value={categoryFilter}
-            onChange={e => handleFilterChange(() => setCategoryFilter(e.target.value))}
-            className="bg-transparent text-slate-700 font-medium outline-none cursor-pointer text-xs"
-          >
-            <option value="ALL">All Categories</option>
-            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-        </div>
+        <div className="grid grid-cols-2 md:flex items-center gap-2 w-full md:w-auto">
+          {/* Category Filter Dropdown */}
+          <div className="flex items-center gap-1.5 bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs shadow-xs">
+            <Folder className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+            <select
+              value={categoryFilter}
+              onChange={e => handleFilterChange(() => setCategoryFilter(e.target.value))}
+              className="bg-transparent text-slate-700 font-medium outline-none cursor-pointer text-xs w-full"
+            >
+              <option value="ALL">All Categories</option>
+              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
 
-        {/* Page Size Dropdown */}
-        <div className="flex items-center gap-2 bg-white border border-slate-200/90 rounded-xl px-3.5 py-2.5 text-xs shrink-0 shadow-xs">
-          <span className="text-slate-700 font-medium">Show</span>
-          <select
-            value={pageSize}
-            onChange={e => { setPageSize(Number(e.target.value) as any); setCurrentPage(1); }}
-            className="bg-transparent text-slate-900 font-bold outline-none cursor-pointer text-xs"
-          >
-            {PAGE_SIZE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+          {/* Page Size Dropdown */}
+          <div className="flex items-center justify-between gap-1.5 bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs shadow-xs">
+            <span className="text-slate-500 font-medium text-xs">Show</span>
+            <select
+              value={pageSize}
+              onChange={e => { setPageSize(Number(e.target.value) as any); setCurrentPage(1); }}
+              className="bg-transparent text-slate-900 font-bold outline-none cursor-pointer text-xs"
+            >
+              {PAGE_SIZE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
         </div>
       </div>
 
-      {/* Services Table */}
-      <div className="rounded-2xl bg-white border border-slate-200/90 overflow-hidden shadow-xs">
-        <div className="overflow-x-auto">
+      {/* Desktop/Laptop Table View (sm:block) */}
+      <div className="hidden sm:block rounded-2xl bg-white border border-slate-200/90 overflow-hidden shadow-xs">
+        <div className="overflow-x-auto w-full">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-slate-200/80 bg-slate-50/70 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
@@ -283,10 +250,64 @@ export function ServicesTab() {
         </div>
       </div>
 
+      {/* Mobile Card View (< sm) */}
+      <div className="block sm:hidden space-y-3">
+        {paginatedServices.length > 0 ? paginatedServices.map(srv => {
+          const category = categories.find(c => c.id === srv.category_id);
+          return (
+            <div key={srv.id} className="p-4 rounded-2xl bg-white border border-slate-200/90 space-y-3 shadow-xs">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <User className="w-4 h-4 text-purple-600 shrink-0" />
+                    <h4 className="font-extrabold text-slate-900 text-sm">{srv.name}</h4>
+                  </div>
+                  <p className="text-xs text-purple-600 font-semibold mt-0.5">{category?.name || srv.category_name || 'Unassigned'}</p>
+                </div>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold text-[10px] shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> {srv.status}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
+                <span className="text-slate-500">Age: <strong className="text-slate-800">{srv.minimum_age}–{srv.maximum_age} yrs</strong></span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => duplicateService(srv.id)}
+                    className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600"
+                    title="Duplicate"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => { if (confirm(`Delete "${srv.name}"?`)) deleteService(srv.id); }}
+                    className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setSelectedServiceForConfig(srv)}
+                className="w-full py-2 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
+              >
+                <Settings className="w-3.5 h-3.5 text-purple-600" /> Open Config Engine
+              </button>
+            </div>
+          );
+        }) : (
+          <div className="p-8 text-center rounded-2xl bg-white border border-slate-200/90 text-slate-500 text-xs">
+            No services match your filters.
+          </div>
+        )}
+      </div>
+
       {/* Pagination Footer */}
       {filteredServices.length > pageSize && (
-        <div className="flex items-center justify-between px-3 py-3 bg-white border border-slate-200/90 rounded-2xl text-xs shadow-2xs">
-          <span className="text-slate-500 font-medium">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-3.5 py-3 bg-white border border-slate-200/90 rounded-2xl text-xs shadow-2xs">
+          <span className="text-slate-500 font-medium text-center sm:text-left">
             Page <span className="text-slate-900 font-bold">{safePage}</span> of <span className="text-slate-900 font-bold">{totalPages}</span>
             <span className="ml-2 text-slate-400">({filteredServices.length} total)</span>
           </span>
@@ -319,9 +340,14 @@ export function ServicesTab() {
 
       {/* Create Service Modal */}
       {isWizardOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
-            <h4 className="font-extrabold text-white text-base">Create New Service Offering</h4>
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-5 sm:p-6 space-y-4 shadow-2xl my-auto">
+            <div className="flex items-center justify-between">
+              <h4 className="font-extrabold text-white text-base">Create New Service Offering</h4>
+              <button onClick={() => setIsWizardOpen(false)} className="p-1 rounded-lg text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
             <form onSubmit={handleCreateService} className="space-y-3 text-xs">
               <div>
                 <label className="block text-slate-400 font-bold mb-1">Service Name *</label>
@@ -343,7 +369,7 @@ export function ServicesTab() {
               </div>
               <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">
                 <button type="button" onClick={() => setIsWizardOpen(false)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold">Cancel</button>
-                <button type="submit" className="px-5 py-2 rounded-xl gradient-bg-primary text-white font-bold">Create & Configure</button>
+                <button type="submit" className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold">Create & Configure</button>
               </div>
             </form>
           </div>
