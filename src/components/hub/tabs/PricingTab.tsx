@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useServiceHubStore } from '@/lib/serviceHubStore';
 import { PricingProfile } from '@/lib/types/serviceHub';
 import { PricingEngine } from '@/lib/serviceHubEngines';
-import { DollarSign, Calculator, Plus, CheckCircle2, Zap, Download, Upload, Search, Edit2, Trash2 } from 'lucide-react';
+import { DollarSign, Calculator, Plus, Edit2, Download, Search, X } from 'lucide-react';
 
 export function PricingTab() {
   const { pricingProfiles, addPricingProfile, updatePricingProfile, searchQuery } = useServiceHubStore();
@@ -14,6 +14,21 @@ export function PricingTab() {
   const [calcTravelKm, setCalcTravelKm] = useState(15);
   const [isWeekend, setIsWeekend] = useState(true);
   const [localSearch, setLocalSearch] = useState('');
+
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingProfile, setEditingProfile] = useState<PricingProfile | null>(null);
+
+  // Form State
+  const [name, setName] = useState('');
+  const [pricingType, setPricingType] = useState<'Hourly' | 'Fixed Price' | 'Per Event'>('Hourly');
+  const [basePrice, setBasePrice] = useState(500);
+  const [extraHourPrice, setExtraHourPrice] = useState(450);
+  const [platformFee, setPlatformFee] = useState(15);
+  const [tax, setTax] = useState(18);
+  const [weekendMultiplier, setWeekendMultiplier] = useState(1.15);
+  const [holidayMultiplier, setHolidayMultiplier] = useState(1.25);
+  const [surgeEnabled, setSurgeEnabled] = useState(true);
 
   const searchTerm = localSearch || searchQuery;
   const filteredProfiles = useMemo(() => {
@@ -25,18 +40,96 @@ export function PricingTab() {
   const activeProfile = pricingProfiles.find(p => p.id === calcProfileId) || pricingProfiles[0];
   const breakdown = activeProfile ? PricingEngine.calculatePrice(activeProfile, calcDuration, calcTravelKm, { isWeekend, promoDiscount: 0 }) : null;
 
+  const handleOpenCreate = () => {
+    setEditingProfile(null);
+    setName('');
+    setPricingType('Hourly');
+    setBasePrice(500);
+    setExtraHourPrice(450);
+    setPlatformFee(15);
+    setTax(18);
+    setWeekendMultiplier(1.15);
+    setHolidayMultiplier(1.25);
+    setSurgeEnabled(true);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (prof: PricingProfile, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingProfile(prof);
+    setName(prof.name);
+    setPricingType(prof.pricing_type as any);
+    setBasePrice(prof.base_price);
+    setExtraHourPrice(prof.extra_hour_price || 0);
+    setPlatformFee(prof.platform_fee);
+    setTax(prof.tax);
+    setWeekendMultiplier(prof.weekend_multiplier || 1.0);
+    setHolidayMultiplier(prof.holiday_multiplier || 1.0);
+    setSurgeEnabled(prof.surge_enabled || false);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+
+    if (editingProfile) {
+      updatePricingProfile(editingProfile.id, {
+        name: name.trim(),
+        pricing_type: pricingType,
+        base_price: Number(basePrice),
+        extra_hour_price: Number(extraHourPrice),
+        platform_fee: Number(platformFee),
+        tax: Number(tax),
+        weekend_multiplier: Number(weekendMultiplier),
+        holiday_multiplier: Number(holidayMultiplier),
+        surge_enabled: surgeEnabled
+      });
+    } else {
+      addPricingProfile({
+        name: name.trim(),
+        pricing_type: pricingType,
+        base_price: Number(basePrice),
+        currency: 'INR',
+        minimum_duration: 1,
+        maximum_duration: 12,
+        extra_hour_price: Number(extraHourPrice),
+        travel_charge: 100,
+        platform_fee: Number(platformFee),
+        companion_commission: 100 - Number(platformFee),
+        tax: Number(tax),
+        weekend_multiplier: Number(weekendMultiplier),
+        holiday_multiplier: Number(holidayMultiplier),
+        surge_enabled: surgeEnabled,
+        cancellation_fee: 100,
+        no_show_fee: 500,
+        status: 'ACTIVE'
+      });
+    }
+    setIsModalOpen(false);
+  };
+
   return (
-    <div className="space-y-5">
-      {/* Search Bar */}
-      <div className="relative">
-        <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-        <input
-          type="text"
-          value={localSearch}
-          onChange={e => setLocalSearch(e.target.value)}
-          placeholder="Search pricing profiles..."
-          className="w-full bg-white border border-slate-200/90 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 outline-none focus:border-purple-500 shadow-xs transition-colors"
-        />
+    <div className="space-y-4 sm:space-y-5">
+      {/* Search & Actions Bar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="relative flex-1 w-full">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={localSearch}
+            onChange={e => setLocalSearch(e.target.value)}
+            placeholder="Search pricing profiles..."
+            className="w-full bg-white border border-slate-200/90 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 outline-none focus:border-purple-500 shadow-xs transition-colors"
+          />
+        </div>
+
+        <button
+          onClick={handleOpenCreate}
+          className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm shadow-purple-200 flex items-center justify-center gap-1.5 transition-all shrink-0"
+        >
+          <Plus className="w-4 h-4" /> Add Pricing Profile
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -73,9 +166,18 @@ export function PricingTab() {
                           </span>
                         )}
                       </div>
-                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-extrabold">
-                        {prof.pricing_type}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-extrabold">
+                          {prof.pricing_type}
+                        </span>
+                        <button
+                          onClick={(e) => handleOpenEdit(prof, e)}
+                          className="p-1 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-slate-100 transition-colors"
+                          title="Edit Pricing Profile"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-xs bg-slate-50/80 p-3 rounded-xl border border-slate-200/80">
@@ -179,6 +281,80 @@ export function PricingTab() {
           )}
         </div>
       </div>
+
+      {/* Create / Edit Pricing Profile Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-5 sm:p-6 space-y-4 shadow-2xl my-auto text-xs">
+            <div className="flex items-center justify-between">
+              <h4 className="font-extrabold text-white text-base">
+                {editingProfile ? `Edit: ${editingProfile.name}` : 'Create Pricing Profile'}
+              </h4>
+              <button onClick={() => setIsModalOpen(false)} className="p-1 rounded-lg text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveProfile} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-400 font-bold mb-1">Profile Name *</label>
+                <input type="text" required value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Festival Surge Profile"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white outline-none focus:border-indigo-500 transition-colors text-xs" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">Pricing Type</label>
+                  <select value={pricingType} onChange={e => setPricingType(e.target.value as any)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white outline-none focus:border-indigo-500 text-xs">
+                    <option value="Hourly">Hourly</option>
+                    <option value="Fixed Price">Fixed Price</option>
+                    <option value="Per Event">Per Event</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">Base Price (₹) *</label>
+                  <input type="number" required value={basePrice} onChange={e => setBasePrice(Number(e.target.value))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white outline-none focus:border-indigo-500 text-xs" />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">Extra/hr (₹)</label>
+                  <input type="number" value={extraHourPrice} onChange={e => setExtraHourPrice(Number(e.target.value))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-indigo-500 text-xs" />
+                </div>
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">Platform Fee %</label>
+                  <input type="number" value={platformFee} onChange={e => setPlatformFee(Number(e.target.value))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-indigo-500 text-xs" />
+                </div>
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">GST Tax %</label>
+                  <input type="number" value={tax} onChange={e => setTax(Number(e.target.value))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-indigo-500 text-xs" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">Weekend Multiplier</label>
+                  <input type="number" step="0.05" value={weekendMultiplier} onChange={e => setWeekendMultiplier(Number(e.target.value))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white outline-none focus:border-indigo-500 text-xs" />
+                </div>
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">Holiday Multiplier</label>
+                  <input type="number" step="0.05" value={holidayMultiplier} onChange={e => setHolidayMultiplier(Number(e.target.value))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white outline-none focus:border-indigo-500 text-xs" />
+                </div>
+              </div>
+              <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-1.5 rounded-xl bg-slate-800 text-slate-300 font-bold">Cancel</button>
+                <button type="submit" className="px-5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold">
+                  {editingProfile ? 'Save Changes' : 'Create Profile'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
