@@ -101,10 +101,10 @@ export function ServiceCategoryHub() {
           </div>
           <div>
             <h2 className="font-extrabold text-slate-900 text-base sm:text-lg tracking-tight leading-snug">
-              Service & Category Management Engine
+              Service & Category
             </h2>
             <p className="text-[11px] sm:text-xs text-slate-500 font-medium">
-              Centralized Enterprise Engine • 10 Interconnected Modules
+              Centralized Enterprise Hub • 10 Interconnected Modules
             </p>
           </div>
         </div>
