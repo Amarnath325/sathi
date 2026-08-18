@@ -3,18 +3,20 @@
 import React, { useState } from 'react';
 import { useServiceHubStore } from '@/lib/serviceHubStore';
 import { RulesEngine } from '@/lib/serviceHubEngines';
-import { Sliders, Plus, AlertCircle, AlertTriangle, CheckCircle2, Play, Search, Calendar, MapPin, Shield, X, Trash2 } from 'lucide-react';
+import { Sliders, Plus, AlertCircle, AlertTriangle, CheckCircle2, Play, Search, Calendar, MapPin, Shield, X, Edit2 } from 'lucide-react';
 import { RuleItem } from '@/lib/types/serviceHub';
 
 export function RulesTab() {
-  const { rulesProfiles, addRuleToProfile } = useServiceHubStore();
+  const { rulesProfiles, addRuleToProfile, updateRuleInProfile } = useServiceHubStore();
 
   const [testDuration, setTestDuration] = useState(10);
   const [testLiveLocation, setTestLiveLocation] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Add Rule Modal State
+  // Add/Edit Rule Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingRule, setEditingRule] = useState<RuleItem | null>(null);
+
   const [ruleName, setRuleName] = useState('');
   const [description, setDescription] = useState('');
   const [ruleType, setRuleType] = useState<'Duration Rule' | 'Location Rule' | 'Safety Rule'>('Duration Rule');
@@ -32,27 +34,64 @@ export function RulesTab() {
   const eval1 = activeProfile?.rules[0] ? RulesEngine.evaluateRule(activeProfile.rules[0], { duration_hours: testDuration }) : null;
   const eval2 = activeProfile?.rules[1] ? RulesEngine.evaluateRule(activeProfile.rules[1], { live_location_enabled: testLiveLocation }) : null;
 
-  const handleAddRule = (e: React.FormEvent) => {
+  const handleOpenCreate = () => {
+    setEditingRule(null);
+    setRuleName('');
+    setDescription('');
+    setRuleType('Duration Rule');
+    setCondition('duration_hours');
+    setOperator('GREATER_THAN');
+    setValue('8');
+    setAction('REQUIRE_APPROVAL');
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (rule: RuleItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingRule(rule);
+    setRuleName(rule.name);
+    setDescription(rule.description);
+    setRuleType(rule.rule_type as any);
+    setCondition(rule.condition);
+    setOperator(rule.operator);
+    setValue(String(rule.value));
+    setAction(rule.action as any);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveRule = (e: React.FormEvent) => {
     e.preventDefault();
     if (!ruleName.trim() || !activeProfile) return;
 
-    const newRule: RuleItem = {
-      id: `rule-${Date.now()}`,
-      name: ruleName.trim(),
-      rule_type: ruleType as any,
-      condition,
-      operator: operator as any,
-      value: isNaN(Number(value)) ? value : Number(value),
-      action: action as any,
-      severity: action === 'BLOCK' ? 'HIGH' : 'MEDIUM',
-      description: description.trim() || 'Custom validation rule.',
-      status: 'ACTIVE'
-    };
+    const parsedVal = isNaN(Number(value)) ? value : Number(value);
 
-    addRuleToProfile(activeProfile.id, newRule);
+    if (editingRule) {
+      updateRuleInProfile(activeProfile.id, editingRule.id, {
+        name: ruleName.trim(),
+        rule_type: ruleType as any,
+        condition,
+        operator: operator as any,
+        value: parsedVal,
+        action: action as any,
+        severity: action === 'BLOCK' ? 'HIGH' : 'MEDIUM',
+        description: description.trim()
+      });
+    } else {
+      const newRule: RuleItem = {
+        id: `rule-${Date.now()}`,
+        name: ruleName.trim(),
+        rule_type: ruleType as any,
+        condition,
+        operator: operator as any,
+        value: parsedVal,
+        action: action as any,
+        severity: action === 'BLOCK' ? 'HIGH' : 'MEDIUM',
+        description: description.trim() || 'Custom validation rule.',
+        status: 'ACTIVE'
+      };
+      addRuleToProfile(activeProfile.id, newRule);
+    }
     setIsModalOpen(false);
-    setRuleName('');
-    setDescription('');
   };
 
   return (
@@ -71,7 +110,7 @@ export function RulesTab() {
         </div>
 
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleOpenCreate}
           className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm shadow-purple-200 flex items-center justify-center gap-1.5 transition-all shrink-0"
         >
           <Plus className="w-4 h-4" /> Add Rule
@@ -109,9 +148,18 @@ export function RulesTab() {
                       <p className="text-xs text-slate-500 font-medium mt-0.5">{rule.description}</p>
                     </div>
                   </div>
-                  <span className="px-3 py-1 rounded-lg bg-purple-50 text-purple-700 border border-purple-100 text-xs font-bold shrink-0">
-                    {isDuration ? 'Duration Rule' : isLocation ? 'Location Rule' : rule.rule_type}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 rounded-lg bg-purple-50 text-purple-700 border border-purple-100 text-xs font-bold shrink-0">
+                      {isDuration ? 'Duration Rule' : isLocation ? 'Location Rule' : rule.rule_type}
+                    </span>
+                    <button
+                      onClick={(e) => handleOpenEdit(rule, e)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-slate-100 transition-colors"
+                      title="Edit Rule"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* IF ... THEN ... logic box */}
@@ -207,17 +255,19 @@ export function RulesTab() {
         </div>
       </div>
 
-      {/* Add Rule Modal */}
+      {/* Add / Edit Rule Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-5 sm:p-6 space-y-4 shadow-2xl my-auto text-xs">
             <div className="flex items-center justify-between">
-              <h4 className="font-extrabold text-white text-base">Add New Operational Rule</h4>
+              <h4 className="font-extrabold text-white text-base">
+                {editingRule ? `Edit Rule: ${editingRule.name}` : 'Add New Operational Rule'}
+              </h4>
               <button onClick={() => setIsModalOpen(false)} className="p-1 rounded-lg text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleAddRule} className="space-y-3 text-xs">
+            <form onSubmit={handleSaveRule} className="space-y-3 text-xs">
               <div>
                 <label className="block text-slate-400 font-bold mb-1">Rule Name *</label>
                 <input type="text" required value={ruleName} onChange={e => setRuleName(e.target.value)} placeholder="e.g. Max Booking Limit per Companion"
@@ -272,7 +322,9 @@ export function RulesTab() {
               </div>
               <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-1.5 rounded-xl bg-slate-800 text-slate-300 font-bold">Cancel</button>
-                <button type="submit" className="px-5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold">Add Rule</button>
+                <button type="submit" className="px-5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold">
+                  {editingRule ? 'Save Changes' : 'Add Rule'}
+                </button>
               </div>
             </form>
           </div>

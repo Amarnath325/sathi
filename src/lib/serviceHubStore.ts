@@ -5,6 +5,7 @@ import {
   ServiceItem,
   PricingProfile,
   RulesProfile,
+  RuleItem,
   PolicyItem,
   RiskLevelItem,
   VerificationProfileItem,
@@ -96,8 +97,10 @@ interface ServiceHubStore {
   // Configuration Profile Actions
   addPricingProfile: (prof: Omit<PricingProfile, 'id'>) => PricingProfile;
   updatePricingProfile: (id: string, updates: Partial<PricingProfile>) => void;
-  addRuleToProfile: (profileId: string, rule: any) => void;
+  addRuleToProfile: (profileId: string, rule: Omit<RuleItem, 'id' | 'status'>) => void;
+  updateRuleInProfile: (profileId: string, ruleId: string, updates: Partial<RuleItem>) => void;
   addPolicy: (pol: Omit<PolicyItem, 'id' | 'version' | 'effective_from'>) => PolicyItem;
+  updatePolicy: (id: string, updates: Partial<PolicyItem>) => void;
   publishNewPolicyVersion: (policyId: string, versionDesc: string) => void;
   updateRiskLevel: (id: string, updates: Partial<RiskLevelItem>) => void;
   updateVerificationProfile: (id: string, updates: Partial<VerificationProfileItem>) => void;
@@ -357,16 +360,41 @@ export const useServiceHubStore = create<ServiceHubStore>()(
       },
 
       addRuleToProfile: (profileId, rule) => {
+        const newRuleItem: RuleItem = {
+          id: 'r-' + Date.now(),
+          name: rule.name,
+          rule_type: rule.rule_type,
+          condition: rule.condition,
+          operator: rule.operator,
+          value: rule.value,
+          action: rule.action,
+          severity: rule.severity || 'MEDIUM',
+          description: rule.description,
+          status: 'ACTIVE'
+        };
         set(state => ({
           rulesProfiles: state.rulesProfiles.map(rp => {
             if (rp.id !== profileId) return rp;
             return {
               ...rp,
-              rules: [...rp.rules, { ...rule, id: 'r-' + Date.now(), status: 'ACTIVE' }]
+              rules: [...rp.rules, newRuleItem]
             };
           })
         }));
         get().addAuditLog('Rules', profileId, 'ADD_RULE', null, rule);
+      },
+
+      updateRuleInProfile: (profileId, ruleId, updates) => {
+        set(state => ({
+          rulesProfiles: state.rulesProfiles.map(rp => {
+            if (rp.id !== profileId) return rp;
+            return {
+              ...rp,
+              rules: rp.rules.map(r => r.id === ruleId ? { ...r, ...updates } : r)
+            };
+          })
+        }));
+        get().addAuditLog('Rules', ruleId, 'UPDATE_RULE', null, updates);
       },
 
       addPolicy: (pol) => {
@@ -381,6 +409,13 @@ export const useServiceHubStore = create<ServiceHubStore>()(
         set(state => ({ policies: [...state.policies, newPol] }));
         get().addAuditLog('Policies', newPol.id, 'CREATE', null, newPol);
         return newPol;
+      },
+
+      updatePolicy: (id, updates) => {
+        set(state => ({
+          policies: state.policies.map(p => p.id === id ? { ...p, ...updates } : p)
+        }));
+        get().addAuditLog('Policies', id, 'UPDATE', null, updates);
       },
 
       publishNewPolicyVersion: (policyId, versionDesc) => {

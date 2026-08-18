@@ -2,17 +2,19 @@
 
 import React, { useState } from 'react';
 import { useServiceHubStore } from '@/lib/serviceHubStore';
-import { Shield, CheckCircle2, Search, Upload, ArrowUpRight, Plus, X } from 'lucide-react';
+import { Shield, CheckCircle2, Search, Upload, ArrowUpRight, Plus, X, Edit2 } from 'lucide-react';
 import { PolicyItem } from '@/lib/types/serviceHub';
 
 export function PoliciesTab() {
-  const { policies, addPolicy, publishNewPolicyVersion } = useServiceHubStore();
+  const { policies, addPolicy, updatePolicy, publishNewPolicyVersion } = useServiceHubStore();
   const [versionNote, setVersionNote] = useState('');
   const [selectedPolId, setSelectedPolId] = useState(policies[0]?.id || '');
   const [searchTerm, setSearchTerm] = useState('');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingPolicy, setEditingPolicy] = useState<PolicyItem | null>(null);
+
   const [policyName, setPolicyName] = useState('');
   const [description, setDescription] = useState('');
   const [kycRequired, setKycRequired] = useState(true);
@@ -31,41 +33,72 @@ export function PoliciesTab() {
     alert(`Policy version v${nextVersion}.0 published successfully!`);
   };
 
-  const handleCreatePolicy = (e: React.FormEvent) => {
+  const handleOpenCreate = () => {
+    setEditingPolicy(null);
+    setPolicyName('');
+    setDescription('');
+    setKycRequired(true);
+    setLiveGpsRequired(true);
+    setSosRequired(true);
+    setPublicPlacesOnly(true);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (pol: PolicyItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingPolicy(pol);
+    setPolicyName(pol.name);
+    setDescription(pol.description);
+    setKycRequired(Boolean(pol.kyc_required));
+    setLiveGpsRequired(Boolean(pol.live_location_required));
+    setSosRequired(Boolean(pol.sos_required));
+    setPublicPlacesOnly(Boolean(pol.public_location_only));
+    setIsModalOpen(true);
+  };
+
+  const handleSavePolicy = (e: React.FormEvent) => {
     e.preventDefault();
     if (!policyName.trim()) return;
 
-    const newPol: PolicyItem = {
-      id: `pol-${Date.now()}`,
-      name: policyName.trim(),
-      description: description.trim() || 'Standard safety policy.',
-      version: 1,
-      status: 'PUBLISHED',
-      effective_from: new Date().toISOString(),
-      minimum_age: 18,
-      kyc_required: kycRequired,
-      background_check_required: true,
-      emergency_contact_required: true,
-      public_location_only: publicPlacesOnly,
-      live_location_required: liveGpsRequired,
-      sos_required: sosRequired,
-      chat_moderation_required: true,
-      incident_reporting_enabled: true,
-      consent_required: true,
-      versions: [
-        {
-          version: 1,
-          effective_from: new Date().toISOString(),
-          description: 'Initial release of policy.',
-          prohibited_activity_text: 'Strict safety rules applied.'
-        }
-      ]
-    };
-
-    addPolicy(newPol);
+    if (editingPolicy) {
+      updatePolicy(editingPolicy.id, {
+        name: policyName.trim(),
+        description: description.trim(),
+        kyc_required: kycRequired,
+        live_location_required: liveGpsRequired,
+        sos_required: sosRequired,
+        public_location_only: publicPlacesOnly
+      });
+    } else {
+      const newPol: PolicyItem = {
+        id: `pol-${Date.now()}`,
+        name: policyName.trim(),
+        description: description.trim() || 'Standard safety policy.',
+        version: 1,
+        status: 'PUBLISHED',
+        effective_from: new Date().toISOString(),
+        minimum_age: 18,
+        kyc_required: kycRequired,
+        background_check_required: true,
+        emergency_contact_required: true,
+        public_location_only: publicPlacesOnly,
+        live_location_required: liveGpsRequired,
+        sos_required: sosRequired,
+        chat_moderation_required: true,
+        incident_reporting_enabled: true,
+        consent_required: true,
+        versions: [
+          {
+            version: 1,
+            effective_from: new Date().toISOString(),
+            description: 'Initial release of policy.',
+            prohibited_activity_text: 'Strict safety rules applied.'
+          }
+        ]
+      };
+      addPolicy(newPol);
+    }
     setIsModalOpen(false);
-    setPolicyName('');
-    setDescription('');
   };
 
   const PARAM_CONFIG = [
@@ -91,7 +124,7 @@ export function PoliciesTab() {
         </div>
 
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleOpenCreate}
           className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm shadow-purple-200 flex items-center justify-center gap-1.5 transition-all shrink-0"
         >
           <Plus className="w-4 h-4" /> Add Policy
@@ -112,6 +145,13 @@ export function PoliciesTab() {
                     <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                     v{pol.version}.0 Active
                   </span>
+                  <button
+                    onClick={(e) => handleOpenEdit(pol, e)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-slate-100 transition-colors"
+                    title="Edit Policy"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
                 </div>
                 <p className="text-xs text-slate-500 font-medium mt-1">{pol.description}</p>
               </div>
@@ -185,17 +225,19 @@ export function PoliciesTab() {
         )}
       </div>
 
-      {/* Add Policy Modal */}
+      {/* Add / Edit Policy Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-5 sm:p-6 space-y-4 shadow-2xl my-auto text-xs">
             <div className="flex items-center justify-between">
-              <h4 className="font-extrabold text-white text-base">Add New Safety & Usage Policy</h4>
+              <h4 className="font-extrabold text-white text-base">
+                {editingPolicy ? `Edit Policy: ${editingPolicy.name}` : 'Add New Safety & Usage Policy'}
+              </h4>
               <button onClick={() => setIsModalOpen(false)} className="p-1 rounded-lg text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleCreatePolicy} className="space-y-3 text-xs">
+            <form onSubmit={handleSavePolicy} className="space-y-3 text-xs">
               <div>
                 <label className="block text-slate-400 font-bold mb-1">Policy Title *</label>
                 <input type="text" required value={policyName} onChange={e => setPolicyName(e.target.value)} placeholder="e.g. VIP Companion Conduct Policy"
@@ -226,7 +268,9 @@ export function PoliciesTab() {
               </div>
               <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-1.5 rounded-xl bg-slate-800 text-slate-300 font-bold">Cancel</button>
-                <button type="submit" className="px-5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold">Publish Policy v1.0</button>
+                <button type="submit" className="px-5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold">
+                  {editingPolicy ? 'Save Changes' : 'Publish Policy v1.0'}
+                </button>
               </div>
             </form>
           </div>
