@@ -28,14 +28,6 @@ export function SafetyTab() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800">
-        <h3 className="font-extrabold text-white text-sm flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-emerald-400" /> Module 8: Safety & Trust Controls Suite
-        </h3>
-        <p className="text-xs text-slate-400 mt-0.5">Safety controls linked to services. Configured as Required, Enabled, Optional, or Disabled.</p>
-      </div>
-
       {/* Quick Status Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[

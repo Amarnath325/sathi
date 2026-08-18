@@ -34,19 +34,6 @@ export function PricingTab() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl bg-slate-900 border border-slate-800">
-        <div>
-          <h3 className="font-extrabold text-white text-sm flex items-center gap-2">
-            <DollarSign className="w-4 h-4 text-emerald-400" />
-            Module 3: Pricing Profiles & Priority Override Engine
-          </h3>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Priority: <span className="text-white font-bold">Service Pricing</span> → <span className="text-indigo-400 font-bold">Category Default</span> → <span className="text-slate-400 font-bold">Global Default</span>
-          </p>
-        </div>
-      </div>
-
       {/* Search Bar */}
       <div className="relative">
         <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />

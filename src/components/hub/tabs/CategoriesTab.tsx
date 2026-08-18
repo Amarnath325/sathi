@@ -21,13 +21,16 @@ export function CategoriesTab() {
     duplicateCategory,
     toggleCategoryActive,
     toggleCategoryFeatured,
-    searchQuery: globalSearch
+    searchQuery: globalSearch,
+    isCategoryFormOpen,
+    setCategoryFormOpen
   } = useServiceHubStore();
 
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [deleteWarningModalCat, setDeleteWarningModalCat] = useState<{ cat: CategoryItem; serviceCount: number } | null>(null);
   const [editingCategory, setEditingCategory] = useState<CategoryItem | null>(null);
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const isFormOpen = isCategoryFormOpen;
+  const setIsFormOpen = setCategoryFormOpen;
 
   // Local search & filter
   const [localSearch, setLocalSearch] = useState('');
@@ -138,24 +141,6 @@ export function CategoriesTab() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl bg-slate-900 border border-slate-800">
-        <div>
-          <h3 className="font-extrabold text-white text-sm flex items-center gap-2">
-            <Layers className="w-4 h-4 text-indigo-400" />
-            Module 1: Category Management
-            <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-mono">{categories.length} Total</span>
-          </h3>
-          <p className="text-xs text-slate-400 mt-0.5">Organize service offerings. Category profiles apply inheritance rules to sub-services.</p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Add */}
-          <button onClick={handleOpenCreate} className="px-4 py-1.5 rounded-xl gradient-bg-primary text-white font-bold text-xs hover:opacity-90 shadow-lg flex items-center gap-1.5">
-            <Plus className="w-4 h-4" /> Add Category
-          </button>
-        </div>
-      </div>
-
       {/* Search & Filter Bar */}
       <div className="flex flex-col sm:flex-row items-center gap-2.5 p-3 rounded-xl bg-slate-900 border border-slate-800">
         {/* Local Search */}

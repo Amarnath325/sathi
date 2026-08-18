@@ -67,6 +67,11 @@ interface ServiceHubStore {
   eligibilityProfiles: EligibilityProfileItem[];
   auditLogs: ServiceHubAuditEntry[];
 
+  isCategoryFormOpen: boolean;
+  setCategoryFormOpen: (open: boolean) => void;
+  isServiceWizardOpen: boolean;
+  setServiceWizardOpen: (open: boolean) => void;
+
   // Selected Service for Configuration Drawer
   selectedServiceForConfig: ServiceItem | null;
   setSelectedServiceForConfig: (service: ServiceItem | null) => void;
@@ -123,6 +128,11 @@ export const useServiceHubStore = create<ServiceHubStore>()(
       setSelectedRiskFilter: (riskId) => set({ selectedRiskFilter: riskId }),
       selectedStatusFilter: 'ALL',
       setSelectedStatusFilter: (status) => set({ selectedStatusFilter: status }),
+
+      isCategoryFormOpen: false,
+      setCategoryFormOpen: (open) => set({ isCategoryFormOpen: open }),
+      isServiceWizardOpen: false,
+      setServiceWizardOpen: (open) => set({ isServiceWizardOpen: open }),
 
       categories: INITIAL_CATEGORIES,
       services: INITIAL_SERVICES,

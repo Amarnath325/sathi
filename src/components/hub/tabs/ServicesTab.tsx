@@ -34,6 +34,8 @@ export function ServicesTab() {
     selectedServiceForConfig,
     searchQuery: globalSearch,
     selectedCategoryFilter,
+    isServiceWizardOpen,
+    setServiceWizardOpen
   } = useServiceHubStore();
 
   const [subStatusFilter, setSubStatusFilter] = useState<string>('ALL');
@@ -41,7 +43,8 @@ export function ServicesTab() {
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<typeof PAGE_SIZE_OPTIONS[number]>(25);
-  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const isWizardOpen = isServiceWizardOpen;
+  const setIsWizardOpen = setServiceWizardOpen;
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [description, setDescription] = useState('');
@@ -118,28 +121,6 @@ export function ServicesTab() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl bg-slate-900 border border-slate-800">
-        <div>
-          <h3 className="font-extrabold text-white text-sm flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-indigo-400" />
-            Module 2: Service Catalog
-            <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-mono">{services.length} Total</span>
-          </h3>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Every service links to 10 core configuration profiles. Only <span className="text-emerald-400 font-bold">PUBLISHED</span> services are bookable.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => { setCategoryId(categories[0]?.id || ''); setIsWizardOpen(true); }}
-            className="px-4 py-1.5 rounded-xl gradient-bg-primary text-white font-bold text-xs hover:opacity-90 shadow-lg flex items-center gap-1.5"
-          >
-            <Plus className="w-4 h-4" /> Create New Service
-          </button>
-        </div>
-      </div>
-
       {/* Status Filter Tabs */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
         {STATUS_TABS.map(st => (

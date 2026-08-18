@@ -15,7 +15,7 @@ import { EligibilityTab } from './tabs/EligibilityTab';
 
 import {
   Layers, Sparkles, DollarSign, Sliders, Shield, ShieldAlert, UserCheck, ShieldCheck, Clock, CheckCircle2,
-  Search, Filter, Download, Play, AlertTriangle, RefreshCw, BarChart3, ChevronRight, Check, Upload, Database
+  Search, Filter, Download, Play, AlertTriangle, RefreshCw, BarChart3, ChevronRight, Check, Upload, Database, Plus
 } from 'lucide-react';
 
 export function ServiceCategoryHub() {
@@ -29,7 +29,9 @@ export function ServiceCategoryHub() {
     riskLevels,
     auditLogs,
     addCategory,
-    addService
+    addService,
+    setCategoryFormOpen,
+    setServiceWizardOpen
   } = useServiceHubStore();
 
   const tabs: { id: HubTabId; label: string; count?: number; icon: any }[] = [
@@ -112,6 +114,22 @@ export function ServiceCategoryHub() {
           >
             <Download className="w-3.5 h-3.5 text-emerald-400" /> Export All
           </button>
+          {activeTab === 'categories' && (
+            <button
+              onClick={() => setCategoryFormOpen(true)}
+              className="px-4 py-2 rounded-xl gradient-bg-primary text-white font-bold text-xs hover:opacity-90 shadow-lg flex items-center gap-1.5 transition-all ml-1"
+            >
+              <Plus className="w-4 h-4" /> Add Category
+            </button>
+          )}
+          {activeTab === 'services' && (
+            <button
+              onClick={() => setServiceWizardOpen(true)}
+              className="px-4 py-2 rounded-xl gradient-bg-primary text-white font-bold text-xs hover:opacity-90 shadow-lg flex items-center gap-1.5 transition-all ml-1"
+            >
+              <Plus className="w-4 h-4" /> Create New Service
+            </button>
+          )}
         </div>
       </div>
 

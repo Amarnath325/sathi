@@ -40,17 +40,6 @@ export function EligibilityTab() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-900 border border-slate-800">
-        <div>
-          <h3 className="font-extrabold text-white text-sm flex items-center gap-2">
-            <UserCheck className="w-4 h-4 text-emerald-400" /> Module 10: Companion Service Eligibility Matrix
-            <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">{eligibilityProfiles.length} Profiles</span>
-          </h3>
-          <p className="text-xs text-slate-400 mt-0.5">Automated eligibility evaluation before companions can accept bookings.</p>
-        </div>
-      </div>
-
       {/* Profile Selector */}
       {eligibilityProfiles.length > 1 && (
         <div className="flex items-center gap-2 overflow-x-auto pb-1">

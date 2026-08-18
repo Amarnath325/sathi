@@ -36,15 +36,6 @@ export function RiskLevelsTab() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800">
-        <h3 className="font-extrabold text-white text-sm flex items-center gap-2">
-          <ShieldAlert className="w-4 h-4 text-rose-400" /> Module 6: Risk Levels & Multi-Factor Score Engine
-          <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 text-[10px] font-mono">{riskLevels.length} Levels</span>
-        </h3>
-        <p className="text-xs text-slate-400 mt-0.5">Numerical scores are auto-evaluated → converted into LOW / MEDIUM / HIGH / CRITICAL tiers.</p>
-      </div>
-
       {/* Search */}
       <div className="relative">
         <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />

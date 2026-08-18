@@ -37,17 +37,6 @@ export function PoliciesTab() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl bg-slate-900 border border-slate-800">
-        <div>
-          <h3 className="font-extrabold text-white text-sm flex items-center gap-2">
-            <Shield className="w-4 h-4 text-purple-400" /> Module 5: Immutable Versioned Policies Manager
-            <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 text-[10px] font-mono">{policies.length} Policies</span>
-          </h3>
-          <p className="text-xs text-slate-400 mt-0.5">Published policies are versioned. New versions never alter historical bookings' bound policy versions.</p>
-        </div>
-      </div>
-
       {/* Search */}
       <div className="relative">
         <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />

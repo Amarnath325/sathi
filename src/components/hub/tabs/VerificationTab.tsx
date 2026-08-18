@@ -25,15 +25,6 @@ export function VerificationTab() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800">
-        <h3 className="font-extrabold text-white text-sm flex items-center gap-2">
-          <UserCheck className="w-4 h-4 text-indigo-400" /> Module 7: Reusable Verification Profiles Suite
-          <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-mono">{verificationProfiles.length} Profiles</span>
-        </h3>
-        <p className="text-xs text-slate-400 mt-0.5">Profiles define mandatory credential checks before companions can provide specific services.</p>
-      </div>
-
       {/* Search */}
       <div className="relative">
         <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />

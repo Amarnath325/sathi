@@ -23,16 +23,6 @@ export function BookingCancellationTab() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-900 border border-slate-800">
-        <div>
-          <h3 className="font-extrabold text-white text-sm flex items-center gap-2">
-            <Clock className="w-4 h-4 text-indigo-400" /> Module 9: Booking Rules & Tiered Cancellation Policy
-          </h3>
-          <p className="text-xs text-slate-400 mt-0.5">Configurable advance booking windows, duration limits, instant booking, and tiered cancellation refund percentages.</p>
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Rules Overview */}
         {rule && (
