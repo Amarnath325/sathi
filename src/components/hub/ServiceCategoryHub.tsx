@@ -32,7 +32,8 @@ export function ServiceCategoryHub() {
     policies,
     riskLevels,
     auditLogs,
-    bulkUpdateServiceStatus
+    addCategory,
+    addService
   } = useServiceHubStore();
 
   const tabs: { id: HubTabId; label: string; count?: number; icon: any }[] = [
@@ -62,6 +63,34 @@ export function ServiceCategoryHub() {
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
+  };
+
+  const handleImportData = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target?.result as string);
+        let count = 0;
+        if (data.categories && Array.isArray(data.categories)) {
+          data.categories.forEach((cat: any) => { addCategory(cat); count++; });
+        }
+        if (data.services && Array.isArray(data.services)) {
+          data.services.forEach((srv: any) => { addService(srv); count++; });
+        }
+        if (Array.isArray(data)) {
+          data.forEach((item: any) => {
+            if (item.name && item.slug) { addCategory(item); count++; }
+          });
+        }
+        alert(`Successfully imported configuration schema (${count} items)!`);
+      } catch (err) {
+        alert('Invalid JSON file format.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   return (
@@ -106,11 +135,15 @@ export function ServiceCategoryHub() {
               ✕ Clear
             </button>
           )}
+          <label className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center gap-1.5 border border-slate-700 cursor-pointer transition-colors">
+            <Upload className="w-3.5 h-3.5 text-indigo-400" /> Import Schema
+            <input type="file" accept=".json" className="hidden" onChange={handleImportData} />
+          </label>
           <button
             onClick={handleExportData}
             className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center gap-1.5 border border-slate-700 transition-colors"
           >
-            <Download className="w-3.5 h-3.5" /> Export All
+            <Download className="w-3.5 h-3.5 text-emerald-400" /> Export All
           </button>
         </div>
       </div>

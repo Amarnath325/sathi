@@ -45,11 +45,6 @@ export function PricingTab() {
             Priority: <span className="text-white font-bold">Service Pricing</span> → <span className="text-indigo-400 font-bold">Category Default</span> → <span className="text-slate-400 font-bold">Global Default</span>
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={handleExport} className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-bold text-xs flex items-center gap-1.5 transition-colors">
-            <Download className="w-3.5 h-3.5" /> Export
-          </button>
-        </div>
       </div>
 
       {/* Search Bar */}

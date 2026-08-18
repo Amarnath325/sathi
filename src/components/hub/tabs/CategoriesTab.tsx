@@ -149,15 +149,6 @@ export function CategoriesTab() {
           <p className="text-xs text-slate-400 mt-0.5">Organize service offerings. Category profiles apply inheritance rules to sub-services.</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Import */}
-          <label className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors">
-            <Upload className="w-3.5 h-3.5" /> Import
-            <input type="file" accept=".json" className="hidden" onChange={handleImport} />
-          </label>
-          {/* Export */}
-          <button onClick={handleExport} className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-bold text-xs flex items-center gap-1.5 transition-colors">
-            <Download className="w-3.5 h-3.5" /> Export
-          </button>
           {/* Add */}
           <button onClick={handleOpenCreate} className="px-4 py-1.5 rounded-xl gradient-bg-primary text-white font-bold text-xs hover:opacity-90 shadow-lg flex items-center gap-1.5">
             <Plus className="w-4 h-4" /> Add Category
