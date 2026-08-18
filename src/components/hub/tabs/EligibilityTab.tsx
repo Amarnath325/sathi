@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useServiceHubStore } from '@/lib/serviceHubStore';
 import { CompanionEligibilityEvaluator } from '@/lib/serviceHubEngines';
-import { UserCheck, CheckCircle2, AlertTriangle, ShieldAlert, Download } from 'lucide-react';
+import { UserCheck, CheckCircle2, AlertTriangle, Star, Shield, FileCheck, Check, X } from 'lucide-react';
 
 export function EligibilityTab() {
   const { eligibilityProfiles } = useServiceHubStore();
@@ -31,13 +31,6 @@ export function EligibilityTab() {
     }
   }, profile) : null;
 
-  const handleExport = () => {
-    const blob = new Blob([JSON.stringify(eligibilityProfiles, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `eligibility_profiles_${Date.now()}.json`;
-    a.click(); URL.revokeObjectURL(url);
-  };
-
   return (
     <div className="space-y-5">
       {/* Profile Selector */}
@@ -47,8 +40,10 @@ export function EligibilityTab() {
             <button
               key={p.id}
               onClick={() => setSelectedProfileId(p.id)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 border ${
-                selectedProfileId === p.id ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 border ${
+                selectedProfileId === p.id
+                  ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                  : 'bg-white text-slate-700 border-slate-200/90 hover:bg-slate-50'
               }`}
             >
               {p.name}
@@ -58,104 +53,201 @@ export function EligibilityTab() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Profile Criteria */}
+        
+        {/* Left Column: Profile Criteria */}
         {profile && (
           <div className="lg:col-span-2 space-y-4">
-            <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-4">
+            <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-6">
               <div>
-                <h4 className="font-extrabold text-white text-base">{profile.name}</h4>
-                <p className="text-xs text-slate-400 mt-1">{profile.description}</p>
+                <h4 className="font-extrabold text-slate-900 text-xl tracking-tight">{profile.name}</h4>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">{profile.description}</p>
               </div>
 
-              {/* Key Criteria */}
-              <div className="grid grid-cols-3 gap-3 font-mono text-xs">
-                <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
-                  <span className="text-slate-500 text-[10px] uppercase">Age Range</span>
-                  <span className="font-bold text-white block">{profile.minimum_age}–{profile.maximum_age} yrs</span>
+              {/* Key Criteria Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Age Range */}
+                <div className="bg-purple-50/50 border border-purple-100 rounded-2xl p-4 flex items-center gap-3.5 shadow-2xs">
+                  <div className="w-10 h-10 rounded-full border-2 border-purple-400 text-purple-600 flex items-center justify-center shrink-0">
+                    <UserCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-extrabold text-slate-500 tracking-wider uppercase block">AGE RANGE</span>
+                    <span className="text-xl font-extrabold text-slate-900 block mt-0.5">
+                      {profile.minimum_age}–{profile.maximum_age} yrs
+                    </span>
+                  </div>
                 </div>
-                <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
-                  <span className="text-slate-500 text-[10px] uppercase">Min Rating</span>
-                  <span className="font-bold text-amber-400 block">{profile.minimum_rating} ★</span>
+
+                {/* Min Rating */}
+                <div className="bg-amber-50/60 border border-amber-100 rounded-2xl p-4 flex items-center gap-3.5 shadow-2xs">
+                  <div className="w-10 h-10 rounded-full border-2 border-amber-400 text-amber-600 flex items-center justify-center shrink-0">
+                    <Star className="w-5 h-5 fill-amber-500" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-extrabold text-slate-500 tracking-wider uppercase block">MIN RATING</span>
+                    <span className="text-xl font-extrabold text-amber-700 block mt-0.5">
+                      {profile.minimum_rating} ★
+                    </span>
+                  </div>
                 </div>
-                <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
-                  <span className="text-slate-500 text-[10px] uppercase">Required Docs</span>
-                  <span className="font-bold text-indigo-400 block">{profile.required_documents.length} Items</span>
+
+                {/* Required Documents Count */}
+                <div className="bg-blue-50/60 border border-blue-100 rounded-2xl p-4 flex items-center gap-3.5 shadow-2xs">
+                  <div className="w-10 h-10 rounded-full border-2 border-indigo-400 text-indigo-600 flex items-center justify-center shrink-0">
+                    <FileCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-extrabold text-slate-500 tracking-wider uppercase block">REQUIRED DOCS</span>
+                    <span className="text-xl font-extrabold text-indigo-700 block mt-0.5">
+                      {profile.required_documents.length} Items
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              {/* Required Documents */}
-              <div className="space-y-2">
-                <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Required Documents</h5>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {/* Required Documents List */}
+              <div className="space-y-3 pt-2">
+                <h5 className="font-extrabold text-slate-900 text-sm">Required Verification Documents</h5>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {profile.required_documents.map((doc, idx) => (
-                    <div key={idx} className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                      <span className="font-medium text-slate-300">{doc.replace(/_/g, ' ')}</span>
+                    <div
+                      key={idx}
+                      className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200/80 flex items-center gap-3 shadow-2xs"
+                    >
+                      <div className="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                        <Check className="w-4 h-4 stroke-[3]" />
+                      </div>
+                      <span className="font-extrabold text-slate-900 text-xs capitalize">
+                        {doc.replace(/_/g, ' ').toLowerCase()}
+                      </span>
                     </div>
                   ))}
                 </div>
               </div>
+
             </div>
           </div>
         )}
 
-        {/* Live Evaluator */}
-        <div className="p-5 rounded-3xl bg-slate-900 border border-indigo-500/30 space-y-4 h-fit shadow-2xl sticky top-4">
-          <h4 className="font-extrabold text-white text-sm flex items-center gap-2">
-            <UserCheck className="w-4 h-4 text-indigo-400" /> Companion Qualification Evaluator
+        {/* Right Column: Live Evaluator Simulator */}
+        <div className="p-5 rounded-2xl bg-white border border-slate-200/90 space-y-4 shadow-md sticky top-4 h-fit">
+          <h4 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
+            <UserCheck className="w-5 h-5 text-purple-600" /> Companion Qualification Evaluator
           </h4>
 
           <div className="space-y-4 text-xs">
             <div>
-              <label className="block text-slate-400 font-bold mb-1.5">Age: <span className="text-white font-mono">{compAge} years</span></label>
-              <input type="range" min={17} max={45} value={compAge} onChange={e => setCompAge(Number(e.target.value))} className="w-full accent-indigo-600 h-1.5 rounded-full" />
-              <div className="flex justify-between text-[10px] text-slate-500 mt-1"><span>17</span><span>45</span></div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-slate-700 font-bold">Age</label>
+                <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-bold text-xs border border-purple-100">
+                  {compAge} years
+                </span>
+              </div>
+              <input
+                type="range"
+                min={17}
+                max={45}
+                value={compAge}
+                onChange={e => setCompAge(Number(e.target.value))}
+                className="w-full accent-purple-600 h-1.5 rounded-full bg-slate-200 cursor-pointer"
+              />
+              <div className="flex justify-between text-[11px] text-slate-400 font-semibold mt-1">
+                <span>17</span>
+                <span>45</span>
+              </div>
             </div>
 
             <div>
-              <label className="block text-slate-400 font-bold mb-1.5">Rating: <span className="text-white font-mono">{compRating.toFixed(1)} ★</span></label>
-              <input type="range" min={3.0} max={5.0} step={0.1} value={compRating} onChange={e => setCompRating(Number(e.target.value))} className="w-full accent-amber-500 h-1.5 rounded-full" />
-              <div className="flex justify-between text-[10px] text-slate-500 mt-1"><span>3.0</span><span>5.0</span></div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-slate-700 font-bold">Rating</label>
+                <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 font-bold text-xs border border-amber-100">
+                  {compRating.toFixed(1)} ★
+                </span>
+              </div>
+              <input
+                type="range"
+                min={3.0}
+                max={5.0}
+                step={0.1}
+                value={compRating}
+                onChange={e => setCompRating(Number(e.target.value))}
+                className="w-full accent-amber-500 h-1.5 rounded-full bg-slate-200 cursor-pointer"
+              />
+              <div className="flex justify-between text-[11px] text-slate-400 font-semibold mt-1">
+                <span>3.0</span>
+                <span>5.0</span>
+              </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 pt-1">
               {[
-                { label: 'Govt ID Verified', val: hasGovtId, set: setHasGovtId, color: 'accent-emerald-500' },
-                { label: 'Live Selfie Verified', val: hasSelfie, set: setHasSelfie, color: 'accent-emerald-500' },
-                { label: 'Emergency Contact', val: hasEmergency, set: setHasEmergency, color: 'accent-emerald-500' },
-                { label: 'Account Suspended', val: isSuspended, set: setIsSuspended, color: 'accent-rose-500', danger: true },
-              ].map(({ label, val, set, color, danger }) => (
-                <label key={label} className={`flex items-center gap-2.5 cursor-pointer p-2.5 rounded-xl border transition-colors ${
-                  danger && val ? 'bg-rose-500/10 border-rose-500/30' : 'bg-slate-950 border-slate-800 hover:border-slate-700'
-                }`}>
-                  <input type="checkbox" checked={val} onChange={e => set(e.target.checked)} className={`${color} w-4 h-4`} />
-                  <span className={`font-bold ${danger ? 'text-rose-400' : 'text-white'}`}>{label}</span>
+                { label: 'Govt ID Verified', val: hasGovtId, set: setHasGovtId, danger: false },
+                { label: 'Live Selfie Verified', val: hasSelfie, set: setHasSelfie, danger: false },
+                { label: 'Emergency Contact Verified', val: hasEmergency, set: setHasEmergency, danger: false },
+                { label: 'Account Suspended', val: isSuspended, set: setIsSuspended, danger: true },
+              ].map(({ label, val, set, danger }) => (
+                <label
+                  key={label}
+                  className={`flex items-center justify-between cursor-pointer p-3 rounded-xl border transition-colors ${
+                    danger && val
+                      ? 'bg-rose-50 border-rose-200 text-rose-700'
+                      : val
+                      ? 'bg-slate-50 border-slate-200/90 text-slate-800'
+                      : 'bg-white border-slate-200/70 text-slate-500'
+                  }`}
+                >
+                  <span className="font-extrabold text-xs">{label}</span>
+                  <input
+                    type="checkbox"
+                    checked={val}
+                    onChange={e => set(e.target.checked)}
+                    className={`w-4 h-4 rounded cursor-pointer ${danger ? 'accent-rose-600' : 'accent-purple-600'}`}
+                  />
                 </label>
               ))}
             </div>
           </div>
 
-          {/* Evaluation Result */}
+          {/* Evaluation Result Output Card */}
           {result && (
-            <div className={`p-4 rounded-2xl border text-xs space-y-2.5 ${
-              result.status === 'ELIGIBLE' ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-amber-500/10 border-amber-500/30'
+            <div className={`p-4 rounded-2xl border text-xs space-y-2.5 shadow-2xs ${
+              result.status === 'ELIGIBLE'
+                ? 'bg-emerald-50/80 border-emerald-200/90'
+                : 'bg-rose-50/80 border-rose-200/90'
             }`}>
               <div className="flex items-center justify-between font-bold">
-                <span className={result.status === 'ELIGIBLE' ? 'text-emerald-300' : 'text-amber-300'}>
-                  {result.status === 'ELIGIBLE' ? '✅ ELIGIBLE' : '❌ NOT ELIGIBLE'}
-                </span>
-                <span className={`px-2 py-0.5 rounded-full bg-slate-950 font-mono text-[10px] ${result.status === 'ELIGIBLE' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                <div className="flex items-center gap-2">
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white shrink-0 ${
+                    result.status === 'ELIGIBLE' ? 'bg-emerald-500' : 'bg-rose-500'
+                  }`}>
+                    {result.status === 'ELIGIBLE' ? <Check className="w-4 h-4 stroke-[3]" /> : <X className="w-4 h-4 stroke-[3]" />}
+                  </div>
+                  <span className={`font-extrabold text-sm ${result.status === 'ELIGIBLE' ? 'text-emerald-800' : 'text-rose-800'}`}>
+                    {result.status === 'ELIGIBLE' ? 'ELIGIBLE FOR SERVICE' : 'INELIGIBLE'}
+                  </span>
+                </div>
+
+                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                  result.status === 'ELIGIBLE' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                }`}>
                   {result.status}
                 </span>
               </div>
+
               {result.missingRequirements.length > 0 && (
-                <div className="text-rose-400 text-[11px] font-mono pt-1 border-t border-slate-800 space-y-1">
-                  <p className="font-bold text-rose-300">Missing Requirements:</p>
-                  {result.missingRequirements.map((m, i) => <p key={i} className="flex items-center gap-1.5"><AlertTriangle className="w-3 h-3 shrink-0" />{m}</p>)}
+                <div className="text-rose-700 text-xs font-medium pt-2 border-t border-rose-200/80 space-y-1">
+                  <p className="font-extrabold text-rose-800">Missing Requirements:</p>
+                  {result.missingRequirements.map((m, i) => (
+                    <p key={i} className="flex items-center gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                      {m}
+                    </p>
+                  ))}
                 </div>
               )}
             </div>
           )}
+
         </div>
       </div>
     </div>
