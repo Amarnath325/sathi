@@ -31,7 +31,11 @@ import {
   Camera,
   Globe,
   Shield,
-  Edit3
+  Edit3,
+  X,
+  Loader2,
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { ServicePolicyEngine } from '@/lib/servicePolicyEngine';
@@ -56,6 +60,160 @@ export default function CompanionOnboardingWizard() {
   const [enablePasskey, setEnablePasskey] = useState(true);
   const [enable2FA, setEnable2FA] = useState(true);
   const [agreeAccountCheck, setAgreeAccountCheck] = useState(false);
+
+  // OTP Verification States
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
+  const [otpTarget, setOtpTarget] = useState<'email' | 'phone'>('email');
+  const [otpTargetValue, setOtpTargetValue] = useState('');
+  const [otpCodeDigits, setOtpCodeDigits] = useState<string[]>(['', '', '', '', '', '']);
+  const [otpDemoCode, setOtpDemoCode] = useState('');
+  const [otpTimerSeconds, setOtpTimerSeconds] = useState(600); // 10 minutes
+  const [otpResendCooldown, setOtpResendCooldown] = useState(60); // 60 seconds
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [otpError, setOtpError] = useState('');
+
+  // 10-Minute Timer Countdown Effect
+  React.useEffect(() => {
+    let timer: any = null;
+    if (isOtpModalOpen && otpTimerSeconds > 0) {
+      timer = setInterval(() => {
+        setOtpTimerSeconds(prev => (prev > 0 ? prev - 1 : 0));
+        setOtpResendCooldown(prev => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [isOtpModalOpen, otpTimerSeconds]);
+
+  // Send OTP Handler
+  const handleSendOtp = async (target: 'email' | 'phone') => {
+    const value = target === 'email' ? email : phone;
+    if (!value || !value.trim()) {
+      showToast('error', 'Required Field', `Please enter your ${target === 'email' ? 'email address' : 'mobile number'} first.`);
+      return;
+    }
+    if (target === 'email' && !/\S+@\S+\.\S+/.test(email)) {
+      showToast('error', 'Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
+    if (target === 'phone' && phone.length < 10) {
+      showToast('error', 'Invalid Mobile Number', 'Please enter a valid 10-digit mobile number.');
+      return;
+    }
+
+    setIsSendingOtp(true);
+    setOtpError('');
+    try {
+      const res = await fetch('/api/mobile/auth/otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'send',
+          identifier: value.trim().toLowerCase(),
+          purpose: target === 'email' ? 'COMPANION_EMAIL_VERIFICATION' : 'COMPANION_PHONE_VERIFICATION',
+          name: `${firstName} ${lastName}`.trim() || 'Companion Candidate',
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOtpTarget(target);
+        setOtpTargetValue(value.trim());
+        setOtpDemoCode(data.data?.demoOtpCode || '');
+        setOtpCodeDigits(['', '', '', '', '', '']);
+        setOtpTimerSeconds(600); // 10 minutes
+        setOtpResendCooldown(60);
+        setIsOtpModalOpen(true);
+        showToast('success', 'OTP Sent Successfully!', data.message || `Verification OTP sent to ${value}. Valid for 10 minutes.`);
+      } else {
+        showToast('error', 'Failed to Send OTP', data.error || 'Could not send verification OTP.');
+      }
+    } catch (err: any) {
+      showToast('error', 'Network Error', err.message || 'Failed to connect to server.');
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  // Verify OTP Handler
+  const handleVerifyOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const fullCode = otpCodeDigits.join('').trim();
+    if (fullCode.length !== 6) {
+      setOtpError('Please enter the complete 6-digit OTP code.');
+      return;
+    }
+    if (otpTimerSeconds === 0) {
+      setOtpError('OTP has expired after 10 minutes. Please click Resend OTP to request a new code.');
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    setOtpError('');
+    try {
+      const res = await fetch('/api/mobile/auth/otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'verify',
+          identifier: otpTargetValue.toLowerCase(),
+          purpose: otpTarget === 'email' ? 'COMPANION_EMAIL_VERIFICATION' : 'COMPANION_PHONE_VERIFICATION',
+          code: fullCode,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (otpTarget === 'email') {
+          setIsEmailVerified(true);
+        } else {
+          setIsPhoneVerified(true);
+        }
+        setIsOtpModalOpen(false);
+        showToast('success', 'Verified Successfully! ✓', `${otpTarget === 'email' ? 'Email address' : 'Mobile number'} has been verified.`);
+      } else {
+        setOtpError(data.error || 'Invalid OTP code.');
+      }
+    } catch (err: any) {
+      setOtpError(err.message || 'Verification failed.');
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
+  const handleOtpDigitChange = (index: number, val: string) => {
+    const cleanVal = val.replace(/\D/g, '');
+    if (!cleanVal) {
+      const newDigits = [...otpCodeDigits];
+      newDigits[index] = '';
+      setOtpCodeDigits(newDigits);
+      return;
+    }
+    if (cleanVal.length === 6) {
+      const pasted = cleanVal.split('');
+      setOtpCodeDigits(pasted);
+      const nextInput = document.getElementById('otp-input-5');
+      if (nextInput) nextInput.focus();
+      return;
+    }
+    const newDigits = [...otpCodeDigits];
+    newDigits[index] = cleanVal[cleanVal.length - 1];
+    setOtpCodeDigits(newDigits);
+
+    if (index < 5 && cleanVal) {
+      const nextInput = document.getElementById(`otp-input-${index + 1}`);
+      if (nextInput) nextInput.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !otpCodeDigits[index] && index > 0) {
+      const prevInput = document.getElementById(`otp-input-${index - 1}`);
+      if (prevInput) prevInput.focus();
+    }
+  };
 
   // Step 2: Profile & Services State
   const [displayName, setDisplayName] = useState('Aria Vance');
@@ -386,46 +544,98 @@ export default function CompanionOnboardingWizard() {
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Email Address *</label>
-                    <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">Not verified</span>
+                    {isEmailVerified ? (
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-mono font-extrabold flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                        Verified ✓
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 font-bold">Not verified</span>
+                    )}
                   </div>
                   <div className="flex gap-2">
-                    <input 
-                      type="email" 
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      className="flex-1 px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
-                    />
-                    <button 
-                      type="button" 
-                      onClick={() => showToast('info', 'OTP Sent', 'Check your email for 6-digit verification code.')}
-                      className="px-3 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-indigo-600 dark:text-indigo-400 text-xs font-bold hover:border-indigo-500 shrink-0"
-                    >
-                      Send OTP
-                    </button>
+                    <div className="relative flex-1">
+                      <input 
+                        type="email" 
+                        value={email}
+                        disabled={isEmailVerified}
+                        onChange={e => setEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        className="w-full px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 disabled:opacity-80 disabled:bg-slate-100 dark:disabled:bg-slate-900"
+                      />
+                      {isEmailVerified && (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500 absolute right-3 top-3" />
+                      )}
+                    </div>
+                    {isEmailVerified ? (
+                      <div className="px-3.5 py-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800/80 text-emerald-700 dark:text-emerald-300 text-xs font-extrabold flex items-center gap-1.5 shrink-0">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        <span>Verified</span>
+                      </div>
+                    ) : (
+                      <button 
+                        type="button" 
+                        onClick={() => handleSendOtp('email')}
+                        disabled={isSendingOtp}
+                        className="px-3.5 py-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 text-xs font-bold hover:bg-indigo-600 hover:text-white transition-all shrink-0 flex items-center gap-1.5 disabled:opacity-50"
+                      >
+                        {isSendingOtp && otpTarget === 'email' ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Mail className="w-3.5 h-3.5" />
+                        )}
+                        <span>Send OTP</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Mobile Number *</label>
-                    <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">Not verified</span>
+                    {isPhoneVerified ? (
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-mono font-extrabold flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                        Verified ✓
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 font-bold">Not verified</span>
+                    )}
                   </div>
                   <div className="flex gap-2">
-                    <input 
-                      type="tel" 
-                      value={phone}
-                      onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                      placeholder="+91 9876543210"
-                      className="flex-1 px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-mono"
-                    />
-                    <button 
-                      type="button"
-                      onClick={() => showToast('info', 'SMS OTP Sent', 'Check your phone SMS for 6-digit verification code.')}
-                      className="px-3 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-indigo-600 dark:text-indigo-400 text-xs font-bold hover:border-indigo-500 shrink-0"
-                    >
-                      Send OTP
-                    </button>
+                    <div className="relative flex-1">
+                      <input 
+                        type="tel" 
+                        value={phone}
+                        disabled={isPhoneVerified}
+                        onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                        placeholder="+91 9876543210"
+                        className="w-full px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-mono disabled:opacity-80 disabled:bg-slate-100 dark:disabled:bg-slate-900"
+                      />
+                      {isPhoneVerified && (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500 absolute right-3 top-3" />
+                      )}
+                    </div>
+                    {isPhoneVerified ? (
+                      <div className="px-3.5 py-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800/80 text-emerald-700 dark:text-emerald-300 text-xs font-extrabold flex items-center gap-1.5 shrink-0">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        <span>Verified</span>
+                      </div>
+                    ) : (
+                      <button 
+                        type="button"
+                        onClick={() => handleSendOtp('phone')}
+                        disabled={isSendingOtp}
+                        className="px-3.5 py-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 text-xs font-bold hover:bg-indigo-600 hover:text-white transition-all shrink-0 flex items-center gap-1.5 disabled:opacity-50"
+                      >
+                        {isSendingOtp && otpTarget === 'phone' ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Phone className="w-3.5 h-3.5" />
+                        )}
+                        <span>Send OTP</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1516,6 +1726,140 @@ export default function CompanionOnboardingWizard() {
         </div>
 
       </div>
+
+      {/* OTP VERIFICATION MODAL POPUP */}
+      {isOtpModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 text-white space-y-5 shadow-2xl animate-in fade-in zoom-in-95 relative">
+            
+            {/* Close Button */}
+            <button 
+              type="button" 
+              onClick={() => setIsOtpModalOpen(false)}
+              className="absolute top-5 right-5 text-slate-400 hover:text-white p-1 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Header */}
+            <div className="text-center space-y-2 pt-2">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center mx-auto">
+                {otpTarget === 'email' ? <Mail className="w-6 h-6" /> : <Phone className="w-6 h-6" />}
+              </div>
+              <h3 className="text-lg font-black tracking-wide">
+                Verify {otpTarget === 'email' ? 'Email Address' : 'Mobile Number'}
+              </h3>
+              <p className="text-xs text-slate-400">
+                We sent a 6-digit OTP code to <strong className="text-indigo-300 font-mono">{otpTargetValue}</strong>
+              </p>
+            </div>
+
+            {/* 10-Minute Countdown Clock Banner */}
+            <div className={`p-3 rounded-2xl border flex items-center justify-between text-xs transition-colors ${
+              otpTimerSeconds > 0
+                ? 'bg-indigo-950/40 border-indigo-500/30 text-indigo-200'
+                : 'bg-rose-950/50 border-rose-500/40 text-rose-300'
+            }`}>
+              <div className="flex items-center gap-2">
+                <Clock className={`w-4 h-4 ${otpTimerSeconds > 0 ? 'text-indigo-400 animate-pulse' : 'text-rose-400'}`} />
+                <span className="font-semibold">
+                  {otpTimerSeconds > 0 ? 'OTP Expire Timer:' : 'Status:'}
+                </span>
+              </div>
+              <span className="font-mono font-black text-sm">
+                {otpTimerSeconds > 0 ? (
+                  `${String(Math.floor(otpTimerSeconds / 60)).padStart(2, '0')}:${String(otpTimerSeconds % 60).padStart(2, '0')}`
+                ) : (
+                  'EXPIRED'
+                )}
+              </span>
+            </div>
+
+            {/* Expired Warning */}
+            {otpTimerSeconds === 0 && (
+              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2 font-medium">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                <span>OTP code has expired after 10 minutes. Please click Resend OTP to request a new code.</span>
+              </div>
+            )}
+
+            {/* OTP 6-Digit PIN Inputs */}
+            <form onSubmit={handleVerifyOtp} className="space-y-4">
+              <div className="flex justify-center gap-2 py-1">
+                {otpCodeDigits.map((digit, idx) => (
+                  <input
+                    key={idx}
+                    id={`otp-input-${idx}`}
+                    type="text"
+                    maxLength={1}
+                    value={digit}
+                    onChange={e => handleOtpDigitChange(idx, e.target.value)}
+                    onKeyDown={e => handleOtpKeyDown(idx, e)}
+                    disabled={otpTimerSeconds === 0}
+                    className="w-11 h-12 text-center text-lg font-bold font-mono rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50 transition-all"
+                  />
+                ))}
+              </div>
+
+              {/* Demo OTP Helper Tag */}
+              {otpDemoCode && (
+                <div 
+                  onClick={() => {
+                    const digits = otpDemoCode.split('');
+                    setOtpCodeDigits(digits);
+                  }}
+                  className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800/80 text-[11px] text-slate-400 flex items-center justify-between cursor-pointer hover:border-indigo-500/50 transition-all"
+                  title="Click to auto-fill demo OTP code"
+                >
+                  <span className="flex items-center gap-1.5 text-slate-300 font-medium">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Demo OTP Code:
+                  </span>
+                  <span className="font-mono font-bold text-amber-400 tracking-widest">{otpDemoCode}</span>
+                </div>
+              )}
+
+              {/* Error Message */}
+              {otpError && (
+                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-medium flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
+                  <span>{otpError}</span>
+                </div>
+              )}
+
+              {/* Submit & Resend Buttons */}
+              <div className="space-y-2 pt-1">
+                <button
+                  type="submit"
+                  disabled={isVerifyingOtp || otpTimerSeconds === 0 || otpCodeDigits.join('').length !== 6}
+                  className="w-full py-3 rounded-xl gradient-bg-primary text-white text-xs font-extrabold shadow-lg shadow-indigo-600/30 hover:opacity-95 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                >
+                  {isVerifyingOtp ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Verifying OTP...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" /> Verify OTP & Confirm
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSendOtp(otpTarget)}
+                  disabled={otpResendCooldown > 0 || isSendingOtp}
+                  className="w-full py-2 rounded-xl text-slate-400 hover:text-white text-xs font-bold disabled:opacity-40 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isSendingOtp ? 'animate-spin' : ''}`} />
+                  {otpResendCooldown > 0
+                    ? `Resend OTP in ${otpResendCooldown}s`
+                    : 'Didn\'t get OTP? Resend OTP'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -1,16 +1,18 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { sendOtpEmail } from '@/lib/emailService';
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { action, identifier, purpose = 'REGISTRATION', code } = body;
+    const { action, identifier, purpose = 'REGISTRATION', code, name } = body;
 
     if (!identifier || !identifier.trim()) {
       return NextResponse.json({ success: false, error: 'Identifier (email or phone) is required.' }, { status: 400 });
     }
 
     const cleanIdentifier = identifier.trim().toLowerCase();
+    const isEmail = cleanIdentifier.includes('@');
 
     // 1. SEND / RESEND OTP ACTION
     if (action === 'send' || action === 'resend') {
@@ -45,15 +47,24 @@ export async function POST(req: Request) {
         },
       });
 
+      // Send email if identifier is an email address
+      let emailResult = null;
+      if (isEmail) {
+        emailResult = await sendOtpEmail(cleanIdentifier, newOtpCode, name || 'Companion Candidate');
+      }
+
       return NextResponse.json({
         success: true,
-        message: 'Verification OTP sent successfully.',
+        message: isEmail
+          ? `Verification OTP sent to ${cleanIdentifier}. Valid for 10 minutes.`
+          : `SMS Verification OTP sent to ${cleanIdentifier}. Valid for 10 minutes.`,
         data: {
           identifier: cleanIdentifier,
           purpose,
           resendInSeconds: 60,
           expiresAt,
-          demoOtpCode: newOtpCode, // For testing & mobile UI convenience
+          demoOtpCode: newOtpCode, // For testing & UI convenience
+          emailDelivery: emailResult,
         },
       });
     }
@@ -74,12 +85,12 @@ export async function POST(req: Request) {
       });
 
       if (!activeOtp) {
-        return NextResponse.json({ success: false, error: 'No active OTP request found. Please request a new code.' }, { status: 400 });
+        return NextResponse.json({ success: false, error: 'No active OTP request found. Please click Send OTP again.' }, { status: 400 });
       }
 
-      // Check Expiry
+      // Check 10-Minute Expiry
       if (new Date(activeOtp.expiresAt).getTime() < Date.now()) {
-        return NextResponse.json({ success: false, error: 'OTP code has expired. Please request a new code.' }, { status: 400 });
+        return NextResponse.json({ success: false, error: 'OTP code has expired after 10 minutes. Please request a new code.' }, { status: 400 });
       }
 
       // Check Max Attempts (Max 5 attempts)
@@ -110,40 +121,48 @@ export async function POST(req: Request) {
         data: { isUsed: true },
       });
 
-      // Update User Verification State in Database
-      const user = await prisma.user.findFirst({
-        where: {
-          OR: [
-            { email: cleanIdentifier },
-            { phone: cleanIdentifier },
-          ],
-        },
-      });
-
-      if (user) {
-        const isEmail = cleanIdentifier.includes('@');
-        await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            ...(isEmail ? { isEmailVerified: true } : { isPhoneVerified: true }),
-            status: 'ACTIVE',
-          } as any,
+      // Update User Verification State if user exists
+      try {
+        const user = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { email: cleanIdentifier },
+              { phone: cleanIdentifier },
+            ],
+          },
         });
+
+        if (user) {
+          if (isEmail) {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { isEmailVerified: true },
+            });
+          } else {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { isPhoneVerified: true },
+            });
+          }
+        }
+      } catch (e) {
+        // Non-blocking if user record doesn't exist yet during onboarding registration
       }
 
       return NextResponse.json({
         success: true,
-        message: 'OTP verified successfully. Account activated.',
+        message: 'OTP verified successfully!',
         data: {
-          isVerified: true,
-          status: 'ACTIVE',
+          identifier: cleanIdentifier,
+          verifiedAt: new Date().toISOString(),
         },
       });
     }
 
-    return NextResponse.json({ success: false, error: 'Invalid OTP action parameter.' }, { status: 400 });
+    return NextResponse.json({ success: false, error: 'Invalid action.' }, { status: 400 });
+
   } catch (error: any) {
-    console.error('OTP Controller Error:', error);
-    return NextResponse.json({ success: false, error: error.message || 'Internal OTP Controller Error' }, { status: 500 });
+    console.error('OTP API Error:', error);
+    return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
