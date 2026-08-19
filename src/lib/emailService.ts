@@ -2,14 +2,16 @@ import nodemailer from 'nodemailer';
 
 export interface SendOtpResult {
   sent: boolean;
-  method: 'smtp' | 'simulated';
+  method: 'smtp' | 'ethereal' | 'simulated';
+  previewUrl?: string;
   code?: string;
   error?: string;
 }
 
 /**
  * Sends a 6-digit OTP email to the candidate's email address.
- * Falls back gracefully to simulated mode if SMTP environment variables are not present.
+ * Uses real SMTP if credentials exist in process.env.
+ * Automatically falls back to Ethereal Test Account / Simulated Mode if SMTP is missing.
  */
 export async function sendOtpEmail(
   toEmail: string,
@@ -23,6 +25,7 @@ export async function sendOtpEmail(
     const smtpPass = process.env.SMTP_PASS;
     const smtpFrom = process.env.SMTP_FROM || smtpUser || 'noreply@sathi.io';
 
+    // 1. If SMTP credentials exist in .env, send via real SMTP
     if (smtpHost && smtpUser && smtpPass) {
       const transporter = nodemailer.createTransport({
         host: smtpHost,
@@ -61,13 +64,46 @@ export async function sendOtpEmail(
           </div>
         `,
       });
+      console.log(`[SMTP OTP SUCCESS] Real email sent to ${toEmail}`);
       return { sent: true, method: 'smtp' };
-    } else {
-      console.log(`[OTP EMAIL DISPATCH LOG] Recipient: ${toEmail} | OTP Code: ${otpCode} | Valid for 10 Minutes`);
+    }
+
+    // 2. Fallback to Ethereal Test Account if no SMTP settings in .env
+    try {
+      const testAccount = await nodemailer.createTestAccount();
+      const testTransporter = nodemailer.createTransport({
+        host: 'smtp.ethereal.email',
+        port: 587,
+        secure: false,
+        auth: {
+          user: testAccount.user,
+          pass: testAccount.pass,
+        },
+      });
+
+      const info = await testTransporter.sendMail({
+        from: `"Companion Connect (Test)" <${testAccount.user}>`,
+        to: toEmail,
+        subject: `Your Verification OTP: ${otpCode} - Companion Connect`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; background-color: #ffffff;">
+            <h2 style="color: #4f46e5; margin: 0; font-size: 24px;">Companion Connect</h2>
+            <p>Your 6-Digit OTP is: <strong style="font-size: 28px; color: #4f46e5; font-family: monospace;">${otpCode}</strong></p>
+            <p style="color: red;">Valid for 10 minutes.</p>
+          </div>
+        `,
+      });
+
+      const previewUrl = nodemailer.getTestMessageUrl(info) || undefined;
+      console.log(`[ETHEREAL TEST OTP] Sent to ${toEmail} | Code: ${otpCode} | Preview: ${previewUrl}`);
+      return { sent: true, method: 'ethereal', previewUrl, code: otpCode };
+    } catch (e) {
+      console.log(`[SIMULATED OTP DISPATCH] Sent to ${toEmail} | Code: ${otpCode}`);
       return { sent: true, method: 'simulated', code: otpCode };
     }
+
   } catch (error) {
-    console.error('Failed to send OTP email via SMTP:', error);
+    console.error('Failed to send OTP email:', error);
     return { sent: false, method: 'simulated', error: (error as Error).message, code: otpCode };
   }
 }

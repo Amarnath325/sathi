@@ -122,8 +122,9 @@ export default function CompanionOnboardingWizard() {
       if (data.success) {
         setOtpTarget(target);
         setOtpTargetValue(value.trim());
-        // Show demo OTP only for mobile phone target; Email OTP must be fetched from email inbox
-        setOtpDemoCode(target === 'phone' ? (data.data?.demoOtpCode || '') : '');
+        // Show demo OTP for mobile, or as testing fallback if SMTP is not configured in .env
+        const isSmtpLive = data.data?.isSmtpConfigured;
+        setOtpDemoCode(target === 'phone' || !isSmtpLive ? (data.data?.demoOtpCode || '') : '');
         setOtpCodeDigits(['', '', '', '', '', '']);
         setOtpTimerSeconds(600); // 10 minutes
         setOtpResendCooldown(60);
@@ -149,6 +150,7 @@ export default function CompanionOnboardingWizard() {
     }
     if (otpTimerSeconds === 0) {
       setOtpError('OTP has expired after 10 minutes. Please click Resend OTP to request a new code.');
+      setOtpCodeDigits(['', '', '', '', '', '']);
       return;
     }
 
@@ -176,9 +178,19 @@ export default function CompanionOnboardingWizard() {
         showToast('success', 'Verified Successfully! ✓', `${otpTarget === 'email' ? 'Email address' : 'Mobile number'} has been verified.`);
       } else {
         setOtpError(data.error || 'Invalid OTP code.');
+        // BLANK OUT OTP FIELD ON INVALID OTP
+        setOtpCodeDigits(['', '', '', '', '', '']);
+        setTimeout(() => {
+          document.getElementById('otp-input-0')?.focus();
+        }, 50);
       }
     } catch (err: any) {
       setOtpError(err.message || 'Verification failed.');
+      // BLANK OUT OTP FIELD ON FAILURE
+      setOtpCodeDigits(['', '', '', '', '', '']);
+      setTimeout(() => {
+        document.getElementById('otp-input-0')?.focus();
+      }, 50);
     } finally {
       setIsVerifyingOtp(false);
     }

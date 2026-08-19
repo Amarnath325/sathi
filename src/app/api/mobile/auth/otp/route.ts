@@ -56,15 +56,18 @@ export async function POST(req: Request) {
       return NextResponse.json({
         success: true,
         message: isEmail
-          ? `Verification OTP sent to ${cleanIdentifier}. Valid for 10 minutes.`
+          ? (emailResult?.method === 'smtp'
+              ? `Verification OTP sent to ${cleanIdentifier}. Please check your email inbox.`
+              : `Verification OTP sent to ${cleanIdentifier}. Valid for 10 minutes.`)
           : `SMS Verification OTP sent to ${cleanIdentifier}. Valid for 10 minutes.`,
         data: {
           identifier: cleanIdentifier,
           purpose,
           resendInSeconds: 60,
           expiresAt,
-          demoOtpCode: newOtpCode, // For testing & UI convenience
+          demoOtpCode: newOtpCode,
           emailDelivery: emailResult,
+          isSmtpConfigured: emailResult?.method === 'smtp',
         },
       });
     }
