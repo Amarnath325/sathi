@@ -544,12 +544,7 @@ export default function CompanionOnboardingWizard() {
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Email Address *</label>
-                    {isEmailVerified ? (
-                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-mono font-extrabold flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                        Verified ✓
-                      </span>
-                    ) : (
+                    {!isEmailVerified && (
                       <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 font-bold">Not verified</span>
                     )}
                   </div>
@@ -593,12 +588,7 @@ export default function CompanionOnboardingWizard() {
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Mobile Number *</label>
-                    {isPhoneVerified ? (
-                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-mono font-extrabold flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                        Verified ✓
-                      </span>
-                    ) : (
+                    {!isPhoneVerified && (
                       <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 font-bold">Not verified</span>
                     )}
                   </div>
