@@ -54,7 +54,7 @@ export function RulesTab() {
     setRuleDescription(rule.description);
     setRuleCondition(rule.condition);
     setRuleOperator(rule.operator);
-    setRuleValue(rule.value);
+    setRuleValue(typeof rule.value === 'boolean' ? String(rule.value) : rule.value);
     setRuleAction(rule.action);
     setRuleSeverity(rule.severity);
     setIsModalOpen(true);
@@ -85,7 +85,6 @@ export function RulesTab() {
         value: ruleValue,
         action: ruleAction,
         severity: ruleSeverity,
-        status: 'ACTIVE'
       });
     }
 

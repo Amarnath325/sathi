@@ -421,7 +421,6 @@ export const useServiceHubStore = create<ServiceHubStore>()(
         }));
         get().addAuditLog('Rules', profileId, 'DELETE_RULE', { ruleId }, null);
       },
-      },
 
       addPolicy: (pol) => {
         const newPol: PolicyItem = {
