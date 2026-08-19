@@ -3,27 +3,27 @@
 import React, { useState } from 'react';
 import { useServiceHubStore } from '@/lib/serviceHubStore';
 import { RulesEngine } from '@/lib/serviceHubEngines';
-import { Sliders, Plus, AlertCircle, AlertTriangle, CheckCircle2, Play, Search, Calendar, MapPin, Shield, X, Edit2 } from 'lucide-react';
-import { RuleItem } from '@/lib/types/serviceHub';
+import { Sliders, Plus, AlertCircle, AlertTriangle, CheckCircle2, Play, Search, Calendar, MapPin, Shield, Edit2, Trash2, X } from 'lucide-react';
+import { RuleItem, RuleType, RuleOperator, RuleAction, RuleSeverity } from '@/lib/types/serviceHub';
 
 export function RulesTab() {
-  const { rulesProfiles, addRuleToProfile, updateRuleInProfile } = useServiceHubStore();
+  const { rulesProfiles, addRuleToProfile, updateRuleInProfile, deleteRuleFromProfile } = useServiceHubStore();
 
   const [testDuration, setTestDuration] = useState(10);
   const [testLiveLocation, setTestLiveLocation] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Add/Edit Rule Modal State
+  // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<RuleItem | null>(null);
-
   const [ruleName, setRuleName] = useState('');
-  const [description, setDescription] = useState('');
-  const [ruleType, setRuleType] = useState<'Duration Rule' | 'Location Rule' | 'Safety Rule'>('Duration Rule');
-  const [condition, setCondition] = useState('duration_hours');
-  const [operator, setOperator] = useState('GREATER_THAN');
-  const [value, setValue] = useState('8');
-  const [action, setAction] = useState<'REQUIRE_APPROVAL' | 'BLOCK' | 'WARN'>('REQUIRE_APPROVAL');
+  const [ruleType, setRuleType] = useState<RuleType>('Duration Rule');
+  const [ruleDescription, setRuleDescription] = useState('');
+  const [ruleCondition, setRuleCondition] = useState('duration_hours');
+  const [ruleOperator, setRuleOperator] = useState<RuleOperator>('GREATER_THAN');
+  const [ruleValue, setRuleValue] = useState<string | number>('8');
+  const [ruleAction, setRuleAction] = useState<RuleAction>('REQUIRE_APPROVAL');
+  const [ruleSeverity, setRuleSeverity] = useState<RuleSeverity>('MEDIUM');
 
   const activeProfile = rulesProfiles[0];
   const filteredRules = (activeProfile?.rules || []).filter(rule =>
@@ -34,70 +34,75 @@ export function RulesTab() {
   const eval1 = activeProfile?.rules[0] ? RulesEngine.evaluateRule(activeProfile.rules[0], { duration_hours: testDuration }) : null;
   const eval2 = activeProfile?.rules[1] ? RulesEngine.evaluateRule(activeProfile.rules[1], { live_location_enabled: testLiveLocation }) : null;
 
-  const handleOpenCreate = () => {
+  const handleOpenAddModal = () => {
     setEditingRule(null);
     setRuleName('');
-    setDescription('');
     setRuleType('Duration Rule');
-    setCondition('duration_hours');
-    setOperator('GREATER_THAN');
-    setValue('8');
-    setAction('REQUIRE_APPROVAL');
+    setRuleDescription('');
+    setRuleCondition('duration_hours');
+    setRuleOperator('GREATER_THAN');
+    setRuleValue('8');
+    setRuleAction('REQUIRE_APPROVAL');
+    setRuleSeverity('MEDIUM');
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (rule: RuleItem, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleOpenEditModal = (rule: RuleItem) => {
     setEditingRule(rule);
     setRuleName(rule.name);
-    setDescription(rule.description);
-    setRuleType(rule.rule_type as any);
-    setCondition(rule.condition);
-    setOperator(rule.operator);
-    setValue(String(rule.value));
-    setAction(rule.action as any);
+    setRuleType(rule.rule_type);
+    setRuleDescription(rule.description);
+    setRuleCondition(rule.condition);
+    setRuleOperator(rule.operator);
+    setRuleValue(rule.value);
+    setRuleAction(rule.action);
+    setRuleSeverity(rule.severity);
     setIsModalOpen(true);
   };
 
   const handleSaveRule = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!ruleName.trim() || !activeProfile) return;
-
-    const parsedVal = isNaN(Number(value)) ? value : Number(value);
+    if (!ruleName || !activeProfile) return;
 
     if (editingRule) {
       updateRuleInProfile(activeProfile.id, editingRule.id, {
-        name: ruleName.trim(),
-        rule_type: ruleType as any,
-        condition,
-        operator: operator as any,
-        value: parsedVal,
-        action: action as any,
-        severity: action === 'BLOCK' ? 'HIGH' : 'MEDIUM',
-        description: description.trim()
+        name: ruleName,
+        rule_type: ruleType,
+        description: ruleDescription,
+        condition: ruleCondition,
+        operator: ruleOperator,
+        value: ruleValue,
+        action: ruleAction,
+        severity: ruleSeverity,
       });
     } else {
-      const newRule: RuleItem = {
-        id: `rule-${Date.now()}`,
-        name: ruleName.trim(),
-        rule_type: ruleType as any,
-        condition,
-        operator: operator as any,
-        value: parsedVal,
-        action: action as any,
-        severity: action === 'BLOCK' ? 'HIGH' : 'MEDIUM',
-        description: description.trim() || 'Custom validation rule.',
+      addRuleToProfile(activeProfile.id, {
+        name: ruleName,
+        rule_type: ruleType,
+        description: ruleDescription,
+        condition: ruleCondition,
+        operator: ruleOperator,
+        value: ruleValue,
+        action: ruleAction,
+        severity: ruleSeverity,
         status: 'ACTIVE'
-      };
-      addRuleToProfile(activeProfile.id, newRule);
+      });
     }
+
     setIsModalOpen(false);
   };
 
+  const handleDeleteRule = (ruleId: string) => {
+    if (!activeProfile) return;
+    if (confirm('Are you sure you want to delete this rule?')) {
+      deleteRuleFromProfile(activeProfile.id, ruleId);
+    }
+  };
+
   return (
-    <div className="space-y-4 sm:space-y-5">
-      {/* Search & Action Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+    <div className="space-y-5">
+      {/* Top Search & Actions Bar */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="relative flex-1 w-full">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
@@ -110,10 +115,10 @@ export function RulesTab() {
         </div>
 
         <button
-          onClick={handleOpenCreate}
-          className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm shadow-purple-200 flex items-center justify-center gap-1.5 transition-all shrink-0"
+          onClick={handleOpenAddModal}
+          className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm shadow-purple-200 flex items-center gap-1.5 shrink-0 transition-all"
         >
-          <Plus className="w-4 h-4" /> Add Rule
+          <Plus className="w-4 h-4" /> Create New Rule
         </button>
       </div>
 
@@ -131,7 +136,7 @@ export function RulesTab() {
             const isLocation = rule.rule_type === 'Location Rule' || rule.name.toLowerCase().includes('location') || rule.name.toLowerCase().includes('gps');
 
             return (
-              <div key={rule.id} className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs hover:shadow-md transition-all space-y-3.5">
+              <div key={rule.id} className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs hover:shadow-md transition-all space-y-3.5 relative group">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center shrink-0">
@@ -148,28 +153,45 @@ export function RulesTab() {
                       <p className="text-xs text-slate-500 font-medium mt-0.5">{rule.description}</p>
                     </div>
                   </div>
+
                   <div className="flex items-center gap-2">
                     <span className="px-3 py-1 rounded-lg bg-purple-50 text-purple-700 border border-purple-100 text-xs font-bold shrink-0">
-                      {isDuration ? 'Duration Rule' : isLocation ? 'Location Rule' : rule.rule_type}
+                      {rule.rule_type}
                     </span>
                     <button
-                      onClick={(e) => handleOpenEdit(rule, e)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-slate-100 transition-colors"
+                      onClick={() => handleOpenEditModal(rule)}
+                      className="p-1.5 rounded-lg bg-slate-100 hover:bg-purple-100 text-slate-600 hover:text-purple-700 transition-colors"
                       title="Edit Rule"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteRule(rule.id)}
+                      className="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-600 transition-colors"
+                      title="Delete Rule"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
 
                 {/* IF ... THEN ... logic box */}
-                <div className="p-3.5 rounded-xl bg-slate-50/80 border border-slate-200/80 font-mono text-xs text-slate-800 tracking-wide">
-                  <span className="font-bold text-slate-900">IF </span>
-                  <span className="font-bold text-slate-800">{rule.condition} </span>
-                  <span className="font-bold text-slate-800">{rule.operator} </span>
-                  <span className="font-bold text-slate-900">{String(rule.value)} </span>
-                  <span className="font-bold text-slate-900">THEN </span>
-                  <span className="font-extrabold text-rose-600 tracking-wider">{rule.action}</span>
+                <div className="p-3.5 rounded-xl bg-slate-50/80 border border-slate-200/80 font-mono text-xs text-slate-800 tracking-wide flex items-center justify-between flex-wrap gap-2">
+                  <div>
+                    <span className="font-bold text-slate-900">IF </span>
+                    <span className="font-bold text-slate-800">{rule.condition} </span>
+                    <span className="font-bold text-slate-800">{rule.operator} </span>
+                    <span className="font-bold text-slate-900">{String(rule.value)} </span>
+                    <span className="font-bold text-slate-900">THEN </span>
+                    <span className="font-extrabold text-rose-600 tracking-wider">{rule.action}</span>
+                  </div>
+                  <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded ${
+                    rule.severity === 'CRITICAL' ? 'bg-purple-100 text-purple-700' :
+                    rule.severity === 'HIGH' ? 'bg-rose-100 text-rose-700' :
+                    rule.severity === 'MEDIUM' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                  }`}>
+                    {rule.severity}
+                  </span>
                 </div>
               </div>
             );
@@ -255,75 +277,136 @@ export function RulesTab() {
         </div>
       </div>
 
-      {/* Add / Edit Rule Modal */}
+      {/* CRUD Add/Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-5 sm:p-6 space-y-4 shadow-2xl my-auto text-xs">
-            <div className="flex items-center justify-between">
-              <h4 className="font-extrabold text-white text-base">
-                {editingRule ? `Edit Rule: ${editingRule.name}` : 'Add New Operational Rule'}
-              </h4>
-              <button onClick={() => setIsModalOpen(false)} className="p-1 rounded-lg text-slate-400 hover:text-white">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 max-w-lg w-full p-6 space-y-4 shadow-2xl animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-base font-extrabold text-slate-900">
+                {editingRule ? 'Edit Rule' : 'Create New Rule'}
+              </h3>
+              <button onClick={() => setIsModalOpen(false)} className="p-1 rounded-lg text-slate-400 hover:text-slate-600">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleSaveRule} className="space-y-3 text-xs">
+
+            <form onSubmit={handleSaveRule} className="space-y-4 text-xs">
               <div>
-                <label className="block text-slate-400 font-bold mb-1">Rule Name *</label>
-                <input type="text" required value={ruleName} onChange={e => setRuleName(e.target.value)} placeholder="e.g. Max Booking Limit per Companion"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white outline-none focus:border-indigo-500 transition-colors text-xs" />
+                <label className="block text-slate-700 font-bold mb-1">Rule Name</label>
+                <input
+                  type="text"
+                  required
+                  value={ruleName}
+                  onChange={e => setRuleName(e.target.value)}
+                  placeholder="e.g. Max Duration Limit"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-900 outline-none focus:border-purple-500"
+                />
               </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-400 font-bold mb-1">Rule Type</label>
-                  <select value={ruleType} onChange={e => setRuleType(e.target.value as any)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white outline-none focus:border-indigo-500 text-xs">
+                  <label className="block text-slate-700 font-bold mb-1">Rule Type</label>
+                  <select
+                    value={ruleType}
+                    onChange={e => setRuleType(e.target.value as RuleType)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-900 outline-none focus:border-purple-500"
+                  >
                     <option value="Duration Rule">Duration Rule</option>
                     <option value="Location Rule">Location Rule</option>
+                    <option value="Age Rule">Age Rule</option>
                     <option value="Safety Rule">Safety Rule</option>
+                    <option value="Booking Rule">Booking Rule</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-slate-400 font-bold mb-1">Operator</label>
-                  <select value={operator} onChange={e => setOperator(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white outline-none focus:border-indigo-500 text-xs">
+                  <label className="block text-slate-700 font-bold mb-1">Severity</label>
+                  <select
+                    value={ruleSeverity}
+                    onChange={e => setRuleSeverity(e.target.value as RuleSeverity)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-900 outline-none focus:border-purple-500"
+                  >
+                    <option value="LOW">LOW</option>
+                    <option value="MEDIUM">MEDIUM</option>
+                    <option value="HIGH">HIGH</option>
+                    <option value="CRITICAL">CRITICAL</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Description</label>
+                <textarea
+                  value={ruleDescription}
+                  onChange={e => setRuleDescription(e.target.value)}
+                  placeholder="Describe when this rule triggers..."
+                  rows={2}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-900 outline-none focus:border-purple-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Condition</label>
+                  <input
+                    type="text"
+                    value={ruleCondition}
+                    onChange={e => setRuleCondition(e.target.value)}
+                    placeholder="e.g. duration_hours"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-900 outline-none focus:border-purple-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Operator</label>
+                  <select
+                    value={ruleOperator}
+                    onChange={e => setRuleOperator(e.target.value as RuleOperator)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-900 outline-none focus:border-purple-500"
+                  >
                     <option value="GREATER_THAN">GREATER_THAN</option>
                     <option value="LESS_THAN">LESS_THAN</option>
                     <option value="EQUALS">EQUALS</option>
-                    <option value="CONTAINS">CONTAINS</option>
+                    <option value="NOT_EQUALS">NOT_EQUALS</option>
                   </select>
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-400 font-bold mb-1">Condition Key</label>
-                  <input type="text" value={condition} onChange={e => setCondition(e.target.value)} placeholder="e.g. duration_hours"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white outline-none focus:border-indigo-500 text-xs" />
-                </div>
-                <div>
-                  <label className="block text-slate-400 font-bold mb-1">Value</label>
-                  <input type="text" value={value} onChange={e => setValue(e.target.value)} placeholder="8"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white outline-none focus:border-indigo-500 text-xs" />
+                  <label className="block text-slate-700 font-bold mb-1">Value</label>
+                  <input
+                    type="text"
+                    value={String(ruleValue)}
+                    onChange={e => setRuleValue(e.target.value)}
+                    placeholder="e.g. 8"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-900 outline-none focus:border-purple-500"
+                  />
                 </div>
               </div>
+
               <div>
-                <label className="block text-slate-400 font-bold mb-1">Action Triggered</label>
-                <select value={action} onChange={e => setAction(e.target.value as any)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white outline-none focus:border-indigo-500 text-xs">
+                <label className="block text-slate-700 font-bold mb-1">Action when Triggered</label>
+                <select
+                  value={ruleAction}
+                  onChange={e => setRuleAction(e.target.value as RuleAction)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-900 outline-none focus:border-purple-500"
+                >
                   <option value="REQUIRE_APPROVAL">REQUIRE_APPROVAL</option>
                   <option value="BLOCK">BLOCK</option>
-                  <option value="WARN">WARN</option>
+                  <option value="WARNING">WARNING</option>
+                  <option value="REQUIRE_VERIFICATION">REQUIRE_VERIFICATION</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-slate-400 font-bold mb-1">Description</label>
-                <textarea rows={2} value={description} onChange={e => setDescription(e.target.value)} placeholder="Rule description..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white outline-none focus:border-indigo-500 resize-none text-xs" />
-              </div>
-              <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-1.5 rounded-xl bg-slate-800 text-slate-300 font-bold">Cancel</button>
-                <button type="submit" className="px-5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold">
-                  {editingRule ? 'Save Changes' : 'Add Rule'}
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold shadow-sm shadow-purple-200"
+                >
+                  {editingRule ? 'Update Rule' : 'Create Rule'}
                 </button>
               </div>
             </form>
