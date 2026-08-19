@@ -385,3 +385,28 @@ html.light ::-webkit-scrollbar-thumb {
 html.light ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* Primary Outline Button Utility Class */
+.btn-primary-outline {
+  background-color: transparent !important;
+  border: 2px solid #6366f1 !important;
+  color: #6366f1 !important;
+  font-weight: 700 !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.btn-primary-outline:hover {
+  background-color: #6366f1 !important;
+  color: #ffffff !important;
+}
+
+html.dark .btn-primary-outline {
+  color: #818cf8 !important;
+  border-color: #6366f1 !important;
+}
+
+html.dark .btn-primary-outline:hover {
+  background-color: #6366f1 !important;
+  color: #ffffff !important;
+}
+

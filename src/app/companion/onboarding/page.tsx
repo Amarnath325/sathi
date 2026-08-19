@@ -122,7 +122,8 @@ export default function CompanionOnboardingWizard() {
       if (data.success) {
         setOtpTarget(target);
         setOtpTargetValue(value.trim());
-        setOtpDemoCode(data.data?.demoOtpCode || '');
+        // Show demo OTP only for mobile phone target; Email OTP must be fetched from email inbox
+        setOtpDemoCode(target === 'phone' ? (data.data?.demoOtpCode || '') : '');
         setOtpCodeDigits(['', '', '', '', '', '']);
         setOtpTimerSeconds(600); // 10 minutes
         setOtpResendCooldown(60);
@@ -572,7 +573,7 @@ export default function CompanionOnboardingWizard() {
                         type="button" 
                         onClick={() => handleSendOtp('email')}
                         disabled={isSendingOtp}
-                        className="px-3.5 py-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 text-xs font-bold hover:bg-indigo-600 hover:text-white transition-all shrink-0 flex items-center gap-1.5 disabled:opacity-50"
+                        className="btn-primary-outline px-3.5 py-2.5 rounded-2xl text-xs font-bold shrink-0 flex items-center gap-1.5 disabled:opacity-50"
                       >
                         {isSendingOtp && otpTarget === 'email' ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -616,7 +617,7 @@ export default function CompanionOnboardingWizard() {
                         type="button"
                         onClick={() => handleSendOtp('phone')}
                         disabled={isSendingOtp}
-                        className="px-3.5 py-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 text-xs font-bold hover:bg-indigo-600 hover:text-white transition-all shrink-0 flex items-center gap-1.5 disabled:opacity-50"
+                        className="btn-primary-outline px-3.5 py-2.5 rounded-2xl text-xs font-bold shrink-0 flex items-center gap-1.5 disabled:opacity-50"
                       >
                         {isSendingOtp && otpTarget === 'phone' ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1791,18 +1792,18 @@ export default function CompanionOnboardingWizard() {
                 ))}
               </div>
 
-              {/* Demo OTP Helper Tag */}
-              {otpDemoCode && (
+              {/* Demo Mobile OTP Helper Tag (Only rendered for Mobile OTP) */}
+              {otpTarget === 'phone' && otpDemoCode && (
                 <div 
                   onClick={() => {
                     const digits = otpDemoCode.split('');
                     setOtpCodeDigits(digits);
                   }}
                   className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800/80 text-[11px] text-slate-400 flex items-center justify-between cursor-pointer hover:border-indigo-500/50 transition-all"
-                  title="Click to auto-fill demo OTP code"
+                  title="Click to auto-fill demo Mobile OTP code"
                 >
                   <span className="flex items-center gap-1.5 text-slate-300 font-medium">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Demo OTP Code:
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Demo Mobile OTP Code:
                   </span>
                   <span className="font-mono font-bold text-amber-400 tracking-widest">{otpDemoCode}</span>
                 </div>
