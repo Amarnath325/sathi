@@ -3,7 +3,8 @@
 import React, { useState, useMemo } from 'react';
 import { useServiceHubStore } from '@/lib/serviceHubStore';
 import { RiskEngine } from '@/lib/serviceHubEngines';
-import { Shield, ShieldAlert, AlertCircle, CheckCircle2, Search } from 'lucide-react';
+import { Shield, ShieldAlert, AlertCircle, CheckCircle2, Search, Plus, Edit2, Trash2, X } from 'lucide-react';
+import { RiskLevelItem, RiskLevelCode, VerificationLevel } from '@/lib/types/serviceHub';
 
 const RISK_CARD_STYLES: Record<string, { card: string; badge: string; text: string; bgBadge: string }> = {
   LOW: {
@@ -33,12 +34,28 @@ const RISK_CARD_STYLES: Record<string, { card: string; badge: string; text: stri
 };
 
 export function RiskLevelsTab() {
-  const { riskLevels, categories } = useServiceHubStore();
+  const { riskLevels, categories, addRiskLevel, updateRiskLevel, deleteRiskLevel } = useServiceHubStore();
   const [simServiceRisk, setSimServiceRisk] = useState('MEDIUM');
   const [simDuration, setSimDuration] = useState(9);
   const [simNight, setSimNight] = useState(true);
   const [simCompVerified, setSimCompVerified] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // CRUD Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingRisk, setEditingRisk] = useState<RiskLevelItem | null>(null);
+
+  const [name, setName] = useState('');
+  const [code, setCode] = useState<RiskLevelCode>('MEDIUM');
+  const [score, setScore] = useState(50);
+  const [description, setDescription] = useState('');
+  const [verificationLevel, setVerificationLevel] = useState<VerificationLevel>('Standard');
+  const [monitoringLevel, setMonitoringLevel] = useState('Standard Periodic Check');
+  const [maxDuration, setMaxDuration] = useState(8);
+  const [manualApprovalRequired, setManualApprovalRequired] = useState(false);
+  const [liveLocationRequired, setLiveLocationRequired] = useState(true);
+  const [emergencyContactRequired, setEmergencyContactRequired] = useState(true);
+  const [sosRequired, setSosRequired] = useState(true);
 
   const filteredRiskLevels = useMemo(() =>
     riskLevels.filter(rk => !searchTerm || rk.name.toLowerCase().includes(searchTerm.toLowerCase()) || rk.description.toLowerCase().includes(searchTerm.toLowerCase())),
@@ -56,6 +73,84 @@ export function RiskLevelsTab() {
   const requiresManualApproval = calc.level === 'CRITICAL' || calc.level === 'HIGH';
   const requiresLiveLocation = calc.level !== 'LOW';
   const verificationRequired = calc.level === 'CRITICAL' || calc.level === 'HIGH' ? 'Advanced KYC & Background Check' : 'Basic KYC';
+
+  const handleOpenAddModal = () => {
+    setEditingRisk(null);
+    setName('');
+    setCode('MEDIUM');
+    setScore(50);
+    setDescription('');
+    setVerificationLevel('Standard');
+    setMonitoringLevel('Standard Periodic Check');
+    setMaxDuration(8);
+    setManualApprovalRequired(false);
+    setLiveLocationRequired(true);
+    setEmergencyContactRequired(true);
+    setSosRequired(true);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditModal = (rk: RiskLevelItem) => {
+    setEditingRisk(rk);
+    setName(rk.name);
+    setCode(rk.code);
+    setScore(rk.score);
+    setDescription(rk.description);
+    setVerificationLevel(rk.verification_level);
+    setMonitoringLevel(rk.monitoring_level || 'Standard Periodic Check');
+    setMaxDuration(rk.maximum_booking_duration);
+    setManualApprovalRequired(rk.manual_approval_required);
+    setLiveLocationRequired(rk.live_location_required);
+    setEmergencyContactRequired(rk.emergency_contact_required);
+    setSosRequired(rk.sos_required);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveRiskLevel = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name) return;
+
+    if (editingRisk) {
+      updateRiskLevel(editingRisk.id, {
+        name,
+        code,
+        score: Number(score),
+        description,
+        color: code === 'LOW' ? '#10b981' : code === 'MEDIUM' ? '#f59e0b' : code === 'HIGH' ? '#f43f5e' : '#a855f7',
+        verification_level: verificationLevel,
+        monitoring_level: monitoringLevel,
+        maximum_booking_duration: Number(maxDuration),
+        manual_approval_required: manualApprovalRequired,
+        live_location_required: liveLocationRequired,
+        emergency_contact_required: emergencyContactRequired,
+        sos_required: sosRequired,
+      });
+    } else {
+      addRiskLevel({
+        name,
+        code,
+        score: Number(score),
+        description,
+        color: code === 'LOW' ? '#10b981' : code === 'MEDIUM' ? '#f59e0b' : code === 'HIGH' ? '#f43f5e' : '#a855f7',
+        verification_level: verificationLevel,
+        monitoring_level: monitoringLevel,
+        maximum_booking_duration: Number(maxDuration),
+        manual_approval_required: manualApprovalRequired,
+        live_location_required: liveLocationRequired,
+        emergency_contact_required: emergencyContactRequired,
+        sos_required: sosRequired,
+        status: 'ACTIVE'
+      });
+    }
+
+    setIsModalOpen(false);
+  };
+
+  const handleDeleteRiskLevel = (id: string) => {
+    if (confirm('Are you sure you want to delete this risk level profile?')) {
+      deleteRiskLevel(id);
+    }
+  };
 
   return (
     <div className="space-y-3 w-full">
@@ -79,6 +174,12 @@ export function RiskLevelsTab() {
             <h4 className="font-extrabold text-slate-900 text-xs">
               Configured Risk Profiles <span className="text-slate-500 font-normal text-[10px]">({filteredRiskLevels.length})</span>
             </h4>
+            <button
+              onClick={handleOpenAddModal}
+              className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm shadow-purple-200 flex items-center gap-1.5 transition-all"
+            >
+              <Plus className="w-4 h-4" /> Add Risk Profile
+            </button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -207,6 +308,155 @@ export function RiskLevelsTab() {
         </div>
 
       </div>
+
+      {/* CRUD Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 max-w-lg w-full p-6 space-y-4 shadow-2xl animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-base font-extrabold text-slate-900">
+                {editingRisk ? 'Edit Risk Profile' : 'Create Risk Profile'}
+              </h3>
+              <button onClick={() => setIsModalOpen(false)} className="p-1 rounded-lg text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveRiskLevel} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Profile Name</label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  placeholder="e.g. High Risk Event Service"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-900 outline-none focus:border-purple-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Risk Code</label>
+                  <select
+                    value={code}
+                    onChange={e => setCode(e.target.value as RiskLevelCode)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-900 outline-none focus:border-purple-500"
+                  >
+                    <option value="LOW">LOW</option>
+                    <option value="MEDIUM">MEDIUM</option>
+                    <option value="HIGH">HIGH</option>
+                    <option value="CRITICAL">CRITICAL</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Score</label>
+                  <input
+                    type="number"
+                    value={score}
+                    onChange={e => setScore(Number(e.target.value))}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-900 outline-none focus:border-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Max Duration (hrs)</label>
+                  <input
+                    type="number"
+                    value={maxDuration}
+                    onChange={e => setMaxDuration(Number(e.target.value))}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-900 outline-none focus:border-purple-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Description</label>
+                <textarea
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  rows={2}
+                  placeholder="Describe risk requirements and monitoring controls..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-900 outline-none focus:border-purple-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Verification Level</label>
+                  <select
+                    value={verificationLevel}
+                    onChange={e => setVerificationLevel(e.target.value as VerificationLevel)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-900 outline-none focus:border-purple-500"
+                  >
+                    <option value="Basic">Basic</option>
+                    <option value="Standard">Standard</option>
+                    <option value="Enhanced">Enhanced</option>
+                    <option value="Restricted">Restricted</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Monitoring Level</label>
+                  <input
+                    type="text"
+                    value={monitoringLevel}
+                    onChange={e => setMonitoringLevel(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-900 outline-none focus:border-purple-500"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={manualApprovalRequired}
+                    onChange={e => setManualApprovalRequired(e.target.checked)}
+                    className="accent-purple-600 rounded"
+                  />
+                  <span className="font-bold text-slate-700">Require Manual Admin Approval</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={liveLocationRequired}
+                    onChange={e => setLiveLocationRequired(e.target.checked)}
+                    className="accent-purple-600 rounded"
+                  />
+                  <span className="font-bold text-slate-700">Require Live GPS Location Streaming</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={sosRequired}
+                    onChange={e => setSosRequired(e.target.checked)}
+                    className="accent-purple-600 rounded"
+                  />
+                  <span className="font-bold text-slate-700">Enable Panic SOS Dispatch</span>
+                </label>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold shadow-sm shadow-purple-200"
+                >
+                  {editingRisk ? 'Update Risk Profile' : 'Save Risk Profile'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -3,12 +3,28 @@
 import React, { useState } from 'react';
 import { useServiceHubStore } from '@/lib/serviceHubStore';
 import { CompanionEligibilityEvaluator } from '@/lib/serviceHubEngines';
-import { UserCheck, CheckCircle2, AlertTriangle, Star, Shield, FileCheck, Check, X } from 'lucide-react';
+import { UserCheck, CheckCircle2, AlertTriangle, Star, Shield, FileCheck, Check, X, Plus, Edit2, Trash2 } from 'lucide-react';
+import { EligibilityProfileItem } from '@/lib/types/serviceHub';
+
+const ALL_DOC_OPTIONS = [
+  'GOVERNMENT_ID',
+  'SELFIE_LIVE',
+  'EMERGENCY_CONTACT',
+  'BACKGROUND_CHECK',
+  'ADDRESS_PROOF',
+  'MEDICAL_FITNESS_CERTIFICATE'
+];
 
 export function EligibilityTab() {
-  const { eligibilityProfiles } = useServiceHubStore();
+  const {
+    eligibilityProfiles,
+    addEligibilityProfile,
+    updateEligibilityProfile,
+    deleteEligibilityProfile
+  } = useServiceHubStore();
+
   const [selectedProfileId, setSelectedProfileId] = useState(eligibilityProfiles[0]?.id || '');
-  const profile = eligibilityProfiles.find(p => p.id === selectedProfileId) || eligibilityProfiles[0];
+  const activeProfile = eligibilityProfiles.find(p => p.id === selectedProfileId) || eligibilityProfiles[0];
 
   // Companion Simulator State
   const [compAge, setCompAge] = useState(24);
@@ -18,7 +34,23 @@ export function EligibilityTab() {
   const [hasEmergency, setHasEmergency] = useState(true);
   const [isSuspended, setIsSuspended] = useState(false);
 
-  const result = profile ? CompanionEligibilityEvaluator.evaluate({
+  // CRUD Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingProfile, setEditingProfile] = useState<EligibilityProfileItem | null>(null);
+
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [minimumAge, setMinimumAge] = useState(18);
+  const [maximumAge, setMaximumAge] = useState(45);
+  const [minimumRating, setMinimumRating] = useState(4.0);
+  const [minimumBookingsDone, setMinimumBookingsDone] = useState(5);
+  const [requiredDocuments, setRequiredDocuments] = useState<string[]>([
+    'GOVERNMENT_ID',
+    'SELFIE_LIVE',
+    'EMERGENCY_CONTACT'
+  ]);
+
+  const result = activeProfile ? CompanionEligibilityEvaluator.evaluate({
     id: 'companion-demo-101',
     age: compAge,
     ratingAvg: compRating,
@@ -29,7 +61,78 @@ export function EligibilityTab() {
       SELFIE_LIVE: hasSelfie,
       EMERGENCY_CONTACT: hasEmergency
     }
-  }, profile) : null;
+  }, activeProfile) : null;
+
+  const handleOpenAddModal = () => {
+    setEditingProfile(null);
+    setName('');
+    setDescription('');
+    setMinimumAge(18);
+    setMaximumAge(45);
+    setMinimumRating(4.0);
+    setMinimumBookingsDone(5);
+    setRequiredDocuments(['GOVERNMENT_ID', 'SELFIE_LIVE', 'EMERGENCY_CONTACT']);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditModal = (prof: EligibilityProfileItem) => {
+    setEditingProfile(prof);
+    setName(prof.name);
+    setDescription(prof.description);
+    setMinimumAge(prof.minimum_age);
+    setMaximumAge(prof.maximum_age);
+    setMinimumRating(prof.minimum_rating);
+    setMinimumBookingsDone(prof.minimum_bookings_done);
+    setRequiredDocuments([...prof.required_documents]);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteProfile = (id: string) => {
+    if (confirm('Are you sure you want to delete this service eligibility profile?')) {
+      deleteEligibilityProfile(id);
+      if (selectedProfileId === id && eligibilityProfiles.length > 1) {
+        const remaining = eligibilityProfiles.filter(p => p.id !== id);
+        setSelectedProfileId(remaining[0]?.id || '');
+      }
+    }
+  };
+
+  const handleSaveProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name) return;
+
+    if (editingProfile) {
+      updateEligibilityProfile(editingProfile.id, {
+        name,
+        description,
+        minimum_age: Number(minimumAge),
+        maximum_age: Number(maximumAge),
+        minimum_rating: Number(minimumRating),
+        minimum_bookings_done: Number(minimumBookingsDone),
+        required_documents: requiredDocuments,
+      });
+    } else {
+      const newProf = addEligibilityProfile({
+        name,
+        description,
+        minimum_age: Number(minimumAge),
+        maximum_age: Number(maximumAge),
+        minimum_rating: Number(minimumRating),
+        minimum_bookings_done: Number(minimumBookingsDone),
+        required_documents: requiredDocuments,
+        status: 'ACTIVE'
+      });
+      setSelectedProfileId(newProf.id);
+    }
+
+    setIsModalOpen(false);
+  };
+
+  const toggleDocRequirement = (docKey: string) => {
+    setRequiredDocuments(prev =>
+      prev.includes(docKey) ? prev.filter(d => d !== docKey) : [...prev, docKey]
+    );
+  };
 
   return (
     <div className="space-y-3 w-full">
@@ -50,7 +153,14 @@ export function EligibilityTab() {
             </button>
           ))}
         </div>
-      )}
+
+        <button
+          onClick={handleOpenAddModal}
+          className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm shadow-purple-200 flex items-center gap-1.5 shrink-0 transition-all"
+        >
+          <Plus className="w-4 h-4" /> Add Eligibility Profile
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
         
@@ -183,6 +293,125 @@ export function EligibilityTab() {
         </div>
 
       </div>
+
+      {/* CRUD Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 max-w-lg w-full p-6 space-y-4 shadow-2xl animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-base font-extrabold text-slate-900">
+                {editingProfile ? 'Edit Eligibility Profile' : 'Create Eligibility Profile'}
+              </h3>
+              <button onClick={() => setIsModalOpen(false)} className="p-1 rounded-lg text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveProfile} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Profile Name</label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  placeholder="e.g. VIP Companion Eligibility Standard"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-900 outline-none focus:border-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Description</label>
+                <textarea
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  rows={2}
+                  placeholder="Describe mandatory qualifications for companion service activation..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-900 outline-none focus:border-purple-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Minimum Age (yrs)</label>
+                  <input
+                    type="number"
+                    value={minimumAge}
+                    onChange={e => setMinimumAge(Number(e.target.value))}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-900 outline-none focus:border-purple-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Maximum Age (yrs)</label>
+                  <input
+                    type="number"
+                    value={maximumAge}
+                    onChange={e => setMaximumAge(Number(e.target.value))}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-900 outline-none focus:border-purple-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Minimum Rating (★)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={minimumRating}
+                    onChange={e => setMinimumRating(Number(e.target.value))}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-900 outline-none focus:border-purple-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Min Bookings Completed</label>
+                  <input
+                    type="number"
+                    value={minimumBookingsDone}
+                    onChange={e => setMinimumBookingsDone(Number(e.target.value))}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-900 outline-none focus:border-purple-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-2">Required Verification Documents</label>
+                <div className="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  {ALL_DOC_OPTIONS.map(doc => (
+                    <label key={doc} className="flex items-center gap-2 cursor-pointer p-1.5 hover:bg-white rounded-lg transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={requiredDocuments.includes(doc)}
+                        onChange={() => toggleDocRequirement(doc)}
+                        className="accent-purple-600 rounded"
+                      />
+                      <span className="font-semibold text-slate-800 text-[11px] capitalize">
+                        {doc.replace(/_/g, ' ').toLowerCase()}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold shadow-sm shadow-purple-200"
+                >
+                  {editingProfile ? 'Update Profile' : 'Save Profile'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

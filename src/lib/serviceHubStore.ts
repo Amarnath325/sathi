@@ -99,14 +99,26 @@ interface ServiceHubStore {
   updatePricingProfile: (id: string, updates: Partial<PricingProfile>) => void;
   addRuleToProfile: (profileId: string, rule: Omit<RuleItem, 'id' | 'status'>) => void;
   updateRuleInProfile: (profileId: string, ruleId: string, updates: Partial<RuleItem>) => void;
+  deleteRuleFromProfile: (profileId: string, ruleId: string) => void;
   addPolicy: (pol: Omit<PolicyItem, 'id' | 'version' | 'effective_from'>) => PolicyItem;
   updatePolicy: (id: string, updates: Partial<PolicyItem>) => void;
   publishNewPolicyVersion: (policyId: string, versionDesc: string) => void;
+  deletePolicy: (id: string) => void;
+  addRiskLevel: (risk: Omit<RiskLevelItem, 'id' | 'createdAt' | 'updatedAt'>) => RiskLevelItem;
   updateRiskLevel: (id: string, updates: Partial<RiskLevelItem>) => void;
+  deleteRiskLevel: (id: string) => void;
+  addVerificationProfile: (prof: Omit<VerificationProfileItem, 'id' | 'createdAt' | 'updatedAt'>) => VerificationProfileItem;
   updateVerificationProfile: (id: string, updates: Partial<VerificationProfileItem>) => void;
+  deleteVerificationProfile: (id: string) => void;
+  addSafetyProfile: (prof: Omit<SafetyProfileItem, 'id' | 'createdAt' | 'updatedAt'>) => SafetyProfileItem;
   updateSafetyProfile: (id: string, updates: Partial<SafetyProfileItem>) => void;
+  deleteSafetyProfile: (id: string) => void;
+  addBookingRule: (rule: Omit<BookingRuleItem, 'id' | 'createdAt' | 'updatedAt'>) => BookingRuleItem;
   updateBookingRule: (id: string, updates: Partial<BookingRuleItem>) => void;
+  deleteBookingRule: (id: string) => void;
+  addEligibilityProfile: (prof: Omit<EligibilityProfileItem, 'id' | 'createdAt' | 'updatedAt'>) => EligibilityProfileItem;
   updateEligibilityProfile: (id: string, updates: Partial<EligibilityProfileItem>) => void;
+  deleteEligibilityProfile: (id: string) => void;
 
   // Bulk Actions
   bulkUpdateServiceStatus: (ids: string[], status: ServicePublishStatus) => void;
@@ -394,7 +406,20 @@ export const useServiceHubStore = create<ServiceHubStore>()(
             };
           })
         }));
-        get().addAuditLog('Rules', ruleId, 'UPDATE_RULE', null, updates);
+        get().addAuditLog('Rules', profileId, 'UPDATE_RULE', null, updates);
+      },
+
+      deleteRuleFromProfile: (profileId, ruleId) => {
+        set(state => ({
+          rulesProfiles: state.rulesProfiles.map(rp => {
+            if (rp.id !== profileId) return rp;
+            return {
+              ...rp,
+              rules: rp.rules.filter(r => r.id !== ruleId)
+            };
+          })
+        }));
+        get().addAuditLog('Rules', profileId, 'DELETE_RULE', { ruleId }, null);
       },
 
       addPolicy: (pol) => {
@@ -440,11 +465,45 @@ export const useServiceHubStore = create<ServiceHubStore>()(
         get().addAuditLog('Policies', policyId, 'NEW_VERSION', null, versionDesc);
       },
 
+      deletePolicy: (id) => {
+        set(state => ({ policies: state.policies.filter(p => p.id !== id) }));
+        get().addAuditLog('Policies', id, 'DELETE');
+      },
+
+      addRiskLevel: (risk) => {
+        const newRisk: RiskLevelItem = {
+          ...risk,
+          id: 'rk-' + Date.now(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        set(state => ({ riskLevels: [...state.riskLevels, newRisk] }));
+        get().addAuditLog('Risk Levels', newRisk.id, 'CREATE', null, newRisk);
+        return newRisk;
+      },
+
       updateRiskLevel: (id, updates) => {
         set(state => ({
           riskLevels: state.riskLevels.map(r => r.id === id ? { ...r, ...updates } : r)
         }));
         get().addAuditLog('Risk Levels', id, 'UPDATE', null, updates);
+      },
+
+      deleteRiskLevel: (id) => {
+        set(state => ({ riskLevels: state.riskLevels.filter(r => r.id !== id) }));
+        get().addAuditLog('Risk Levels', id, 'DELETE');
+      },
+
+      addVerificationProfile: (prof) => {
+        const newProf: VerificationProfileItem = {
+          ...prof,
+          id: 'ver-' + Date.now(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        set(state => ({ verificationProfiles: [...state.verificationProfiles, newProf] }));
+        get().addAuditLog('Verification Requirements', newProf.id, 'CREATE', null, newProf);
+        return newProf;
       },
 
       updateVerificationProfile: (id, updates) => {
@@ -454,11 +513,45 @@ export const useServiceHubStore = create<ServiceHubStore>()(
         get().addAuditLog('Verification Requirements', id, 'UPDATE', null, updates);
       },
 
+      deleteVerificationProfile: (id) => {
+        set(state => ({ verificationProfiles: state.verificationProfiles.filter(v => v.id !== id) }));
+        get().addAuditLog('Verification Requirements', id, 'DELETE');
+      },
+
+      addSafetyProfile: (prof) => {
+        const newProf: SafetyProfileItem = {
+          ...prof,
+          id: 'saf-' + Date.now(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        set(state => ({ safetyProfiles: [...state.safetyProfiles, newProf] }));
+        get().addAuditLog('Safety & Trust', newProf.id, 'CREATE', null, newProf);
+        return newProf;
+      },
+
       updateSafetyProfile: (id, updates) => {
         set(state => ({
           safetyProfiles: state.safetyProfiles.map(s => s.id === id ? { ...s, ...updates } : s)
         }));
         get().addAuditLog('Safety & Trust', id, 'UPDATE', null, updates);
+      },
+
+      deleteSafetyProfile: (id) => {
+        set(state => ({ safetyProfiles: state.safetyProfiles.filter(s => s.id !== id) }));
+        get().addAuditLog('Safety & Trust', id, 'DELETE');
+      },
+
+      addBookingRule: (rule) => {
+        const newRule: BookingRuleItem = {
+          ...rule,
+          id: 'bk-' + Date.now(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        set(state => ({ bookingRules: [...state.bookingRules, newRule] }));
+        get().addAuditLog('Booking & Cancellation', newRule.id, 'CREATE', null, newRule);
+        return newRule;
       },
 
       updateBookingRule: (id, updates) => {
@@ -468,11 +561,33 @@ export const useServiceHubStore = create<ServiceHubStore>()(
         get().addAuditLog('Booking & Cancellation', id, 'UPDATE', null, updates);
       },
 
+      deleteBookingRule: (id) => {
+        set(state => ({ bookingRules: state.bookingRules.filter(b => b.id !== id) }));
+        get().addAuditLog('Booking & Cancellation', id, 'DELETE');
+      },
+
+      addEligibilityProfile: (prof) => {
+        const newProf: EligibilityProfileItem = {
+          ...prof,
+          id: 'el-' + Date.now(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        set(state => ({ eligibilityProfiles: [...state.eligibilityProfiles, newProf] }));
+        get().addAuditLog('Service Eligibility', newProf.id, 'CREATE', null, newProf);
+        return newProf;
+      },
+
       updateEligibilityProfile: (id, updates) => {
         set(state => ({
           eligibilityProfiles: state.eligibilityProfiles.map(e => e.id === id ? { ...e, ...updates } : e)
         }));
         get().addAuditLog('Service Eligibility', id, 'UPDATE', null, updates);
+      },
+
+      deleteEligibilityProfile: (id) => {
+        set(state => ({ eligibilityProfiles: state.eligibilityProfiles.filter(e => e.id !== id) }));
+        get().addAuditLog('Service Eligibility', id, 'DELETE');
       },
 
       // Bulk Actions

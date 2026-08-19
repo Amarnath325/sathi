@@ -6,31 +6,63 @@ import {
   Zap, Clock, ShieldAlert, Activity, Download, Smartphone, UserCheck, MapPin, Calendar, CheckSquare,
   ShieldCheck, Globe, Eye, Bell, Flag, MessageSquare, Shield, Layers
 } from 'lucide-react';
+import { SafetyProfileItem, SafetyControlState } from '@/lib/types/serviceHub';
 
-const REQUIRED_CONTROL_ICONS: Record<string, React.ElementType> = {
-  sos_required: Smartphone,
-  emergency_contact_required: UserCheck,
-  live_location_required: MapPin,
-  periodic_checkin_required: Clock,
-  booking_start_checkin_required: Calendar,
-  booking_end_checkout_required: CheckSquare,
-  safe_location_requirement_required: ShieldCheck,
-  public_place_requirement_required: Globe,
-  location_monitoring_required: Eye,
+const CONTROL_LABELS: Record<string, string> = {
+  sos: 'SOS Panic Button',
+  emergency_contact: 'Emergency Contact',
+  live_location: 'Live Location Streaming',
+  periodic_checkin: 'Periodic Safety Check-in',
+  booking_start_checkin: 'Booking Start Check-in',
+  booking_end_checkout: 'Booking End Checkout',
+  geofence: 'Geofence Boundaries',
+  safe_location_requirement: 'Safe Location Verification',
+  public_place_requirement: 'Public Place Requirement',
+  emergency_notification: 'Emergency Push Alerts',
+  admin_emergency_escalation: 'Admin Escalation Protocol',
+  incident_reporting: 'In-App Incident Reporting',
+  chat_monitoring: 'Automated Chat Monitoring',
+  location_monitoring: 'Real-time Location Monitoring'
 };
 
-const ENABLED_CONTROL_ICONS: Record<string, React.ElementType> = {
-  geofence_enabled: Layers,
-  emergency_notification_enabled: Bell,
-  admin_emergency_escalation_enabled: Shield,
-  incident_reporting_enabled: Flag,
-  chat_monitoring_enabled: MessageSquare,
-};
+const CONTROL_KEYS = Object.keys(CONTROL_LABELS);
 
 export function SafetyTab() {
-  const { safetyProfiles, auditLogs } = useServiceHubStore();
-  const profile = safetyProfiles[0];
+  const {
+    safetyProfiles,
+    auditLogs,
+    addSafetyProfile,
+    updateSafetyProfile,
+    deleteSafetyProfile
+  } = useServiceHubStore();
+
+  const [selProfId, setSelProfId] = useState(safetyProfiles[0]?.id || '');
   const [auditFilter, setAuditFilter] = useState<'ALL' | string>('ALL');
+
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingProfile, setEditingProfile] = useState<SafetyProfileItem | null>(null);
+
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [controls, setControls] = useState<Record<string, SafetyControlState>>({
+    sos: 'Required',
+    emergency_contact: 'Required',
+    live_location: 'Required',
+    periodic_checkin: 'Required',
+    booking_start_checkin: 'Required',
+    booking_end_checkout: 'Required',
+    geofence: 'Enabled',
+    safe_location_requirement: 'Required',
+    public_place_requirement: 'Required',
+    emergency_notification: 'Enabled',
+    admin_emergency_escalation: 'Enabled',
+    incident_reporting: 'Enabled',
+    chat_monitoring: 'Enabled',
+    location_monitoring: 'Required',
+  });
+
+  const activeProfile = safetyProfiles.find(s => s.id === selProfId) || safetyProfiles[0];
 
   const modules = [...new Set(auditLogs.map(l => l.module))];
   const filteredLogs = auditFilter === 'ALL' ? auditLogs : auditLogs.filter(l => l.module === auditFilter);
@@ -43,14 +75,19 @@ export function SafetyTab() {
   };
 
   const requiredControls = useMemo(() => {
-    if (!profile) return [];
-    return Object.entries(profile.controls).filter(([_, state]) => state === 'Required');
-  }, [profile]);
+    if (!activeProfile) return [];
+    return Object.entries(activeProfile.controls).filter(([_, state]) => state === 'Required');
+  }, [activeProfile]);
 
   const enabledControls = useMemo(() => {
-    if (!profile) return [];
-    return Object.entries(profile.controls).filter(([_, state]) => state === 'Enabled');
-  }, [profile]);
+    if (!activeProfile) return [];
+    return Object.entries(activeProfile.controls).filter(([_, state]) => state === 'Enabled');
+  }, [activeProfile]);
+
+  const optionalControls = useMemo(() => {
+    if (!activeProfile) return [];
+    return Object.entries(activeProfile.controls).filter(([_, state]) => state === 'Optional' || state === 'Disabled');
+  }, [activeProfile]);
 
   return (
     <div className="space-y-3 w-full">
@@ -186,6 +223,84 @@ export function SafetyTab() {
           )}
         </div>
       </div>
+
+      {/* CRUD Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 max-w-lg w-full p-6 space-y-4 shadow-2xl animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-base font-extrabold text-slate-900">
+                {editingProfile ? 'Edit Safety Profile' : 'Create Safety Profile'}
+              </h3>
+              <button onClick={() => setIsModalOpen(false)} className="p-1 rounded-lg text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveProfile} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Profile Name</label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  placeholder="e.g. VIP Companion Safety Controls"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-900 outline-none focus:border-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Description</label>
+                <textarea
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  rows={2}
+                  placeholder="Describe emergency dispatch and location safety policies..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-900 outline-none focus:border-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-2">Safety Controls Configuration</label>
+                <div className="space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-200 max-h-60 overflow-y-auto">
+                  {CONTROL_KEYS.map(key => (
+                    <div key={key} className="flex items-center justify-between p-1.5 hover:bg-white rounded-lg transition-colors">
+                      <span className="font-semibold text-slate-800">{CONTROL_LABELS[key]}</span>
+                      <select
+                        value={controls[key] || 'Enabled'}
+                        onChange={e => setControls(prev => ({ ...prev, [key]: e.target.value as SafetyControlState }))}
+                        className="bg-white border border-slate-200 text-slate-800 text-xs font-bold rounded-lg px-2 py-1 outline-none"
+                      >
+                        <option value="Required">Required</option>
+                        <option value="Enabled">Enabled</option>
+                        <option value="Optional">Optional</option>
+                        <option value="Disabled">Disabled</option>
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold shadow-sm shadow-purple-200"
+                >
+                  {editingProfile ? 'Update Safety Profile' : 'Save Safety Profile'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

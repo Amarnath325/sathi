@@ -3,27 +3,27 @@
 import React, { useState } from 'react';
 import { useServiceHubStore } from '@/lib/serviceHubStore';
 import { RulesEngine } from '@/lib/serviceHubEngines';
-import { Sliders, Plus, AlertCircle, AlertTriangle, CheckCircle2, Play, Search, Calendar, MapPin, Shield, X, Edit2 } from 'lucide-react';
-import { RuleItem } from '@/lib/types/serviceHub';
+import { Sliders, Plus, AlertCircle, AlertTriangle, CheckCircle2, Play, Search, Calendar, MapPin, Shield, Edit2, Trash2, X } from 'lucide-react';
+import { RuleItem, RuleType, RuleOperator, RuleAction, RuleSeverity } from '@/lib/types/serviceHub';
 
 export function RulesTab() {
-  const { rulesProfiles, addRuleToProfile, updateRuleInProfile } = useServiceHubStore();
+  const { rulesProfiles, addRuleToProfile, updateRuleInProfile, deleteRuleFromProfile } = useServiceHubStore();
 
   const [testDuration, setTestDuration] = useState(10);
   const [testLiveLocation, setTestLiveLocation] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Add/Edit Rule Modal State
+  // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<RuleItem | null>(null);
-
   const [ruleName, setRuleName] = useState('');
-  const [description, setDescription] = useState('');
-  const [ruleType, setRuleType] = useState<'Duration Rule' | 'Location Rule' | 'Safety Rule'>('Duration Rule');
-  const [condition, setCondition] = useState('duration_hours');
-  const [operator, setOperator] = useState('GREATER_THAN');
-  const [value, setValue] = useState('8');
-  const [action, setAction] = useState<'REQUIRE_APPROVAL' | 'BLOCK' | 'WARN'>('REQUIRE_APPROVAL');
+  const [ruleType, setRuleType] = useState<RuleType>('Duration Rule');
+  const [ruleDescription, setRuleDescription] = useState('');
+  const [ruleCondition, setRuleCondition] = useState('duration_hours');
+  const [ruleOperator, setRuleOperator] = useState<RuleOperator>('GREATER_THAN');
+  const [ruleValue, setRuleValue] = useState<string | number>('8');
+  const [ruleAction, setRuleAction] = useState<RuleAction>('REQUIRE_APPROVAL');
+  const [ruleSeverity, setRuleSeverity] = useState<RuleSeverity>('MEDIUM');
 
   const activeProfile = rulesProfiles[0];
   const filteredRules = (activeProfile?.rules || []).filter(rule =>
@@ -34,64 +34,68 @@ export function RulesTab() {
   const eval1 = activeProfile?.rules[0] ? RulesEngine.evaluateRule(activeProfile.rules[0], { duration_hours: testDuration }) : null;
   const eval2 = activeProfile?.rules[1] ? RulesEngine.evaluateRule(activeProfile.rules[1], { live_location_enabled: testLiveLocation }) : null;
 
-  const handleOpenCreate = () => {
+  const handleOpenAddModal = () => {
     setEditingRule(null);
     setRuleName('');
-    setDescription('');
     setRuleType('Duration Rule');
-    setCondition('duration_hours');
-    setOperator('GREATER_THAN');
-    setValue('8');
-    setAction('REQUIRE_APPROVAL');
+    setRuleDescription('');
+    setRuleCondition('duration_hours');
+    setRuleOperator('GREATER_THAN');
+    setRuleValue('8');
+    setRuleAction('REQUIRE_APPROVAL');
+    setRuleSeverity('MEDIUM');
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (rule: RuleItem, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleOpenEditModal = (rule: RuleItem) => {
     setEditingRule(rule);
     setRuleName(rule.name);
-    setDescription(rule.description);
-    setRuleType(rule.rule_type as any);
-    setCondition(rule.condition);
-    setOperator(rule.operator);
-    setValue(String(rule.value));
-    setAction(rule.action as any);
+    setRuleType(rule.rule_type);
+    setRuleDescription(rule.description);
+    setRuleCondition(rule.condition);
+    setRuleOperator(rule.operator);
+    setRuleValue(typeof rule.value === 'boolean' ? String(rule.value) : rule.value);
+    setRuleAction(rule.action);
+    setRuleSeverity(rule.severity);
     setIsModalOpen(true);
   };
 
   const handleSaveRule = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!ruleName.trim() || !activeProfile) return;
-
-    const parsedVal = isNaN(Number(value)) ? value : Number(value);
+    if (!ruleName || !activeProfile) return;
 
     if (editingRule) {
       updateRuleInProfile(activeProfile.id, editingRule.id, {
-        name: ruleName.trim(),
-        rule_type: ruleType as any,
-        condition,
-        operator: operator as any,
-        value: parsedVal,
-        action: action as any,
-        severity: action === 'BLOCK' ? 'HIGH' : 'MEDIUM',
-        description: description.trim()
+        name: ruleName,
+        rule_type: ruleType,
+        description: ruleDescription,
+        condition: ruleCondition,
+        operator: ruleOperator,
+        value: ruleValue,
+        action: ruleAction,
+        severity: ruleSeverity,
       });
     } else {
-      const newRule: RuleItem = {
-        id: `rule-${Date.now()}`,
-        name: ruleName.trim(),
-        rule_type: ruleType as any,
-        condition,
-        operator: operator as any,
-        value: parsedVal,
-        action: action as any,
-        severity: action === 'BLOCK' ? 'HIGH' : 'MEDIUM',
-        description: description.trim() || 'Custom validation rule.',
-        status: 'ACTIVE'
-      };
-      addRuleToProfile(activeProfile.id, newRule);
+      addRuleToProfile(activeProfile.id, {
+        name: ruleName,
+        rule_type: ruleType,
+        description: ruleDescription,
+        condition: ruleCondition,
+        operator: ruleOperator,
+        value: ruleValue,
+        action: ruleAction,
+        severity: ruleSeverity,
+      });
     }
+
     setIsModalOpen(false);
+  };
+
+  const handleDeleteRule = (ruleId: string) => {
+    if (!activeProfile) return;
+    if (confirm('Are you sure you want to delete this rule?')) {
+      deleteRuleFromProfile(activeProfile.id, ruleId);
+    }
   };
 
   return (
@@ -158,6 +162,13 @@ export function RulesTab() {
                       title="Edit Rule"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteRule(rule.id)}
+                      className="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-600 transition-colors"
+                      title="Delete Rule"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
@@ -255,7 +266,7 @@ export function RulesTab() {
         </div>
       </div>
 
-      {/* Add / Edit Rule Modal */}
+      {/* CRUD Add/Edit Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-4 sm:p-5 space-y-3.5 shadow-2xl my-auto text-xs">
@@ -280,7 +291,9 @@ export function RulesTab() {
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-white outline-none focus:border-indigo-500 text-[11px]">
                     <option value="Duration Rule">Duration Rule</option>
                     <option value="Location Rule">Location Rule</option>
+                    <option value="Age Rule">Age Rule</option>
                     <option value="Safety Rule">Safety Rule</option>
+                    <option value="Booking Rule">Booking Rule</option>
                   </select>
                 </div>
                 <div>
@@ -290,7 +303,7 @@ export function RulesTab() {
                     <option value="GREATER_THAN">GREATER_THAN</option>
                     <option value="LESS_THAN">LESS_THAN</option>
                     <option value="EQUALS">EQUALS</option>
-                    <option value="CONTAINS">CONTAINS</option>
+                    <option value="NOT_EQUALS">NOT_EQUALS</option>
                   </select>
                 </div>
               </div>
@@ -306,13 +319,15 @@ export function RulesTab() {
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-white outline-none focus:border-indigo-500 text-[11px]" />
                 </div>
               </div>
+
               <div>
                 <label className="block text-slate-400 font-bold mb-1">Action Triggered</label>
                 <select value={action} onChange={e => setAction(e.target.value as any)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-white outline-none focus:border-indigo-500 text-[11px]">
                   <option value="REQUIRE_APPROVAL">REQUIRE_APPROVAL</option>
                   <option value="BLOCK">BLOCK</option>
-                  <option value="WARN">WARN</option>
+                  <option value="WARNING">WARNING</option>
+                  <option value="REQUIRE_VERIFICATION">REQUIRE_VERIFICATION</option>
                 </select>
               </div>
               <div>
