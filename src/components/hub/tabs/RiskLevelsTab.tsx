@@ -53,59 +53,69 @@ export function RiskLevelsTab() {
   });
 
   const calcStyle = RISK_CARD_STYLES[calc.level] || RISK_CARD_STYLES.LOW;
+  const requiresManualApproval = calc.level === 'CRITICAL' || calc.level === 'HIGH';
+  const requiresLiveLocation = calc.level !== 'LOW';
+  const verificationRequired = calc.level === 'CRITICAL' || calc.level === 'HIGH' ? 'Advanced KYC & Background Check' : 'Basic KYC';
 
   return (
-    <div className="space-y-5">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+    <div className="space-y-3 w-full">
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          placeholder="Search risk levels by name or description..."
+          className="w-full bg-white border border-slate-200/90 rounded-xl pl-9 pr-3.5 py-1.5 text-[11px] text-slate-900 placeholder-slate-400 outline-none focus:border-purple-500 shadow-2xs transition-colors"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
         
         {/* Left Column: Configured Risk Profiles */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-2.5">
           <div className="flex items-center justify-between">
-            <h4 className="font-extrabold text-slate-900 text-sm">
-              Configured Risk Profiles <span className="text-slate-500 font-normal text-xs">({filteredRiskLevels.length})</span>
+            <h4 className="font-extrabold text-slate-900 text-xs">
+              Configured Risk Profiles <span className="text-slate-500 font-normal text-[10px]">({filteredRiskLevels.length})</span>
             </h4>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {filteredRiskLevels.map(rk => {
               const style = RISK_CARD_STYLES[rk.code] || RISK_CARD_STYLES.LOW;
               const linkedCats = categories.filter(c => c.default_risk_level_id === rk.id);
 
               return (
-                <div key={rk.id} className={`p-5 rounded-2xl border shadow-xs hover:shadow-md transition-all space-y-3.5 ${style.card}`}>
+                <div key={rk.id} className={`p-3.5 rounded-2xl border shadow-2xs hover:shadow-xs transition-all space-y-2.5 ${style.card}`}>
                   {/* Card Header */}
                   <div className="flex items-center justify-between">
-                    <h5 className="font-extrabold text-slate-900 text-base">{rk.name}</h5>
-                    <span className={`px-3 py-1 rounded-lg text-xs font-extrabold border ${style.badge}`}>
+                    <h5 className="font-extrabold text-slate-900 text-xs">{rk.name}</h5>
+                    <span className={`px-2 py-0.2 rounded-lg text-[10px] font-extrabold border ${style.badge}`}>
                       {rk.code}
                     </span>
                   </div>
 
                   {/* Description */}
-                  <p className="text-xs text-slate-600 font-medium leading-relaxed">{rk.description}</p>
+                  <p className="text-[11px] text-slate-600 font-medium leading-tight">{rk.description}</p>
 
-                  {/* Single Line Details Row */}
-                  <div className="text-xs font-semibold text-slate-600 flex items-center gap-1.5 flex-wrap pt-1 border-t border-slate-200/60">
-                    <span>Verification: <span className={`font-bold ${style.text}`}>{rk.verification_level}</span></span>
+                  {/* Details Row */}
+                  <div className="text-[10px] font-semibold text-slate-600 flex items-center gap-1.5 flex-wrap pt-1 border-t border-slate-200/60">
+                    <span>Verif: <strong className={style.text}>{rk.verification_level}</strong></span>
                     <span className="text-slate-300">|</span>
-                    <span>Manual Approval: <span className={`font-bold ${rk.manual_approval_required ? 'text-rose-700' : 'text-emerald-700'}`}>{rk.manual_approval_required ? 'Required' : 'Auto-Publish'}</span></span>
+                    <span>Approval: <strong className={rk.manual_approval_required ? 'text-rose-700' : 'text-emerald-700'}>{rk.manual_approval_required ? 'Required' : 'Auto'}</strong></span>
                     <span className="text-slate-300">|</span>
-                    <span>Max Duration: <span className={`font-bold ${style.text}`}>{rk.maximum_booking_duration}h</span></span>
+                    <span>Max: <strong className={style.text}>{rk.maximum_booking_duration}h</strong></span>
                   </div>
 
                   {/* Category Pills */}
                   {linkedCats.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-1">
+                    <div className="flex flex-wrap gap-1 pt-0.5">
                       {linkedCats.slice(0, 4).map(c => (
-                        <span key={c.id} className={`px-2.5 py-1 rounded-lg text-xs font-semibold border ${style.bgBadge}`}>
+                        <span key={c.id} className={`px-2 py-0.2 rounded text-[9px] font-semibold border ${style.bgBadge}`}>
                           {c.name}
                         </span>
                       ))}
-                      {linkedCats.length > 4 && (
-                        <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold border ${style.bgBadge}`}>
-                          +{linkedCats.length - 4} more
-                        </span>
-                      )}
                     </div>
                   )}
                 </div>
@@ -114,103 +124,86 @@ export function RiskLevelsTab() {
           </div>
         </div>
 
-        {/* Right Column: Risk Simulator & Search */}
-        <div className="space-y-4">
-          {/* Search Box on top right */}
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              placeholder="Search risk profiles..."
-              className="w-full bg-white border border-slate-200/90 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 outline-none focus:border-purple-500 shadow-xs transition-colors"
-            />
-          </div>
+        {/* Right Column: Dynamic Risk Engine Simulator */}
+        <div className="p-3.5 rounded-2xl bg-white border border-slate-200/90 space-y-3 h-fit shadow-2xs sticky top-3">
+          <h4 className="font-extrabold text-slate-900 text-xs flex items-center gap-1.5">
+            <ShieldAlert className="w-3.5 h-3.5 text-purple-600" /> Dynamic Risk Matrix Engine
+          </h4>
 
-          {/* Simulator Card */}
-          <div className="p-5 rounded-2xl bg-white border border-slate-200/90 space-y-4 shadow-md sticky top-4">
-            <h4 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
-              <Shield className="w-5 h-5 text-purple-600 fill-purple-100" /> Risk Score Simulator
-            </h4>
+          <div className="space-y-2.5 text-[11px]">
+            <div>
+              <label className="block text-slate-700 font-bold mb-1">Service Risk Level</label>
+              <select
+                value={simServiceRisk}
+                onChange={e => setSimServiceRisk(e.target.value)}
+                className="w-full bg-white border border-slate-200/90 rounded-xl p-1.5 text-[11px] font-bold text-slate-900 outline-none focus:border-purple-500 shadow-2xs"
+              >
+                <option value="LOW">LOW — Public Errands</option>
+                <option value="MEDIUM">MEDIUM — Social Events & Travel</option>
+                <option value="HIGH">HIGH — Private / Elderly Care</option>
+                <option value="CRITICAL">CRITICAL — High Risk Night Travel</option>
+              </select>
+            </div>
 
-            <div className="space-y-4 text-xs">
-              <div>
-                <label className="block text-slate-700 font-bold mb-1.5">Base Service Risk</label>
-                <select
-                  value={simServiceRisk}
-                  onChange={e => setSimServiceRisk(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-amber-700 font-extrabold text-xs outline-none focus:border-purple-500 shadow-2xs cursor-pointer"
-                >
-                  {['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map(r => <option key={r} value={r}>{r}</option>)}
-                </select>
-              </div>
+            <div>
+              <label className="block text-slate-700 font-bold mb-1">
+                Duration: <span className="text-slate-900 font-mono font-bold">{simDuration} hours</span>
+              </label>
+              <input
+                type="range"
+                min={1}
+                max={14}
+                value={simDuration}
+                onChange={e => setSimDuration(Number(e.target.value))}
+                className="w-full accent-purple-600 h-1 rounded-full bg-slate-200"
+              />
+              <div className="flex justify-between text-[9px] text-slate-400 mt-0.5 font-medium"><span>1h</span><span>14h</span></div>
+            </div>
 
-              <div>
-                <label className="block text-slate-700 font-bold mb-1.5">Duration</label>
+            <div className="space-y-1.5 pt-0.5">
+              <label className="flex items-center gap-2 cursor-pointer">
                 <input
-                  type="range"
-                  min={1}
-                  max={14}
-                  value={simDuration}
-                  onChange={e => setSimDuration(Number(e.target.value))}
-                  className="w-full accent-purple-600 h-1.5 rounded-full bg-slate-200"
+                  type="checkbox"
+                  checked={simNight}
+                  onChange={e => setSimNight(e.target.checked)}
+                  className="accent-purple-600 w-3.5 h-3.5 rounded"
                 />
-                <span className="block text-xs font-bold text-blue-600 mt-1">{simDuration} hours</span>
-              </div>
+                <span className="text-slate-700 font-bold text-[11px]">Night Time Booking (10 PM - 6 AM)</span>
+              </label>
 
-              <div className="space-y-2 pt-1">
-                <label className="flex items-center gap-2.5 cursor-pointer text-xs">
-                  <input
-                    type="checkbox"
-                    checked={simNight}
-                    onChange={e => setSimNight(e.target.checked)}
-                    className="accent-purple-600 w-4 h-4 rounded"
-                  />
-                  <span className="text-slate-700 font-bold">Late Night Session</span>
-                </label>
-                <label className="flex items-center gap-2.5 cursor-pointer text-xs">
-                  <input
-                    type="checkbox"
-                    checked={simCompVerified}
-                    onChange={e => setSimCompVerified(e.target.checked)}
-                    className="accent-purple-600 w-4 h-4 rounded"
-                  />
-                  <span className="text-slate-700 font-bold">Companion Background Verified</span>
-                </label>
-              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={simCompVerified}
+                  onChange={e => setSimCompVerified(e.target.checked)}
+                  className="accent-purple-600 w-3.5 h-3.5 rounded"
+                />
+                <span className="text-slate-700 font-bold text-[11px]">Companion Fully Verified (Police + KYC)</span>
+              </label>
             </div>
-
-            {/* Calculated Result Output */}
-            <div className="pt-3 border-t border-slate-100 space-y-3">
-              <div>
-                <span className="text-xs font-bold text-slate-700 block mb-1">Calculated Score</span>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-extrabold text-purple-700">{calc.score}</span>
-                  <span className="text-xs font-semibold text-slate-500">Points</span>
-                </div>
-              </div>
-
-              <div>
-                <span className="text-xs font-bold text-slate-700 block mb-1">Risk Level</span>
-                <span className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold inline-block border ${calcStyle.badge}`}>
-                  {calc.level}
-                </span>
-              </div>
-
-              {/* Status Alert Banner */}
-              <div className="mt-3 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 font-bold text-xs flex items-center gap-2.5">
-                <span className="w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center text-xs font-extrabold shrink-0">!</span>
-                <span>
-                  {calc.level === 'LOW' && 'Standard booking flow applies'}
-                  {calc.level === 'MEDIUM' && 'GPS tracking required'}
-                  {calc.level === 'HIGH' && 'Enhanced verification required'}
-                  {calc.level === 'CRITICAL' && 'Manual admin approval required'}
-                </span>
-              </div>
-            </div>
-
           </div>
+
+          {/* Calculator Output */}
+          <div className={`p-3 rounded-xl border space-y-2 transition-all ${calcStyle.card}`}>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500 uppercase">SCORE RESULT</span>
+              <span className={`px-2 py-0.2 rounded text-[10px] font-extrabold border ${calcStyle.badge}`}>
+                {calc.level}
+              </span>
+            </div>
+
+            <div className="flex items-baseline gap-2">
+              <span className="text-xl font-extrabold font-mono text-slate-900">{calc.score}</span>
+              <span className="text-[10px] text-slate-500 font-medium">/ 100 Risk Score</span>
+            </div>
+
+            <div className="space-y-1 text-[10px] border-t border-slate-200/60 pt-2 font-medium">
+              <p className="flex justify-between"><span>Require Verification:</span> <strong className={calcStyle.text}>{verificationRequired}</strong></p>
+              <p className="flex justify-between"><span>Manual Admin Review:</span> <strong className={requiresManualApproval ? 'text-rose-700' : 'text-emerald-700'}>{requiresManualApproval ? 'Required' : 'Auto'}</strong></p>
+              <p className="flex justify-between"><span>Live Tracking:</span> <strong className={requiresLiveLocation ? 'text-rose-700' : 'text-slate-700'}>{requiresLiveLocation ? 'Mandatory' : 'Optional'}</strong></p>
+            </div>
+          </div>
+
         </div>
 
       </div>
