@@ -140,6 +140,18 @@ export default function CompanionOnboardingWizard() {
     }
   };
 
+  const clearOtpInputs = () => {
+    setOtpCodeDigits(['', '', '', '', '', '']);
+    setTimeout(() => {
+      for (let i = 0; i < 6; i++) {
+        const inputEl = document.getElementById(`otp-input-${i}`) as HTMLInputElement;
+        if (inputEl) inputEl.value = '';
+      }
+      const firstInput = document.getElementById('otp-input-0');
+      if (firstInput) firstInput.focus();
+    }, 20);
+  };
+
   // Verify OTP Handler
   const handleVerifyOtp = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -150,7 +162,7 @@ export default function CompanionOnboardingWizard() {
     }
     if (otpTimerSeconds === 0) {
       setOtpError('OTP has expired after 10 minutes. Please click Resend OTP to request a new code.');
-      setOtpCodeDigits(['', '', '', '', '', '']);
+      clearOtpInputs();
       return;
     }
 
@@ -178,19 +190,13 @@ export default function CompanionOnboardingWizard() {
         showToast('success', 'Verified Successfully! ✓', `${otpTarget === 'email' ? 'Email address' : 'Mobile number'} has been verified.`);
       } else {
         setOtpError(data.error || 'Invalid OTP code.');
-        // BLANK OUT OTP FIELD ON INVALID OTP
-        setOtpCodeDigits(['', '', '', '', '', '']);
-        setTimeout(() => {
-          document.getElementById('otp-input-0')?.focus();
-        }, 50);
+        // FORCE CLEAR ALL OTP INPUT FIELDS
+        clearOtpInputs();
       }
     } catch (err: any) {
       setOtpError(err.message || 'Verification failed.');
-      // BLANK OUT OTP FIELD ON FAILURE
-      setOtpCodeDigits(['', '', '', '', '', '']);
-      setTimeout(() => {
-        document.getElementById('otp-input-0')?.focus();
-      }, 50);
+      // FORCE CLEAR ALL OTP INPUT FIELDS
+      clearOtpInputs();
     } finally {
       setIsVerifyingOtp(false);
     }
