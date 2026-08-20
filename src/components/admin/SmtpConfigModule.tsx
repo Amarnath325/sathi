@@ -25,10 +25,18 @@ import { decryptCredential } from '@/lib/cryptoUtils';
 export function SmtpConfigModule() {
   const { smtpSettings, updateSmtpSettings, verifySmtpConnection } = useEmailConfigStore();
 
-  const [formData, setFormData] = useState<SmtpSettings>(() => ({
-    ...smtpSettings,
-    password: decryptCredential(smtpSettings.password)
-  }));
+  const [formData, setFormData] = useState<SmtpSettings>({
+    driver: 'SMTP',
+    host: '',
+    port: 587,
+    username: '',
+    password: '',
+    encryption: 'TLS',
+    fromName: '',
+    fromEmail: '',
+    isVerified: false,
+    isEncryptedInDb: false
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isSyncingApi, setIsSyncingApi] = useState(false);
@@ -42,11 +50,31 @@ export function SmtpConfigModule() {
         const data = await res.json();
         if (data.success && data.settings) {
           if (data.source) setDbSource(data.source);
-          setFormData(prev => ({
-            ...prev,
-            ...data.settings,
-            password: data.settings.password // Plaintext decrypted value
-          }));
+          setFormData({
+            driver: data.settings.driver || 'SMTP',
+            host: data.settings.host || '',
+            port: Number(data.settings.port) || 587,
+            username: data.settings.username || '',
+            password: data.settings.password || '', // Plaintext decrypted value
+            encryption: data.settings.encryption || 'TLS',
+            fromName: data.settings.fromName || '',
+            fromEmail: data.settings.fromEmail || '',
+            isVerified: data.settings.isVerified ?? false,
+            isEncryptedInDb: true
+          });
+        } else {
+          setFormData({
+            driver: 'SMTP',
+            host: '',
+            port: 587,
+            username: '',
+            password: '',
+            encryption: 'TLS',
+            fromName: '',
+            fromEmail: '',
+            isVerified: false,
+            isEncryptedInDb: false
+          });
         }
       } catch (err) {
         console.error('SMTP API Fetch Error:', err);
