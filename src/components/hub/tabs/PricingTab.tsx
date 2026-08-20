@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useServiceHubStore } from '@/lib/serviceHubStore';
 import { PricingProfile, PricingType } from '@/lib/types/serviceHub';
 import { PricingEngine } from '@/lib/serviceHubEngines';
@@ -11,21 +11,17 @@ import {
   Edit2,
   Search,
   X,
-  Copy,
-  Trash2,
   Clock,
   Car,
   TrendingUp,
   Percent,
   Tag,
   ShieldCheck,
-  Calendar,
-  Layers,
   FileSpreadsheet,
-  CheckCircle2,
-  AlertCircle,
+  Upload,
   Lock,
-  ArrowRight
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 
 type ModalTab = 'basic' | 'rate_duration' | 'travel' | 'dynamic' | 'fees' | 'discounts' | 'advanced';
@@ -39,6 +35,11 @@ export function PricingTab() {
     updatePricingProfile,
     searchQuery
   } = useServiceHubStore();
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Notifications
+  const [importMessage, setImportMessage] = useState<string | null>(null);
 
   // Search & Filter State
   const [localSearch, setLocalSearch] = useState('');
@@ -351,8 +352,168 @@ export function PricingTab() {
     document.body.removeChild(link);
   };
 
+  // Import Trigger & Handler
+  const handleTriggerImport = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const content = evt.target?.result as string;
+        if (!content) return;
+
+        let importedCount = 0;
+
+        if (file.name.endsWith('.json')) {
+          const parsed = JSON.parse(content);
+          const list = Array.isArray(parsed) ? parsed : [parsed];
+          list.forEach((item: any) => {
+            if (item.name) {
+              addPricingProfile({
+                name: item.name || 'Imported Profile',
+                pricing_type: item.pricing_type || 'Hourly',
+                currency: item.currency || 'INR',
+                category_id: item.category_id,
+                category_name: item.category_name,
+                service_id: item.service_id,
+                service_name: item.service_name,
+                base_price: Number(item.base_price || 500),
+                extra_hour_price: Number(item.extra_hour_price || 450),
+                minimum_duration: Number(item.minimum_duration || 1),
+                maximum_duration: Number(item.maximum_duration || 12),
+                travel_enabled: item.travel_enabled !== false,
+                travel_pricing_type: item.travel_pricing_type || 'Per KM',
+                travel_charge: Number(item.travel_charge || 15),
+                free_distance_km: Number(item.free_distance_km || 5),
+                max_travel_charge: Number(item.max_travel_charge || 500),
+                waiting_charge_per_hr: Number(item.waiting_charge_per_hr || 100),
+                parking_charge: Number(item.parking_charge || 0),
+                toll_charge: Number(item.toll_charge || 0),
+                other_charges: Number(item.other_charges || 0),
+                weekend_multiplier: Number(item.weekend_multiplier || 1.15),
+                holiday_multiplier: Number(item.holiday_multiplier || 1.25),
+                surge_enabled: Boolean(item.surge_enabled),
+                surge_multiplier: Number(item.surge_multiplier || 1.2),
+                peak_hours_start: item.peak_hours_start || '18:00',
+                peak_hours_end: item.peak_hours_end || '23:00',
+                demand_pricing_multiplier: Number(item.demand_pricing_multiplier || 1.0),
+                platform_fee: Number(item.platform_fee || 15),
+                payment_gateway_fee: Number(item.payment_gateway_fee || 2),
+                tax: Number(item.tax || 18),
+                companion_commission: Number(item.companion_commission || 20),
+                companion_payout_rate: Number(item.companion_payout_rate || 80),
+                discount_enabled: Boolean(item.discount_enabled),
+                discount_type: item.discount_type || 'Percentage',
+                discount_value: Number(item.discount_value || 0),
+                discount_cap: Number(item.discount_cap || 0),
+                long_duration_discount: Number(item.long_duration_discount || 0),
+                price_min_limit: item.price_min_limit ? Number(item.price_min_limit) : undefined,
+                price_max_limit: item.price_max_limit ? Number(item.price_max_limit) : undefined,
+                rounding_rule: item.rounding_rule || 'ROUND_NEAREST_10',
+                version: item.version || 'v1.0',
+                effective_from: item.effective_from || new Date().toISOString().split('T')[0],
+                effective_until: item.effective_until,
+                pricing_snapshot_code: `SNAP-IMP-${Date.now().toString(36).slice(-4)}`,
+                historical_price_lock: item.historical_price_lock !== false,
+                cancellation_fee: Number(item.cancellation_fee || 100),
+                no_show_fee: Number(item.no_show_fee || 500),
+                status: item.status || 'ACTIVE'
+              });
+              importedCount++;
+            }
+          });
+        } else if (file.name.endsWith('.csv')) {
+          const lines = content.split(/\r?\n/).filter(line => line.trim().length > 0);
+          if (lines.length > 1) {
+            for (let i = 1; i < lines.length; i++) {
+              const cols = lines[i].split(',').map(c => c.trim().replace(/^"(.*)"$/, '$1'));
+              if (cols.length >= 2 && cols[1]) {
+                addPricingProfile({
+                  name: cols[1] || `Imported Profile ${i}`,
+                  pricing_type: (cols[2] as any) || 'Hourly',
+                  currency: cols[3] || 'INR',
+                  base_price: Number(cols[4]) || 500,
+                  extra_hour_price: Number(cols[5]) || 450,
+                  minimum_duration: Number(cols[6]) || 1,
+                  maximum_duration: Number(cols[7]) || 12,
+                  travel_enabled: true,
+                  travel_pricing_type: 'Per KM',
+                  travel_charge: 15,
+                  free_distance_km: 5,
+                  max_travel_charge: 500,
+                  waiting_charge_per_hr: 100,
+                  parking_charge: 0,
+                  toll_charge: 0,
+                  other_charges: 0,
+                  weekend_multiplier: 1.15,
+                  holiday_multiplier: 1.25,
+                  surge_enabled: true,
+                  surge_multiplier: 1.2,
+                  platform_fee: Number(cols[8]?.replace('%', '')) || 15,
+                  payment_gateway_fee: 2,
+                  tax: 18,
+                  companion_commission: 20,
+                  companion_payout_rate: Number(cols[9]?.replace('%', '')) || 80,
+                  discount_enabled: true,
+                  discount_type: 'Percentage',
+                  discount_value: 10,
+                  discount_cap: 300,
+                  long_duration_discount: 5,
+                  rounding_rule: 'ROUND_NEAREST_10',
+                  version: cols[10] || 'v1.0',
+                  effective_from: new Date().toISOString().split('T')[0],
+                  historical_price_lock: true,
+                  cancellation_fee: 100,
+                  no_show_fee: 500,
+                  status: (cols[11] as any) || 'ACTIVE'
+                });
+                importedCount++;
+              }
+            }
+          }
+        }
+
+        setImportMessage(`Successfully imported ${importedCount} pricing profile(s)!`);
+        setTimeout(() => setImportMessage(null), 5000);
+      } catch (err) {
+        alert('Failed to import pricing profiles. Please ensure it is a valid CSV or JSON file.');
+      }
+    };
+    reader.readAsText(file);
+  };
+
   return (
     <div className="space-y-4 w-full text-xs">
+      {/* Hidden File Input for Import */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept=".csv, .json"
+        onChange={handleImportFile}
+        className="hidden"
+      />
+
+      {/* Notification Toast */}
+      {importMessage && (
+        <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-extrabold text-xs flex items-center justify-between shadow-2xs transition-all">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <span>{importMessage}</span>
+          </div>
+          <button onClick={() => setImportMessage(null)} className="text-emerald-600 hover:text-emerald-900">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Search, Filter & Actions Bar */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs">
         <div className="flex flex-1 flex-wrap items-center gap-2">
@@ -415,6 +576,14 @@ export function PricingTab() {
               Grid View
             </button>
           </div>
+
+          <button
+            onClick={handleTriggerImport}
+            className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] border border-slate-200/90 flex items-center gap-1 transition-all"
+            title="Import CSV or JSON"
+          >
+            <Upload className="w-3.5 h-3.5 text-purple-600" /> Import
+          </button>
 
           <button
             onClick={handleExportCSV}
@@ -873,28 +1042,30 @@ export function PricingTab() {
         </div>
       </div>
 
-      {/* 7-Tab Organized Enterprise Create / Edit Modal */}
+      {/* 🚀 EXPANDED ENTERPRISE MODAL (No Scroll Tabs & Wide Width) */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-3xl w-full p-4 sm:p-6 space-y-4 shadow-2xl my-auto text-xs text-slate-100">
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-white border border-slate-200/90 rounded-3xl max-w-5xl w-full p-6 sm:p-7 space-y-5 shadow-2xl my-auto text-xs text-slate-900 transition-all min-h-[580px]">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex items-start justify-between border-b border-slate-100 pb-3.5">
               <div>
-                <h4 className="font-extrabold text-white text-base">
+                <h4 className="font-extrabold text-slate-900 text-lg tracking-tight">
                   {editingProfile ? `Edit Pricing Profile: ${editingProfile.name}` : 'Create Enterprise Pricing Profile'}
                 </h4>
-                <p className="text-[11px] text-slate-400">Configure multi-tier pricing, travel rules, gateway fees, and payout logic.</p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Configure multi-tier pricing, travel rules, gateway fees, and payout logic.
+                </p>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* 7 Tab Navigation Headers */}
-            <div className="flex items-center gap-1 overflow-x-auto pb-1 border-b border-slate-800 no-scrollbar">
+            {/* 7 Tab Navigation Headers - Clean 7-Column Grid (NO SCROLL!) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-1.5 w-full bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200/80">
               {[
                 { id: 'basic', label: '1. Basic Pricing', icon: Tag },
                 { id: 'rate_duration', label: '2. Rate & Duration', icon: Clock },
@@ -911,43 +1082,43 @@ export function PricingTab() {
                     key={tab.id}
                     type="button"
                     onClick={() => setActiveModalTab(tab.id as ModalTab)}
-                    className={`px-3 py-2 rounded-xl text-[10.5px] font-extrabold flex items-center gap-1.5 shrink-0 transition-all ${
+                    className={`px-2 py-2 rounded-xl text-[10.5px] font-extrabold flex items-center justify-center gap-1.5 transition-all text-center ${
                       isActive
-                        ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
-                        : 'bg-slate-800/60 text-slate-400 hover:text-white hover:bg-slate-800'
+                        ? 'bg-purple-600 text-white shadow-sm ring-1 ring-purple-600/30'
+                        : 'bg-transparent text-slate-600 hover:text-slate-900 hover:bg-white/80'
                     }`}
                   >
-                    <IconComponent className="w-3.5 h-3.5" />
-                    {tab.label}
+                    <IconComponent className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">{tab.label}</span>
                   </button>
                 );
               })}
             </div>
 
-            {/* Form */}
+            {/* Form Content */}
             <form onSubmit={handleSaveProfile} className="space-y-4 pt-1">
               {/* TAB 1: BASIC PRICING */}
               {activeModalTab === 'basic' && (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div>
-                    <label className="block text-slate-300 font-bold mb-1">Pricing Profile Name *</label>
+                    <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Pricing Profile Name *</label>
                     <input
                       type="text"
                       required
                       value={name}
                       onChange={e => setName(e.target.value)}
                       placeholder="e.g. Standard Companion Hourly Profile"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-slate-300 font-bold mb-1">Pricing Type</label>
+                      <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Pricing Type</label>
                       <select
                         value={pricingType}
                         onChange={e => setPricingType(e.target.value as any)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                       >
                         <option value="Hourly">Hourly</option>
                         <option value="Half Day">Half Day (4h)</option>
@@ -961,11 +1132,11 @@ export function PricingTab() {
                     </div>
 
                     <div>
-                      <label className="block text-slate-300 font-bold mb-1">Currency</label>
+                      <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Currency</label>
                       <select
                         value={currency}
                         onChange={e => setCurrency(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                       >
                         <option value="INR">INR (₹)</option>
                         <option value="USD">USD ($)</option>
@@ -976,13 +1147,13 @@ export function PricingTab() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-slate-300 font-bold mb-1">Linked Category (Optional)</label>
+                      <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Linked Category (Optional)</label>
                       <select
                         value={categoryId}
                         onChange={e => setCategoryId(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                       >
                         <option value="">All Categories</option>
                         {categories.map(c => (
@@ -992,11 +1163,11 @@ export function PricingTab() {
                     </div>
 
                     <div>
-                      <label className="block text-slate-300 font-bold mb-1">Linked Service (Optional)</label>
+                      <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Linked Service (Optional)</label>
                       <select
                         value={serviceId}
                         onChange={e => setServiceId(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                       >
                         <option value="">All Services</option>
                         {services.map(s => (
@@ -1006,11 +1177,11 @@ export function PricingTab() {
                     </div>
 
                     <div>
-                      <label className="block text-slate-300 font-bold mb-1">Status</label>
+                      <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Status</label>
                       <select
                         value={status}
                         onChange={e => setStatus(e.target.value as any)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-extrabold outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                       >
                         <option value="ACTIVE">Active</option>
                         <option value="INACTIVE">Inactive</option>
@@ -1023,54 +1194,54 @@ export function PricingTab() {
 
               {/* TAB 2: RATE & DURATION */}
               {activeModalTab === 'rate_duration' && (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-slate-300 font-bold mb-1">Base Rate (₹) *</label>
+                      <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Base Rate (₹) *</label>
                       <input
                         type="number"
                         required
                         value={basePrice}
                         onChange={e => setBasePrice(Number(e.target.value))}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-extrabold font-mono outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                       />
-                      <p className="text-[10px] text-slate-400 mt-1">Starting base charge for 1st hour or fixed session.</p>
+                      <p className="text-[10px] text-slate-500 mt-1">Starting base charge for 1st hour or fixed session.</p>
                     </div>
 
                     <div>
-                      <label className="block text-slate-300 font-bold mb-1">Extra Hour Rate (₹)</label>
+                      <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Extra Hour Rate (₹)</label>
                       <input
                         type="number"
                         value={extraHourPrice}
                         onChange={e => setExtraHourPrice(Number(e.target.value))}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-extrabold font-mono outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                       />
-                      <p className="text-[10px] text-slate-400 mt-1">Fee for each additional hour beyond 1st hour.</p>
+                      <p className="text-[10px] text-slate-500 mt-1">Fee for each additional hour beyond 1st hour.</p>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-800">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-slate-100">
                     <div>
-                      <label className="block text-slate-300 font-bold mb-1">Minimum Duration (Hours)</label>
+                      <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Minimum Duration (Hours)</label>
                       <input
                         type="number"
                         min={1}
                         max={24}
                         value={minDuration}
                         onChange={e => setMinDuration(Number(e.target.value))}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-slate-300 font-bold mb-1">Maximum Duration (Hours)</label>
+                      <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Maximum Duration (Hours)</label>
                       <input
                         type="number"
                         min={1}
                         max={24}
                         value={maxDuration}
                         onChange={e => setMaxDuration(Number(e.target.value))}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                       />
                     </div>
                   </div>
@@ -1079,29 +1250,29 @@ export function PricingTab() {
 
               {/* TAB 3: TRAVEL & EXTRA CHARGES */}
               {activeModalTab === 'travel' && (
-                <div className="space-y-3">
-                  <label className="flex items-center gap-2 cursor-pointer p-3 rounded-xl bg-slate-950 border border-slate-800">
+                <div className="space-y-4">
+                  <label className="flex items-center gap-3 cursor-pointer p-3.5 rounded-2xl bg-slate-50 border border-slate-200/90 hover:border-purple-300 transition-colors">
                     <input
                       type="checkbox"
                       checked={travelEnabled}
                       onChange={e => setTravelEnabled(e.target.checked)}
-                      className="accent-purple-600 w-4 h-4 rounded"
+                      className="accent-purple-600 w-4 h-4 rounded cursor-pointer"
                     />
                     <div>
-                      <span className="text-white font-bold text-xs">Enable Travel Charges</span>
-                      <p className="text-[10px] text-slate-400">Calculate distance-based travel reimbursement for companions.</p>
+                      <span className="text-slate-900 font-extrabold text-xs">Enable Travel Charges</span>
+                      <p className="text-[10px] text-slate-500">Calculate distance-based travel reimbursement for companions.</p>
                     </div>
                   </label>
 
                   {travelEnabled && (
-                    <div className="space-y-3 pt-1">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="space-y-4 pt-1">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
-                          <label className="block text-slate-300 font-bold mb-1">Travel Pricing Type</label>
+                          <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Travel Pricing Type</label>
                           <select
                             value={travelPricingType}
                             onChange={e => setTravelPricingType(e.target.value as any)}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                           >
                             <option value="Per KM">Per KM Rate</option>
                             <option value="Fixed">Fixed Travel Fee</option>
@@ -1110,54 +1281,54 @@ export function PricingTab() {
                         </div>
 
                         <div>
-                          <label className="block text-slate-300 font-bold mb-1">Per KM / Travel Rate (₹)</label>
+                          <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Per KM / Travel Rate (₹)</label>
                           <input
                             type="number"
                             value={travelCharge}
                             onChange={e => setTravelCharge(Number(e.target.value))}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold font-mono outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-slate-300 font-bold mb-1">Free Distance (KM)</label>
+                          <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Free Distance (KM)</label>
                           <input
                             type="number"
                             value={freeDistanceKm}
                             onChange={e => setFreeDistanceKm(Number(e.target.value))}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold font-mono outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                           />
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-800">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-3 border-t border-slate-100">
                         <div>
-                          <label className="block text-slate-300 font-bold mb-1">Max Travel Charge Cap (₹)</label>
+                          <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Max Travel Charge Cap (₹)</label>
                           <input
                             type="number"
                             value={maxTravelCharge}
                             onChange={e => setMaxTravelCharge(Number(e.target.value))}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold font-mono outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-slate-300 font-bold mb-1">Waiting Charge (₹/hr)</label>
+                          <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Waiting Charge (₹/hr)</label>
                           <input
                             type="number"
                             value={waitingChargePerHr}
                             onChange={e => setWaitingChargePerHr(Number(e.target.value))}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold font-mono outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-slate-300 font-bold mb-1">Parking / Toll (₹)</label>
+                          <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Parking / Toll (₹)</label>
                           <input
                             type="number"
                             value={parkingCharge}
                             onChange={e => setParkingCharge(Number(e.target.value))}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold font-mono outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                           />
                         </div>
                       </div>
@@ -1168,77 +1339,77 @@ export function PricingTab() {
 
               {/* TAB 4: DYNAMIC MULTIPLIERS */}
               {activeModalTab === 'dynamic' && (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-slate-300 font-bold mb-1">Weekend Multiplier (x)</label>
+                      <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Weekend Multiplier (x)</label>
                       <input
                         type="number"
                         step="0.05"
                         value={weekendMultiplier}
                         onChange={e => setWeekendMultiplier(Number(e.target.value))}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-extrabold font-mono outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                       />
-                      <p className="text-[10px] text-slate-400 mt-1">e.g. 1.15 = 15% surge on Sat/Sun</p>
+                      <p className="text-[10px] text-slate-500 mt-1">e.g. 1.15 = 15% surge on Sat/Sun</p>
                     </div>
 
                     <div>
-                      <label className="block text-slate-300 font-bold mb-1">Holiday Multiplier (x)</label>
+                      <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Holiday Multiplier (x)</label>
                       <input
                         type="number"
                         step="0.05"
                         value={holidayMultiplier}
                         onChange={e => setHolidayMultiplier(Number(e.target.value))}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-extrabold font-mono outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                       />
-                      <p className="text-[10px] text-slate-400 mt-1">e.g. 1.25 = 25% surge on official holidays</p>
+                      <p className="text-[10px] text-slate-500 mt-1">e.g. 1.25 = 25% surge on official holidays</p>
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-800 space-y-3">
-                    <label className="flex items-center gap-2 cursor-pointer p-3 rounded-xl bg-slate-950 border border-slate-800">
+                  <div className="pt-3 border-t border-slate-100 space-y-3">
+                    <label className="flex items-center gap-3 cursor-pointer p-3.5 rounded-2xl bg-slate-50 border border-slate-200/90 hover:border-purple-300 transition-colors">
                       <input
                         type="checkbox"
                         checked={surgeEnabled}
                         onChange={e => setSurgeEnabled(e.target.checked)}
-                        className="accent-purple-600 w-4 h-4 rounded"
+                        className="accent-purple-600 w-4 h-4 rounded cursor-pointer"
                       />
                       <div>
-                        <span className="text-white font-bold text-xs">Enable Peak Hours Surge Pricing</span>
-                        <p className="text-[10px] text-slate-400">Apply automatic surge during high demand night hours.</p>
+                        <span className="text-slate-900 font-extrabold text-xs">Enable Peak Hours Surge Pricing</span>
+                        <p className="text-[10px] text-slate-500">Apply automatic surge during high demand night hours.</p>
                       </div>
                     </label>
 
                     {surgeEnabled && (
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
-                          <label className="block text-slate-300 font-bold mb-1">Surge Multiplier (x)</label>
+                          <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Surge Multiplier (x)</label>
                           <input
                             type="number"
                             step="0.05"
                             value={surgeMultiplier}
                             onChange={e => setSurgeMultiplier(Number(e.target.value))}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold font-mono outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-slate-300 font-bold mb-1">Peak Start Time</label>
+                          <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Peak Start Time</label>
                           <input
                             type="time"
                             value={peakHoursStart}
                             onChange={e => setPeakHoursStart(e.target.value)}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-slate-300 font-bold mb-1">Peak End Time</label>
+                          <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Peak End Time</label>
                           <input
                             type="time"
                             value={peakHoursEnd}
                             onChange={e => setPeakHoursEnd(e.target.value)}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                           />
                         </div>
                       </div>
@@ -1249,49 +1420,49 @@ export function PricingTab() {
 
               {/* TAB 5: FEES, TAX & EARNINGS */}
               {activeModalTab === 'fees' && (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-slate-300 font-bold mb-1">Platform Fee (%)</label>
+                      <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Platform Fee (%)</label>
                       <input
                         type="number"
                         value={platformFee}
                         onChange={e => setPlatformFee(Number(e.target.value))}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold font-mono outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-slate-300 font-bold mb-1">Payment Gateway Fee (%)</label>
+                      <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Payment Gateway Fee (%)</label>
                       <input
                         type="number"
                         step="0.1"
                         value={gatewayFee}
                         onChange={e => setGatewayFee(Number(e.target.value))}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold font-mono outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-slate-300 font-bold mb-1">GST / Tax Rate (%)</label>
+                      <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">GST / Tax Rate (%)</label>
                       <input
                         type="number"
                         value={tax}
                         onChange={e => setTax(Number(e.target.value))}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold font-mono outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                       />
                     </div>
                   </div>
 
-                  <div className="p-3 rounded-2xl bg-emerald-950/40 border border-emerald-800/60 space-y-3 pt-3">
-                    <h5 className="font-extrabold text-emerald-400 text-xs flex items-center gap-1.5">
-                      <DollarSign className="w-4 h-4 text-emerald-400" />
+                  <div className="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-200/90 space-y-3 pt-3">
+                    <h5 className="font-extrabold text-emerald-800 text-xs flex items-center gap-1.5">
+                      <DollarSign className="w-4 h-4 text-emerald-600" />
                       Companion Payout & Escrow Split
                     </h5>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-slate-300 font-bold mb-1">Companion Payout Rate (%)</label>
+                        <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Companion Payout Rate (%)</label>
                         <input
                           type="number"
                           value={companionPayoutRate}
@@ -1300,13 +1471,13 @@ export function PricingTab() {
                             setCompanionPayoutRate(val);
                             setCompanionCommission(100 - val);
                           }}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-emerald-500 text-xs font-mono font-bold"
+                          className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 outline-none focus:border-emerald-500 text-xs font-mono font-extrabold shadow-2xs"
                         />
-                        <p className="text-[10px] text-slate-400 mt-1">Percentage directly transferred to companion bank wallet.</p>
+                        <p className="text-[10px] text-slate-500 mt-1">Percentage directly transferred to companion bank wallet.</p>
                       </div>
 
                       <div>
-                        <label className="block text-slate-300 font-bold mb-1">Admin Commission (%)</label>
+                        <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Admin Commission (%)</label>
                         <input
                           type="number"
                           value={companionCommission}
@@ -1315,9 +1486,9 @@ export function PricingTab() {
                             setCompanionCommission(val);
                             setCompanionPayoutRate(100 - val);
                           }}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-emerald-500 text-xs font-mono font-bold"
+                          className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 outline-none focus:border-emerald-500 text-xs font-mono font-extrabold shadow-2xs"
                         />
-                        <p className="text-[10px] text-slate-400 mt-1">Platform gross margin retained by Sathi.</p>
+                        <p className="text-[10px] text-slate-500 mt-1">Platform gross margin retained by Sathi.</p>
                       </div>
                     </div>
                   </div>
@@ -1326,28 +1497,28 @@ export function PricingTab() {
 
               {/* TAB 6: DISCOUNTS */}
               {activeModalTab === 'discounts' && (
-                <div className="space-y-3">
-                  <label className="flex items-center gap-2 cursor-pointer p-3 rounded-xl bg-slate-950 border border-slate-800">
+                <div className="space-y-4">
+                  <label className="flex items-center gap-3 cursor-pointer p-3.5 rounded-2xl bg-slate-50 border border-slate-200/90 hover:border-purple-300 transition-colors">
                     <input
                       type="checkbox"
                       checked={discountEnabled}
                       onChange={e => setDiscountEnabled(e.target.checked)}
-                      className="accent-purple-600 w-4 h-4 rounded"
+                      className="accent-purple-600 w-4 h-4 rounded cursor-pointer"
                     />
                     <div>
-                      <span className="text-white font-bold text-xs">Enable Automatic Profile Discounts</span>
-                      <p className="text-[10px] text-slate-400">Apply introductory or bulk promo discounts automatically.</p>
+                      <span className="text-slate-900 font-extrabold text-xs">Enable Automatic Profile Discounts</span>
+                      <p className="text-[10px] text-slate-500">Apply introductory or bulk promo discounts automatically.</p>
                     </div>
                   </label>
 
                   {discountEnabled && (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div>
-                        <label className="block text-slate-300 font-bold mb-1">Discount Type</label>
+                        <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Discount Type</label>
                         <select
                           value={discountType}
                           onChange={e => setDiscountType(e.target.value as any)}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                         >
                           <option value="Percentage">Percentage (%)</option>
                           <option value="Fixed Amount">Fixed Amount (₹)</option>
@@ -1355,34 +1526,34 @@ export function PricingTab() {
                       </div>
 
                       <div>
-                        <label className="block text-slate-300 font-bold mb-1">Discount Value</label>
+                        <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Discount Value</label>
                         <input
                           type="number"
                           value={discountValue}
                           onChange={e => setDiscountValue(Number(e.target.value))}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold font-mono outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-slate-300 font-bold mb-1">Discount Cap Limit (₹)</label>
+                        <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Discount Cap Limit (₹)</label>
                         <input
                           type="number"
                           value={discountCap}
                           onChange={e => setDiscountCap(Number(e.target.value))}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold font-mono outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                         />
                       </div>
 
-                      <div className="col-span-1 sm:col-span-3 pt-2 border-t border-slate-800">
-                        <label className="block text-slate-300 font-bold mb-1">Long Duration Bonus Discount (%)</label>
+                      <div className="col-span-1 sm:col-span-3 pt-3 border-t border-slate-100">
+                        <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Long Duration Bonus Discount (%)</label>
                         <input
                           type="number"
                           value={longDurationDiscount}
                           onChange={e => setLongDurationDiscount(Number(e.target.value))}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                         />
-                        <p className="text-[10px] text-slate-400 mt-1">Extra discount automatically applied for bookings exceeding 4 hours.</p>
+                        <p className="text-[10px] text-slate-500 mt-1">Extra discount automatically applied for bookings exceeding 4 hours.</p>
                       </div>
                     </div>
                   )}
@@ -1391,34 +1562,34 @@ export function PricingTab() {
 
               {/* TAB 7: ADVANCED & VERSIONING */}
               {activeModalTab === 'advanced' && (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-slate-300 font-bold mb-1">Min Price Threshold (₹)</label>
+                      <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Min Price Threshold (₹)</label>
                       <input
                         type="number"
                         value={priceMinLimit}
                         onChange={e => setPriceMinLimit(Number(e.target.value))}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold font-mono outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-slate-300 font-bold mb-1">Max Price Cap (₹)</label>
+                      <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Max Price Cap (₹)</label>
                       <input
                         type="number"
                         value={priceMaxLimit}
                         onChange={e => setPriceMaxLimit(Number(e.target.value))}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold font-mono outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-slate-300 font-bold mb-1">Rounding Functionality</label>
+                      <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Rounding Functionality</label>
                       <select
                         value={roundingRule}
                         onChange={e => setRoundingRule(e.target.value as any)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                       >
                         <option value="ROUND_NEAREST_10">Round to Nearest ₹10</option>
                         <option value="ROUND_NEAREST_50">Round to Nearest ₹50</option>
@@ -1428,70 +1599,72 @@ export function PricingTab() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-800">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-3 border-t border-slate-100">
                     <div>
-                      <label className="block text-slate-300 font-bold mb-1">Pricing Version Tag</label>
+                      <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Pricing Version Tag</label>
                       <input
                         type="text"
                         value={versionTag}
                         onChange={e => setVersionTag(e.target.value)}
                         placeholder="v1.0"
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs font-mono font-bold"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold font-mono outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-slate-300 font-bold mb-1">Effective From Date</label>
+                      <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Effective From Date</label>
                       <input
                         type="date"
                         value={effectiveFrom}
                         onChange={e => setEffectiveFrom(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-slate-300 font-bold mb-1">Effective Until Date</label>
+                      <label className="block text-slate-700 font-bold mb-1.5 text-[11px]">Effective Until Date</label>
                       <input
                         type="date"
                         value={effectiveUntil}
                         onChange={e => setEffectiveUntil(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-xs"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-bold outline-none focus:bg-white focus:border-purple-500 text-xs transition-all shadow-2xs"
                       />
                     </div>
                   </div>
 
-                  <label className="flex items-center gap-2 cursor-pointer p-3 rounded-xl bg-slate-950 border border-slate-800">
+                  <label className="flex items-center gap-3 cursor-pointer p-3.5 rounded-2xl bg-slate-50 border border-slate-200/90 hover:border-purple-300 transition-colors">
                     <input
                       type="checkbox"
                       checked={historicalLock}
                       onChange={e => setHistoricalLock(e.target.checked)}
-                      className="accent-purple-600 w-4 h-4 rounded"
+                      className="accent-purple-600 w-4 h-4 rounded cursor-pointer"
                     />
                     <div>
-                      <span className="text-white font-bold text-xs">Enable Historical Price Snapshot Locking</span>
-                      <p className="text-[10px] text-slate-400">Lock immutable pricing snapshot hash into booking record upon checkout.</p>
+                      <span className="text-slate-900 font-extrabold text-xs">Enable Historical Price Snapshot Locking</span>
+                      <p className="text-[10px] text-slate-500">Lock immutable pricing snapshot hash into booking record upon checkout.</p>
                     </div>
                   </label>
                 </div>
               )}
 
               {/* Modal Footer Controls */}
-              <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-slate-500">Step {['basic', 'rate_duration', 'travel', 'dynamic', 'fees', 'discounts', 'advanced'].indexOf(activeModalTab) + 1} of 7</span>
+                  <span className="text-[11px] text-slate-500 font-medium">
+                    Step {['basic', 'rate_duration', 'travel', 'dynamic', 'fees', 'discounts', 'advanced'].indexOf(activeModalTab) + 1} of 7
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition-colors"
+                    className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs shadow-lg shadow-purple-600/30 transition-all flex items-center gap-1"
+                    className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs shadow-md shadow-purple-600/20 transition-all flex items-center gap-1"
                   >
                     {editingProfile ? 'Save Pricing Changes' : 'Create Pricing Profile'}
                   </button>
