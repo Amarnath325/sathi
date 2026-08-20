@@ -4,10 +4,10 @@ import { prisma } from '@/lib/prisma';
 
 const SETTING_KEY = 'smtp_email_config';
 
-// In-memory runtime cache (populates only when form is submitted or fetched from DB)
+// In-memory runtime cache
 let memorySmtpStore: any = null;
 
-// GET: Fetch real SMTP credentials from Neon DB
+// GET: Fetch real SMTP credentials & per-driver vault from Neon DB
 export async function GET() {
   try {
     let dbRecord = null;
@@ -19,7 +19,7 @@ export async function GET() {
       console.warn('Neon DB query warning:', dbErr);
     }
 
-    let smtpData = null;
+    let smtpData: any = null;
 
     if (dbRecord && dbRecord.value) {
       try {
@@ -36,13 +36,42 @@ export async function GET() {
         success: true,
         configured: false,
         source: 'NO_CONFIG_FOUND',
-        settings: null
+        settings: null,
+        driverVault: {}
       });
     }
 
-    // Password in DB is stored encrypted with AES-256 (`enc_aes256_v1:...`)
+    // Password at root level
     const rawEncryptedPass = smtpData.password || '';
     const decryptedPass = decryptCredential(rawEncryptedPass);
+
+    // Decrypt passwords inside driverVault map as well
+    const rawVault = smtpData.driverVault || {};
+    const decryptedVault: Record<string, any> = {};
+
+    for (const [drvKey, drvConfig] of Object.entries<any>(rawVault)) {
+      if (drvConfig) {
+        decryptedVault[drvKey] = {
+          ...drvConfig,
+          password: drvConfig.password ? decryptCredential(drvConfig.password) : ''
+        };
+      }
+    }
+
+    // Ensure active driver's current config is also present in decryptedVault
+    if (smtpData.driver) {
+      decryptedVault[smtpData.driver] = {
+        driver: smtpData.driver,
+        host: smtpData.host || '',
+        port: Number(smtpData.port) || 587,
+        username: smtpData.username || '',
+        password: decryptedPass,
+        encryption: smtpData.encryption || 'TLS',
+        fromName: smtpData.fromName || '',
+        fromEmail: smtpData.fromEmail || '',
+        isVerified: smtpData.isVerified ?? false
+      };
+    }
 
     return NextResponse.json({
       success: true,
@@ -50,8 +79,8 @@ export async function GET() {
       source: dbRecord ? 'NEON_POSTGRES_DB' : 'MEMORY_CACHE',
       settings: {
         ...smtpData,
-        password: decryptedPass, // Decrypted for admin view
-        encryptedPasswordHash: rawEncryptedPass // Raw ciphertext saved in Neon DB
+        password: decryptedPass,
+        driverVault: decryptedVault
       }
     });
   } catch (error: any) {
@@ -62,11 +91,13 @@ export async function GET() {
   }
 }
 
-// POST: Encrypt & Save user's form data into Neon DB
+// POST: Encrypt & Save driver-specific form data into Neon DB
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { driver, host, port, username, password, encryption, fromName, fromEmail } = body;
+
+    const driverKey = driver || 'SMTP';
 
     if (!host || !username || !password) {
       return NextResponse.json(
@@ -78,18 +109,46 @@ export async function POST(req: Request) {
     // 1. Encrypt password using AES-256 before saving to DB
     const encryptedPassword = encryptCredential(password);
 
-    // Dynamic payload directly constructed from form inputs
-    const payloadToSave = {
-      driver: driver || 'SMTP',
+    // Fetch existing settings to preserve other driver vault configurations
+    let existingSettings: any = {};
+    try {
+      const dbRecord = await prisma.systemSetting.findUnique({
+        where: { key: SETTING_KEY }
+      });
+      if (dbRecord && dbRecord.value) {
+        existingSettings = JSON.parse(dbRecord.value) || {};
+      } else if (memorySmtpStore) {
+        existingSettings = memorySmtpStore;
+      }
+    } catch (e) {
+      console.warn('Failed to read existing settings for vault merge:', e);
+    }
+
+    const existingVault = existingSettings.driverVault || {};
+
+    // Dynamic payload for the specific active driver being saved
+    const activeDriverPayload = {
+      driver: driverKey,
       host: host.trim(),
       port: Number(port) || 587,
       username: username.trim(),
-      password: encryptedPassword, // Strictly saved in ENCRYPTED format in DB
+      password: encryptedPassword, // Encrypted hash in DB
       encryption: encryption || 'TLS',
-      fromName: fromName ? fromName.trim() : 'Sathi Companion Connect',
+      fromName: fromName ? fromName.trim() : '',
       fromEmail: fromEmail ? fromEmail.trim() : username.trim(),
       isVerified: true,
       lastSavedAt: new Date().toISOString()
+    };
+
+    // Update the specific driver in driverVault map
+    const updatedVault = {
+      ...existingVault,
+      [driverKey]: activeDriverPayload
+    };
+
+    const payloadToSave = {
+      ...activeDriverPayload,
+      driverVault: updatedVault
     };
 
     memorySmtpStore = payloadToSave;
@@ -112,7 +171,7 @@ export async function POST(req: Request) {
           value: JSON.stringify(payloadToSave),
           valueType: 'JSON',
           isEncrypted: true,
-          description: 'Encrypted SMTP Credentials for Brevo/Custom Mail Gateway'
+          description: 'Encrypted Multi-Driver SMTP Credentials Vault'
         }
       });
       dbSuccess = true;
@@ -124,8 +183,8 @@ export async function POST(req: Request) {
       success: true,
       dbSynced: dbSuccess,
       message: dbSuccess
-        ? 'SMTP credentials successfully encrypted with AES-256 & updated live in Neon PostgreSQL DB!'
-        : 'SMTP credentials encrypted with AES-256 and saved in active server store.',
+        ? `SMTP credentials for ${driverKey} successfully encrypted with AES-256 & updated live in DB!`
+        : `SMTP credentials for ${driverKey} encrypted with AES-256 and saved in server store.`,
       savedEncryptedData: payloadToSave,
       decryptedViewPassword: password
     });

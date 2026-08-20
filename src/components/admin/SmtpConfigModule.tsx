@@ -25,6 +25,8 @@ import { decryptCredential } from '@/lib/cryptoUtils';
 export function SmtpConfigModule() {
   const { smtpSettings, updateSmtpSettings, verifySmtpConnection } = useEmailConfigStore();
 
+  const [driverVault, setDriverVault] = useState<Record<string, SmtpSettings>>({});
+
   const [formData, setFormData] = useState<SmtpSettings>({
     driver: 'SMTP',
     host: '',
@@ -42,7 +44,7 @@ export function SmtpConfigModule() {
   const [isSyncingApi, setIsSyncingApi] = useState(false);
   const [dbSource, setDbSource] = useState<string>('NEON_POSTGRES_DB');
 
-  // Fetch decrypted settings from Live DB API on mount
+  // Fetch decrypted settings & per-driver vault from Live DB API on mount
   React.useEffect(() => {
     async function loadSmtpFromApi() {
       try {
@@ -50,16 +52,23 @@ export function SmtpConfigModule() {
         const data = await res.json();
         if (data.success && data.settings) {
           if (data.source) setDbSource(data.source);
+
+          const vaultMap: Record<string, SmtpSettings> = data.settings.driverVault || {};
+          setDriverVault(vaultMap);
+
+          const activeDriver = data.settings.driver || 'SMTP';
+          const activeDriverData = vaultMap[activeDriver] || data.settings;
+
           setFormData({
-            driver: data.settings.driver || 'SMTP',
-            host: data.settings.host || '',
-            port: Number(data.settings.port) || 587,
-            username: data.settings.username || '',
-            password: data.settings.password || '', // Plaintext decrypted value
-            encryption: data.settings.encryption || 'TLS',
-            fromName: data.settings.fromName || '',
-            fromEmail: data.settings.fromEmail || '',
-            isVerified: data.settings.isVerified ?? false,
+            driver: activeDriver,
+            host: activeDriverData.host || '',
+            port: Number(activeDriverData.port) || 587,
+            username: activeDriverData.username || '',
+            password: activeDriverData.password || '', // Plaintext decrypted value
+            encryption: activeDriverData.encryption || 'TLS',
+            fromName: activeDriverData.fromName || '',
+            fromEmail: activeDriverData.fromEmail || '',
+            isVerified: activeDriverData.isVerified ?? false,
             isEncryptedInDb: true
           });
         } else {
@@ -102,10 +111,16 @@ export function SmtpConfigModule() {
       });
       await apiRes.json();
 
+      // Update local driverVault state map
+      setDriverVault(prev => ({
+        ...prev,
+        [formData.driver]: { ...formData, isVerified: true, isEncryptedInDb: true }
+      }));
+
       // 2. Encrypt & Save in Client Store
       updateSmtpSettings({
         ...formData,
-        password: formData.password // Will be encrypted inside updateSmtpSettings
+        password: formData.password
       });
 
       setIsSaved(true);
@@ -128,20 +143,47 @@ export function SmtpConfigModule() {
     setTestResult(result);
   };
 
-  const driverOptions: { key: SmtpSettings['driver']; label: string; desc: string; defaultHost: string; defaultPort: number }[] = [
-    { key: 'SMTP', label: 'Custom SMTP', desc: 'Private SMTP server', defaultHost: 'mail.yourdomain.com', defaultPort: 587 },
-    { key: 'GMAIL', label: 'Gmail SMTP', desc: 'smtp.gmail.com (TLS)', defaultHost: 'smtp.gmail.com', defaultPort: 587 },
-    { key: 'SENDGRID', label: 'Twilio SendGrid', desc: 'smtp.sendgrid.net', defaultHost: 'smtp.sendgrid.net', defaultPort: 587 },
-    { key: 'AWS_SES', label: 'Amazon SES', desc: 'email-smtp.amazonaws.com', defaultHost: 'email-smtp.us-east-1.amazonaws.com', defaultPort: 587 },
-    { key: 'MAILGUN', label: 'Mailgun', desc: 'smtp.mailgun.org', defaultHost: 'smtp.mailgun.org', defaultPort: 587 },
-    { key: 'POSTMARK', label: 'Postmark', desc: 'smtp.postmarkapp.com', defaultHost: 'smtp.postmarkapp.com', defaultPort: 587 }
+  const driverOptions: { key: SmtpSettings['driver']; label: string; desc: string }[] = [
+    { key: 'SMTP', label: 'Custom SMTP', desc: 'Private SMTP server' },
+    { key: 'GMAIL', label: 'Gmail SMTP', desc: 'smtp.gmail.com (TLS)' },
+    { key: 'SENDGRID', label: 'Twilio SendGrid', desc: 'smtp.sendgrid.net' },
+    { key: 'AWS_SES', label: 'Amazon SES', desc: 'email-smtp.amazonaws.com' },
+    { key: 'MAILGUN', label: 'Mailgun', desc: 'smtp.mailgun.org' },
+    { key: 'POSTMARK', label: 'Postmark', desc: 'smtp.postmarkapp.com' }
   ];
 
   const handleSelectDriver = (driverKey: SmtpSettings['driver']) => {
-    setFormData(prev => ({
-      ...prev,
-      driver: driverKey
-    }));
+    const savedForDriver = driverVault[driverKey];
+
+    if (savedForDriver && savedForDriver.host) {
+      // If user previously saved config for this specific driver tab, load it!
+      setFormData({
+        driver: driverKey,
+        host: savedForDriver.host || '',
+        port: Number(savedForDriver.port) || 587,
+        username: savedForDriver.username || '',
+        password: savedForDriver.password || '',
+        encryption: savedForDriver.encryption || 'TLS',
+        fromName: savedForDriver.fromName || '',
+        fromEmail: savedForDriver.fromEmail || '',
+        isVerified: savedForDriver.isVerified ?? false,
+        isEncryptedInDb: true
+      });
+    } else {
+      // If no config saved for this driver tab yet, keep all fields 100% BLANK!
+      setFormData({
+        driver: driverKey,
+        host: '',
+        port: 587,
+        username: '',
+        password: '',
+        encryption: 'TLS',
+        fromName: '',
+        fromEmail: '',
+        isVerified: false,
+        isEncryptedInDb: false
+      });
+    }
   };
 
   return (
@@ -201,6 +243,7 @@ export function SmtpConfigModule() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 lg:gap-2 xl:gap-3">
             {driverOptions.map(drv => {
               const isSelected = formData.driver === drv.key;
+              const hasConfig = Boolean(driverVault[drv.key]?.host);
               return (
                 <button
                   key={drv.key}
@@ -214,14 +257,22 @@ export function SmtpConfigModule() {
                 >
                   <div className="flex items-center justify-between mb-0.5 lg:mb-1">
                     <Server className={`w-3 h-3 lg:w-3.5 lg:h-3.5 xl:w-4 xl:h-4 ${isSelected ? 'text-indigo-600' : 'text-slate-400'}`} />
-                    {isSelected && (
-                      <div className="w-3 h-3 lg:w-3.5 lg:h-3.5 xl:w-4 xl:h-4 rounded-full bg-indigo-500 text-white flex items-center justify-center">
-                        <Check className="w-2 h-2 lg:w-2.5 lg:h-2.5 xl:w-3 xl:h-3 stroke-[3]" />
-                      </div>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {hasConfig && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 ring-2 ring-emerald-100" title="Saved Config Available" />
+                      )}
+                      {isSelected && (
+                        <div className="w-3 h-3 lg:w-3.5 lg:h-3.5 xl:w-4 xl:h-4 rounded-full bg-indigo-500 text-white flex items-center justify-center">
+                          <Check className="w-2 h-2 lg:w-2.5 lg:h-2.5 xl:w-3 xl:h-3 stroke-[3]" />
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className={`font-bold text-[10px] lg:text-[11px] xl:text-sm ${isSelected ? 'text-slate-900' : 'text-slate-700'}`}>{drv.label}</div>
-                  <div className="text-[8px] lg:text-[9px] xl:text-xs text-slate-400 truncate font-medium">{drv.desc}</div>
+                  <div className="text-[8px] lg:text-[9px] xl:text-xs text-slate-400 truncate font-medium flex items-center justify-between">
+                    <span>{drv.desc}</span>
+                    {hasConfig && <span className="text-[8px] text-emerald-600 font-bold ml-1">✓ Saved</span>}
+                  </div>
                 </button>
               );
             })}
