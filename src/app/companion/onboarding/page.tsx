@@ -274,6 +274,7 @@ export default function CompanionOnboardingWizard() {
   // Step 3: Safety & Boundaries State
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [serviceDescription, setServiceDescription] = useState('Describe exactly what customers can book you for. All services strictly non-sexual.');
+  const [serviceSearchQuery, setServiceSearchQuery] = useState<string>('');
   const [policyScanResult, setPolicyScanResult] = useState<any>(null);
   const [safetyCheckboxes, setSafetyCheckboxes] = useState({
     nonSexual: true,
@@ -321,6 +322,45 @@ export default function CompanionOnboardingWizard() {
 
     return subList;
   }, [dbCategories, selectedCategories]);
+
+  // Group services by category for clean section headers
+  const groupedServices = useMemo(() => {
+    const groups: { [categoryName: string]: { name: string; categoryName: string }[] } = {};
+    availableServices.forEach(s => {
+      const cat = s.categoryName || 'General Services';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(s);
+    });
+    return groups;
+  }, [availableServices]);
+
+  // Filter grouped services by search query
+  const filteredGroupedServices = useMemo(() => {
+    if (!serviceSearchQuery.trim()) return groupedServices;
+    const q = serviceSearchQuery.toLowerCase().trim();
+
+    const filtered: { [categoryName: string]: { name: string; categoryName: string }[] } = {};
+    Object.keys(groupedServices).forEach(catName => {
+      const matching = groupedServices[catName].filter(s => s.name.toLowerCase().includes(q));
+      if (matching.length > 0) {
+        filtered[catName] = matching;
+      }
+    });
+    return filtered;
+  }, [groupedServices, serviceSearchQuery]);
+
+  // Quick Toggle All Services in Category
+  const handleToggleAllCategoryServices = (catName: string) => {
+    const catServices = groupedServices[catName]?.map(s => s.name) || [];
+    const allSelected = catServices.every(s => selectedServices.includes(s));
+
+    if (allSelected) {
+      setSelectedServices(prev => prev.filter(s => !catServices.includes(s)));
+    } else {
+      const newSelected = Array.from(new Set([...selectedServices, ...catServices]));
+      setSelectedServices(newSelected);
+    }
+  };
 
   // Compute Dynamic Safety Commitments from Database Safety Policies
   const dynamicSafetyCommitments = useMemo(() => {
@@ -928,7 +968,7 @@ export default function CompanionOnboardingWizard() {
                   <span>Loading categories from database...</span>
                 </div>
               ) : (
-                <div className="flex flex-wrap gap-1.5">
+                <div className="max-h-40 overflow-y-auto pr-1 flex flex-wrap gap-1.5">
                   {dbCategories.map((catObj) => {
                     const isSelected = selectedCategories.includes(catObj.name);
                     const subCount = catObj.subcategories ? catObj.subcategories.length : 0;
@@ -973,69 +1013,127 @@ export default function CompanionOnboardingWizard() {
               </span>
             </div>
 
-            {/* Services Offered - Dynamically Filtered by Selected Categories */}
+            {/* Dynamic Services Offered & Description Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-3">
-              <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <span className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
-                    <span>Select Services Offered</span>
-                    <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-200 dark:border-emerald-800">
-                      {selectedCategories.length > 0 ? `Filtered by ${selectedCategories.length} Categories` : 'All Available Services'}
-                    </span>
-                  </span>
-                  {selectedServices.length > 0 && (
+              
+              {/* Dynamic Services Offered - Grouped, Searchable, Fixed Max-Height Scrollable Box */}
+              <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-2 flex flex-col justify-between">
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-xs text-slate-900 dark:text-white">Select Services Offered</span>
+                      <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-200 dark:border-emerald-800">
+                        {selectedCategories.length > 0 ? `${selectedCategories.length} Categories Active` : 'All Categories'}
+                      </span>
+                    </div>
                     <span className="text-[9px] font-mono text-indigo-600 dark:text-indigo-400 font-bold">
                       {selectedServices.length} Selected
                     </span>
-                  )}
-                </div>
+                  </div>
 
-                {selectedCategories.length > 0 && (
-                  <p className="text-[9px] text-slate-500 dark:text-slate-400 font-mono">
-                    Showing sub-services for: <strong className="text-indigo-600 dark:text-indigo-300">{selectedCategories.join(', ')}</strong>
-                  </p>
-                )}
-
-                <div className="flex flex-wrap gap-1">
-                  {availableServices.map((serviceObj) => {
-                    const serviceName = serviceObj.name;
-                    const categoryTag = serviceObj.categoryName;
-                    const isSelected = selectedServices.includes(serviceName);
-
-                    return (
+                  {/* Search & Quick Action Toolbar */}
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <Search className="w-3.5 h-3.5 absolute left-2.5 top-2 text-slate-400" />
+                      <input
+                        type="text"
+                        value={serviceSearchQuery}
+                        onChange={e => setServiceSearchQuery(e.target.value)}
+                        placeholder="Filter services..."
+                        className="w-full pl-8 pr-3 py-1 text-xs rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                    {selectedServices.length > 0 && (
                       <button
-                        key={serviceName}
                         type="button"
-                        onClick={() => handleServiceToggle(serviceName)}
-                        className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all flex items-center gap-1 ${
-                          isSelected
-                            ? 'bg-indigo-600 border-indigo-500 text-white shadow-sm'
-                            : 'bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-400'
-                        }`}
+                        onClick={() => setSelectedServices([])}
+                        className="px-2 py-1 text-[9px] font-bold text-rose-600 dark:text-rose-400 hover:underline shrink-0"
                       >
-                        <span>{serviceName}</span>
-                        {categoryTag && selectedCategories.length > 1 && (
-                          <span className={`text-[8px] opacity-75 font-mono ${isSelected ? 'text-indigo-100' : 'text-slate-400'}`}>
-                            ({categoryTag})
-                          </span>
-                        )}
-                        {isSelected && '✓'}
+                        Clear All
                       </button>
-                    );
-                  })}
+                    )}
+                  </div>
+
+                  {/* Scrollable Container (Max height 220px prevents UI overflow) */}
+                  <div className="max-h-56 overflow-y-auto pr-1 space-y-2 custom-scrollbar p-2 rounded-xl bg-white dark:bg-slate-950/80 border border-slate-200/80 dark:border-slate-800">
+                    {Object.keys(filteredGroupedServices).length === 0 ? (
+                      <p className="text-[10px] text-slate-400 text-center py-3">No matching services found.</p>
+                    ) : (
+                      Object.keys(filteredGroupedServices).map(catName => {
+                        const servicesInCat = filteredGroupedServices[catName];
+                        const selectedInCatCount = servicesInCat.filter(s => selectedServices.includes(s.name)).length;
+                        const allSelected = servicesInCat.length > 0 && selectedInCatCount === servicesInCat.length;
+
+                        return (
+                          <div key={catName} className="space-y-1">
+                            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-900 pb-0.5">
+                              <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-600"></span>
+                                <span>{catName}</span>
+                                <span className="text-[9px] text-slate-400 font-mono">({selectedInCatCount}/{servicesInCat.length})</span>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleToggleAllCategoryServices(catName)}
+                                className="text-[9px] font-mono text-indigo-600 dark:text-indigo-400 font-bold hover:underline"
+                              >
+                                {allSelected ? 'Deselect All' : 'Select All'}
+                              </button>
+                            </div>
+
+                            <div className="flex flex-wrap gap-1 pt-0.5">
+                              {servicesInCat.map(serviceObj => {
+                                const isSelected = selectedServices.includes(serviceObj.name);
+                                return (
+                                  <button
+                                    key={serviceObj.name}
+                                    type="button"
+                                    onClick={() => handleServiceToggle(serviceObj.name)}
+                                    className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all border ${
+                                      isSelected
+                                        ? 'bg-indigo-600 border-indigo-500 text-white shadow-sm'
+                                        : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-400'
+                                    }`}
+                                  >
+                                    {serviceObj.name} {isSelected && '✓'}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
+
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1">
-                <span className="font-bold text-xs text-slate-900 dark:text-white block">Service Description & Moderation Scan</span>
-                <textarea 
-                  rows={2}
-                  value={serviceDescription}
-                  onChange={e => handleScanServiceText(e.target.value)}
-                  placeholder="Describe exactly what customers can book you for..."
-                  className="w-full p-2 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white"
-                ></textarea>
+              {/* Service Description Box */}
+              <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1.5 flex flex-col justify-between">
+                <div>
+                  <span className="font-bold text-xs text-slate-900 dark:text-white block mb-1">Service Description & Moderation Scan</span>
+                  <textarea 
+                    rows={6}
+                    value={serviceDescription}
+                    onChange={e => handleScanServiceText(e.target.value)}
+                    placeholder="Describe exactly what customers can book you for..."
+                    className="w-full p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                  ></textarea>
+                </div>
+
+                {policyScanResult && (
+                  <div className={`p-2 rounded-xl text-[10px] border font-mono ${
+                    policyScanResult.allowed
+                      ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
+                      : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300'
+                  }`}>
+                    <strong>AI Safety Policy Check:</strong> {policyScanResult.allowed ? 'Passed ✓ Content conforms to safety guidelines.' : 'Flagged ⚠️ Please remove inappropriate terms.'}
+                  </div>
+                )}
               </div>
+
             </div>
 
             {/* Dynamic Safety Commitments from Category DB Policies */}
