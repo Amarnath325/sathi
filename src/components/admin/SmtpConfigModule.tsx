@@ -110,12 +110,9 @@ export function SmtpConfigModule() {
   ];
 
   const handleSelectDriver = (driverKey: SmtpSettings['driver']) => {
-    const selected = driverOptions.find(d => d.key === driverKey);
     setFormData(prev => ({
       ...prev,
-      driver: driverKey,
-      host: selected ? selected.defaultHost : prev.host,
-      port: selected ? selected.defaultPort : prev.port
+      driver: driverKey
     }));
   };
 
@@ -219,7 +216,7 @@ export function SmtpConfigModule() {
                   required
                   value={formData.host}
                   onChange={e => setFormData({ ...formData, host: e.target.value })}
-                  placeholder="smtp-relay.brevo.com"
+                  placeholder="Enter SMTP Host (e.g. smtp-relay.brevo.com)"
                   className="w-full px-2.5 py-1.5 lg:px-3 lg:py-1.5 xl:px-4 xl:py-2.5 rounded-lg xl:rounded-xl bg-slate-50/60 border border-slate-200 text-xs xl:text-sm text-slate-900 font-medium focus:outline-none focus:border-indigo-500 focus:bg-white pl-8 lg:pl-8.5 xl:pl-10 transition-all"
                 />
                 <Globe className="w-3.5 h-3.5 xl:w-4 xl:h-4 text-slate-400 absolute left-2.5 lg:left-3 top-2 lg:top-2 xl:top-3" />
@@ -259,7 +256,7 @@ export function SmtpConfigModule() {
                   required
                   value={formData.username}
                   onChange={e => setFormData({ ...formData, username: e.target.value })}
-                  placeholder="b57a23001@smtp-brevo.com"
+                  placeholder="Enter Username / Email..."
                   className="w-full px-2.5 py-1.5 lg:px-3 lg:py-1.5 xl:px-4 xl:py-2.5 rounded-lg xl:rounded-xl bg-slate-50/60 border border-slate-200 text-xs xl:text-sm text-slate-900 font-medium focus:outline-none focus:border-indigo-500 focus:bg-white pl-8 lg:pl-8.5 xl:pl-10 transition-all"
                 />
                 <Key className="w-3.5 h-3.5 xl:w-4 xl:h-4 text-slate-400 absolute left-2.5 lg:left-3 top-2 lg:top-2 xl:top-3" />
@@ -279,7 +276,7 @@ export function SmtpConfigModule() {
                   required
                   value={formData.password}
                   onChange={e => setFormData({ ...formData, password: e.target.value })}
-                  placeholder="••••••••••••••••••••••••••••••••"
+                  placeholder="Enter Password / Secret Key..."
                   className="w-full px-2.5 py-1.5 lg:px-3 lg:py-1.5 xl:px-4 xl:py-2.5 rounded-lg xl:rounded-xl bg-slate-50/60 border border-slate-200 text-xs xl:text-sm text-slate-900 font-mono font-medium focus:outline-none focus:border-indigo-500 focus:bg-white pl-8 lg:pl-8.5 xl:pl-10 pr-8 lg:pr-8.5 xl:pr-10 transition-all"
                 />
                 <Lock className="w-3.5 h-3.5 xl:w-4 xl:h-4 text-purple-500 absolute left-2.5 lg:left-3 top-2 lg:top-2 xl:top-3" />
@@ -300,7 +297,7 @@ export function SmtpConfigModule() {
                 required
                 value={formData.fromName}
                 onChange={e => setFormData({ ...formData, fromName: e.target.value })}
-                placeholder="Sathi Companion Connect"
+                placeholder="Enter Sender Name..."
                 className="w-full px-2.5 py-1.5 lg:px-3 lg:py-1.5 xl:px-4 xl:py-2.5 rounded-lg xl:rounded-xl bg-slate-50/60 border border-slate-200 text-xs xl:text-sm text-slate-900 font-medium focus:outline-none focus:border-indigo-500 focus:bg-white transition-all"
               />
             </div>
@@ -312,7 +309,7 @@ export function SmtpConfigModule() {
                 required
                 value={formData.fromEmail}
                 onChange={e => setFormData({ ...formData, fromEmail: e.target.value })}
-                placeholder="no-reply@sathi-connect.com"
+                placeholder="Enter Sender Email..."
                 className="w-full px-2.5 py-1.5 lg:px-3 lg:py-1.5 xl:px-4 xl:py-2.5 rounded-lg xl:rounded-xl bg-slate-50/60 border border-slate-200 text-xs xl:text-sm text-slate-900 font-medium focus:outline-none focus:border-indigo-500 focus:bg-white transition-all"
               />
             </div>

@@ -59,7 +59,7 @@ const DEFAULT_SMTP_SETTINGS: SmtpSettings = {
   username: '',
   password: '',
   encryption: 'TLS',
-  fromName: 'Sathi Companion Connect',
+  fromName: '',
   fromEmail: '',
   isVerified: false,
   isEncryptedInDb: false
