@@ -209,11 +209,13 @@ export function PricingTab() {
     setEditingProfile(prof);
     setActiveModalTab('basic');
 
+    const rulesJson = prof.surge_rules || {};
+
     setName(prof.name);
     setPricingType(prof.pricing_type);
-    setCurrency(prof.currency || 'INR');
-    setCategoryId(prof.category_id || '');
-    setServiceId(prof.service_id || '');
+    setCurrency(prof.currency || rulesJson.currency || 'INR');
+    setCategoryId(prof.category_id || rulesJson.category_id || '');
+    setServiceId(prof.service_id || rulesJson.service_id || '');
     setStatus(prof.status || 'ACTIVE');
 
     setBasePrice(prof.base_price || 0);
@@ -221,43 +223,43 @@ export function PricingTab() {
     setMinDuration(prof.minimum_duration || 1);
     setMaxDuration(prof.maximum_duration || 12);
 
-    setTravelEnabled(prof.travel_enabled !== false);
-    setTravelPricingType(prof.travel_pricing_type || 'Per KM');
-    setTravelCharge(prof.travel_charge || 0);
-    setFreeDistanceKm(prof.free_distance_km || 0);
-    setMaxTravelCharge(prof.max_travel_charge || 500);
-    setWaitingChargePerHr(prof.waiting_charge_per_hr || 0);
-    setParkingCharge(prof.parking_charge || 0);
-    setTollCharge(prof.toll_charge || 0);
-    setOtherCharges(prof.other_charges || 0);
+    setTravelEnabled(prof.travel_enabled !== undefined ? prof.travel_enabled : (rulesJson.travel_enabled !== false));
+    setTravelPricingType(prof.travel_pricing_type || rulesJson.travel_pricing_type || 'Per KM');
+    setTravelCharge(prof.travel_charge || rulesJson.travel_charge || 0);
+    setFreeDistanceKm(prof.free_distance_km || rulesJson.free_distance_km || 0);
+    setMaxTravelCharge(prof.max_travel_charge || rulesJson.max_travel_charge || 500);
+    setWaitingChargePerHr(prof.waiting_charge_per_hr || rulesJson.waiting_charge_per_hr || 0);
+    setParkingCharge(prof.parking_charge || rulesJson.parking_charge || 0);
+    setTollCharge(prof.toll_charge || rulesJson.toll_charge || 0);
+    setOtherCharges(prof.other_charges || rulesJson.other_charges || 0);
 
-    setWeekendMultiplier(prof.weekend_multiplier || 1.0);
-    setHolidayMultiplier(prof.holiday_multiplier || 1.0);
-    setSurgeEnabled(prof.surge_enabled || false);
-    setSurgeMultiplier(prof.surge_multiplier || 1.2);
-    setPeakHoursStart(prof.peak_hours_start || '18:00');
-    setPeakHoursEnd(prof.peak_hours_end || '23:00');
-    setDemandMultiplier(prof.demand_pricing_multiplier || 1.0);
+    setWeekendMultiplier(prof.weekend_multiplier || rulesJson.weekend_multiplier || 1.0);
+    setHolidayMultiplier(prof.holiday_multiplier || rulesJson.holiday_multiplier || 1.0);
+    setSurgeEnabled(prof.surge_enabled !== undefined ? prof.surge_enabled : Boolean(rulesJson.surge_enabled));
+    setSurgeMultiplier(prof.surge_multiplier || rulesJson.surge_multiplier || 1.2);
+    setPeakHoursStart(prof.peak_hours_start || rulesJson.peak_hours_start || '18:00');
+    setPeakHoursEnd(prof.peak_hours_end || rulesJson.peak_hours_end || '23:00');
+    setDemandMultiplier(prof.demand_pricing_multiplier || rulesJson.demand_pricing_multiplier || 1.0);
 
-    setPlatformFee(prof.platform_fee || 15);
-    setGatewayFee(prof.payment_gateway_fee || 2);
-    setTax(prof.tax || 18);
-    setCompanionCommission(prof.companion_commission || 20);
-    setCompanionPayoutRate(prof.companion_payout_rate || 80);
+    setPlatformFee(prof.platform_fee || rulesJson.platform_fee || 15);
+    setGatewayFee(prof.payment_gateway_fee || rulesJson.payment_gateway_fee || 2);
+    setTax(prof.tax || rulesJson.tax || 18);
+    setCompanionCommission(prof.companion_commission || rulesJson.companion_commission || 20);
+    setCompanionPayoutRate(prof.companion_payout_rate || rulesJson.companion_payout_rate || 80);
 
-    setDiscountEnabled(prof.discount_enabled || false);
-    setDiscountType(prof.discount_type || 'Percentage');
-    setDiscountValue(prof.discount_value || 0);
-    setDiscountCap(prof.discount_cap || 0);
-    setLongDurationDiscount(prof.long_duration_discount || 0);
+    setDiscountEnabled(prof.discount_enabled !== undefined ? prof.discount_enabled : Boolean(rulesJson.discount_enabled));
+    setDiscountType(prof.discount_type || rulesJson.discount_type || 'Percentage');
+    setDiscountValue(prof.discount_value || rulesJson.discount_value || 0);
+    setDiscountCap(prof.discount_cap || rulesJson.discount_cap || 0);
+    setLongDurationDiscount(prof.long_duration_discount || rulesJson.long_duration_discount || 0);
 
-    setPriceMinLimit(prof.price_min_limit || 100);
-    setPriceMaxLimit(prof.price_max_limit || 20000);
-    setRoundingRule(prof.rounding_rule || 'ROUND_NEAREST_10');
-    setVersionTag(prof.version || 'v1.0');
-    setEffectiveFrom(prof.effective_from || new Date().toISOString().split('T')[0]);
-    setEffectiveUntil(prof.effective_until || '');
-    setHistoricalLock(prof.historical_price_lock !== false);
+    setPriceMinLimit(prof.price_min_limit || rulesJson.price_min_limit || 100);
+    setPriceMaxLimit(prof.price_max_limit || rulesJson.price_max_limit || 20000);
+    setRoundingRule(prof.rounding_rule || rulesJson.rounding_rule || 'ROUND_NEAREST_10');
+    setVersionTag(prof.version || rulesJson.version || 'v1.0');
+    setEffectiveFrom(prof.effective_from || rulesJson.effective_from || new Date().toISOString().split('T')[0]);
+    setEffectiveUntil(prof.effective_until || rulesJson.effective_until || '');
+    setHistoricalLock(prof.historical_price_lock !== undefined ? prof.historical_price_lock : (rulesJson.historical_price_lock !== false));
 
     setIsModalOpen(true);
   };
@@ -269,6 +271,47 @@ export function PricingTab() {
 
     const catObj = categories.find(c => c.id === categoryId);
     const srvObj = services.find(s => s.id === serviceId);
+
+    const surgeRulesObj = {
+      surge_enabled: surgeEnabled,
+      surge_multiplier: Number(surgeMultiplier),
+      peak_hours_start: peakHoursStart,
+      peak_hours_end: peakHoursEnd,
+      demand_pricing_multiplier: Number(demandMultiplier),
+      weekend_multiplier: Number(weekendMultiplier),
+      holiday_multiplier: Number(holidayMultiplier),
+      category_id: categoryId || undefined,
+      category_name: catObj?.name || undefined,
+      service_id: serviceId || undefined,
+      service_name: srvObj?.name || undefined,
+      travel_enabled: travelEnabled,
+      travel_pricing_type: travelPricingType,
+      travel_charge: Number(travelCharge),
+      free_distance_km: Number(freeDistanceKm),
+      max_travel_charge: Number(maxTravelCharge),
+      waiting_charge_per_hr: Number(waitingChargePerHr),
+      parking_charge: Number(parkingCharge),
+      toll_charge: Number(tollCharge),
+      other_charges: Number(otherCharges),
+      platform_fee: Number(platformFee),
+      payment_gateway_fee: Number(gatewayFee),
+      tax: Number(tax),
+      companion_commission: Number(companionCommission),
+      companion_payout_rate: Number(companionPayoutRate),
+      discount_enabled: discountEnabled,
+      discount_type: discountType,
+      discount_value: Number(discountValue),
+      discount_cap: Number(discountCap),
+      long_duration_discount: Number(longDurationDiscount),
+      price_min_limit: priceMinLimit ? Number(priceMinLimit) : undefined,
+      price_max_limit: priceMaxLimit ? Number(priceMaxLimit) : undefined,
+      rounding_rule: roundingRule,
+      version: versionTag || 'v1.0',
+      effective_from: effectiveFrom || new Date().toISOString().split('T')[0],
+      effective_until: effectiveUntil || undefined,
+      pricing_snapshot_code: `SNAP-${versionTag.toUpperCase()}-${Date.now().toString(36).slice(-4)}`,
+      historical_price_lock: historicalLock
+    };
 
     const payload: Omit<PricingProfile, 'id'> = {
       name: name.trim(),
@@ -296,11 +339,12 @@ export function PricingTab() {
 
       weekend_multiplier: Number(weekendMultiplier),
       holiday_multiplier: Number(holidayMultiplier),
-      surge_enabled: surgeEnabled,
+      surge_enabled: Boolean(surgeEnabled),
       surge_multiplier: Number(surgeMultiplier),
       peak_hours_start: peakHoursStart,
       peak_hours_end: peakHoursEnd,
       demand_pricing_multiplier: Number(demandMultiplier),
+      surge_rules: surgeRulesObj,
 
       platform_fee: Number(platformFee),
       payment_gateway_fee: Number(gatewayFee),
