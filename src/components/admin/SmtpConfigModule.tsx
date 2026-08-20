@@ -141,9 +141,6 @@ export function SmtpConfigModule() {
                 <span className="text-[8px] sm:text-[9px] lg:text-[10px] xl:text-xs font-mono font-bold uppercase px-1.5 py-0.5 lg:px-2 lg:py-0.5 xl:px-2.5 xl:py-1 rounded-full bg-purple-50 text-purple-600 border border-purple-200 flex items-center gap-1">
                   <Lock className="w-2.5 h-2.5 lg:w-3 lg:h-3 text-purple-500" /> AES-256 VAULT ENCRYPTED
                 </span>
-                <span className="text-[8px] sm:text-[9px] lg:text-[10px] xl:text-xs font-mono font-bold uppercase px-1.5 py-0.5 lg:px-2 lg:py-0.5 xl:px-2.5 xl:py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200 flex items-center gap-1">
-                  <Database className="w-2.5 h-2.5 lg:w-3 lg:h-3 text-slate-500" /> NEON POSTGRESQL DB
-                </span>
               </div>
               <p className="text-[10px] lg:text-[11px] xl:text-xs text-slate-500 font-medium">
                 All third-party credentials are encrypted with AES-256 in the database and decrypted in-memory for API dispatch.
@@ -164,7 +161,7 @@ export function SmtpConfigModule() {
 
         {isSaved && (
           <div className="p-2 lg:p-2.5 xl:p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] lg:text-xs xl:text-sm font-semibold flex items-center gap-2 animate-fade-in shadow-sm">
-            <CheckCircle2 className="w-3.5 h-3.5 lg:w-4 lg:h-4 xl:w-5 xl:h-5 shrink-0 text-emerald-600" /> Credentials Encrypted with AES-256 & Updated Live in Neon PostgreSQL Database!
+            <CheckCircle2 className="w-3.5 h-3.5 lg:w-4 lg:h-4 xl:w-5 xl:h-5 shrink-0 text-emerald-600" /> Credentials Encrypted with AES-256 & Updated Live in Database!
           </div>
         )}
       </div>
