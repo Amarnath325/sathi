@@ -52,6 +52,10 @@ export default function CompanionOnboardingWizard() {
   const [lastName, setLastName] = useState('');
   const [dob, setDob] = useState('');
   const [country, setCountry] = useState('India');
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [pincode, setPincode] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -380,769 +384,831 @@ export default function CompanionOnboardingWizard() {
   const progressPercentage = Math.round((currentStep / 7) * 100);
 
   return (
-    <div className="max-w-6xl mx-auto px-2 sm:px-4 lg:px-6 py-2 lg:py-3 space-y-2 lg:space-y-3 min-h-screen flex flex-col justify-between">
+    <div className="max-w-6xl mx-auto px-2 sm:px-4 lg:px-6 py-2 lg:py-3 space-y-2 lg:space-y-3">
       
-      <div className="space-y-2 lg:space-y-2.5">
-        {/* Compact Header Bar */}
-        <div className="flex items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-1.5">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-xl bg-indigo-600 text-white font-extrabold flex items-center justify-center text-xs lg:text-sm shadow-md shadow-indigo-600/30">
-              CC
-            </div>
-            <div>
-              <h1 className="text-xs lg:text-sm font-black text-slate-900 dark:text-white tracking-wide leading-tight">Companion Connect</h1>
-              <p className="text-[9px] lg:text-[10px] text-slate-500 dark:text-slate-400 font-mono">Secure Onboarding Portal</p>
-            </div>
+      {/* Compact Header Bar */}
+      <div className="flex items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-1.5">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-xl bg-indigo-600 text-white font-extrabold flex items-center justify-center text-xs lg:text-sm shadow-md shadow-indigo-600/30">
+            CC
           </div>
-
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-300 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-[9px] lg:text-[10px] font-mono font-bold">
-            <Lock className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-            <span>ENCRYPTED ONBOARDING</span>
+          <div>
+            <h1 className="text-xs lg:text-sm font-black text-slate-900 dark:text-white tracking-wide leading-tight">Companion Connect</h1>
+            <p className="text-[9px] lg:text-[10px] text-slate-500 dark:text-slate-400 font-mono">Secure Onboarding Portal</p>
           </div>
         </div>
 
-        {/* Ultra-Compact Horizontal 7-Step Navigation */}
-        <div className="glass-panel bg-white dark:bg-slate-950/70 p-2 lg:p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5 shadow-md">
-          <div className="flex justify-between items-center text-[10px] lg:text-xs">
-            <div className="flex items-center gap-2">
-              <h3 className="font-extrabold text-slate-900 dark:text-white uppercase tracking-wider text-[10px] lg:text-xs">Companion Registration</h3>
-              <span className="text-[9px] text-slate-400 font-mono hidden sm:inline">• Stage {currentStep} of 7</span>
-            </div>
-            <div className="flex items-center gap-1.5 font-mono text-[10px] lg:text-xs">
-              <span className="px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800">
-                {progressPercentage}% Completed
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-300 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-[9px] lg:text-[10px] font-mono font-bold">
+          <Lock className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+          <span>ENCRYPTED ONBOARDING</span>
+        </div>
+      </div>
+
+      {/* Ultra-Compact Horizontal 7-Step Navigation */}
+      <div className="glass-panel bg-white dark:bg-slate-950/70 p-2 lg:p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5 shadow-md">
+        <div className="flex justify-between items-center text-[10px] lg:text-xs">
+          <div className="flex items-center gap-2">
+            <h3 className="font-extrabold text-slate-900 dark:text-white uppercase tracking-wider text-[10px] lg:text-xs">Companion Registration</h3>
+            <span className="text-[9px] text-slate-400 font-mono hidden sm:inline">• Stage {currentStep} of 7</span>
+          </div>
+          <div className="flex items-center gap-1.5 font-mono text-[10px] lg:text-xs">
+            <span className="px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800">
+              {progressPercentage}% Completed
+            </span>
+          </div>
+        </div>
+
+        {/* Progress Bar Line */}
+        <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-900 overflow-hidden border border-slate-200/60 dark:border-slate-800">
+          <div 
+            className="h-full gradient-bg-primary transition-all duration-300 rounded-full"
+            style={{ width: `${progressPercentage}%` }}
+          />
+        </div>
+
+        {/* 7 Compact Step Buttons */}
+        <div className="grid grid-cols-4 sm:grid-cols-7 gap-1 lg:gap-1.5 pt-0.5">
+          {STEPS.map((s) => {
+            const isActive = currentStep === s.id;
+            const isDone = currentStep > s.id;
+
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => {
+                  if (s.id < currentStep || isDone) setCurrentStep(s.id);
+                }}
+                className={`p-1 lg:p-1.5 rounded-xl border text-left transition-all flex items-center gap-1.5 ${
+                  isActive
+                    ? 'bg-indigo-600 border-indigo-500 text-white shadow-md'
+                    : isDone
+                    ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 hover:border-emerald-400'
+                    : 'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <div
+                  className={`w-4 h-4 lg:w-5 lg:h-5 rounded-lg flex items-center justify-center text-[9px] lg:text-[10px] font-mono font-bold shrink-0 ${
+                    isActive
+                      ? 'bg-white text-indigo-700 shadow-sm'
+                      : isDone
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400'
+                  }`}
+                >
+                  {isDone ? '✓' : s.id}
+                </div>
+
+                <div className="overflow-hidden min-w-0">
+                  <h4 className={`text-[9px] lg:text-[10px] font-bold truncate leading-tight ${isActive ? 'text-white' : 'text-slate-800 dark:text-slate-200'}`}>
+                    {s.title}
+                  </h4>
+                  <p className={`text-[8px] truncate leading-tight hidden lg:block ${isActive ? 'text-indigo-100' : 'text-slate-400'}`}>{s.subtitle}</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* MAIN STEP CONTENT CARD */}
+      <div className="glass-panel bg-white dark:bg-slate-950/70 p-3 sm:p-4 lg:p-5 rounded-2xl lg:rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-2.5 lg:space-y-3">
+        
+        {/* STEP 1: ACCOUNT & ELIGIBILITY */}
+        {currentStep === 1 && (
+          <div className="space-y-2.5 lg:space-y-3">
+            
+            {/* Header Badge */}
+            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/80 pb-1.5">
+              <div>
+                <span className="text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">STAGE 1 OF 7</span>
+                <h2 className="text-sm lg:text-base font-black text-slate-900 dark:text-white leading-tight">Account & Eligibility Pre-Check</h2>
+              </div>
+              <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-[9px] font-mono font-bold border border-indigo-200 dark:border-indigo-500/30">
+                18+ MANDATORY
               </span>
             </div>
-          </div>
 
-          {/* Progress Bar Line */}
-          <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-900 overflow-hidden border border-slate-200/60 dark:border-slate-800">
-            <div 
-              className="h-full gradient-bg-primary transition-all duration-300 rounded-full"
-              style={{ width: `${progressPercentage}%` }}
-            />
-          </div>
+            {/* Adult-Only Compact Alert */}
+            <div className="py-1.5 px-3 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-500/30 text-[11px] text-indigo-900 dark:text-indigo-200 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-indigo-600 dark:bg-indigo-400 animate-pulse shrink-0"></div>
+              <p className="truncate">
+                <strong>Adult-Only Marketplace:</strong> Companion Connect requires service providers to be 18+ years old.
+              </p>
+            </div>
 
-          {/* 7 Compact Step Buttons */}
-          <div className="grid grid-cols-4 sm:grid-cols-7 gap-1 lg:gap-1.5 pt-0.5">
-            {STEPS.map((s) => {
-              const isActive = currentStep === s.id;
-              const isDone = currentStep > s.id;
+            {/* Account Form Fields in Compact Grid */}
+            <div className="p-3 lg:p-4 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-2.5">
+              
+              {/* Personal Info Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3">
+                <div>
+                  <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">First Name *</label>
+                  <input 
+                    type="text" 
+                    value={firstName}
+                    onChange={e => setFirstName(e.target.value)}
+                    placeholder="e.g. Aria"
+                    className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
 
-              return (
+                <div>
+                  <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Last Name *</label>
+                  <input 
+                    type="text" 
+                    value={lastName}
+                    onChange={e => setLastName(e.target.value)}
+                    placeholder="e.g. Vance"
+                    className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Date of Birth *</label>
+                  <input 
+                    type="date" 
+                    value={dob}
+                    onChange={e => setDob(e.target.value)}
+                    className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Country *</label>
+                  <select 
+                    value={country}
+                    onChange={e => setCountry(e.target.value)}
+                    className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none"
+                  >
+                    <option value="India">India</option>
+                    <option value="United States">United States</option>
+                    <option value="United Kingdom">United Kingdom</option>
+                    <option value="Australia">Australia</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Address, City, State, Pincode Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3">
+                <div className="sm:col-span-2 lg:col-span-1">
+                  <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Street Address *</label>
+                  <input 
+                    type="text" 
+                    value={address}
+                    onChange={e => setAddress(e.target.value)}
+                    placeholder="Flat / Building / Street"
+                    className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">City *</label>
+                  <input 
+                    type="text" 
+                    value={city}
+                    onChange={e => setCity(e.target.value)}
+                    placeholder="e.g. Mumbai"
+                    className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">State *</label>
+                  <input 
+                    type="text" 
+                    value={state}
+                    onChange={e => setState(e.target.value)}
+                    placeholder="e.g. Maharashtra"
+                    className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Pincode *</label>
+                  <input 
+                    type="text" 
+                    value={pincode}
+                    onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="e.g. 400001"
+                    className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
+              {/* Email & Phone OTP Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 lg:gap-3">
+                <div>
+                  <div className="flex justify-between items-center mb-0.5">
+                    <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300">Email Address *</label>
+                    <span className="text-[9px] font-mono text-amber-600 font-bold">{isEmailVerified ? '✓ Verified' : 'Not verified'}</span>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <input 
+                      type="email" 
+                      value={email}
+                      disabled={isEmailVerified}
+                      onChange={e => setEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      className="flex-1 px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 disabled:opacity-80"
+                    />
+                    {!isEmailVerified && (
+                      <button 
+                        type="button" 
+                        onClick={() => handleSendOtp('email')}
+                        disabled={isSendingOtp}
+                        className="px-3 py-1.5 rounded-xl bg-indigo-600 text-white text-[11px] font-bold shrink-0 flex items-center gap-1 hover:bg-indigo-500"
+                      >
+                        {isSendingOtp && otpTarget === 'email' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Mail className="w-3 h-3" />}
+                        <span>Send OTP</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-0.5">
+                    <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300">Mobile Number *</label>
+                    <span className="text-[9px] font-mono text-amber-600 font-bold">{isPhoneVerified ? '✓ Verified' : 'Not verified'}</span>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <input 
+                      type="tel" 
+                      value={phone}
+                      disabled={isPhoneVerified}
+                      onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                      placeholder="+91 9876543210"
+                      className="flex-1 px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 disabled:opacity-80"
+                    />
+                    {!isPhoneVerified && (
+                      <button 
+                        type="button"
+                        onClick={() => handleSendOtp('phone')}
+                        disabled={isSendingOtp}
+                        className="px-3 py-1.5 rounded-xl bg-indigo-600 text-white text-[11px] font-bold shrink-0 flex items-center gap-1 hover:bg-indigo-500"
+                      >
+                        {isSendingOtp && otpTarget === 'phone' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Phone className="w-3 h-3" />}
+                        <span>Send OTP</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Password Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 lg:gap-3">
+                <div>
+                  <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Password *</label>
+                  <div className="relative">
+                    <input 
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      placeholder="Create strong password"
+                      className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 pr-8"
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-2.5 top-2 text-slate-400"
+                    >
+                      {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Confirm Password *</label>
+                  <input 
+                    type="password"
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    placeholder="Repeat password"
+                    className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
+            </div>
+
+            {/* Account Security Toggles with iOS-Style Toggle Switches */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-3">
+              <div className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
+                <div>
+                  <h5 className="text-[11px] lg:text-xs font-bold text-slate-800 dark:text-slate-200">Enable Biometric Passkey</h5>
+                  <p className="text-[9px] text-slate-500">Biometric / PIN login</p>
+                </div>
+                {/* Sleek Toggle Switch */}
                 <button
-                  key={s.id}
                   type="button"
-                  onClick={() => {
-                    if (s.id < currentStep || isDone) setCurrentStep(s.id);
-                  }}
-                  className={`p-1 lg:p-1.5 rounded-xl border text-left transition-all flex items-center gap-1.5 ${
-                    isActive
-                      ? 'bg-indigo-600 border-indigo-500 text-white shadow-md'
-                      : isDone
-                      ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 hover:border-emerald-400'
-                      : 'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  onClick={() => setEnablePasskey(!enablePasskey)}
+                  className={`w-10 h-5 lg:w-11 lg:h-6 rounded-full transition-colors relative focus:outline-none p-0.5 shrink-0 ${
+                    enablePasskey ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-700'
                   }`}
                 >
                   <div
-                    className={`w-4 h-4 lg:w-5 lg:h-5 rounded-lg flex items-center justify-center text-[9px] lg:text-[10px] font-mono font-bold shrink-0 ${
-                      isActive
-                        ? 'bg-white text-indigo-700 shadow-sm'
-                        : isDone
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400'
+                    className={`w-4 h-4 lg:w-5 lg:h-5 rounded-full bg-white shadow-md transform transition-transform ${
+                      enablePasskey ? 'translate-x-5' : 'translate-x-0'
                     }`}
-                  >
-                    {isDone ? '✓' : s.id}
-                  </div>
-
-                  <div className="overflow-hidden min-w-0">
-                    <h4 className={`text-[9px] lg:text-[10px] font-bold truncate leading-tight ${isActive ? 'text-white' : 'text-slate-800 dark:text-slate-200'}`}>
-                      {s.title}
-                    </h4>
-                    <p className={`text-[8px] truncate leading-tight hidden lg:block ${isActive ? 'text-indigo-100' : 'text-slate-400'}`}>{s.subtitle}</p>
-                  </div>
+                  />
                 </button>
-              );
-            })}
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
+                <div>
+                  <h5 className="text-[11px] lg:text-xs font-bold text-slate-800 dark:text-slate-200">Enable 2-Factor Authentication</h5>
+                  <p className="text-[9px] text-slate-500">Authenticator app / OTP</p>
+                </div>
+                {/* Sleek Toggle Switch */}
+                <button
+                  type="button"
+                  onClick={() => setEnable2FA(!enable2FA)}
+                  className={`w-10 h-5 lg:w-11 lg:h-6 rounded-full transition-colors relative focus:outline-none p-0.5 shrink-0 ${
+                    enable2FA ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-700'
+                  }`}
+                >
+                  <div
+                    className={`w-4 h-4 lg:w-5 lg:h-5 rounded-full bg-white shadow-md transform transition-transform ${
+                      enable2FA ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+
+            {/* Single Line Declaration Checkbox */}
+            <div className="p-2.5 rounded-xl bg-slate-50/90 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+              <label className="flex items-center gap-2 cursor-pointer text-[10px] lg:text-xs text-slate-700 dark:text-slate-300">
+                <input 
+                  type="checkbox" 
+                  checked={agreeAccountCheck}
+                  onChange={e => setAgreeAccountCheck(e.target.checked)}
+                  className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                />
+                <span>
+                  I confirm that I am at least 18 years old and agree to the <strong>Terms of Service</strong>, <strong>Privacy Policy</strong>, and Companion safety standards.
+                </span>
+              </label>
+            </div>
+
           </div>
-        </div>
+        )}
 
-        {/* MAIN STEP CONTENT CONTAINER - Ultra-Compact High Density */}
-        <div className="glass-panel bg-white dark:bg-slate-950/70 p-3 sm:p-4 lg:p-5 rounded-2xl lg:rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-2.5 lg:space-y-3">
-          
-          {/* STEP 1: ACCOUNT & ELIGIBILITY */}
-          {currentStep === 1 && (
-            <div className="space-y-2.5 lg:space-y-3">
-              
-              {/* Header Badge */}
-              <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/80 pb-1.5">
-                <div>
-                  <span className="text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">STAGE 1 OF 7</span>
-                  <h2 className="text-sm lg:text-base font-black text-slate-900 dark:text-white leading-tight">Account & Eligibility Pre-Check</h2>
-                </div>
-                <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-[9px] font-mono font-bold border border-indigo-200 dark:border-indigo-500/30">
-                  18+ MANDATORY
-                </span>
+        {/* STEP 2: PROFILE & SERVICES */}
+        {currentStep === 2 && (
+          <div className="space-y-2.5 lg:space-y-3">
+            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/80 pb-1.5">
+              <div>
+                <span className="text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">STAGE 2 OF 7</span>
+                <h2 className="text-sm lg:text-base font-black text-slate-900 dark:text-white leading-tight">Public Profile Setup</h2>
               </div>
-
-              {/* Adult-Only Compact Alert */}
-              <div className="py-1.5 px-3 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-500/30 text-[11px] text-indigo-900 dark:text-indigo-200 flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-indigo-600 dark:bg-indigo-400 animate-pulse shrink-0"></div>
-                <p className="truncate">
-                  <strong>Adult-Only Marketplace:</strong> Companion Connect requires service providers to be 18+ years old.
-                </p>
-              </div>
-
-              {/* Account Form Fields in 3-Column Responsive Compact Grid */}
-              <div className="p-3 lg:p-4 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-2.5">
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3">
-                  <div>
-                    <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">First Name *</label>
-                    <input 
-                      type="text" 
-                      value={firstName}
-                      onChange={e => setFirstName(e.target.value)}
-                      placeholder="e.g. Aria"
-                      className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Last Name *</label>
-                    <input 
-                      type="text" 
-                      value={lastName}
-                      onChange={e => setLastName(e.target.value)}
-                      placeholder="e.g. Vance"
-                      className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Date of Birth *</label>
-                    <input 
-                      type="date" 
-                      value={dob}
-                      onChange={e => setDob(e.target.value)}
-                      className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Country *</label>
-                    <select 
-                      value={country}
-                      onChange={e => setCountry(e.target.value)}
-                      className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none"
-                    >
-                      <option value="India">India</option>
-                      <option value="United States">United States</option>
-                      <option value="United Kingdom">United Kingdom</option>
-                      <option value="Australia">Australia</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Email & Phone OTP Row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 lg:gap-3">
-                  <div>
-                    <div className="flex justify-between items-center mb-0.5">
-                      <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300">Email Address *</label>
-                      <span className="text-[9px] font-mono text-amber-600 font-bold">{isEmailVerified ? '✓ Verified' : 'Not verified'}</span>
-                    </div>
-                    <div className="flex gap-1.5">
-                      <input 
-                        type="email" 
-                        value={email}
-                        disabled={isEmailVerified}
-                        onChange={e => setEmail(e.target.value)}
-                        placeholder="you@example.com"
-                        className="flex-1 px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 disabled:opacity-80"
-                      />
-                      {!isEmailVerified && (
-                        <button 
-                          type="button" 
-                          onClick={() => handleSendOtp('email')}
-                          disabled={isSendingOtp}
-                          className="px-3 py-1.5 rounded-xl bg-indigo-600 text-white text-[11px] font-bold shrink-0 flex items-center gap-1 hover:bg-indigo-500"
-                        >
-                          {isSendingOtp && otpTarget === 'email' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Mail className="w-3 h-3" />}
-                          <span>Send OTP</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between items-center mb-0.5">
-                      <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300">Mobile Number *</label>
-                      <span className="text-[9px] font-mono text-amber-600 font-bold">{isPhoneVerified ? '✓ Verified' : 'Not verified'}</span>
-                    </div>
-                    <div className="flex gap-1.5">
-                      <input 
-                        type="tel" 
-                        value={phone}
-                        disabled={isPhoneVerified}
-                        onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                        placeholder="+91 9876543210"
-                        className="flex-1 px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 disabled:opacity-80"
-                      />
-                      {!isPhoneVerified && (
-                        <button 
-                          type="button"
-                          onClick={() => handleSendOtp('phone')}
-                          disabled={isSendingOtp}
-                          className="px-3 py-1.5 rounded-xl bg-indigo-600 text-white text-[11px] font-bold shrink-0 flex items-center gap-1 hover:bg-indigo-500"
-                        >
-                          {isSendingOtp && otpTarget === 'phone' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Phone className="w-3 h-3" />}
-                          <span>Send OTP</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Password Row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 lg:gap-3">
-                  <div>
-                    <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Password *</label>
-                    <div className="relative">
-                      <input 
-                        type={showPassword ? 'text' : 'password'}
-                        value={password}
-                        onChange={e => setPassword(e.target.value)}
-                        placeholder="Create strong password"
-                        className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 pr-8"
-                      />
-                      <button 
-                        type="button" 
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-2.5 top-2 text-slate-400"
-                      >
-                        {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Confirm Password *</label>
-                    <input 
-                      type="password"
-                      value={confirmPassword}
-                      onChange={e => setConfirmPassword(e.target.value)}
-                      placeholder="Repeat password"
-                      className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
-                    />
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Account Security Toggles & Consent in Compact 2-Column Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-3">
-                <div className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
-                  <div>
-                    <h5 className="text-[11px] lg:text-xs font-bold text-slate-800 dark:text-slate-200">Enable Biometric Passkey</h5>
-                    <p className="text-[9px] text-slate-500">Biometric / PIN login</p>
-                  </div>
-                  <input 
-                    type="checkbox" 
-                    checked={enablePasskey} 
-                    onChange={e => setEnablePasskey(e.target.checked)}
-                    className="w-4 h-4 accent-indigo-600 cursor-pointer"
-                  />
-                </div>
-
-                <div className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
-                  <div>
-                    <h5 className="text-[11px] lg:text-xs font-bold text-slate-800 dark:text-slate-200">Enable 2-Factor Authentication</h5>
-                    <p className="text-[9px] text-slate-500">Authenticator app / OTP</p>
-                  </div>
-                  <input 
-                    type="checkbox" 
-                    checked={enable2FA} 
-                    onChange={e => setEnable2FA(e.target.checked)}
-                    className="w-4 h-4 accent-indigo-600 cursor-pointer"
-                  />
-                </div>
-              </div>
-
-              {/* Single Line Declaration Checkbox */}
-              <div className="p-2.5 rounded-xl bg-slate-50/90 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-                <label className="flex items-center gap-2 cursor-pointer text-[10px] lg:text-xs text-slate-700 dark:text-slate-300">
-                  <input 
-                    type="checkbox" 
-                    checked={agreeAccountCheck}
-                    onChange={e => setAgreeAccountCheck(e.target.checked)}
-                    className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
-                  />
-                  <span>
-                    I confirm that I am at least 18 years old and agree to the <strong>Terms of Service</strong>, <strong>Privacy Policy</strong>, and Companion safety standards.
-                  </span>
-                </label>
-              </div>
-
+              <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-[9px] font-mono font-bold border border-indigo-200 dark:border-indigo-500/30">
+                PUBLIC VIEW
+              </span>
             </div>
-          )}
 
-          {/* STEP 2: PROFILE & SERVICES */}
-          {currentStep === 2 && (
-            <div className="space-y-2.5 lg:space-y-3">
-              <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/80 pb-1.5">
+            <div className="p-3 lg:p-4 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 lg:gap-3">
                 <div>
-                  <span className="text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">STAGE 2 OF 7</span>
-                  <h2 className="text-sm lg:text-base font-black text-slate-900 dark:text-white leading-tight">Public Profile Setup</h2>
-                </div>
-                <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-[9px] font-mono font-bold border border-indigo-200 dark:border-indigo-500/30">
-                  PUBLIC VIEW
-                </span>
-              </div>
-
-              <div className="p-3 lg:p-4 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-2.5">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 lg:gap-3">
-                  <div>
-                    <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Public Display Name *</label>
-                    <input 
-                      type="text" 
-                      value={displayName}
-                      onChange={e => setDisplayName(e.target.value)}
-                      placeholder="e.g. Aria Vance"
-                      className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Legal Full Name (Private)</label>
-                    <input 
-                      type="text" 
-                      value={legalName}
-                      onChange={e => setLegalName(e.target.value)}
-                      placeholder="As per government ID"
-                      className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Gender Identity</label>
-                    <select 
-                      value={gender}
-                      onChange={e => setGender(e.target.value)}
-                      className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none"
-                    >
-                      <option value="Female">Female</option>
-                      <option value="Male">Male</option>
-                      <option value="Non-Binary">Non-Binary</option>
-                    </select>
-                  </div>
+                  <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Public Display Name *</label>
+                  <input 
+                    type="text" 
+                    value={displayName}
+                    onChange={e => setDisplayName(e.target.value)}
+                    placeholder="e.g. Aria Vance"
+                    className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                  />
                 </div>
 
-                {/* Upload Photo & Bio Side-by-Side */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 lg:gap-3">
-                  <div className="p-3 rounded-xl bg-white dark:bg-slate-950 border-2 border-dashed border-slate-300 dark:border-slate-800 text-center flex flex-col items-center justify-center">
-                    <UploadCloud className="w-5 h-5 text-indigo-600 mb-1" />
-                    <p className="text-[11px] font-bold text-slate-900 dark:text-white">Upload Profile Photo</p>
-                    <p className="text-[9px] text-slate-400">JPG/PNG • max 5 MB</p>
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Professional Bio</label>
-                    <textarea 
-                      rows={2}
-                      value={bio}
-                      onChange={e => setBio(e.target.value)}
-                      placeholder="Describe your experience, personality, and services..."
-                      className="w-full p-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none"
-                    ></textarea>
-                  </div>
-                </div>
-              </div>
-
-              {/* Categories Pills */}
-              <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
-                <div className="flex justify-between items-center text-[10px] lg:text-xs">
-                  <span className="font-bold text-slate-900 dark:text-white">Companion Categories (Max 5)</span>
-                  <span className="text-[9px] text-slate-400">{selectedCategories.length}/5 Selected</span>
-                </div>
-
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    'Event Companion', 'Travel Companion', 'Dining & Gala', 'Study & Focus Partner',
-                    'Elderly Assistance', 'Shopping Companion', 'Fitness & Activity', 'Conversation Partner'
-                  ].map((cat) => {
-                    const isSelected = selectedCategories.includes(cat);
-                    return (
-                      <button
-                        key={cat}
-                        type="button"
-                        onClick={() => handleCategoryToggle(cat)}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] lg:text-xs font-bold transition-all border ${
-                          isSelected
-                            ? 'bg-indigo-600 border-indigo-500 text-white shadow-sm'
-                            : 'bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-400'
-                        }`}
-                      >
-                        {cat} {isSelected && '✓'}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-            </div>
-          )}
-
-          {/* STEP 3: SERVICES & SAFETY */}
-          {currentStep === 3 && (
-            <div className="space-y-2.5 lg:space-y-3">
-              <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/80 pb-1.5">
                 <div>
-                  <span className="text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">STAGE 3 OF 7</span>
-                  <h2 className="text-sm lg:text-base font-black text-slate-900 dark:text-white leading-tight">Service Boundaries & Safety Standards</h2>
+                  <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Legal Full Name (Private)</label>
+                  <input 
+                    type="text" 
+                    value={legalName}
+                    onChange={e => setLegalName(e.target.value)}
+                    placeholder="As per government ID"
+                    className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                  />
                 </div>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[9px] font-mono font-bold border border-emerald-200 dark:border-emerald-500/30">
-                  SAFETY FIRST
-                </span>
+
+                <div>
+                  <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Gender Identity</label>
+                  <select 
+                    value={gender}
+                    onChange={e => setGender(e.target.value)}
+                    className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none"
+                  >
+                    <option value="Female">Female</option>
+                    <option value="Male">Male</option>
+                    <option value="Non-Binary">Non-Binary</option>
+                  </select>
+                </div>
               </div>
 
-              {/* Services & Policy Scanner */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-3">
-                <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
-                  <span className="font-bold text-xs text-slate-900 dark:text-white block">Select Services Offered</span>
-                  <div className="flex flex-wrap gap-1">
-                    {[
-                      'Event Companion', 'Fine Dining Companion', 'Sightseeing & City Guide',
-                      'Business Gala Escort', 'Museum & Art Partner', 'Virtual Study Focus'
-                    ].map((service) => {
-                      const isSelected = selectedServices.includes(service);
-                      return (
-                        <button
-                          key={service}
-                          type="button"
-                          onClick={() => handleServiceToggle(service)}
-                          className={`px-2 py-1 rounded-lg text-[10px] font-bold border ${
-                            isSelected
-                              ? 'bg-indigo-600 border-indigo-500 text-white'
-                              : 'bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-300'
-                          }`}
-                        >
-                          {service} {isSelected && '✓'}
-                        </button>
-                      );
-                    })}
-                  </div>
+              {/* Upload Photo & Bio Side-by-Side */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 lg:gap-3">
+                <div className="p-3 rounded-xl bg-white dark:bg-slate-950 border-2 border-dashed border-slate-300 dark:border-slate-800 text-center flex flex-col items-center justify-center">
+                  <UploadCloud className="w-5 h-5 text-indigo-600 mb-1" />
+                  <p className="text-[11px] font-bold text-slate-900 dark:text-white">Upload Profile Photo</p>
+                  <p className="text-[9px] text-slate-400">JPG/PNG • max 5 MB</p>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1">
-                  <span className="font-bold text-xs text-slate-900 dark:text-white block">Service Description & Moderation Scan</span>
+                <div className="sm:col-span-2">
+                  <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Professional Bio</label>
                   <textarea 
                     rows={2}
-                    value={serviceDescription}
-                    onChange={e => handleScanServiceText(e.target.value)}
-                    placeholder="Describe exactly what customers can book you for..."
-                    className="w-full p-2 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white"
+                    value={bio}
+                    onChange={e => setBio(e.target.value)}
+                    placeholder="Describe your experience, personality, and services..."
+                    className="w-full p-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none"
                   ></textarea>
                 </div>
               </div>
-
-              {/* Safety Standards Checklist */}
-              <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
-                <span className="font-bold text-xs text-slate-900 dark:text-white block">Mandatory Companion Safety Commitments</span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px]">
-                  <div className="p-2 rounded-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span><strong>Strictly Non-Sexual:</strong> Legal companionship only.</span>
-                  </div>
-                  <div className="p-2 rounded-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span><strong>Platform Booking:</strong> All payments created through Sathi app.</span>
-                  </div>
-                </div>
-              </div>
-
             </div>
-          )}
 
-          {/* STEP 4: RATES & SCHEDULE */}
-          {currentStep === 4 && (
-            <div className="space-y-2.5 lg:space-y-3">
-              <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/80 pb-1.5">
-                <div>
-                  <span className="text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">STAGE 4 OF 7</span>
-                  <h2 className="text-sm lg:text-base font-black text-slate-900 dark:text-white leading-tight">Rates & Working Availability</h2>
-                </div>
-                <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-[9px] font-mono font-bold border border-indigo-200 dark:border-indigo-500/30">
-                  EARNINGS
-                </span>
+            {/* Categories Pills */}
+            <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
+              <div className="flex justify-between items-center text-[10px] lg:text-xs">
+                <span className="font-bold text-slate-900 dark:text-white">Companion Categories (Max 5)</span>
+                <span className="text-[9px] text-slate-400">{selectedCategories.length}/5 Selected</span>
               </div>
 
-              {/* Rates Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 lg:gap-3">
-                <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
-                  <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Hourly Rate (₹)</label>
-                  <input 
-                    type="number" 
-                    value={hourlyRate}
-                    onChange={e => setHourlyRate(Number(e.target.value))}
-                    className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono font-bold text-slate-900 dark:text-white"
-                  />
-                </div>
-
-                <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
-                  <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Half-Day Rate (₹)</label>
-                  <input 
-                    type="number" 
-                    value={halfDayRate}
-                    onChange={e => setHalfDayRate(Number(e.target.value))}
-                    className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono font-bold text-slate-900 dark:text-white"
-                  />
-                </div>
-
-                <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
-                  <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Full-Day Rate (₹)</label>
-                  <input 
-                    type="number" 
-                    value={fullDayRate}
-                    onChange={e => setFullDayRate(Number(e.target.value))}
-                    className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono font-bold text-slate-900 dark:text-white"
-                  />
-                </div>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  'Event Companion', 'Travel Companion', 'Dining & Gala', 'Study & Focus Partner',
+                  'Elderly Assistance', 'Shopping Companion', 'Fitness & Activity', 'Conversation Partner'
+                ].map((cat) => {
+                  const isSelected = selectedCategories.includes(cat);
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => handleCategoryToggle(cat)}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] lg:text-xs font-bold transition-all border ${
+                        isSelected
+                          ? 'bg-indigo-600 border-indigo-500 text-white shadow-sm'
+                          : 'bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-400'
+                      }`}
+                    >
+                      {cat} {isSelected && '✓'}
+                    </button>
+                  );
+                })}
               </div>
+            </div>
 
-              {/* Working Days Row */}
-              <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1.5">
-                <span className="font-bold text-xs text-slate-900 dark:text-white block">Working Days</span>
-                <div className="grid grid-cols-7 gap-1">
-                  {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => {
-                    const isSelected = workingDays.includes(day);
+          </div>
+        )}
+
+        {/* STEP 3: SERVICES & SAFETY */}
+        {currentStep === 3 && (
+          <div className="space-y-2.5 lg:space-y-3">
+            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/80 pb-1.5">
+              <div>
+                <span className="text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">STAGE 3 OF 7</span>
+                <h2 className="text-sm lg:text-base font-black text-slate-900 dark:text-white leading-tight">Service Boundaries & Safety Standards</h2>
+              </div>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[9px] font-mono font-bold border border-emerald-200 dark:border-emerald-500/30">
+                SAFETY FIRST
+              </span>
+            </div>
+
+            {/* Services & Policy Scanner */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-3">
+              <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
+                <span className="font-bold text-xs text-slate-900 dark:text-white block">Select Services Offered</span>
+                <div className="flex flex-wrap gap-1">
+                  {[
+                    'Event Companion', 'Fine Dining Companion', 'Sightseeing & City Guide',
+                    'Business Gala Escort', 'Museum & Art Partner', 'Virtual Study Focus'
+                  ].map((service) => {
+                    const isSelected = selectedServices.includes(service);
                     return (
                       <button
-                        key={day}
+                        key={service}
                         type="button"
-                        onClick={() => handleDayToggle(day)}
-                        className={`py-1 text-[10px] font-bold rounded-lg border text-center transition-all ${
+                        onClick={() => handleServiceToggle(service)}
+                        className={`px-2 py-1 rounded-lg text-[10px] font-bold border ${
                           isSelected
                             ? 'bg-indigo-600 border-indigo-500 text-white'
-                            : 'bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800 text-slate-600 dark:text-slate-400'
+                            : 'bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-300'
                         }`}
                       >
-                        {day.slice(0, 3)}
+                        {service} {isSelected && '✓'}
                       </button>
                     );
                   })}
                 </div>
               </div>
 
+              <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1">
+                <span className="font-bold text-xs text-slate-900 dark:text-white block">Service Description & Moderation Scan</span>
+                <textarea 
+                  rows={2}
+                  value={serviceDescription}
+                  onChange={e => handleScanServiceText(e.target.value)}
+                  placeholder="Describe exactly what customers can book you for..."
+                  className="w-full p-2 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white"
+                ></textarea>
+              </div>
             </div>
-          )}
 
-          {/* STEP 5: LOCATION & EMERGENCY */}
-          {currentStep === 5 && (
-            <div className="space-y-2.5 lg:space-y-3">
-              <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/80 pb-1.5">
-                <div>
-                  <span className="text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">STAGE 5 OF 7</span>
-                  <h2 className="text-sm lg:text-base font-black text-slate-900 dark:text-white leading-tight">Operating Area & Emergency Contact</h2>
+            {/* Safety Standards Checklist */}
+            <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
+              <span className="font-bold text-xs text-slate-900 dark:text-white block">Mandatory Companion Safety Commitments</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px]">
+                <div className="p-2 rounded-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span><strong>Strictly Non-Sexual:</strong> Legal companionship only.</span>
                 </div>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[9px] font-mono font-bold border border-emerald-200 dark:border-emerald-500/30">
-                  SAFETY SETUP
-                </span>
+                <div className="p-2 rounded-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span><strong>Platform Booking:</strong> All payments created through Sathi app.</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* STEP 4: RATES & SCHEDULE */}
+        {currentStep === 4 && (
+          <div className="space-y-2.5 lg:space-y-3">
+            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/80 pb-1.5">
+              <div>
+                <span className="text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">STAGE 4 OF 7</span>
+                <h2 className="text-sm lg:text-base font-black text-slate-900 dark:text-white leading-tight">Rates & Working Availability</h2>
+              </div>
+              <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-[9px] font-mono font-bold border border-indigo-200 dark:border-indigo-500/30">
+                EARNINGS
+              </span>
+            </div>
+
+            {/* Rates Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 lg:gap-3">
+              <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+                <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Hourly Rate (₹)</label>
+                <input 
+                  type="number" 
+                  value={hourlyRate}
+                  onChange={e => setHourlyRate(Number(e.target.value))}
+                  className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono font-bold text-slate-900 dark:text-white"
+                />
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-3">
-                <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-2">
-                  <span className="font-bold text-xs text-slate-900 dark:text-white block">Operating Area</span>
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Base Operating City *</label>
-                    <select 
-                      value={operatingCity}
-                      onChange={e => setOperatingCity(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white"
+              <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+                <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Half-Day Rate (₹)</label>
+                <input 
+                  type="number" 
+                  value={halfDayRate}
+                  onChange={e => setHalfDayRate(Number(e.target.value))}
+                  className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono font-bold text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+                <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Full-Day Rate (₹)</label>
+                <input 
+                  type="number" 
+                  value={fullDayRate}
+                  onChange={e => setFullDayRate(Number(e.target.value))}
+                  className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono font-bold text-slate-900 dark:text-white"
+                />
+              </div>
+            </div>
+
+            {/* Working Days Row */}
+            <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1.5">
+              <span className="font-bold text-xs text-slate-900 dark:text-white block">Working Days</span>
+              <div className="grid grid-cols-7 gap-1">
+                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => {
+                  const isSelected = workingDays.includes(day);
+                  return (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => handleDayToggle(day)}
+                      className={`py-1 text-[10px] font-bold rounded-lg border text-center transition-all ${
+                        isSelected
+                          ? 'bg-indigo-600 border-indigo-500 text-white'
+                          : 'bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800 text-slate-600 dark:text-slate-400'
+                      }`}
                     >
-                      <option value="Mumbai Metro">Mumbai Metro</option>
-                      <option value="Delhi NCR">Delhi NCR</option>
-                      <option value="Bangalore">Bangalore</option>
-                      <option value="Hyderabad">Hyderabad</option>
-                    </select>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-[10px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">
-                      <span>Travel Radius</span>
-                      <span className="font-mono text-indigo-600 font-bold">{travelRadiusKm} km</span>
-                    </div>
-                    <input 
-                      type="range" 
-                      min={5} 
-                      max={100} 
-                      value={travelRadiusKm}
-                      onChange={e => setTravelRadiusKm(Number(e.target.value))}
-                      className="w-full accent-indigo-600 cursor-pointer"
-                    />
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-2">
-                  <span className="font-bold text-xs text-slate-900 dark:text-white block">Trusted Emergency Contact</span>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Contact Name *</label>
-                      <input 
-                        type="text" 
-                        value={emergencyName}
-                        onChange={e => setEmergencyName(e.target.value)}
-                        placeholder="Trusted person"
-                        className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Mobile Number *</label>
-                      <input 
-                        type="tel" 
-                        value={emergencyPhone}
-                        onChange={e => setEmergencyPhone(e.target.value)}
-                        className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white"
-                      />
-                    </div>
-                  </div>
-                </div>
+                      {day.slice(0, 3)}
+                    </button>
+                  );
+                })}
               </div>
-
             </div>
-          )}
 
-          {/* STEP 6: IDENTITY (KYC & Liveness) */}
-          {currentStep === 6 && (
-            <div className="space-y-2.5 lg:space-y-3">
-              <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/80 pb-1.5">
+          </div>
+        )}
+
+        {/* STEP 5: LOCATION & EMERGENCY */}
+        {currentStep === 5 && (
+          <div className="space-y-2.5 lg:space-y-3">
+            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/80 pb-1.5">
+              <div>
+                <span className="text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">STAGE 5 OF 7</span>
+                <h2 className="text-sm lg:text-base font-black text-slate-900 dark:text-white leading-tight">Operating Area & Emergency Contact</h2>
+              </div>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[9px] font-mono font-bold border border-emerald-200 dark:border-emerald-500/30">
+                SAFETY SETUP
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-3">
+              <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-2">
+                <span className="font-bold text-xs text-slate-900 dark:text-white block">Operating Area</span>
                 <div>
-                  <span className="text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">STAGE 6 OF 7</span>
-                  <h2 className="text-sm lg:text-base font-black text-slate-900 dark:text-white leading-tight">Government ID & Biometric Verification</h2>
+                  <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Base Operating City *</label>
+                  <select 
+                    value={operatingCity}
+                    onChange={e => setOperatingCity(e.target.value)}
+                    className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white"
+                  >
+                    <option value="Mumbai Metro">Mumbai Metro</option>
+                    <option value="Delhi NCR">Delhi NCR</option>
+                    <option value="Bangalore">Bangalore</option>
+                    <option value="Hyderabad">Hyderabad</option>
+                  </select>
                 </div>
-                <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-[9px] font-mono font-bold border border-indigo-200 dark:border-indigo-500/30">
-                  KYC VERIFIED
-                </span>
+                <div>
+                  <div className="flex justify-between text-[10px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">
+                    <span>Travel Radius</span>
+                    <span className="font-mono text-indigo-600 font-bold">{travelRadiusKm} km</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min={5} 
+                    max={100} 
+                    value={travelRadiusKm}
+                    onChange={e => setTravelRadiusKm(Number(e.target.value))}
+                    className="w-full accent-indigo-600 cursor-pointer"
+                  />
+                </div>
               </div>
 
               <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-2">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <span className="font-bold text-xs text-slate-900 dark:text-white block">Trusted Emergency Contact</span>
+                <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">ID Type *</label>
-                    <select 
-                      value={idType}
-                      onChange={e => setIdType(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white"
-                    >
-                      <option value="Aadhaar Card">Aadhaar Card</option>
-                      <option value="Passport">Passport</option>
-                      <option value="Driving License">Driving License</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Document Number *</label>
+                    <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Contact Name *</label>
                     <input 
                       type="text" 
-                      value={idNumber}
-                      onChange={e => setIdNumber(e.target.value)}
-                      placeholder="Enter ID number"
+                      value={emergencyName}
+                      onChange={e => setEmergencyName(e.target.value)}
+                      placeholder="Trusted person"
+                      className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Mobile Number *</label>
+                    <input 
+                      type="tel" 
+                      value={emergencyPhone}
+                      onChange={e => setEmergencyPhone(e.target.value)}
                       className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white"
                     />
                   </div>
                 </div>
-
-                <div className="grid grid-cols-2 gap-2 pt-1">
-                  <div className="p-2.5 rounded-lg bg-white dark:bg-slate-950 border border-dashed border-slate-300 dark:border-slate-800 text-center">
-                    <UploadCloud className="w-4 h-4 text-indigo-600 mx-auto mb-0.5" />
-                    <span className="text-[10px] font-bold text-slate-900 dark:text-white block">Upload ID Front</span>
-                  </div>
-                  <div className="p-2.5 rounded-lg bg-white dark:bg-slate-950 border border-dashed border-slate-300 dark:border-slate-800 text-center">
-                    <UploadCloud className="w-4 h-4 text-indigo-600 mx-auto mb-0.5" />
-                    <span className="text-[10px] font-bold text-slate-900 dark:text-white block">Upload ID Back</span>
-                  </div>
-                </div>
               </div>
-
             </div>
-          )}
 
-          {/* STEP 7: REVIEW & PAYOUT */}
-          {currentStep === 7 && (
-            <div className="space-y-2.5 lg:space-y-3">
-              <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/80 pb-1.5">
-                <div>
-                  <span className="text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">STAGE 7 OF 7</span>
-                  <h2 className="text-sm lg:text-base font-black text-slate-900 dark:text-white leading-tight">Review & Submit Application</h2>
-                </div>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[9px] font-mono font-bold border border-emerald-200 dark:border-emerald-500/30">
-                  FINAL REVIEW
-                </span>
-              </div>
-
-              {/* Summary Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-                <div className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
-                  <span className="text-[9px] text-slate-400 block">Candidate</span>
-                  <strong className="text-slate-900 dark:text-white font-bold">{displayName}</strong>
-                </div>
-                <div className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
-                  <span className="text-[9px] text-slate-400 block">Base Rate</span>
-                  <strong className="text-slate-900 dark:text-white font-bold">₹{hourlyRate}/hr</strong>
-                </div>
-                <div className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
-                  <span className="text-[9px] text-slate-400 block">City</span>
-                  <strong className="text-slate-900 dark:text-white font-bold">{operatingCity}</strong>
-                </div>
-              </div>
-
-              <div className="p-2.5 rounded-xl bg-slate-50/90 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-                <label className="flex items-center gap-2 cursor-pointer text-[10px] lg:text-xs text-slate-700 dark:text-slate-300">
-                  <input 
-                    type="checkbox"
-                    checked={finalConsent}
-                    onChange={e => setFinalConsent(e.target.checked)}
-                    className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500"
-                  />
-                  <span>
-                    I confirm that the information provided is accurate and I agree to Companion Connect safety rules.
-                  </span>
-                </label>
-              </div>
-
-            </div>
-          )}
-
-        </div>
-      </div>
-
-      {/* BOTTOM WIZARD CONTROLS - Fixed Compact Height */}
-      <div className="flex justify-between items-center pt-2 pb-1 border-t border-slate-200 dark:border-slate-800">
-        <button
-          type="button"
-          onClick={handlePrev}
-          disabled={currentStep === 1}
-          className="px-4 py-1.5 lg:py-2 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs disabled:opacity-30 flex items-center gap-1 hover:bg-slate-200"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" /> Previous
-        </button>
-
-        {currentStep < 7 ? (
-          <button
-            type="button"
-            onClick={handleNext}
-            className="px-5 py-1.5 lg:py-2 rounded-xl gradient-bg-primary text-white font-bold text-xs hover:opacity-95 flex items-center gap-1.5 shadow-md shadow-indigo-600/30"
-          >
-            Continue →
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={handleSubmitApplication}
-            disabled={isSubmitting}
-            className="px-6 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-900/30 flex items-center gap-1.5"
-          >
-            {isSubmitting ? 'Submitting...' : 'Submit Companion Application ✓'}
-          </button>
+          </div>
         )}
+
+        {/* STEP 6: IDENTITY (KYC & Liveness) */}
+        {currentStep === 6 && (
+          <div className="space-y-2.5 lg:space-y-3">
+            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/80 pb-1.5">
+              <div>
+                <span className="text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">STAGE 6 OF 7</span>
+                <h2 className="text-sm lg:text-base font-black text-slate-900 dark:text-white leading-tight">Government ID & Biometric Verification</h2>
+              </div>
+              <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-[9px] font-mono font-bold border border-indigo-200 dark:border-indigo-500/30">
+                KYC VERIFIED
+              </span>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">ID Type *</label>
+                  <select 
+                    value={idType}
+                    onChange={e => setIdType(e.target.value)}
+                    className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white"
+                  >
+                    <option value="Aadhaar Card">Aadhaar Card</option>
+                    <option value="Passport">Passport</option>
+                    <option value="Driving License">Driving License</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Document Number *</label>
+                  <input 
+                    type="text" 
+                    value={idNumber}
+                    onChange={e => setIdNumber(e.target.value)}
+                    placeholder="Enter ID number"
+                    className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <div className="p-2.5 rounded-lg bg-white dark:bg-slate-950 border border-dashed border-slate-300 dark:border-slate-800 text-center">
+                  <UploadCloud className="w-4 h-4 text-indigo-600 mx-auto mb-0.5" />
+                  <span className="text-[10px] font-bold text-slate-900 dark:text-white block">Upload ID Front</span>
+                </div>
+                <div className="p-2.5 rounded-lg bg-white dark:bg-slate-950 border border-dashed border-slate-300 dark:border-slate-800 text-center">
+                  <UploadCloud className="w-4 h-4 text-indigo-600 mx-auto mb-0.5" />
+                  <span className="text-[10px] font-bold text-slate-900 dark:text-white block">Upload ID Back</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* STEP 7: REVIEW & PAYOUT */}
+        {currentStep === 7 && (
+          <div className="space-y-2.5 lg:space-y-3">
+            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/80 pb-1.5">
+              <div>
+                <span className="text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">STAGE 7 OF 7</span>
+                <h2 className="text-sm lg:text-base font-black text-slate-900 dark:text-white leading-tight">Review & Submit Application</h2>
+              </div>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[9px] font-mono font-bold border border-emerald-200 dark:border-emerald-500/30">
+                FINAL REVIEW
+              </span>
+            </div>
+
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+              <div className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+                <span className="text-[9px] text-slate-400 block">Candidate</span>
+                <strong className="text-slate-900 dark:text-white font-bold">{displayName}</strong>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+                <span className="text-[9px] text-slate-400 block">Base Rate</span>
+                <strong className="text-slate-900 dark:text-white font-bold">₹{hourlyRate}/hr</strong>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+                <span className="text-[9px] text-slate-400 block">City</span>
+                <strong className="text-slate-900 dark:text-white font-bold">{operatingCity}</strong>
+              </div>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-slate-50/90 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+              <label className="flex items-center gap-2 cursor-pointer text-[10px] lg:text-xs text-slate-700 dark:text-slate-300">
+                <input 
+                  type="checkbox"
+                  checked={finalConsent}
+                  onChange={e => setFinalConsent(e.target.checked)}
+                  className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500"
+                />
+                <span>
+                  I confirm that the information provided is accurate and I agree to Companion Connect safety rules.
+                </span>
+              </label>
+            </div>
+
+          </div>
+        )}
+
+        {/* WIZARD CONTROL BUTTONS - DIRECTLY ATTACHED INSIDE FORM CARD */}
+        <div className="flex justify-between items-center pt-3 border-t border-slate-200 dark:border-slate-800">
+          <button
+            type="button"
+            onClick={handlePrev}
+            disabled={currentStep === 1}
+            className="px-4 py-1.5 lg:py-2 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs disabled:opacity-30 flex items-center gap-1 hover:bg-slate-200"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" /> Previous
+          </button>
+
+          {currentStep < 7 ? (
+            <button
+              type="button"
+              onClick={handleNext}
+              className="px-5 py-1.5 lg:py-2 rounded-xl gradient-bg-primary text-white font-bold text-xs hover:opacity-95 flex items-center gap-1.5 shadow-md shadow-indigo-600/30"
+            >
+              Continue →
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSubmitApplication}
+              disabled={isSubmitting}
+              className="px-6 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-900/30 flex items-center gap-1.5"
+            >
+              {isSubmitting ? 'Submitting...' : 'Submit Companion Application ✓'}
+            </button>
+          )}
+        </div>
+
       </div>
 
       {/* OTP VERIFICATION MODAL POPUP */}
