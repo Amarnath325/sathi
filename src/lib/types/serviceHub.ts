@@ -127,26 +127,64 @@ export interface PricingProfile {
   id: string;
   name: string;
   pricing_type: PricingType;
-  base_price: number;
   currency: string;
+  category_id?: string;
+  category_name?: string;
+  service_id?: string;
+  service_name?: string;
+
+  // 2. Rate & Duration
+  base_price: number;
+  extra_hour_price: number;
   minimum_duration: number;
   maximum_duration: number;
-  extra_hour_price: number;
-  travel_charge: number;
-  platform_fee: number;
-  companion_commission: number;
-  tax: number;
+
+  // 3. Travel & Extra Charges
+  travel_enabled: boolean;
+  travel_pricing_type: 'Per KM' | 'Fixed' | 'Zone';
+  travel_charge: number; // Rate per KM or Fixed Fee
+  free_distance_km: number;
+  max_travel_charge: number;
+  waiting_charge_per_hr: number;
+  parking_charge: number;
+  toll_charge: number;
+  other_charges: number;
+
+  // 4. Dynamic Pricing
   weekend_multiplier: number;
   holiday_multiplier: number;
   surge_enabled: boolean;
-  surge_rules?: {
-    peakHoursStart?: string;
-    peakHoursEnd?: string;
-    surgeMultiplier?: number;
-  };
+  surge_multiplier: number;
+  peak_hours_start?: string;
+  peak_hours_end?: string;
+  demand_pricing_multiplier?: number;
+
+  // 5. Fees, Tax & Earnings
+  platform_fee: number; // Platform Fee %
+  payment_gateway_fee: number; // Payment Gateway Fee %
+  tax: number; // GST/Tax %
+  companion_commission: number; // Companion Commission %
+  companion_payout_rate: number; // Companion Payout Rate %
+
+  // 6. Discounts
+  discount_enabled: boolean;
+  discount_type: 'Percentage' | 'Fixed Amount';
+  discount_value: number;
+  discount_cap: number;
+  long_duration_discount: number; // Extra % discount for 4+ hours
+
+  // 7. Advanced & Versioning
+  price_min_limit?: number;
+  price_max_limit?: number;
+  rounding_rule: 'NO_ROUNDING' | 'ROUND_NEAREST_10' | 'ROUND_NEAREST_50' | 'ROUND_NEAREST_100';
+  version: string;
+  effective_from: string;
+  effective_until?: string;
+  pricing_snapshot_code?: string;
+  historical_price_lock: boolean;
   cancellation_fee: number;
   no_show_fee: number;
-  status: 'ACTIVE' | 'INACTIVE';
+  status: 'ACTIVE' | 'INACTIVE' | 'DRAFT';
   createdAt?: string;
   updatedAt?: string;
 }
@@ -332,12 +370,28 @@ export interface PriceBreakdownResult {
   basePrice: number;
   durationHours: number;
   durationCharge: number;
+  travelKm: number;
+  billableTravelKm: number;
   travelCharge: number;
-  additionalCharges: number;
+  waitingCharge: number;
+  parkingTollCharges: number;
+  grossSubtotal: number;
+  weekendHolidaySurgeMultiplier: number;
+  multiplierCharge: number;
   platformFee: number;
+  gatewayFee: number;
   taxAmount: number;
+  grossTotalBeforeDiscount: number;
   discountAmount: number;
+  discountCapApplied: boolean;
   finalPrice: number;
+  roundedPrice: number;
+  companionPayoutAmount: number;
+  companionCommissionAmount: number;
+  pricingVersion: string;
+  effectiveFrom: string;
+  snapshotCode: string;
+  historicalPriceLock: boolean;
   pricingSource: 'Service' | 'Category' | 'Global Default';
 }
 

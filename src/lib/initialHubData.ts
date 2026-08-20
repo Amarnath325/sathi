@@ -16,19 +16,58 @@ export const DEFAULT_PRICING_PROFILES: PricingProfile[] = [
     id: 'pr-hourly-std',
     name: 'Standard Hourly Profile',
     pricing_type: 'Hourly',
-    base_price: 500,
     currency: 'INR',
+    category_id: 'cat-2',
+    category_name: 'Travel & Exploration',
+    
+    // 2. Rate & Duration
+    base_price: 500,
+    extra_hour_price: 450,
     minimum_duration: 1,
     maximum_duration: 12,
-    extra_hour_price: 450,
-    travel_charge: 100,
-    platform_fee: 15,
-    companion_commission: 85,
-    tax: 18,
+
+    // 3. Travel & Extra Charges
+    travel_enabled: true,
+    travel_pricing_type: 'Per KM',
+    travel_charge: 15,
+    free_distance_km: 5,
+    max_travel_charge: 500,
+    waiting_charge_per_hr: 100,
+    parking_charge: 0,
+    toll_charge: 0,
+    other_charges: 0,
+
+    // 4. Dynamic Pricing
     weekend_multiplier: 1.15,
     holiday_multiplier: 1.25,
     surge_enabled: true,
-    surge_rules: { peakHoursStart: '18:00', peakHoursEnd: '23:00', surgeMultiplier: 1.2 },
+    surge_multiplier: 1.2,
+    peak_hours_start: '18:00',
+    peak_hours_end: '23:00',
+    demand_pricing_multiplier: 1.1,
+
+    // 5. Fees, Tax & Earnings
+    platform_fee: 15,
+    payment_gateway_fee: 2,
+    tax: 18,
+    companion_commission: 20,
+    companion_payout_rate: 80,
+
+    // 6. Discounts
+    discount_enabled: true,
+    discount_type: 'Percentage',
+    discount_value: 10,
+    discount_cap: 300,
+    long_duration_discount: 5,
+
+    // 7. Advanced & Versioning
+    price_min_limit: 300,
+    price_max_limit: 10000,
+    rounding_rule: 'ROUND_NEAREST_10',
+    version: 'v1.0',
+    effective_from: '2026-01-01',
+    pricing_snapshot_code: 'SNAP-V1.0-STD',
+    historical_price_lock: true,
     cancellation_fee: 100,
     no_show_fee: 500,
     status: 'ACTIVE'
@@ -37,18 +76,57 @@ export const DEFAULT_PRICING_PROFILES: PricingProfile[] = [
     id: 'pr-event-pro',
     name: 'Premium Event Package Profile',
     pricing_type: 'Per Event',
-    base_price: 3500,
     currency: 'INR',
+    category_id: 'cat-1',
+    category_name: 'Events & Social',
+
+    // 2. Rate & Duration
+    base_price: 3500,
+    extra_hour_price: 600,
     minimum_duration: 4,
     maximum_duration: 10,
-    extra_hour_price: 600,
+
+    // 3. Travel & Extra Charges
+    travel_enabled: true,
+    travel_pricing_type: 'Fixed',
     travel_charge: 250,
-    platform_fee: 15,
-    companion_commission: 85,
-    tax: 18,
+    free_distance_km: 10,
+    max_travel_charge: 1000,
+    waiting_charge_per_hr: 200,
+    parking_charge: 100,
+    toll_charge: 50,
+    other_charges: 0,
+
+    // 4. Dynamic Pricing
     weekend_multiplier: 1.2,
     holiday_multiplier: 1.3,
     surge_enabled: false,
+    surge_multiplier: 1.0,
+    peak_hours_start: '19:00',
+    peak_hours_end: '01:00',
+
+    // 5. Fees, Tax & Earnings
+    platform_fee: 15,
+    payment_gateway_fee: 2.5,
+    tax: 18,
+    companion_commission: 15,
+    companion_payout_rate: 85,
+
+    // 6. Discounts
+    discount_enabled: true,
+    discount_type: 'Fixed Amount',
+    discount_value: 500,
+    discount_cap: 500,
+    long_duration_discount: 10,
+
+    // 7. Advanced & Versioning
+    price_min_limit: 2500,
+    price_max_limit: 25000,
+    rounding_rule: 'ROUND_NEAREST_50',
+    version: 'v1.2',
+    effective_from: '2026-01-01',
+    pricing_snapshot_code: 'SNAP-V1.2-EVT',
+    historical_price_lock: true,
     cancellation_fee: 500,
     no_show_fee: 1500,
     status: 'ACTIVE'
@@ -57,18 +135,55 @@ export const DEFAULT_PRICING_PROFILES: PricingProfile[] = [
     id: 'pr-fixed-budget',
     name: 'Budget Fixed Profile',
     pricing_type: 'Fixed Price',
-    base_price: 350,
     currency: 'INR',
+    category_id: 'cat-4',
+    category_name: 'Study, Career & Work',
+
+    // 2. Rate & Duration
+    base_price: 350,
+    extra_hour_price: 300,
     minimum_duration: 1,
     maximum_duration: 4,
-    extra_hour_price: 300,
-    travel_charge: 50,
-    platform_fee: 10,
-    companion_commission: 90,
-    tax: 18,
+
+    // 3. Travel & Extra Charges
+    travel_enabled: false,
+    travel_pricing_type: 'Per KM',
+    travel_charge: 0,
+    free_distance_km: 0,
+    max_travel_charge: 0,
+    waiting_charge_per_hr: 50,
+    parking_charge: 0,
+    toll_charge: 0,
+    other_charges: 0,
+
+    // 4. Dynamic Pricing
     weekend_multiplier: 1.0,
     holiday_multiplier: 1.1,
     surge_enabled: false,
+    surge_multiplier: 1.0,
+
+    // 5. Fees, Tax & Earnings
+    platform_fee: 10,
+    payment_gateway_fee: 2,
+    tax: 18,
+    companion_commission: 10,
+    companion_payout_rate: 90,
+
+    // 6. Discounts
+    discount_enabled: false,
+    discount_type: 'Percentage',
+    discount_value: 0,
+    discount_cap: 0,
+    long_duration_discount: 0,
+
+    // 7. Advanced & Versioning
+    price_min_limit: 200,
+    price_max_limit: 2000,
+    rounding_rule: 'ROUND_NEAREST_10',
+    version: 'v1.0',
+    effective_from: '2026-01-01',
+    pricing_snapshot_code: 'SNAP-V1.0-BDG',
+    historical_price_lock: true,
     cancellation_fee: 50,
     no_show_fee: 200,
     status: 'ACTIVE'

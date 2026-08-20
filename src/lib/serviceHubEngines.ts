@@ -90,14 +90,25 @@ export class PricingEngine {
     pricingProfile: PricingProfile,
     durationHours: number = 2,
     travelKm: number = 0,
-    options: { isWeekend?: boolean; isHoliday?: boolean; promoDiscount?: number } = {}
+    options: {
+      isWeekend?: boolean;
+      isHoliday?: boolean;
+      isPeakHours?: boolean;
+      waitingHours?: number;
+      promoDiscount?: number;
+    } = {}
   ): PriceBreakdownResult {
-    const base = pricingProfile.base_price;
-    const dur = Math.max(pricingProfile.minimum_duration, Math.min(durationHours, pricingProfile.maximum_duration));
+    const base = pricingProfile.base_price || 0;
     
+    // 1. Duration Clamp
+    const minDur = pricingProfile.minimum_duration || 1;
+    const maxDur = pricingProfile.maximum_duration || 12;
+    const dur = Math.max(minDur, Math.min(durationHours, maxDur));
+    
+    // 2. Base Duration Charge
     let durationCharge = 0;
     if (pricingProfile.pricing_type === 'Hourly') {
-      durationCharge = base + Math.max(0, dur - 1) * pricingProfile.extra_hour_price;
+      durationCharge = base + Math.max(0, dur - 1) * (pricingProfile.extra_hour_price || 0);
     } else if (pricingProfile.pricing_type === 'Half Day') {
       durationCharge = base * 4;
     } else if (pricingProfile.pricing_type === 'Full Day') {
@@ -106,31 +117,130 @@ export class PricingEngine {
       durationCharge = base;
     }
 
-    // Apply multipliers
-    let multiplier = 1.0;
-    if (options.isWeekend) multiplier *= pricingProfile.weekend_multiplier;
-    if (options.isHoliday) multiplier *= pricingProfile.holiday_multiplier;
+    // 3. Travel Charges
+    let billableTravelKm = 0;
+    let travelCharge = 0;
+    if (pricingProfile.travel_enabled !== false && travelKm > 0) {
+      const freeDist = pricingProfile.free_distance_km || 0;
+      billableTravelKm = Math.max(0, travelKm - freeDist);
+      if (pricingProfile.travel_pricing_type === 'Fixed') {
+        travelCharge = pricingProfile.travel_charge || 0;
+      } else {
+        const calculatedTravel = billableTravelKm * (pricingProfile.travel_charge || 0);
+        const maxTravel = pricingProfile.max_travel_charge || 99999;
+        travelCharge = Math.min(calculatedTravel, maxTravel);
+      }
+    }
 
-    durationCharge *= multiplier;
+    // 4. Extras (Waiting, Parking, Toll, Other)
+    const waitingHours = options.waitingHours || 0;
+    const waitingCharge = waitingHours * (pricingProfile.waiting_charge_per_hr || 0);
+    const parkingTollCharges = (pricingProfile.parking_charge || 0) + (pricingProfile.toll_charge || 0) + (pricingProfile.other_charges || 0);
 
-    const travelCharge = travelKm * pricingProfile.travel_charge;
-    const subtotal = durationCharge + travelCharge;
-    const platformFee = (subtotal * pricingProfile.platform_fee) / 100;
-    const taxAmount = ((subtotal + platformFee) * pricingProfile.tax) / 100;
-    const discountAmount = options.promoDiscount || 0;
+    const grossSubtotal = durationCharge + travelCharge + waitingCharge + parkingTollCharges;
 
-    const finalPrice = Math.max(0, subtotal + platformFee + taxAmount - discountAmount);
+    // 5. Dynamic Multipliers (Weekend, Holiday, Surge)
+    let totalMultiplier = 1.0;
+    if (options.isWeekend) totalMultiplier *= (pricingProfile.weekend_multiplier || 1.0);
+    if (options.isHoliday) totalMultiplier *= (pricingProfile.holiday_multiplier || 1.0);
+    if (pricingProfile.surge_enabled && options.isPeakHours) {
+      totalMultiplier *= (pricingProfile.surge_multiplier || 1.2);
+    }
+
+    const multiplierCharge = grossSubtotal * (totalMultiplier - 1.0);
+    const totalAfterMultipliers = grossSubtotal + multiplierCharge;
+
+    // 6. Fees (Platform & Payment Gateway)
+    const platformFee = (totalAfterMultipliers * (pricingProfile.platform_fee || 0)) / 100;
+    const gatewayFee = (totalAfterMultipliers * (pricingProfile.payment_gateway_fee || 0)) / 100;
+
+    // 7. Taxes
+    const taxBase = totalAfterMultipliers + platformFee + gatewayFee;
+    const taxAmount = (taxBase * (pricingProfile.tax || 0)) / 100;
+
+    const grossTotalBeforeDiscount = taxBase + taxAmount;
+
+    // 8. Discounts & Caps
+    let discountAmount = 0;
+    let discountCapApplied = false;
+    if (pricingProfile.discount_enabled || options.promoDiscount) {
+      if (pricingProfile.discount_type === 'Percentage') {
+        discountAmount = (grossTotalBeforeDiscount * (pricingProfile.discount_value || 0)) / 100;
+      } else {
+        discountAmount = pricingProfile.discount_value || 0;
+      }
+
+      if (dur >= 4 && pricingProfile.long_duration_discount) {
+        discountAmount += (grossTotalBeforeDiscount * pricingProfile.long_duration_discount) / 100;
+      }
+
+      if (options.promoDiscount) {
+        discountAmount += options.promoDiscount;
+      }
+
+      if (pricingProfile.discount_cap && discountAmount > pricingProfile.discount_cap) {
+        discountAmount = pricingProfile.discount_cap;
+        discountCapApplied = true;
+      }
+    }
+
+    // 9. Final Price Calculation & Limits
+    let rawFinal = Math.max(0, grossTotalBeforeDiscount - discountAmount);
+
+    if (pricingProfile.price_min_limit && rawFinal < pricingProfile.price_min_limit) {
+      rawFinal = pricingProfile.price_min_limit;
+    }
+    if (pricingProfile.price_max_limit && rawFinal > pricingProfile.price_max_limit) {
+      rawFinal = pricingProfile.price_max_limit;
+    }
+
+    // 10. Rounding Rule
+    let roundedPrice = rawFinal;
+    const rule = pricingProfile.rounding_rule || 'ROUND_NEAREST_10';
+    if (rule === 'ROUND_NEAREST_10') {
+      roundedPrice = Math.round(rawFinal / 10) * 10;
+    } else if (rule === 'ROUND_NEAREST_50') {
+      roundedPrice = Math.round(rawFinal / 50) * 50;
+    } else if (rule === 'ROUND_NEAREST_100') {
+      roundedPrice = Math.round(rawFinal / 100) * 100;
+    } else {
+      roundedPrice = Math.round(rawFinal);
+    }
+
+    // 11. Companion Commission & Payout Split
+    const payoutRate = pricingProfile.companion_payout_rate || (100 - (pricingProfile.companion_commission || 15));
+    const companionPayoutAmount = Math.round((roundedPrice * payoutRate) / 100);
+    const companionCommissionAmount = Math.round(roundedPrice - companionPayoutAmount);
+
+    // 12. Snapshot Code
+    const snapshotCode = pricingProfile.pricing_snapshot_code || `SNAP-${(pricingProfile.version || 'v1.0').toUpperCase()}-${pricingProfile.id.slice(-4)}`;
 
     return {
       basePrice: base,
       durationHours: dur,
       durationCharge: Math.round(durationCharge),
+      travelKm,
+      billableTravelKm,
       travelCharge: Math.round(travelCharge),
-      additionalCharges: 0,
+      waitingCharge: Math.round(waitingCharge),
+      parkingTollCharges: Math.round(parkingTollCharges),
+      grossSubtotal: Math.round(grossSubtotal),
+      weekendHolidaySurgeMultiplier: Number(totalMultiplier.toFixed(2)),
+      multiplierCharge: Math.round(multiplierCharge),
       platformFee: Math.round(platformFee),
+      gatewayFee: Math.round(gatewayFee),
       taxAmount: Math.round(taxAmount),
+      grossTotalBeforeDiscount: Math.round(grossTotalBeforeDiscount),
       discountAmount: Math.round(discountAmount),
-      finalPrice: Math.round(finalPrice),
+      discountCapApplied,
+      finalPrice: Math.round(rawFinal),
+      roundedPrice,
+      companionPayoutAmount,
+      companionCommissionAmount,
+      pricingVersion: pricingProfile.version || 'v1.0',
+      effectiveFrom: pricingProfile.effective_from || new Date().toISOString().split('T')[0],
+      snapshotCode,
+      historicalPriceLock: pricingProfile.historical_price_lock ?? true,
       pricingSource: 'Service'
     };
   }
