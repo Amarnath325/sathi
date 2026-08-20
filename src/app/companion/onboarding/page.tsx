@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { ServicePolicyEngine } from '@/lib/servicePolicyEngine';
+import { ServiceCategory } from '@/lib/types';
 
 export default function CompanionOnboardingWizard() {
   const router = useRouter();
@@ -48,10 +49,10 @@ export default function CompanionOnboardingWizard() {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // Dynamic DB Categories State
-  const [categoriesList, setCategoriesList] = useState<string[]>([]);
+  const [dbCategories, setDbCategories] = useState<ServiceCategory[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState<boolean>(true);
 
-  // Fetch Categories from Database API
+  // Fetch Categories & Subcategories from Database API
   React.useEffect(() => {
     async function fetchDbCategories() {
       try {
@@ -59,20 +60,13 @@ export default function CompanionOnboardingWizard() {
         const res = await fetch('/api/categories?active=true');
         const json = await res.json();
         if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-          const fetchedNames = json.data.map((c: any) => c.name);
-          setCategoriesList(fetchedNames);
+          setDbCategories(json.data);
         } else {
-          setCategoriesList([
-            'Event Companion', 'Travel Companion', 'Dining & Gala', 'Study & Focus Partner',
-            'Elderly Assistance', 'Shopping Companion', 'Fitness & Activity', 'Conversation Partner'
-          ]);
+          setDbCategories([]);
         }
       } catch (err) {
         console.error('Failed to fetch DB categories:', err);
-        setCategoriesList([
-          'Event Companion', 'Travel Companion', 'Dining & Gala', 'Study & Focus Partner',
-          'Elderly Assistance', 'Shopping Companion', 'Fitness & Activity', 'Conversation Partner'
-        ]);
+        setDbCategories([]);
       } finally {
         setIsLoadingCategories(false);
       }
@@ -290,6 +284,67 @@ export default function CompanionOnboardingWizard() {
   const [bookingRestrictions, setBookingRestrictions] = useState<string[]>([
     'No Overnight', 'No Private Residence', 'No Late Night'
   ]);
+
+  // DYNAMIC COMPUTATIONS FOR SERVICES & SAFETY POLICIES
+  const availableServices = useMemo(() => {
+    if (!dbCategories || dbCategories.length === 0) {
+      return [
+        { name: 'Event Companion', categoryName: 'Events' },
+        { name: 'Fine Dining Companion', categoryName: 'Dining' },
+        { name: 'Sightseeing & City Guide', categoryName: 'Travel' },
+        { name: 'Business Gala Escort', categoryName: 'Events' },
+        { name: 'Museum & Art Partner', categoryName: 'Culture' },
+        { name: 'Virtual Study Focus', categoryName: 'Study' }
+      ];
+    }
+
+    // Filter categories that match user's selectedCategories, or use all if none selected
+    const activeCats = selectedCategories.length > 0
+      ? dbCategories.filter(c => selectedCategories.includes(c.name))
+      : dbCategories;
+
+    const subList: { name: string; categoryName: string }[] = [];
+    activeCats.forEach(cat => {
+      if (cat.subcategories && Array.isArray(cat.subcategories) && cat.subcategories.length > 0) {
+        cat.subcategories.forEach(sub => {
+          if (sub.name && !subList.some(s => s.name === sub.name)) {
+            subList.push({ name: sub.name, categoryName: cat.name });
+          }
+        });
+      }
+    });
+
+    // Fallback if DB category has no subcategories
+    if (subList.length === 0) {
+      return activeCats.map(c => ({ name: c.name, categoryName: c.name }));
+    }
+
+    return subList;
+  }, [dbCategories, selectedCategories]);
+
+  // Compute Dynamic Safety Commitments from Database Safety Policies
+  const dynamicSafetyCommitments = useMemo(() => {
+    const baseCommitments = [
+      { title: 'Strictly Non-Sexual', desc: 'Legal companionship only. Zero tolerance for adult content.' },
+      { title: 'Platform Escrow Booking', desc: 'All payments created & held securely through Sathi app.' }
+    ];
+
+    if (!dbCategories || selectedCategories.length === 0) return baseCommitments;
+
+    const selectedCatObjs = dbCategories.filter(c => selectedCategories.includes(c.name));
+    const categoryPolicies: { title: string; desc: string }[] = [];
+
+    selectedCatObjs.forEach(cat => {
+      if (cat.safetyPolicy) {
+        categoryPolicies.push({
+          title: `${cat.name} Safety Standard`,
+          desc: cat.safetyPolicy
+        });
+      }
+    });
+
+    return categoryPolicies.length > 0 ? [...baseCommitments, ...categoryPolicies] : baseCommitments;
+  }, [dbCategories, selectedCategories]);
 
   // Step 4: Rates & Availability State
   const [hourlyRate, setHourlyRate] = useState<number>(1500);
@@ -874,20 +929,27 @@ export default function CompanionOnboardingWizard() {
                 </div>
               ) : (
                 <div className="flex flex-wrap gap-1.5">
-                  {categoriesList.map((cat) => {
-                    const isSelected = selectedCategories.includes(cat);
+                  {dbCategories.map((catObj) => {
+                    const isSelected = selectedCategories.includes(catObj.name);
+                    const subCount = catObj.subcategories ? catObj.subcategories.length : 0;
                     return (
                       <button
-                        key={cat}
+                        key={catObj.id || catObj.name}
                         type="button"
-                        onClick={() => handleCategoryToggle(cat)}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] lg:text-xs font-bold transition-all border ${
+                        onClick={() => handleCategoryToggle(catObj.name)}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] lg:text-xs font-bold transition-all border flex items-center gap-1.5 ${
                           isSelected
                             ? 'bg-indigo-600 border-indigo-500 text-white shadow-sm'
                             : 'bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-400'
                         }`}
                       >
-                        {cat} {isSelected && '✓'}
+                        <span>{catObj.name}</span>
+                        {subCount > 0 && (
+                          <span className={`text-[8px] font-mono px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-indigo-700 text-indigo-100' : 'bg-slate-100 dark:bg-slate-900 text-slate-500'}`}>
+                            {subCount} services
+                          </span>
+                        )}
+                        {isSelected && '✓'}
                       </button>
                     );
                   })}
@@ -911,28 +973,53 @@ export default function CompanionOnboardingWizard() {
               </span>
             </div>
 
-            {/* Services & Policy Scanner */}
+            {/* Services Offered - Dynamically Filtered by Selected Categories */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-3">
               <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
-                <span className="font-bold text-xs text-slate-900 dark:text-white block">Select Services Offered</span>
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <span>Select Services Offered</span>
+                    <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-200 dark:border-emerald-800">
+                      {selectedCategories.length > 0 ? `Filtered by ${selectedCategories.length} Categories` : 'All Available Services'}
+                    </span>
+                  </span>
+                  {selectedServices.length > 0 && (
+                    <span className="text-[9px] font-mono text-indigo-600 dark:text-indigo-400 font-bold">
+                      {selectedServices.length} Selected
+                    </span>
+                  )}
+                </div>
+
+                {selectedCategories.length > 0 && (
+                  <p className="text-[9px] text-slate-500 dark:text-slate-400 font-mono">
+                    Showing sub-services for: <strong className="text-indigo-600 dark:text-indigo-300">{selectedCategories.join(', ')}</strong>
+                  </p>
+                )}
+
                 <div className="flex flex-wrap gap-1">
-                  {[
-                    'Event Companion', 'Fine Dining Companion', 'Sightseeing & City Guide',
-                    'Business Gala Escort', 'Museum & Art Partner', 'Virtual Study Focus'
-                  ].map((service) => {
-                    const isSelected = selectedServices.includes(service);
+                  {availableServices.map((serviceObj) => {
+                    const serviceName = serviceObj.name;
+                    const categoryTag = serviceObj.categoryName;
+                    const isSelected = selectedServices.includes(serviceName);
+
                     return (
                       <button
-                        key={service}
+                        key={serviceName}
                         type="button"
-                        onClick={() => handleServiceToggle(service)}
-                        className={`px-2 py-1 rounded-lg text-[10px] font-bold border ${
+                        onClick={() => handleServiceToggle(serviceName)}
+                        className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all flex items-center gap-1 ${
                           isSelected
-                            ? 'bg-indigo-600 border-indigo-500 text-white'
-                            : 'bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                            ? 'bg-indigo-600 border-indigo-500 text-white shadow-sm'
+                            : 'bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-400'
                         }`}
                       >
-                        {service} {isSelected && '✓'}
+                        <span>{serviceName}</span>
+                        {categoryTag && selectedCategories.length > 1 && (
+                          <span className={`text-[8px] opacity-75 font-mono ${isSelected ? 'text-indigo-100' : 'text-slate-400'}`}>
+                            ({categoryTag})
+                          </span>
+                        )}
+                        {isSelected && '✓'}
                       </button>
                     );
                   })}
@@ -951,18 +1038,24 @@ export default function CompanionOnboardingWizard() {
               </div>
             </div>
 
-            {/* Safety Standards Checklist */}
+            {/* Dynamic Safety Commitments from Category DB Policies */}
             <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
-              <span className="font-bold text-xs text-slate-900 dark:text-white block">Mandatory Companion Safety Commitments</span>
+              <span className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
+                <span>Mandatory Companion Safety Commitments</span>
+                <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-semibold border border-indigo-200 dark:border-indigo-800">
+                  Dynamic Policies
+                </span>
+              </span>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px]">
-                <div className="p-2 rounded-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span><strong>Strictly Non-Sexual:</strong> Legal companionship only.</span>
-                </div>
-                <div className="p-2 rounded-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span><strong>Platform Booking:</strong> All payments created through Sathi app.</span>
-                </div>
+                {dynamicSafetyCommitments.map((commit, idx) => (
+                  <div key={idx} className="p-2 rounded-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span className="leading-tight">
+                      <strong>{commit.title}:</strong> {commit.desc}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -1187,7 +1280,7 @@ export default function CompanionOnboardingWizard() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
               <div className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
                 <span className="text-[9px] text-slate-400 block">Candidate</span>
-                <strong className="text-slate-900 dark:text-white font-bold">{displayName}</strong>
+                <strong className="text-slate-900 dark:text-white font-bold">{displayName || 'Candidate Name'}</strong>
               </div>
               <div className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
                 <span className="text-[9px] text-slate-400 block">Base Rate</span>
@@ -1196,6 +1289,15 @@ export default function CompanionOnboardingWizard() {
               <div className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
                 <span className="text-[9px] text-slate-400 block">City</span>
                 <strong className="text-slate-900 dark:text-white font-bold">{operatingCity}</strong>
+              </div>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-slate-50/90 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 font-mono text-[10px] space-y-1">
+              <div className="text-slate-600 dark:text-slate-300">
+                Selected Categories: <strong className="text-indigo-600 dark:text-indigo-400">{selectedCategories.join(', ') || 'None selected'}</strong>
+              </div>
+              <div className="text-slate-600 dark:text-slate-300">
+                Offered Services: <strong className="text-indigo-600 dark:text-indigo-400">{selectedServices.join(', ') || 'None selected'}</strong>
               </div>
             </div>
 
