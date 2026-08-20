@@ -47,6 +47,39 @@ export default function CompanionOnboardingWizard() {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+  // Dynamic DB Categories State
+  const [categoriesList, setCategoriesList] = useState<string[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState<boolean>(true);
+
+  // Fetch Categories from Database API
+  React.useEffect(() => {
+    async function fetchDbCategories() {
+      try {
+        setIsLoadingCategories(true);
+        const res = await fetch('/api/categories?active=true');
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          const fetchedNames = json.data.map((c: any) => c.name);
+          setCategoriesList(fetchedNames);
+        } else {
+          setCategoriesList([
+            'Event Companion', 'Travel Companion', 'Dining & Gala', 'Study & Focus Partner',
+            'Elderly Assistance', 'Shopping Companion', 'Fitness & Activity', 'Conversation Partner'
+          ]);
+        }
+      } catch (err) {
+        console.error('Failed to fetch DB categories:', err);
+        setCategoriesList([
+          'Event Companion', 'Travel Companion', 'Dining & Gala', 'Study & Focus Partner',
+          'Elderly Assistance', 'Shopping Companion', 'Fitness & Activity', 'Conversation Partner'
+        ]);
+      } finally {
+        setIsLoadingCategories(false);
+      }
+    }
+    fetchDbCategories();
+  }, []);
+
   // Step 1: Account & Eligibility State
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -826,35 +859,44 @@ export default function CompanionOnboardingWizard() {
               </div>
             </div>
 
-            {/* Categories Pills */}
+            {/* Dynamic DB Categories Pills */}
             <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
               <div className="flex justify-between items-center text-[10px] lg:text-xs">
-                <span className="font-bold text-slate-900 dark:text-white">Companion Categories (Max 5)</span>
+                <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <span>Companion Categories (Max 5)</span>
+                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-semibold border border-indigo-200 dark:border-indigo-800">
+                    Live DB
+                  </span>
+                </span>
                 <span className="text-[9px] text-slate-400">{selectedCategories.length}/5 Selected</span>
               </div>
 
-              <div className="flex flex-wrap gap-1.5">
-                {[
-                  'Event Companion', 'Travel Companion', 'Dining & Gala', 'Study & Focus Partner',
-                  'Elderly Assistance', 'Shopping Companion', 'Fitness & Activity', 'Conversation Partner'
-                ].map((cat) => {
-                  const isSelected = selectedCategories.includes(cat);
-                  return (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => handleCategoryToggle(cat)}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] lg:text-xs font-bold transition-all border ${
-                        isSelected
-                          ? 'bg-indigo-600 border-indigo-500 text-white shadow-sm'
-                          : 'bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-400'
-                      }`}
-                    >
-                      {cat} {isSelected && '✓'}
-                    </button>
-                  );
-                })}
-              </div>
+              {isLoadingCategories ? (
+                <div className="flex items-center gap-2 text-xs text-indigo-600 dark:text-indigo-400 font-bold py-2">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Loading categories from database...</span>
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {categoriesList.map((cat) => {
+                    const isSelected = selectedCategories.includes(cat);
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => handleCategoryToggle(cat)}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] lg:text-xs font-bold transition-all border ${
+                          isSelected
+                            ? 'bg-indigo-600 border-indigo-500 text-white shadow-sm'
+                            : 'bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-400'
+                        }`}
+                      >
+                        {cat} {isSelected && '✓'}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
           </div>
