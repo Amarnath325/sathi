@@ -124,69 +124,71 @@ export interface ServiceItem {
 }
 
 export interface PricingProfile {
+  // DB Primary Columns
   id: string;
   name: string;
   pricing_type: PricingType;
-  currency: string;
-  category_id?: string;
-  category_name?: string;
-  service_id?: string;
-  service_name?: string;
-
-  // 2. Rate & Duration
   base_price: number;
-  extra_hour_price: number;
+  currency: string;
   minimum_duration: number;
   maximum_duration: number;
-
-  // 3. Travel & Extra Charges
-  travel_enabled: boolean;
-  travel_pricing_type: 'Per KM' | 'Fixed' | 'Zone';
-  travel_charge: number; // Rate per KM or Fixed Fee
-  free_distance_km: number;
-  max_travel_charge: number;
-  waiting_charge_per_hr: number;
-  parking_charge: number;
-  toll_charge: number;
-  other_charges: number;
-
-  // 4. Dynamic Pricing
+  extra_hour_price: number;
+  travel_charge: number;
+  platform_fee: number;
+  companion_commission: number;
+  tax: number;
   weekend_multiplier: number;
   holiday_multiplier: number;
   surge_enabled: boolean;
-  surge_multiplier: number;
-  peak_hours_start?: string;
-  peak_hours_end?: string;
-  demand_pricing_multiplier?: number;
-
-  // 5. Fees, Tax & Earnings
-  platform_fee: number; // Platform Fee %
-  payment_gateway_fee: number; // Payment Gateway Fee %
-  tax: number; // GST/Tax %
-  companion_commission: number; // Companion Commission %
-  companion_payout_rate: number; // Companion Payout Rate %
-
-  // 6. Discounts
-  discount_enabled: boolean;
-  discount_type: 'Percentage' | 'Fixed Amount';
-  discount_value: number;
-  discount_cap: number;
-  long_duration_discount: number; // Extra % discount for 4+ hours
-
-  // 7. Advanced & Versioning
-  price_min_limit?: number;
-  price_max_limit?: number;
-  rounding_rule: 'NO_ROUNDING' | 'ROUND_NEAREST_10' | 'ROUND_NEAREST_50' | 'ROUND_NEAREST_100';
-  version: string;
-  effective_from: string;
-  effective_until?: string;
-  pricing_snapshot_code?: string;
-  historical_price_lock: boolean;
+  surge_rules?: Record<string, any>;
   cancellation_fee: number;
   no_show_fee: number;
   status: 'ACTIVE' | 'INACTIVE' | 'DRAFT';
   createdAt?: string;
   updatedAt?: string;
+
+  // Extended 7-Section Hub Fields (Flattened or stored inside surge_rules JSONB)
+  category_id?: string;
+  category_name?: string;
+  service_id?: string;
+  service_name?: string;
+
+  // Travel Extended
+  travel_enabled?: boolean;
+  travel_pricing_type?: 'Per KM' | 'Fixed' | 'Zone';
+  free_distance_km?: number;
+  max_travel_charge?: number;
+  waiting_charge_per_hr?: number;
+  parking_charge?: number;
+  toll_charge?: number;
+  other_charges?: number;
+
+  // Dynamic Extended
+  surge_multiplier?: number;
+  peak_hours_start?: string;
+  peak_hours_end?: string;
+  demand_pricing_multiplier?: number;
+
+  // Fees & Split Extended
+  payment_gateway_fee?: number;
+  companion_payout_rate?: number;
+
+  // Discounts Extended
+  discount_enabled?: boolean;
+  discount_type?: 'Percentage' | 'Fixed Amount';
+  discount_value?: number;
+  discount_cap?: number;
+  long_duration_discount?: number;
+
+  // Advanced & Versioning Extended
+  price_min_limit?: number;
+  price_max_limit?: number;
+  rounding_rule?: 'NO_ROUNDING' | 'ROUND_NEAREST_10' | 'ROUND_NEAREST_50' | 'ROUND_NEAREST_100';
+  version?: string;
+  effective_from?: string;
+  effective_until?: string;
+  pricing_snapshot_code?: string;
+  historical_price_lock?: boolean;
 }
 
 export interface RuleItem {
