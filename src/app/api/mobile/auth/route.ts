@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
+import { sendOtpEmail } from '@/lib/mailService';
+
 const JWT_SECRET = process.env.JWT_SECRET || 'companion-connect-super-secret-jwt-key-2026';
 
 export async function POST(req: Request) {
@@ -146,6 +148,13 @@ export async function POST(req: Request) {
           purpose: 'REGISTRATION',
           expiresAt,
         },
+      });
+
+      await sendOtpEmail({
+        toEmail: formattedEmail,
+        otpCode,
+        purpose: 'REGISTRATION',
+        userName: fullName,
       });
 
       const accessToken = jwt.sign(

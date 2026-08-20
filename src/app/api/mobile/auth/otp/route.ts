@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { sendOtpEmail } from '@/lib/emailService';
+import { sendOtpEmail } from '@/lib/mailService';
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { action, identifier, purpose = 'REGISTRATION', code, name } = body;
+    const { action, identifier, name, purpose = 'REGISTRATION', code } = body;
 
     if (!identifier || !identifier.trim()) {
       return NextResponse.json({ success: false, error: 'Identifier (email or phone) is required.' }, { status: 400 });
@@ -48,17 +48,22 @@ export async function POST(req: Request) {
       });
 
       // Send email if identifier is an email address
-      let emailResult = null;
+      let mailResult = null;
       if (isEmail) {
-        emailResult = await sendOtpEmail(cleanIdentifier, newOtpCode, name || 'Companion Candidate');
+        mailResult = await sendOtpEmail({
+          toEmail: cleanIdentifier,
+          otpCode: newOtpCode,
+          purpose,
+          userName: name || 'Companion Candidate',
+        });
       }
 
       return NextResponse.json({
         success: true,
         message: isEmail
-          ? (emailResult?.method === 'smtp'
+          ? (mailResult?.sent
               ? `Verification OTP sent to ${cleanIdentifier}. Please check your email inbox.`
-              : `Verification OTP sent to ${cleanIdentifier}. Valid for 10 minutes.`)
+              : `Verification OTP generated for ${cleanIdentifier}. Valid for 10 minutes.`)
           : `SMS Verification OTP sent to ${cleanIdentifier}. Valid for 10 minutes.`,
         data: {
           identifier: cleanIdentifier,
@@ -66,8 +71,8 @@ export async function POST(req: Request) {
           resendInSeconds: 60,
           expiresAt,
           demoOtpCode: newOtpCode,
-          emailDelivery: emailResult,
-          isSmtpConfigured: emailResult?.method === 'smtp',
+          emailDelivery: mailResult,
+          isSmtpConfigured: mailResult?.sent ?? false,
         },
       });
     }
