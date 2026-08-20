@@ -269,20 +269,16 @@ export default function CompanionOnboardingWizard() {
   };
 
   // Step 2: Profile & Services State
-  const [displayName, setDisplayName] = useState('Aria Vance');
-  const [legalName, setLegalName] = useState('Aria Vance');
+  const [displayName, setDisplayName] = useState('');
+  const [legalName, setLegalName] = useState('');
   const [gender, setGender] = useState('Female');
   const [languages, setLanguages] = useState('English, Hindi, French');
-  const [bio, setBio] = useState('Professional event companion for gala dinners, business travel, sightseeing, and intelligent conversation.');
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([
-    'Event Companion', 'Travel Companion', 'Dining & Gala', 'Study & Focus Partner'
-  ]);
-  const [skills, setSkills] = useState('Event coordination, public speaking, city guide, translation...');
+  const [bio, setBio] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [skills, setSkills] = useState('');
 
   // Step 3: Safety & Boundaries State
-  const [selectedServices, setSelectedServices] = useState<string[]>([
-    'Event Companion', 'Fine Dining Companion', 'Sightseeing & City Guide'
-  ]);
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [serviceDescription, setServiceDescription] = useState('Describe exactly what customers can book you for. All services strictly non-sexual.');
   const [policyScanResult, setPolicyScanResult] = useState<any>(null);
   const [safetyCheckboxes, setSafetyCheckboxes] = useState({
