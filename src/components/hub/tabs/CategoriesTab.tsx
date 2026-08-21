@@ -6,7 +6,8 @@ import { CategoryItem } from '@/lib/types/serviceHub';
 import { ImageLightboxModal } from '@/components/common/ImageLightboxModal';
 import {
   Users, Plus, Edit2, Trash2, Copy, Star, Layers, ShieldAlert, Maximize2,
-  Search, ChevronLeft, ChevronRight, SlidersHorizontal, X, Power, Calendar, Sparkles, Compass, Heart, LayoutGrid, Table
+  Search, ChevronLeft, ChevronRight, SlidersHorizontal, X, Power, Calendar, Sparkles, Compass, Heart,
+  LayoutGrid, Table, CheckCircle2, AlertTriangle, Archive, RotateCcw, Info
 } from 'lucide-react';
 
 const PAGE_SIZE_OPTIONS = [6, 12, 24, 48] as const;
@@ -18,6 +19,8 @@ export function CategoriesTab() {
     addCategory,
     updateCategory,
     deleteCategory,
+    softDeleteCategory,
+    restoreCategory,
     duplicateCategory,
     toggleCategoryActive,
     toggleCategoryFeatured,
@@ -30,12 +33,15 @@ export function CategoriesTab() {
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [deleteWarningModalCat, setDeleteWarningModalCat] = useState<{ cat: CategoryItem; serviceCount: number } | null>(null);
   const [editingCategory, setEditingCategory] = useState<CategoryItem | null>(null);
+  const [softDeleteConfirmCat, setSoftDeleteConfirmCat] = useState<CategoryItem | null>(null);
+  const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error' | 'info'; title: string; text: string } | null>(null);
+
   const isFormOpen = isCategoryFormOpen;
   const setIsFormOpen = setCategoryFormOpen;
 
   // Local search & filter
   const [localSearch, setLocalSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE' | 'ARCHIVED'>('ALL');
   const [featuredFilter, setFeaturedFilter] = useState<'ALL' | 'FEATURED' | 'STANDARD'>('ALL');
 
   // Pagination
@@ -54,6 +60,13 @@ export function CategoriesTab() {
   const [isFeatured, setIsFeatured] = useState(false);
   const [minAge, setMinAge] = useState(18);
 
+  const showToast = (type: 'success' | 'error' | 'info', title: string, text: string) => {
+    setToastMessage({ type, title, text });
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 4500);
+  };
+
   // Filtered & paginated
   const searchTerm = localSearch || globalSearch;
   const filteredCategories = useMemo(() => {
@@ -63,12 +76,19 @@ export function CategoriesTab() {
         (c.code && c.code.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (c.short_description && c.short_description.toLowerCase().includes(searchTerm.toLowerCase())) ||
         c.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === 'ALL' ||
-        (statusFilter === 'ACTIVE' && c.status === 'ACTIVE') ||
-        (statusFilter === 'INACTIVE' && c.status !== 'ACTIVE');
+
+      const matchesStatus = statusFilter === 'ALL'
+        ? c.status !== 'ARCHIVED'
+        : statusFilter === 'ACTIVE'
+        ? c.status === 'ACTIVE'
+        : statusFilter === 'INACTIVE'
+        ? c.status === 'INACTIVE'
+        : c.status === 'ARCHIVED';
+
       const matchesFeatured = featuredFilter === 'ALL' ||
         (featuredFilter === 'FEATURED' && c.is_featured) ||
         (featuredFilter === 'STANDARD' && !c.is_featured);
+
       return matchesSearch && matchesStatus && matchesFeatured;
     });
   }, [categories, searchTerm, statusFilter, featuredFilter]);
@@ -112,6 +132,7 @@ export function CategoriesTab() {
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+
     if (editingCategory) {
       updateCategory(editingCategory.id, {
         code: code.trim(),
@@ -126,8 +147,9 @@ export function CategoriesTab() {
         is_featured: isFeatured,
         minimum_age: Number(minAge)
       });
+      showToast('success', 'Category Updated', `Category "${name.trim()}" (${code.trim()}) updated successfully.`);
     } else {
-      addCategory({
+      const created = addCategory({
         code: code.trim(),
         name: name.trim(),
         slug: name.toLowerCase().replace(/\s+/g, '-'),
@@ -141,8 +163,28 @@ export function CategoriesTab() {
         is_featured: isFeatured,
         minimum_age: Number(minAge)
       });
+      showToast('success', 'Category Created', `Category "${created.name}" (${created.code}) created successfully.`);
     }
     setIsFormOpen(false);
+  };
+
+  const handleSoftDelete = (cat: CategoryItem) => {
+    const res = softDeleteCategory(cat.id);
+    if (res.success) {
+      showToast('info', 'Category Archived (Soft Deleted)', res.message || `Category "${cat.name}" has been soft-deleted.`);
+    } else {
+      showToast('error', 'Archive Failed', res.message || 'Could not archive category.');
+    }
+    setSoftDeleteConfirmCat(null);
+  };
+
+  const handleRestore = (cat: CategoryItem) => {
+    const res = restoreCategory(cat.id);
+    if (res.success) {
+      showToast('success', 'Category Restored', res.message || `Category "${cat.name}" has been restored.`);
+    } else {
+      showToast('error', 'Restore Failed', res.message || 'Could not restore category.');
+    }
   };
 
   const handleDeleteAttempt = (cat: CategoryItem) => {
@@ -150,12 +192,33 @@ export function CategoriesTab() {
     if (activeSubServices.length > 0) {
       setDeleteWarningModalCat({ cat, serviceCount: activeSubServices.length });
     } else {
-      deleteCategory(cat.id);
+      setSoftDeleteConfirmCat(cat);
     }
   };
 
   return (
-    <div className="space-y-4 w-full">
+    <div className="space-y-4 w-full relative">
+      {/* Toast Notification Banner */}
+      {toastMessage && (
+        <div className={`p-3.5 rounded-2xl border shadow-lg flex items-center justify-between transition-all font-mono text-xs ${
+          toastMessage.type === 'success' ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500/40' :
+          toastMessage.type === 'error' ? 'bg-rose-950/90 text-rose-300 border-rose-500/40' : 'bg-slate-900 text-purple-300 border-purple-500/40'
+        }`}>
+          <div className="flex items-center gap-2.5">
+            {toastMessage.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
+            {toastMessage.type === 'error' && <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />}
+            {toastMessage.type === 'info' && <Info className="w-4 h-4 text-purple-400 shrink-0" />}
+            <div>
+              <strong className="block text-white font-bold">{toastMessage.title}</strong>
+              <p className="text-[11px] text-slate-300">{toastMessage.text}</p>
+            </div>
+          </div>
+          <button onClick={() => setToastMessage(null)} className="p-1 rounded-lg text-slate-400 hover:text-white">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Top Action & Search Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-slate-200/90 shadow-2xs">
         <div className="flex items-center gap-2 flex-1 flex-wrap sm:flex-nowrap">
@@ -175,9 +238,10 @@ export function CategoriesTab() {
             onChange={e => handleFilterChange(() => setStatusFilter(e.target.value as any))}
             className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-purple-500 cursor-pointer"
           >
-            <option value="ALL">All Status</option>
+            <option value="ALL">Active & Inactive</option>
             <option value="ACTIVE">Active Only</option>
             <option value="INACTIVE">Inactive Only</option>
+            <option value="ARCHIVED">Archived (Soft-Deleted)</option>
           </select>
 
           <select
@@ -231,9 +295,12 @@ export function CategoriesTab() {
             {paginatedCategories.map(cat => {
               const catImg = cat.banner_image || cat.image || 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=80';
               const linkedSubServices = services.filter(s => s.category_id === cat.id);
+              const isArchived = cat.status === 'ARCHIVED';
 
               return (
-                <div key={cat.id} className="rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:shadow-md transition-all overflow-hidden flex flex-col justify-between">
+                <div key={cat.id} className={`rounded-2xl bg-white border shadow-2xs hover:shadow-md transition-all overflow-hidden flex flex-col justify-between ${
+                  isArchived ? 'border-amber-300 bg-amber-50/20' : 'border-slate-200/90'
+                }`}>
                   {/* Category Image Banner with Lightbox & Featured Badge */}
                   <div className="relative h-32 w-full bg-slate-900 group">
                     <img src={catImg} alt={cat.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90" />
@@ -257,7 +324,10 @@ export function CategoriesTab() {
                         Order #{cat.display_order || 1}
                       </span>
                       <button
-                        onClick={() => toggleCategoryActive(cat.id)}
+                        onClick={() => {
+                          toggleCategoryActive(cat.id);
+                          showToast('info', 'Status Updated', `Category "${cat.name}" status toggled.`);
+                        }}
                         className={`px-2 py-0.5 rounded-lg font-bold text-[10px] transition-all backdrop-blur-md ${
                           cat.status === 'ACTIVE' ? 'bg-emerald-500/90 text-white' : 'bg-slate-700/90 text-slate-300'
                         }`}
@@ -316,7 +386,10 @@ export function CategoriesTab() {
                     {/* Bottom Action Controls */}
                     <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
                       <button
-                        onClick={() => toggleCategoryFeatured(cat.id)}
+                        onClick={() => {
+                          toggleCategoryFeatured(cat.id);
+                          showToast('info', 'Featured Toggled', `Category "${cat.name}" featured state updated.`);
+                        }}
                         className={`text-[10px] font-bold flex items-center gap-1 px-2 py-1 rounded-lg border transition-all ${
                           cat.is_featured
                             ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
@@ -328,27 +401,42 @@ export function CategoriesTab() {
                       </button>
 
                       <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => duplicateCategory(cat.id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-slate-100 transition-colors"
-                          title="Duplicate Category"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleOpenEdit(cat)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-slate-100 transition-colors"
-                          title="Edit Category"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteAttempt(cat)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition-colors"
-                          title="Delete Category"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {isArchived ? (
+                          <button
+                            onClick={() => handleRestore(cat)}
+                            className="p-1.5 rounded-lg text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-colors font-bold text-[10px] flex items-center gap-1"
+                            title="Restore Category"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" /> Restore
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => {
+                                const dup = duplicateCategory(cat.id);
+                                if (dup) showToast('success', 'Category Duplicated', `Duplicated as "${dup.name}"`);
+                              }}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-slate-100 transition-colors"
+                              title="Duplicate Category"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleOpenEdit(cat)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-slate-100 transition-colors"
+                              title="Edit Category"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteAttempt(cat)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-slate-100 transition-colors"
+                              title="Soft Delete (Archive) Category"
+                            >
+                              <Archive className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -377,9 +465,10 @@ export function CategoriesTab() {
                   {paginatedCategories.map(cat => {
                     const catImg = cat.banner_image || cat.image || 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=80';
                     const linkedSubServices = services.filter(s => s.category_id === cat.id);
+                    const isArchived = cat.status === 'ARCHIVED';
 
                     return (
-                      <tr key={cat.id} className="hover:bg-slate-50/70 transition-colors">
+                      <tr key={cat.id} className={`hover:bg-slate-50/70 transition-colors ${isArchived ? 'bg-amber-50/20' : ''}`}>
                         {/* Code */}
                         <td className="py-3 px-3.5 font-mono font-bold text-purple-700 text-[11px]">
                           {cat.code || `CAT-${cat.id.slice(-4)}`}
@@ -417,7 +506,10 @@ export function CategoriesTab() {
                         {/* Status */}
                         <td className="py-3 px-3.5 text-center">
                           <button
-                            onClick={() => toggleCategoryActive(cat.id)}
+                            onClick={() => {
+                              toggleCategoryActive(cat.id);
+                              showToast('info', 'Status Updated', `Category "${cat.name}" status toggled.`);
+                            }}
                             className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] border transition-all ${
                               cat.status === 'ACTIVE'
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
@@ -431,7 +523,10 @@ export function CategoriesTab() {
                         {/* Featured */}
                         <td className="py-3 px-3.5 text-center">
                           <button
-                            onClick={() => toggleCategoryFeatured(cat.id)}
+                            onClick={() => {
+                              toggleCategoryFeatured(cat.id);
+                              showToast('info', 'Featured Toggled', `Category "${cat.name}" featured state updated.`);
+                            }}
                             className={`p-1.5 rounded-lg border transition-all inline-flex items-center gap-1 font-bold text-[10px] ${
                               cat.is_featured
                                 ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
@@ -454,27 +549,42 @@ export function CategoriesTab() {
                         {/* Actions */}
                         <td className="py-3 px-3.5 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <button
-                              onClick={() => duplicateCategory(cat.id)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-slate-100 transition-colors"
-                              title="Duplicate Category"
-                            >
-                              <Copy className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => handleOpenEdit(cat)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-slate-100 transition-colors"
-                              title="Edit Category"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteAttempt(cat)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition-colors"
-                              title="Delete Category"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            {isArchived ? (
+                              <button
+                                onClick={() => handleRestore(cat)}
+                                className="px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 font-bold text-[10px] flex items-center gap-1"
+                                title="Restore Category"
+                              >
+                                <RotateCcw className="w-3.5 h-3.5" /> Restore
+                              </button>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    const dup = duplicateCategory(cat.id);
+                                    if (dup) showToast('success', 'Category Duplicated', `Duplicated as "${dup.name}"`);
+                                  }}
+                                  className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-slate-100 transition-colors"
+                                  title="Duplicate Category"
+                                >
+                                  <Copy className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleOpenEdit(cat)}
+                                  className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-slate-100 transition-colors"
+                                  title="Edit Category"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteAttempt(cat)}
+                                  className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-slate-100 transition-colors"
+                                  title="Soft Delete (Archive) Category"
+                                >
+                                  <Archive className="w-3.5 h-3.5" />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -548,9 +658,33 @@ export function CategoriesTab() {
               <p className="font-bold text-rose-400">Category "{deleteWarningModalCat.cat.name}" has:</p>
               <p>• {deleteWarningModalCat.serviceCount} Active Sub-Services</p>
             </div>
+            <p className="text-xs text-slate-400">Please reassign or archive active sub-services before deleting this category.</p>
             <button onClick={() => setDeleteWarningModalCat(null)} className="px-5 py-2.5 rounded-xl bg-slate-800 text-white font-bold text-xs hover:bg-slate-700 w-full">
               Acknowledge & Close
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Soft Delete (Archive) Confirmation Modal */}
+      {softDeleteConfirmCat && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-5 space-y-4 shadow-2xl text-xs text-white">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
+                <Archive className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-extrabold text-sm text-white">Soft-Delete (Archive) Category?</h4>
+                <p className="text-[11px] text-slate-400 mt-0.5">Category <strong className="text-white">{softDeleteConfirmCat.name}</strong> will be archived and hidden from active list.</p>
+              </div>
+            </div>
+            <div className="pt-2 border-t border-slate-800 flex justify-end gap-2">
+              <button onClick={() => setSoftDeleteConfirmCat(null)} className="px-3.5 py-1.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-[11px]">Cancel</button>
+              <button onClick={() => handleSoftDelete(softDeleteConfirmCat)} className="px-4 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px]">
+                Archive Category
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -635,7 +769,7 @@ export function CategoriesTab() {
                     className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-bold">
                     <option value="ACTIVE">ACTIVE</option>
                     <option value="INACTIVE">INACTIVE</option>
-                    <option value="ARCHIVED">ARCHIVED</option>
+                    <option value="ARCHIVED">ARCHIVED (Soft Deleted)</option>
                   </select>
                 </div>
 

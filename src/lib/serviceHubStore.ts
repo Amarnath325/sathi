@@ -82,6 +82,8 @@ interface ServiceHubStore {
   addCategory: (cat: Omit<CategoryItem, 'id' | 'created_at' | 'updated_at'>) => CategoryItem;
   updateCategory: (id: string, updates: Partial<CategoryItem>) => void;
   deleteCategory: (id: string) => { success: boolean; error?: string };
+  softDeleteCategory: (id: string) => { success: boolean; message?: string };
+  restoreCategory: (id: string) => { success: boolean; message?: string };
   duplicateCategory: (id: string) => CategoryItem | null;
   toggleCategoryActive: (id: string) => void;
   toggleCategoryFeatured: (id: string) => void;
@@ -223,6 +225,32 @@ export const useServiceHubStore = create<ServiceHubStore>()(
         }));
         get().addAuditLog('Categories', id, 'DELETE', oldCat, null);
         return { success: true };
+      },
+
+      softDeleteCategory: (id) => {
+        const oldCat = get().categories.find(c => c.id === id);
+        if (!oldCat) return { success: false, message: 'Category not found' };
+
+        set(state => ({
+          categories: state.categories.map(c =>
+            c.id === id ? { ...c, status: 'ARCHIVED', deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() } : c
+          )
+        }));
+        get().addAuditLog('Categories', id, 'SOFT_DELETE', oldCat, { status: 'ARCHIVED', deleted_at: new Date().toISOString() });
+        return { success: true, message: `Category "${oldCat.name}" has been soft-deleted (archived).` };
+      },
+
+      restoreCategory: (id) => {
+        const oldCat = get().categories.find(c => c.id === id);
+        if (!oldCat) return { success: false, message: 'Category not found' };
+
+        set(state => ({
+          categories: state.categories.map(c =>
+            c.id === id ? { ...c, status: 'ACTIVE', deleted_at: null, updated_at: new Date().toISOString() } : c
+          )
+        }));
+        get().addAuditLog('Categories', id, 'RESTORE', oldCat, { status: 'ACTIVE', deleted_at: null });
+        return { success: true, message: `Category "${oldCat.name}" has been restored to Active status.` };
       },
 
       duplicateCategory: (id) => {
