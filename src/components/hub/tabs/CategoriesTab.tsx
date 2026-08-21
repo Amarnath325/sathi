@@ -6,7 +6,7 @@ import { CategoryItem } from '@/lib/types/serviceHub';
 import { ImageLightboxModal } from '@/components/common/ImageLightboxModal';
 import {
   Users, Plus, Edit2, Trash2, Copy, Star, Layers, ShieldAlert, Maximize2,
-  Search, ChevronLeft, ChevronRight, SlidersHorizontal, X, Power, Calendar, Sparkles, Compass, Heart, Hash, ArrowUpDown
+  Search, ChevronLeft, ChevronRight, SlidersHorizontal, X, Power, Calendar, Sparkles, Compass, Heart, LayoutGrid, Table
 } from 'lucide-react';
 
 const PAGE_SIZE_OPTIONS = [6, 12, 24, 48] as const;
@@ -26,6 +26,7 @@ export function CategoriesTab() {
     setCategoryFormOpen
   } = useServiceHubStore();
 
+  const [viewMode, setViewMode] = useState<'GRID' | 'TABLE'>('GRID');
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [deleteWarningModalCat, setDeleteWarningModalCat] = useState<{ cat: CategoryItem; serviceCount: number } | null>(null);
   const [editingCategory, setEditingCategory] = useState<CategoryItem | null>(null);
@@ -190,145 +191,300 @@ export function CategoriesTab() {
           </select>
         </div>
 
-        <button
-          onClick={handleOpenCreate}
-          className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-all shrink-0"
-        >
-          <Plus className="w-4 h-4" /> Add Category
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Grid vs Table View Switcher */}
+          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 shrink-0">
+            <button
+              onClick={() => setViewMode('GRID')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
+                viewMode === 'GRID' ? 'bg-white text-purple-700 shadow-2xs' : 'text-slate-500 hover:text-slate-900'
+              }`}
+              title="Grid View"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" /> Grid
+            </button>
+            <button
+              onClick={() => setViewMode('TABLE')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
+                viewMode === 'TABLE' ? 'bg-white text-purple-700 shadow-2xs' : 'text-slate-500 hover:text-slate-900'
+              }`}
+              title="Table View"
+            >
+              <Table className="w-3.5 h-3.5" /> Table
+            </button>
+          </div>
+
+          <button
+            onClick={handleOpenCreate}
+            className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-all shrink-0"
+          >
+            <Plus className="w-4 h-4" /> Add Category
+          </button>
+        </div>
       </div>
 
-      {/* Grid of Categories showing all 9 Fields */}
+      {/* Main Content Area: GRID VIEW or TABLE VIEW */}
       {paginatedCategories.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {paginatedCategories.map(cat => {
-            const catImg = cat.banner_image || cat.image || 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=80';
-            const linkedSubServices = services.filter(s => s.category_id === cat.id);
+        viewMode === 'GRID' ? (
+          /* GRID VIEW */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {paginatedCategories.map(cat => {
+              const catImg = cat.banner_image || cat.image || 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=80';
+              const linkedSubServices = services.filter(s => s.category_id === cat.id);
 
-            return (
-              <div key={cat.id} className="rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:shadow-md transition-all overflow-hidden flex flex-col justify-between">
-                {/* Category Image Banner with Lightbox & Featured Badge */}
-                <div className="relative h-32 w-full bg-slate-900 group">
-                  <img src={catImg} alt={cat.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/30" />
+              return (
+                <div key={cat.id} className="rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:shadow-md transition-all overflow-hidden flex flex-col justify-between">
+                  {/* Category Image Banner with Lightbox & Featured Badge */}
+                  <div className="relative h-32 w-full bg-slate-900 group">
+                    <img src={catImg} alt={cat.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/30" />
 
-                  {/* Icon & Code Badge */}
-                  <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-                    <span className="px-2 py-0.5 rounded-lg bg-slate-900/90 text-purple-300 font-mono font-bold text-[10px] backdrop-blur-md border border-slate-700">
-                      {cat.code || `CAT-${cat.id.slice(-4)}`}
-                    </span>
-                    {cat.is_featured && (
-                      <span className="px-2 py-0.5 rounded-lg bg-amber-500/90 text-slate-950 font-extrabold text-[10px] flex items-center gap-1 shadow-xs backdrop-blur-md">
-                        <Star className="w-3 h-3 fill-slate-950" /> Featured
+                    {/* Icon & Code Badge */}
+                    <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                      <span className="px-2 py-0.5 rounded-lg bg-slate-900/90 text-purple-300 font-mono font-bold text-[10px] backdrop-blur-md border border-slate-700">
+                        {cat.code || `CAT-${cat.id.slice(-4)}`}
                       </span>
-                    )}
+                      {cat.is_featured && (
+                        <span className="px-2 py-0.5 rounded-lg bg-amber-500/90 text-slate-950 font-extrabold text-[10px] flex items-center gap-1 shadow-xs backdrop-blur-md">
+                          <Star className="w-3 h-3 fill-slate-950" /> Featured
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Status & Display Order */}
+                    <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
+                      <span className="px-2 py-0.5 rounded-lg bg-slate-900/80 text-white font-mono text-[10px] font-bold">
+                        Order #{cat.display_order || 1}
+                      </span>
+                      <button
+                        onClick={() => toggleCategoryActive(cat.id)}
+                        className={`px-2 py-0.5 rounded-lg font-bold text-[10px] transition-all backdrop-blur-md ${
+                          cat.status === 'ACTIVE' ? 'bg-emerald-500/90 text-white' : 'bg-slate-700/90 text-slate-300'
+                        }`}
+                      >
+                        {cat.status || 'ACTIVE'}
+                      </button>
+                      <button
+                        onClick={() => setLightboxImage(catImg)}
+                        className="p-1 rounded-lg bg-black/60 hover:bg-black/90 text-white transition-colors"
+                        title="Expand Banner Image"
+                      >
+                        <Maximize2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Title overlay */}
+                    <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-end justify-between text-white">
+                      <h5 className="font-extrabold text-sm text-white drop-shadow-md">{cat.name}</h5>
+                    </div>
                   </div>
 
-                  {/* Status & Display Order */}
-                  <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
-                    <span className="px-2 py-0.5 rounded-lg bg-slate-900/80 text-white font-mono text-[10px] font-bold">
-                      Order #{cat.display_order || 1}
-                    </span>
-                    <button
-                      onClick={() => toggleCategoryActive(cat.id)}
-                      className={`px-2 py-0.5 rounded-lg font-bold text-[10px] transition-all backdrop-blur-md ${
-                        cat.status === 'ACTIVE' ? 'bg-emerald-500/90 text-white' : 'bg-slate-700/90 text-slate-300'
-                      }`}
-                    >
-                      {cat.status || 'ACTIVE'}
-                    </button>
-                    <button
-                      onClick={() => setLightboxImage(catImg)}
-                      className="p-1 rounded-lg bg-black/60 hover:bg-black/90 text-white transition-colors"
-                      title="Expand Banner Image"
-                    >
-                      <Maximize2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  {/* Card Content Body */}
+                  <div className="p-3.5 space-y-2.5 flex-1 flex flex-col justify-between">
+                    <div className="space-y-2">
+                      {/* Short Description */}
+                      {cat.short_description && (
+                        <p className="text-[11px] font-bold text-purple-700 leading-snug line-clamp-1">
+                          {cat.short_description}
+                        </p>
+                      )}
 
-                  {/* Title overlay */}
-                  <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-end justify-between text-white">
-                    <h5 className="font-extrabold text-sm text-white drop-shadow-md">{cat.name}</h5>
-                  </div>
-                </div>
-
-                {/* Card Content Body */}
-                <div className="p-3.5 space-y-2.5 flex-1 flex flex-col justify-between">
-                  <div className="space-y-2">
-                    {/* Short Description */}
-                    {cat.short_description && (
-                      <p className="text-[11px] font-bold text-purple-700 leading-snug line-clamp-1">
-                        {cat.short_description}
+                      {/* Full Description */}
+                      <p className="text-[11px] text-slate-600 leading-snug line-clamp-2">
+                        {cat.description}
                       </p>
-                    )}
 
-                    {/* Full Description */}
-                    <p className="text-[11px] text-slate-600 leading-snug line-clamp-2">
-                      {cat.description}
-                    </p>
+                      {/* Sub-Services Pill Badges */}
+                      <div className="space-y-1 pt-1">
+                        <span className="text-[9px] uppercase font-bold text-slate-400 flex items-center gap-1">
+                          <Layers className="w-3 h-3 text-purple-600" /> Linked Services ({linkedSubServices.length}):
+                        </span>
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {linkedSubServices.length > 0 ? (
+                            linkedSubServices.map(srv => (
+                              <span key={srv.id} className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-100 font-bold text-[10px]">
+                                {srv.name}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-[10px] text-slate-400 italic">No linked services</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
 
-                    {/* Sub-Services Pill Badges */}
-                    <div className="space-y-1 pt-1">
-                      <span className="text-[9px] uppercase font-bold text-slate-400 flex items-center gap-1">
-                        <Layers className="w-3 h-3 text-purple-600" /> Linked Services ({linkedSubServices.length}):
-                      </span>
-                      <div className="flex items-center gap-1 flex-wrap">
-                        {linkedSubServices.length > 0 ? (
-                          linkedSubServices.map(srv => (
-                            <span key={srv.id} className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-100 font-bold text-[10px]">
-                              {srv.name}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-[10px] text-slate-400 italic">No linked services</span>
-                        )}
+                    {/* Bottom Action Controls */}
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                      <button
+                        onClick={() => toggleCategoryFeatured(cat.id)}
+                        className={`text-[10px] font-bold flex items-center gap-1 px-2 py-1 rounded-lg border transition-all ${
+                          cat.is_featured
+                            ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                            : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        <Star className={`w-3 h-3 ${cat.is_featured ? 'fill-amber-500 text-amber-500' : ''}`} />
+                        {cat.is_featured ? 'Featured' : 'Mark Featured'}
+                      </button>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => duplicateCategory(cat.id)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-slate-100 transition-colors"
+                          title="Duplicate Category"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleOpenEdit(cat)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-slate-100 transition-colors"
+                          title="Edit Category"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteAttempt(cat)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition-colors"
+                          title="Delete Category"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   </div>
-
-                  {/* Bottom Action Controls */}
-                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                    <button
-                      onClick={() => toggleCategoryFeatured(cat.id)}
-                      className={`text-[10px] font-bold flex items-center gap-1 px-2 py-1 rounded-lg border transition-all ${
-                        cat.is_featured
-                          ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
-                          : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      <Star className={`w-3 h-3 ${cat.is_featured ? 'fill-amber-500 text-amber-500' : ''}`} />
-                      {cat.is_featured ? 'Featured' : 'Mark Featured'}
-                    </button>
-
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => duplicateCategory(cat.id)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-slate-100 transition-colors"
-                        title="Duplicate Category"
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleOpenEdit(cat)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-slate-100 transition-colors"
-                        title="Edit Category"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteAttempt(cat)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition-colors"
-                        title="Delete Category"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* TABLE VIEW */
+          <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-2xs">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/80 border-b border-slate-200/90 text-slate-500 font-bold uppercase text-[10px]">
+                    <th className="py-3 px-3.5">Code</th>
+                    <th className="py-3 px-3.5">Category Name</th>
+                    <th className="py-3 px-3.5">Short Description</th>
+                    <th className="py-3 px-3.5 text-center">Order #</th>
+                    <th className="py-3 px-3.5 text-center">Status</th>
+                    <th className="py-3 px-3.5 text-center">Featured</th>
+                    <th className="py-3 px-3.5 text-center">Linked Services</th>
+                    <th className="py-3 px-3.5 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200/80">
+                  {paginatedCategories.map(cat => {
+                    const catImg = cat.banner_image || cat.image || 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=80';
+                    const linkedSubServices = services.filter(s => s.category_id === cat.id);
+
+                    return (
+                      <tr key={cat.id} className="hover:bg-slate-50/70 transition-colors">
+                        {/* Code */}
+                        <td className="py-3 px-3.5 font-mono font-bold text-purple-700 text-[11px]">
+                          {cat.code || `CAT-${cat.id.slice(-4)}`}
+                        </td>
+
+                        {/* Image & Name */}
+                        <td className="py-3 px-3.5">
+                          <div className="flex items-center gap-2.5">
+                            <div className="relative w-9 h-9 rounded-xl overflow-hidden bg-slate-900 shrink-0 border border-slate-200 group">
+                              <img src={catImg} alt={cat.name} className="w-full h-full object-cover" />
+                              <button
+                                onClick={() => setLightboxImage(catImg)}
+                                className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity"
+                              >
+                                <Maximize2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                            <div>
+                              <h6 className="font-extrabold text-slate-900 text-xs">{cat.name}</h6>
+                              <span className="text-[10px] text-slate-400">{cat.slug}</span>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Short Description */}
+                        <td className="py-3 px-3.5 max-w-xs text-slate-600 leading-snug">
+                          <p className="line-clamp-2">{cat.short_description || cat.description}</p>
+                        </td>
+
+                        {/* Order */}
+                        <td className="py-3 px-3.5 text-center font-mono font-bold text-slate-700">
+                          #{cat.display_order || 1}
+                        </td>
+
+                        {/* Status */}
+                        <td className="py-3 px-3.5 text-center">
+                          <button
+                            onClick={() => toggleCategoryActive(cat.id)}
+                            className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] border transition-all ${
+                              cat.status === 'ACTIVE'
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                                : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
+                            }`}
+                          >
+                            {cat.status || 'ACTIVE'}
+                          </button>
+                        </td>
+
+                        {/* Featured */}
+                        <td className="py-3 px-3.5 text-center">
+                          <button
+                            onClick={() => toggleCategoryFeatured(cat.id)}
+                            className={`p-1.5 rounded-lg border transition-all inline-flex items-center gap-1 font-bold text-[10px] ${
+                              cat.is_featured
+                                ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                                : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
+                            }`}
+                            title="Toggle Featured Status"
+                          >
+                            <Star className={`w-3.5 h-3.5 ${cat.is_featured ? 'fill-amber-500 text-amber-500' : ''}`} />
+                            {cat.is_featured ? 'Yes' : 'No'}
+                          </button>
+                        </td>
+
+                        {/* Linked Services */}
+                        <td className="py-3 px-3.5 text-center">
+                          <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-bold text-[10px] border border-purple-100">
+                            {linkedSubServices.length} Services
+                          </span>
+                        </td>
+
+                        {/* Actions */}
+                        <td className="py-3 px-3.5 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => duplicateCategory(cat.id)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-slate-100 transition-colors"
+                              title="Duplicate Category"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleOpenEdit(cat)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-slate-100 transition-colors"
+                              title="Edit Category"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteAttempt(cat)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition-colors"
+                              title="Delete Category"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )
       ) : (
         <div className="p-8 text-center rounded-2xl bg-white border border-slate-200/90 space-y-3 shadow-xs">
           <Layers className="w-8 h-8 text-slate-400 mx-auto" />
@@ -444,7 +600,7 @@ export function CategoriesTab() {
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white outline-none focus:border-purple-500 resize-none" />
               </div>
 
-              {/* Field 5 & 6: Category Icon & Category Image Banner URL */}
+              {/* Field 5 & 8: Category Icon & Category Display Order */}
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
                   <label className="block text-slate-400 font-bold mb-1">Category Icon *</label>
