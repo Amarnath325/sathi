@@ -139,12 +139,12 @@ export function CategoriesTab() {
     setIsFormOpen(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
     if (editingCategory) {
-      updateCategory(editingCategory.id, {
+      const res = await updateCategory(editingCategory.id, {
         code: code.trim(),
         name: name.trim(),
         short_description: shortDescription.trim(),
@@ -157,9 +157,13 @@ export function CategoriesTab() {
         is_featured: isFeatured,
         minimum_age: Number(minAge)
       });
-      showToast('success', 'Category Saved', `Category "${name.trim()}" (${code.trim()}) was updated successfully.`);
+      if (res.success) {
+        showToast('success', 'Saved in Neon DB', `Category "${name.trim()}" (${code.trim()}) updated live in database.`);
+      } else {
+        showToast('error', 'DB Write Failed', res.error || 'Failed to update category in DB');
+      }
     } else {
-      const created = addCategory({
+      const res = await addCategory({
         code: code.trim(),
         name: name.trim(),
         slug: name.toLowerCase().replace(/\s+/g, '-'),
@@ -173,37 +177,41 @@ export function CategoriesTab() {
         is_featured: isFeatured,
         minimum_age: Number(minAge)
       });
-      showToast('success', 'Category Created', `New Category "${created.name}" (${created.code}) created successfully.`);
+      if (res.success) {
+        showToast('success', 'Created in Neon DB', `Category "${name.trim()}" saved live in database.`);
+      } else {
+        showToast('error', 'DB Write Failed', res.error || 'Failed to create category in DB');
+      }
     }
     setIsFormOpen(false);
   };
 
-  const handleSoftDelete = (cat: CategoryItem) => {
-    const res = softDeleteCategory(cat.id);
+  const handleSoftDelete = async (cat: CategoryItem) => {
+    const res = await softDeleteCategory(cat.id);
     if (res.success) {
-      showToast('info', 'Category Soft-Deleted (Archived)', `Category "${cat.name}" has been moved to Archive.`);
+      showToast('info', 'Archived in Neon DB', res.message || `Category "${cat.name}" archived in database.`);
     } else {
-      showToast('error', 'Archive Failed', res.message || 'Could not archive category.');
+      showToast('error', 'Archive Failed', res.error || res.message || 'Could not archive category.');
     }
     setSoftDeleteConfirmCat(null);
   };
 
-  const handleHardDelete = (cat: CategoryItem) => {
-    const res = deleteCategory(cat.id);
+  const handleHardDelete = async (cat: CategoryItem) => {
+    const res = await deleteCategory(cat.id);
     if (res.success) {
-      showToast('success', 'Category Permanently Deleted', `Category "${cat.name}" was permanently removed.`);
+      showToast('success', 'Deleted from Neon DB', `Category "${cat.name}" permanently deleted from database.`);
     } else {
       showToast('error', 'Deletion Blocked', res.error || 'Could not delete category.');
     }
     setSoftDeleteConfirmCat(null);
   };
 
-  const handleRestore = (cat: CategoryItem) => {
-    const res = restoreCategory(cat.id);
+  const handleRestore = async (cat: CategoryItem) => {
+    const res = await restoreCategory(cat.id);
     if (res.success) {
-      showToast('success', 'Category Restored', `Category "${cat.name}" has been restored to Active status.`);
+      showToast('success', 'Restored in Neon DB', res.message || `Category "${cat.name}" restored in database.`);
     } else {
-      showToast('error', 'Restore Failed', res.message || 'Could not restore category.');
+      showToast('error', 'Restore Failed', res.error || res.message || 'Could not restore category.');
     }
   };
 
@@ -219,10 +227,12 @@ export function CategoriesTab() {
     showToast('info', 'Featured Toggled', `Category "${cat.name}" is now ${nextFeatured ? 'Marked as Featured' : 'Standard'}.`);
   };
 
-  const handleDuplicateCat = (cat: CategoryItem) => {
-    const dup = duplicateCategory(cat.id);
-    if (dup) {
-      showToast('success', 'Category Duplicated', `Duplicated as "${dup.name}" (${dup.code || 'CAT'}).`);
+  const handleDuplicateCat = async (cat: CategoryItem) => {
+    const res = await duplicateCategory(cat.id);
+    if (res.success && res.data) {
+      showToast('success', 'Category Duplicated', `Duplicated as "${res.data.name}" (${res.data.code || 'CAT'}).`);
+    } else {
+      showToast('error', 'Duplicate Failed', res.error || 'Could not duplicate category');
     }
   };
 

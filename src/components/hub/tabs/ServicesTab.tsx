@@ -151,13 +151,13 @@ export function ServicesTab() {
     setIsWizardOpen(true);
   };
 
-  const handleSaveService = (e: React.FormEvent) => {
+  const handleSaveService = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !categoryId) return;
     const category = categories.find(c => c.id === categoryId);
 
     if (editingService) {
-      updateService(editingService.id, {
+      const res = await updateService(editingService.id, {
         category_id: categoryId,
         category_name: category?.name || 'Unassigned',
         name: name.trim(),
@@ -176,9 +176,13 @@ export function ServicesTab() {
         location_required: locationRequired,
         duration_required: durationRequired
       });
-      showToast('success', 'Service Saved in Neon DB', `Service "${name.trim()}" updated successfully.`);
+      if (res.success) {
+        showToast('success', 'Saved in Neon DB', `Service "${name.trim()}" updated live in database.`);
+      } else {
+        showToast('error', 'DB Write Failed', res.error || 'Failed to update service in DB');
+      }
     } else {
-      const created = addService({
+      const res = await addService({
         category_id: categoryId,
         category_name: category?.name || 'Unassigned',
         name: name.trim(),
@@ -197,40 +201,50 @@ export function ServicesTab() {
         location_required: locationRequired,
         duration_required: durationRequired
       });
-      showToast('success', 'Service Created in Neon DB', `Service "${created.name}" created successfully.`);
+      if (res.success) {
+        showToast('success', 'Created in Neon DB', `Service "${name.trim()}" created live in database.`);
+      } else {
+        showToast('error', 'DB Write Failed', res.error || 'Failed to create service in DB');
+      }
     }
     setIsWizardOpen(false);
   };
 
-  const handleSoftDelete = (srv: ServiceItem) => {
-    const res = softDeleteService(srv.id);
+  const handleSoftDelete = async (srv: ServiceItem) => {
+    const res = await softDeleteService(srv.id);
     if (res.success) {
-      showToast('info', 'Service Soft-Deleted (Archived)', `Service "${srv.name}" moved to Archive in Neon DB.`);
+      showToast('info', 'Archived in Neon DB', `Service "${srv.name}" moved to Archive in database.`);
     } else {
-      showToast('error', 'Archive Failed', res.message || 'Could not archive service.');
+      showToast('error', 'Archive Failed', res.error || res.message || 'Could not archive service.');
     }
     setSoftDeleteConfirmSrv(null);
   };
 
-  const handleHardDelete = (srv: ServiceItem) => {
-    deleteService(srv.id);
-    showToast('success', 'Service Permanently Deleted', `Service "${srv.name}" deleted from Neon DB.`);
+  const handleHardDelete = async (srv: ServiceItem) => {
+    const res = await deleteService(srv.id);
+    if (res.success) {
+      showToast('success', 'Deleted from Neon DB', `Service "${srv.name}" deleted from database.`);
+    } else {
+      showToast('error', 'Deletion Failed', res.error || 'Could not delete service.');
+    }
     setSoftDeleteConfirmSrv(null);
   };
 
-  const handleRestore = (srv: ServiceItem) => {
-    const res = restoreService(srv.id);
+  const handleRestore = async (srv: ServiceItem) => {
+    const res = await restoreService(srv.id);
     if (res.success) {
-      showToast('success', 'Service Restored', `Service "${srv.name}" restored to DRAFT status in Neon DB.`);
+      showToast('success', 'Restored in Neon DB', `Service "${srv.name}" restored in database.`);
     } else {
-      showToast('error', 'Restore Failed', res.message || 'Could not restore service.');
+      showToast('error', 'Restore Failed', res.error || res.message || 'Could not restore service.');
     }
   };
 
-  const handleDuplicate = (srv: ServiceItem) => {
-    const dup = duplicateService(srv.id);
-    if (dup) {
-      showToast('success', 'Service Duplicated', `Duplicated as "${dup.name}" in Neon DB.`);
+  const handleDuplicate = async (srv: ServiceItem) => {
+    const res = await duplicateService(srv.id);
+    if (res.success) {
+      showToast('success', 'Duplicated in Neon DB', `Duplicated as "${res.data?.name || srv.name + ' (Copy)'}" in database.`);
+    } else {
+      showToast('error', 'Duplicate Failed', res.error || 'Could not duplicate service.');
     }
   };
 

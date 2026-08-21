@@ -79,25 +79,25 @@ interface ServiceHubStore {
   setSelectedServiceForConfig: (service: ServiceItem | null) => void;
 
   // Category Actions
-  addCategory: (cat: Omit<CategoryItem, 'id' | 'created_at' | 'updated_at'>) => CategoryItem;
-  updateCategory: (id: string, updates: Partial<CategoryItem>) => void;
-  deleteCategory: (id: string) => { success: boolean; error?: string };
-  softDeleteCategory: (id: string) => { success: boolean; message?: string };
-  restoreCategory: (id: string) => { success: boolean; message?: string };
-  duplicateCategory: (id: string) => CategoryItem | null;
-  toggleCategoryActive: (id: string) => void;
-  toggleCategoryFeatured: (id: string) => void;
+  addCategory: (cat: Omit<CategoryItem, 'id' | 'created_at' | 'updated_at'>) => Promise<{ success: boolean; data?: CategoryItem; error?: string }>;
+  updateCategory: (id: string, updates: Partial<CategoryItem>) => Promise<{ success: boolean; error?: string }>;
+  deleteCategory: (id: string) => Promise<{ success: boolean; error?: string }>;
+  softDeleteCategory: (id: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+  restoreCategory: (id: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+  duplicateCategory: (id: string) => Promise<{ success: boolean; data?: CategoryItem; error?: string }>;
+  toggleCategoryActive: (id: string) => Promise<void>;
+  toggleCategoryFeatured: (id: string) => Promise<void>;
   reorderCategories: (orderedIds: string[]) => void;
 
   // Service Actions
-  addService: (srv: Omit<ServiceItem, 'id' | 'created_at' | 'updated_at'>) => ServiceItem;
-  updateService: (id: string, updates: Partial<ServiceItem>) => void;
-  deleteService: (id: string) => void;
-  softDeleteService: (id: string) => { success: boolean; message?: string };
-  restoreService: (id: string) => { success: boolean; message?: string };
+  addService: (srv: Omit<ServiceItem, 'id' | 'created_at' | 'updated_at'>) => Promise<{ success: boolean; data?: ServiceItem; error?: string }>;
+  updateService: (id: string, updates: Partial<ServiceItem>) => Promise<{ success: boolean; error?: string }>;
+  deleteService: (id: string) => Promise<{ success: boolean; error?: string }>;
+  softDeleteService: (id: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+  restoreService: (id: string) => Promise<{ success: boolean; message?: string; error?: string }>;
   publishService: (id: string) => { success: boolean; readinessMissing?: string[] };
   suspendService: (id: string) => void;
-  duplicateService: (id: string) => ServiceItem | null;
+  duplicateService: (id: string) => Promise<{ success: boolean; data?: ServiceItem; error?: string }>;
 
   // Configuration Profile Actions
   addPricingProfile: (prof: Omit<PricingProfile, 'id'>) => PricingProfile;
@@ -188,7 +188,7 @@ export const useServiceHubStore = create<ServiceHubStore>()(
       setSelectedServiceForConfig: (service) => set({ selectedServiceForConfig: service }),
 
       // Category Actions
-      addCategory: (cat) => {
+      addCategory: async (cat) => {
         const newCat: CategoryItem = {
           ...cat,
           id: 'cat-' + Date.now(),
@@ -200,26 +200,32 @@ export const useServiceHubStore = create<ServiceHubStore>()(
         set(state => ({ categories: [...state.categories, newCat] }));
         get().addAuditLog('Categories', newCat.id, 'CREATE', null, newCat);
 
-        // Async persistence to Neon PostgreSQL via API Route
-        fetch('/api/categories', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: newCat.name,
-            slug: newCat.slug,
-            description: newCat.description,
-            iconName: newCat.icon,
-            bannerUrl: newCat.banner_image || newCat.image,
-            minAgeLimit: newCat.minimum_age || 18,
-            isFeatured: newCat.is_featured,
-            isActive: newCat.status === 'ACTIVE'
-          })
-        }).catch(err => console.warn('Async Neon DB save warning:', err));
-
-        return newCat;
+        try {
+          const res = await fetch('/api/categories', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: newCat.name,
+              slug: newCat.slug,
+              description: newCat.description,
+              iconName: newCat.icon,
+              bannerUrl: newCat.banner_image || newCat.image,
+              minAgeLimit: newCat.minimum_age || 18,
+              isFeatured: newCat.is_featured,
+              isActive: newCat.status === 'ACTIVE'
+            })
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) {
+            return { success: false, error: data.error || 'Failed to save category in Neon DB' };
+          }
+          return { success: true, data: data.data || newCat };
+        } catch (err: any) {
+          return { success: false, error: err.message || 'Network error saving category to DB' };
+        }
       },
 
-      updateCategory: (id, updates) => {
+      updateCategory: async (id, updates) => {
         const oldCat = get().categories.find(c => c.id === id);
         set(state => ({
           categories: state.categories.map(c =>
@@ -228,24 +234,32 @@ export const useServiceHubStore = create<ServiceHubStore>()(
         }));
         get().addAuditLog('Categories', id, 'UPDATE', oldCat, updates);
 
-        // Async persistence to Neon PostgreSQL via API Route
-        fetch(`/api/categories/${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...(updates.name ? { name: updates.name } : {}),
-            ...(updates.slug ? { slug: updates.slug } : {}),
-            ...(updates.description ? { description: updates.description } : {}),
-            ...(updates.icon ? { iconName: updates.icon } : {}),
-            ...(updates.banner_image || updates.image ? { bannerUrl: updates.banner_image || updates.image } : {}),
-            ...(updates.minimum_age ? { minAgeLimit: updates.minimum_age } : {}),
-            ...(updates.is_featured !== undefined ? { isFeatured: updates.is_featured } : {}),
-            ...(updates.status ? { isActive: updates.status === 'ACTIVE' } : {})
-          })
-        }).catch(err => console.warn('Async Neon DB update warning:', err));
+        try {
+          const res = await fetch(`/api/categories/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...(updates.name ? { name: updates.name } : {}),
+              ...(updates.slug ? { slug: updates.slug } : {}),
+              ...(updates.description ? { description: updates.description } : {}),
+              ...(updates.icon ? { iconName: updates.icon } : {}),
+              ...(updates.banner_image || updates.image ? { bannerUrl: updates.banner_image || updates.image } : {}),
+              ...(updates.minimum_age ? { minAgeLimit: updates.minimum_age } : {}),
+              ...(updates.is_featured !== undefined ? { isFeatured: updates.is_featured } : {}),
+              ...(updates.status ? { isActive: updates.status === 'ACTIVE' } : {})
+            })
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) {
+            return { success: false, error: data.error || 'Failed to update category in Neon DB' };
+          }
+          return { success: true };
+        } catch (err: any) {
+          return { success: false, error: err.message || 'Network error updating category' };
+        }
       },
 
-      deleteCategory: (id) => {
+      deleteCategory: async (id) => {
         const activeSubServices = get().services.filter(s => s.category_id === id && s.status !== 'ARCHIVED');
         if (activeSubServices.length > 0) {
           return {
@@ -260,13 +274,19 @@ export const useServiceHubStore = create<ServiceHubStore>()(
         }));
         get().addAuditLog('Categories', id, 'DELETE', oldCat, null);
 
-        // Async persistence to Neon PostgreSQL via API Route
-        fetch(`/api/categories/${id}`, { method: 'DELETE' }).catch(err => console.warn('Async Neon DB delete warning:', err));
-
-        return { success: true };
+        try {
+          const res = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
+          const data = await res.json();
+          if (!res.ok || !data.success) {
+            return { success: false, error: data.error || 'Failed to delete category from DB' };
+          }
+          return { success: true };
+        } catch (err: any) {
+          return { success: false, error: err.message };
+        }
       },
 
-      softDeleteCategory: (id) => {
+      softDeleteCategory: async (id) => {
         const oldCat = get().categories.find(c => c.id === id);
         if (!oldCat) return { success: false, message: 'Category not found' };
 
@@ -277,17 +297,23 @@ export const useServiceHubStore = create<ServiceHubStore>()(
         }));
         get().addAuditLog('Categories', id, 'SOFT_DELETE', oldCat, { status: 'ARCHIVED', deleted_at: new Date().toISOString() });
 
-        // Async persistence to Neon PostgreSQL via API Route
-        fetch(`/api/categories/${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ isActive: false })
-        }).catch(err => console.warn('Async Neon DB soft delete warning:', err));
-
-        return { success: true, message: `Category "${oldCat.name}" has been soft-deleted (archived).` };
+        try {
+          const res = await fetch(`/api/categories/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isActive: false })
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) {
+            return { success: false, error: data.error || 'Failed to soft delete category in DB' };
+          }
+          return { success: true, message: `Category "${oldCat.name}" has been soft-deleted (archived).` };
+        } catch (err: any) {
+          return { success: false, error: err.message };
+        }
       },
 
-      restoreCategory: (id) => {
+      restoreCategory: async (id) => {
         const oldCat = get().categories.find(c => c.id === id);
         if (!oldCat) return { success: false, message: 'Category not found' };
 
@@ -298,19 +324,25 @@ export const useServiceHubStore = create<ServiceHubStore>()(
         }));
         get().addAuditLog('Categories', id, 'RESTORE', oldCat, { status: 'ACTIVE', deleted_at: null });
 
-        // Async persistence to Neon PostgreSQL via API Route
-        fetch(`/api/categories/${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ isActive: true })
-        }).catch(err => console.warn('Async Neon DB restore warning:', err));
-
-        return { success: true, message: `Category "${oldCat.name}" has been restored to Active status.` };
+        try {
+          const res = await fetch(`/api/categories/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isActive: true })
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) {
+            return { success: false, error: data.error || 'Failed to restore category in DB' };
+          }
+          return { success: true, message: `Category "${oldCat.name}" has been restored to Active status.` };
+        } catch (err: any) {
+          return { success: false, error: err.message };
+        }
       },
 
-      duplicateCategory: (id) => {
+      duplicateCategory: async (id) => {
         const target = get().categories.find(c => c.id === id);
-        if (!target) return null;
+        if (!target) return { success: false, error: 'Category not found' };
 
         const duplicated: CategoryItem = {
           ...target,
@@ -324,26 +356,29 @@ export const useServiceHubStore = create<ServiceHubStore>()(
         set(state => ({ categories: [...state.categories, duplicated] }));
         get().addAuditLog('Categories', duplicated.id, 'DUPLICATE', { sourceId: id }, duplicated);
 
-        // Async persistence to Neon PostgreSQL via API Route
-        fetch('/api/categories', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: duplicated.name,
-            slug: duplicated.slug,
-            description: duplicated.description,
-            iconName: duplicated.icon,
-            bannerUrl: duplicated.banner_image || duplicated.image,
-            minAgeLimit: duplicated.minimum_age || 18,
-            isFeatured: duplicated.is_featured,
-            isActive: duplicated.status === 'ACTIVE'
-          })
-        }).catch(err => console.warn('Async Neon DB duplicate warning:', err));
-
-        return duplicated;
+        try {
+          const res = await fetch('/api/categories', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: duplicated.name,
+              slug: duplicated.slug,
+              description: duplicated.description,
+              iconName: duplicated.icon,
+              bannerUrl: duplicated.banner_image || duplicated.image,
+              minAgeLimit: duplicated.minimum_age || 18,
+              isFeatured: duplicated.is_featured,
+              isActive: duplicated.status === 'ACTIVE'
+            })
+          });
+          const data = await res.json();
+          return { success: true, data: data.data || duplicated };
+        } catch (err: any) {
+          return { success: false, error: err.message };
+        }
       },
 
-      toggleCategoryActive: (id) => {
+      toggleCategoryActive: async (id) => {
         const cat = get().categories.find(c => c.id === id);
         const nextStatus = cat?.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
 
@@ -354,15 +389,18 @@ export const useServiceHubStore = create<ServiceHubStore>()(
         }));
         get().addAuditLog('Categories', id, 'TOGGLE_STATUS');
 
-        // Async persistence to Neon PostgreSQL via API Route
-        fetch(`/api/categories/${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ isActive: nextStatus === 'ACTIVE' })
-        }).catch(err => console.warn('Async Neon DB status toggle warning:', err));
+        try {
+          await fetch(`/api/categories/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isActive: nextStatus === 'ACTIVE' })
+          });
+        } catch (err) {
+          console.warn('Status toggle DB sync notice:', err);
+        }
       },
 
-      toggleCategoryFeatured: (id) => {
+      toggleCategoryFeatured: async (id) => {
         const cat = get().categories.find(c => c.id === id);
         const nextFeatured = !cat?.is_featured;
 
@@ -373,12 +411,15 @@ export const useServiceHubStore = create<ServiceHubStore>()(
         }));
         get().addAuditLog('Categories', id, 'TOGGLE_FEATURED');
 
-        // Async persistence to Neon PostgreSQL via API Route
-        fetch(`/api/categories/${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ isFeatured: nextFeatured })
-        }).catch(err => console.warn('Async Neon DB featured toggle warning:', err));
+        try {
+          await fetch(`/api/categories/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isFeatured: nextFeatured })
+          });
+        } catch (err) {
+          console.warn('Featured toggle DB sync notice:', err);
+        }
       },
 
       reorderCategories: (orderedIds) => {
@@ -392,7 +433,7 @@ export const useServiceHubStore = create<ServiceHubStore>()(
       },
 
       // Service Actions
-      addService: (srv) => {
+      addService: async (srv) => {
         const category = get().categories.find(c => c.id === srv.category_id);
         const newSrv: ServiceItem = {
           ...srv,
@@ -414,17 +455,23 @@ export const useServiceHubStore = create<ServiceHubStore>()(
         set(state => ({ services: [newSrv, ...state.services] }));
         get().addAuditLog('Services', newSrv.id, 'CREATE', null, newSrv);
 
-        // Async persistence to Neon PostgreSQL via API Route
-        fetch('/api/hub/services', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newSrv)
-        }).catch(err => console.warn('Async Neon DB hubService save warning:', err));
-
-        return newSrv;
+        try {
+          const res = await fetch('/api/hub/services', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newSrv)
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) {
+            return { success: false, error: data.error || 'Failed to save service in Neon DB' };
+          }
+          return { success: true, data: data.data || newSrv };
+        } catch (err: any) {
+          return { success: false, error: err.message || 'Network error saving service to DB' };
+        }
       },
 
-      updateService: (id, updates) => {
+      updateService: async (id, updates) => {
         const oldSrv = get().services.find(s => s.id === id);
         set(state => ({
           services: state.services.map(s =>
@@ -436,15 +483,23 @@ export const useServiceHubStore = create<ServiceHubStore>()(
         }));
         get().addAuditLog('Services', id, 'UPDATE', oldSrv, updates);
 
-        // Async persistence to Neon PostgreSQL via API Route
-        fetch(`/api/hub/services/${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updates)
-        }).catch(err => console.warn('Async Neon DB hubService update warning:', err));
+        try {
+          const res = await fetch(`/api/hub/services/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates)
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) {
+            return { success: false, error: data.error || 'Failed to update service in Neon DB' };
+          }
+          return { success: true };
+        } catch (err: any) {
+          return { success: false, error: err.message || 'Network error updating service' };
+        }
       },
 
-      deleteService: (id) => {
+      deleteService: async (id) => {
         const oldSrv = get().services.find(s => s.id === id);
         set(state => ({
           services: state.services.filter(s => s.id !== id),
@@ -452,11 +507,19 @@ export const useServiceHubStore = create<ServiceHubStore>()(
         }));
         get().addAuditLog('Services', id, 'DELETE', oldSrv, null);
 
-        // Async persistence to Neon PostgreSQL via API Route
-        fetch(`/api/hub/services/${id}`, { method: 'DELETE' }).catch(err => console.warn('Async Neon DB hubService delete warning:', err));
+        try {
+          const res = await fetch(`/api/hub/services/${id}`, { method: 'DELETE' });
+          const data = await res.json();
+          if (!res.ok || !data.success) {
+            return { success: false, error: data.error || 'Failed to delete service from DB' };
+          }
+          return { success: true };
+        } catch (err: any) {
+          return { success: false, error: err.message };
+        }
       },
 
-      softDeleteService: (id) => {
+      softDeleteService: async (id) => {
         const oldSrv = get().services.find(s => s.id === id);
         if (!oldSrv) return { success: false, message: 'Service not found' };
 
@@ -467,17 +530,23 @@ export const useServiceHubStore = create<ServiceHubStore>()(
         }));
         get().addAuditLog('Services', id, 'SOFT_DELETE', oldSrv, { status: 'ARCHIVED' });
 
-        // Async persistence to Neon PostgreSQL via API Route
-        fetch(`/api/hub/services/${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'ARCHIVED' })
-        }).catch(err => console.warn('Async Neon DB hubService soft delete warning:', err));
-
-        return { success: true, message: `Service "${oldSrv.name}" archived (soft deleted).` };
+        try {
+          const res = await fetch(`/api/hub/services/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'ARCHIVED' })
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) {
+            return { success: false, error: data.error || 'Failed to archive service in DB' };
+          }
+          return { success: true, message: `Service "${oldSrv.name}" archived (soft deleted).` };
+        } catch (err: any) {
+          return { success: false, error: err.message };
+        }
       },
 
-      restoreService: (id) => {
+      restoreService: async (id) => {
         const oldSrv = get().services.find(s => s.id === id);
         if (!oldSrv) return { success: false, message: 'Service not found' };
 
@@ -488,14 +557,20 @@ export const useServiceHubStore = create<ServiceHubStore>()(
         }));
         get().addAuditLog('Services', id, 'RESTORE', oldSrv, { status: 'DRAFT' });
 
-        // Async persistence to Neon PostgreSQL via API Route
-        fetch(`/api/hub/services/${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'DRAFT' })
-        }).catch(err => console.warn('Async Neon DB hubService restore warning:', err));
-
-        return { success: true, message: `Service "${oldSrv.name}" restored to DRAFT status.` };
+        try {
+          const res = await fetch(`/api/hub/services/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'DRAFT' })
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) {
+            return { success: false, error: data.error || 'Failed to restore service in DB' };
+          }
+          return { success: true, message: `Service "${oldSrv.name}" restored to DRAFT status.` };
+        } catch (err: any) {
+          return { success: false, error: err.message };
+        }
       },
 
       publishService: (id) => {
@@ -529,9 +604,9 @@ export const useServiceHubStore = create<ServiceHubStore>()(
         get().addAuditLog('Services', id, 'SUSPEND', null, { status: 'SUSPENDED' });
       },
 
-      duplicateService: (id) => {
+      duplicateService: async (id) => {
         const target = get().services.find(s => s.id === id);
-        if (!target) return null;
+        if (!target) return { success: false, error: 'Service not found' };
 
         const duplicated: ServiceItem = {
           ...target,
@@ -546,14 +621,17 @@ export const useServiceHubStore = create<ServiceHubStore>()(
         set(state => ({ services: [duplicated, ...state.services] }));
         get().addAuditLog('Services', duplicated.id, 'DUPLICATE', { sourceId: id }, duplicated);
 
-        // Async persistence to Neon PostgreSQL via API Route
-        fetch('/api/hub/services', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(duplicated)
-        }).catch(err => console.warn('Async Neon DB hubService duplicate warning:', err));
-
-        return duplicated;
+        try {
+          const res = await fetch('/api/hub/services', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(duplicated)
+          });
+          const data = await res.json();
+          return { success: true, data: data.data || duplicated };
+        } catch (err: any) {
+          return { success: false, error: err.message };
+        }
       },
 
       // Profile Actions
