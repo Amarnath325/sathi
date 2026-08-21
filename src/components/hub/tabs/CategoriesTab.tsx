@@ -26,8 +26,13 @@ export function CategoriesTab() {
     toggleCategoryFeatured,
     searchQuery: globalSearch,
     isCategoryFormOpen,
-    setCategoryFormOpen
+    setCategoryFormOpen,
+    syncFromNeonDB
   } = useServiceHubStore();
+
+  React.useEffect(() => {
+    syncFromNeonDB();
+  }, [syncFromNeonDB]);
 
   const [viewMode, setViewMode] = useState<'GRID' | 'TABLE'>('GRID');
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);

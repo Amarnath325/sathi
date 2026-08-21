@@ -197,6 +197,23 @@ export const useServiceHubStore = create<ServiceHubStore>()(
         };
         set(state => ({ categories: [...state.categories, newCat] }));
         get().addAuditLog('Categories', newCat.id, 'CREATE', null, newCat);
+
+        // Async persistence to Neon PostgreSQL via API Route
+        fetch('/api/categories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: newCat.name,
+            slug: newCat.slug,
+            description: newCat.description,
+            iconName: newCat.icon,
+            bannerUrl: newCat.banner_image || newCat.image,
+            minAgeLimit: newCat.minimum_age || 18,
+            isFeatured: newCat.is_featured,
+            isActive: newCat.status === 'ACTIVE'
+          })
+        }).catch(err => console.warn('Async Neon DB save warning:', err));
+
         return newCat;
       },
 
@@ -208,6 +225,22 @@ export const useServiceHubStore = create<ServiceHubStore>()(
           )
         }));
         get().addAuditLog('Categories', id, 'UPDATE', oldCat, updates);
+
+        // Async persistence to Neon PostgreSQL via API Route
+        fetch(`/api/categories/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...(updates.name ? { name: updates.name } : {}),
+            ...(updates.slug ? { slug: updates.slug } : {}),
+            ...(updates.description ? { description: updates.description } : {}),
+            ...(updates.icon ? { iconName: updates.icon } : {}),
+            ...(updates.banner_image || updates.image ? { bannerUrl: updates.banner_image || updates.image } : {}),
+            ...(updates.minimum_age ? { minAgeLimit: updates.minimum_age } : {}),
+            ...(updates.is_featured !== undefined ? { isFeatured: updates.is_featured } : {}),
+            ...(updates.status ? { isActive: updates.status === 'ACTIVE' } : {})
+          })
+        }).catch(err => console.warn('Async Neon DB update warning:', err));
       },
 
       deleteCategory: (id) => {
@@ -224,6 +257,10 @@ export const useServiceHubStore = create<ServiceHubStore>()(
           categories: state.categories.filter(c => c.id !== id)
         }));
         get().addAuditLog('Categories', id, 'DELETE', oldCat, null);
+
+        // Async persistence to Neon PostgreSQL via API Route
+        fetch(`/api/categories/${id}`, { method: 'DELETE' }).catch(err => console.warn('Async Neon DB delete warning:', err));
+
         return { success: true };
       },
 
@@ -237,6 +274,14 @@ export const useServiceHubStore = create<ServiceHubStore>()(
           )
         }));
         get().addAuditLog('Categories', id, 'SOFT_DELETE', oldCat, { status: 'ARCHIVED', deleted_at: new Date().toISOString() });
+
+        // Async persistence to Neon PostgreSQL via API Route
+        fetch(`/api/categories/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isActive: false })
+        }).catch(err => console.warn('Async Neon DB soft delete warning:', err));
+
         return { success: true, message: `Category "${oldCat.name}" has been soft-deleted (archived).` };
       },
 
@@ -250,6 +295,14 @@ export const useServiceHubStore = create<ServiceHubStore>()(
           )
         }));
         get().addAuditLog('Categories', id, 'RESTORE', oldCat, { status: 'ACTIVE', deleted_at: null });
+
+        // Async persistence to Neon PostgreSQL via API Route
+        fetch(`/api/categories/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isActive: true })
+        }).catch(err => console.warn('Async Neon DB restore warning:', err));
+
         return { success: true, message: `Category "${oldCat.name}" has been restored to Active status.` };
       },
 
@@ -268,25 +321,62 @@ export const useServiceHubStore = create<ServiceHubStore>()(
 
         set(state => ({ categories: [...state.categories, duplicated] }));
         get().addAuditLog('Categories', duplicated.id, 'DUPLICATE', { sourceId: id }, duplicated);
+
+        // Async persistence to Neon PostgreSQL via API Route
+        fetch('/api/categories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: duplicated.name,
+            slug: duplicated.slug,
+            description: duplicated.description,
+            iconName: duplicated.icon,
+            bannerUrl: duplicated.banner_image || duplicated.image,
+            minAgeLimit: duplicated.minimum_age || 18,
+            isFeatured: duplicated.is_featured,
+            isActive: duplicated.status === 'ACTIVE'
+          })
+        }).catch(err => console.warn('Async Neon DB duplicate warning:', err));
+
         return duplicated;
       },
 
       toggleCategoryActive: (id) => {
+        const cat = get().categories.find(c => c.id === id);
+        const nextStatus = cat?.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+
         set(state => ({
           categories: state.categories.map(c =>
-            c.id === id ? { ...c, status: c.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE', updated_at: new Date().toISOString() } : c
+            c.id === id ? { ...c, status: nextStatus, updated_at: new Date().toISOString() } : c
           )
         }));
         get().addAuditLog('Categories', id, 'TOGGLE_STATUS');
+
+        // Async persistence to Neon PostgreSQL via API Route
+        fetch(`/api/categories/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isActive: nextStatus === 'ACTIVE' })
+        }).catch(err => console.warn('Async Neon DB status toggle warning:', err));
       },
 
       toggleCategoryFeatured: (id) => {
+        const cat = get().categories.find(c => c.id === id);
+        const nextFeatured = !cat?.is_featured;
+
         set(state => ({
           categories: state.categories.map(c =>
-            c.id === id ? { ...c, is_featured: !c.is_featured, updated_at: new Date().toISOString() } : c
+            c.id === id ? { ...c, is_featured: nextFeatured, updated_at: new Date().toISOString() } : c
           )
         }));
         get().addAuditLog('Categories', id, 'TOGGLE_FEATURED');
+
+        // Async persistence to Neon PostgreSQL via API Route
+        fetch(`/api/categories/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isFeatured: nextFeatured })
+        }).catch(err => console.warn('Async Neon DB featured toggle warning:', err));
       },
 
       reorderCategories: (orderedIds) => {
@@ -952,15 +1042,38 @@ export const useServiceHubStore = create<ServiceHubStore>()(
 
       syncFromNeonDB: async () => {
         try {
+          // Sync categories from Neon PostgreSQL DB
+          const catRes = await fetch('/api/categories');
+          const catData = await catRes.json();
+          if (catData.success && Array.isArray(catData.data) && catData.data.length > 0) {
+            const mappedCats = catData.data.map((c: any) => ({
+              id: c.id,
+              code: c.code || `CAT-${c.id.slice(-4)}`,
+              name: c.name,
+              slug: c.slug,
+              short_description: c.shortDescription || c.description,
+              description: c.description,
+              icon: c.iconName || 'Users',
+              image: c.bannerUrl || '',
+              banner_image: c.bannerUrl || '',
+              status: c.isActive ? 'ACTIVE' : 'INACTIVE',
+              display_order: c.displayOrder || 1,
+              is_featured: Boolean(c.isFeatured),
+              minimum_age: c.minAgeLimit || 18,
+              created_at: c.createdAt || new Date().toISOString(),
+              updated_at: c.updatedAt || new Date().toISOString()
+            }));
+            set({ categories: mappedCats });
+          }
+
+          // Sync services from Neon PostgreSQL DB
           const res = await fetch('/api/hub/services');
           const data = await res.json();
           if (data.success && Array.isArray(data.data) && data.data.length > 0) {
             set({ services: data.data });
-          } else {
-            set({ services: INITIAL_SERVICES });
           }
         } catch (e) {
-          set({ services: INITIAL_SERVICES });
+          console.warn('Neon DB sync notice:', e);
         }
       },
 
