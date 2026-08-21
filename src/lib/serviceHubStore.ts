@@ -93,6 +93,8 @@ interface ServiceHubStore {
   addService: (srv: Omit<ServiceItem, 'id' | 'created_at' | 'updated_at'>) => ServiceItem;
   updateService: (id: string, updates: Partial<ServiceItem>) => void;
   deleteService: (id: string) => void;
+  softDeleteService: (id: string) => { success: boolean; message?: string };
+  restoreService: (id: string) => { success: boolean; message?: string };
   publishService: (id: string) => { success: boolean; readinessMissing?: string[] };
   suspendService: (id: string) => void;
   duplicateService: (id: string) => ServiceItem | null;
@@ -411,6 +413,14 @@ export const useServiceHubStore = create<ServiceHubStore>()(
 
         set(state => ({ services: [newSrv, ...state.services] }));
         get().addAuditLog('Services', newSrv.id, 'CREATE', null, newSrv);
+
+        // Async persistence to Neon PostgreSQL via API Route
+        fetch('/api/hub/services', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newSrv)
+        }).catch(err => console.warn('Async Neon DB hubService save warning:', err));
+
         return newSrv;
       },
 
@@ -425,6 +435,13 @@ export const useServiceHubStore = create<ServiceHubStore>()(
             : state.selectedServiceForConfig
         }));
         get().addAuditLog('Services', id, 'UPDATE', oldSrv, updates);
+
+        // Async persistence to Neon PostgreSQL via API Route
+        fetch(`/api/hub/services/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates)
+        }).catch(err => console.warn('Async Neon DB hubService update warning:', err));
       },
 
       deleteService: (id) => {
@@ -434,6 +451,51 @@ export const useServiceHubStore = create<ServiceHubStore>()(
           selectedServiceForConfig: state.selectedServiceForConfig?.id === id ? null : state.selectedServiceForConfig
         }));
         get().addAuditLog('Services', id, 'DELETE', oldSrv, null);
+
+        // Async persistence to Neon PostgreSQL via API Route
+        fetch(`/api/hub/services/${id}`, { method: 'DELETE' }).catch(err => console.warn('Async Neon DB hubService delete warning:', err));
+      },
+
+      softDeleteService: (id) => {
+        const oldSrv = get().services.find(s => s.id === id);
+        if (!oldSrv) return { success: false, message: 'Service not found' };
+
+        set(state => ({
+          services: state.services.map(s =>
+            s.id === id ? { ...s, status: 'ARCHIVED', updated_at: new Date().toISOString() } : s
+          )
+        }));
+        get().addAuditLog('Services', id, 'SOFT_DELETE', oldSrv, { status: 'ARCHIVED' });
+
+        // Async persistence to Neon PostgreSQL via API Route
+        fetch(`/api/hub/services/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'ARCHIVED' })
+        }).catch(err => console.warn('Async Neon DB hubService soft delete warning:', err));
+
+        return { success: true, message: `Service "${oldSrv.name}" archived (soft deleted).` };
+      },
+
+      restoreService: (id) => {
+        const oldSrv = get().services.find(s => s.id === id);
+        if (!oldSrv) return { success: false, message: 'Service not found' };
+
+        set(state => ({
+          services: state.services.map(s =>
+            s.id === id ? { ...s, status: 'DRAFT', updated_at: new Date().toISOString() } : s
+          )
+        }));
+        get().addAuditLog('Services', id, 'RESTORE', oldSrv, { status: 'DRAFT' });
+
+        // Async persistence to Neon PostgreSQL via API Route
+        fetch(`/api/hub/services/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'DRAFT' })
+        }).catch(err => console.warn('Async Neon DB hubService restore warning:', err));
+
+        return { success: true, message: `Service "${oldSrv.name}" restored to DRAFT status.` };
       },
 
       publishService: (id) => {
@@ -483,6 +545,14 @@ export const useServiceHubStore = create<ServiceHubStore>()(
 
         set(state => ({ services: [duplicated, ...state.services] }));
         get().addAuditLog('Services', duplicated.id, 'DUPLICATE', { sourceId: id }, duplicated);
+
+        // Async persistence to Neon PostgreSQL via API Route
+        fetch('/api/hub/services', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(duplicated)
+        }).catch(err => console.warn('Async Neon DB hubService duplicate warning:', err));
+
         return duplicated;
       },
 
