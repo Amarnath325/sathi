@@ -5,12 +5,14 @@ import { useServiceHubStore } from '@/lib/serviceHubStore';
 import { CancellationCalculator } from '@/lib/serviceHubEngines';
 import {
   Clock, Calendar, Calculator, Check, Hourglass, RotateCcw, AlertTriangle,
-  FileText, Shield, Sparkles, CheckCircle2, Layers, RefreshCw, XCircle
+  FileText, Shield, Sparkles, CheckCircle2, Layers, RefreshCw, XCircle, Plus, Edit2, Trash2, X
 } from 'lucide-react';
+import { BookingRuleItem } from '@/lib/types/serviceHub';
 
 export function BookingCancellationTab() {
-  const { bookingRules } = useServiceHubStore();
-  const rule = bookingRules[0];
+  const { bookingRules, addBookingRule, updateBookingRule, deleteBookingRule } = useServiceHubStore();
+  const [selectedRuleId, setSelectedRuleId] = useState(bookingRules[0]?.id || '');
+  const rule = bookingRules.find(r => r.id === selectedRuleId) || bookingRules[0];
 
   const [subTab, setSubTab] = useState<'overview' | 'booking_rules' | 'cancellation' | 'refund_rules'>('overview');
 
@@ -19,6 +21,102 @@ export function BookingCancellationTab() {
   const [cancelHoursPrior, setCancelHoursPrior] = useState(18);
 
   const calc = rule ? CancellationCalculator.calculateRefund(paidAmt, cancelHoursPrior, rule) : null;
+
+  // Modal state for Add / Edit Booking Rule
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingRule, setEditingRule] = useState<BookingRuleItem | null>(null);
+
+  // Form State
+  const [name, setName] = useState('');
+  const [minAdvanceHours, setMinAdvanceHours] = useState(2);
+  const [maxAdvanceDays, setMaxAdvanceDays] = useState(30);
+  const [minDurationHours, setMinDurationHours] = useState(1);
+  const [maxDurationHours, setMaxDurationHours] = useState(12);
+  const [sameDayAllowed, setSameDayAllowed] = useState(true);
+  const [instantBookingAllowed, setInstantBookingAllowed] = useState(true);
+  const [companionApprovalRequired, setCompanionApprovalRequired] = useState(false);
+  const [userApprovalRequired, setUserApprovalRequired] = useState(false);
+  const [freeCancellationWindow, setFreeCancellationWindow] = useState(24);
+  const [noShowRefundPercent, setNoShowRefundPercent] = useState(0);
+  const [status, setStatus] = useState<'ACTIVE' | 'INACTIVE'>('ACTIVE');
+
+  const openAddModal = () => {
+    setEditingRule(null);
+    setName('');
+    setMinAdvanceHours(2);
+    setMaxAdvanceDays(30);
+    setMinDurationHours(1);
+    setMaxDurationHours(12);
+    setSameDayAllowed(true);
+    setInstantBookingAllowed(true);
+    setCompanionApprovalRequired(false);
+    setUserApprovalRequired(false);
+    setFreeCancellationWindow(24);
+    setNoShowRefundPercent(0);
+    setStatus('ACTIVE');
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (r: BookingRuleItem, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setEditingRule(r);
+    setName(r.name);
+    setMinAdvanceHours(r.min_advance_hours || 2);
+    setMaxAdvanceDays(r.max_advance_days || 30);
+    setMinDurationHours(r.min_duration_hours || 1);
+    setMaxDurationHours(r.max_duration_hours || 12);
+    setSameDayAllowed(r.same_day_allowed ?? true);
+    setInstantBookingAllowed(r.instant_booking_allowed ?? true);
+    setCompanionApprovalRequired(r.companion_approval_required ?? false);
+    setUserApprovalRequired(r.user_approval_required ?? false);
+    setFreeCancellationWindow(r.cancellation_rules?.free_cancellation_window_hours || 24);
+    setNoShowRefundPercent(r.cancellation_rules?.no_show_refund_percent || 0);
+    setStatus(r.status || 'ACTIVE');
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteRule = (id: string, rName: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (confirm(`Are you sure you want to delete booking rule profile "${rName}"?`)) {
+      deleteBookingRule(id);
+    }
+  };
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) { alert('Please enter rule name.'); return; }
+
+    const payload = {
+      name,
+      min_advance_hours: minAdvanceHours,
+      max_advance_days: maxAdvanceDays,
+      min_duration_hours: minDurationHours,
+      max_duration_hours: maxDurationHours,
+      same_day_allowed: sameDayAllowed,
+      instant_booking_allowed: instantBookingAllowed,
+      companion_approval_required: companionApprovalRequired,
+      user_approval_required: userApprovalRequired,
+      status,
+      cancellation_rules: {
+        free_cancellation_window_hours: freeCancellationWindow,
+        no_show_refund_percent: noShowRefundPercent,
+        tiers: editingRule?.cancellation_rules?.tiers || [
+          { hoursBeforeBooking: 24, refundPercentage: 100, cancellationFeePercent: 0 },
+          { hoursBeforeBooking: 12, refundPercentage: 75, cancellationFeePercent: 25 },
+          { hoursBeforeBooking: 4, refundPercentage: 50, cancellationFeePercent: 50 },
+          { hoursBeforeBooking: 0, refundPercentage: 0, cancellationFeePercent: 100 },
+        ]
+      }
+    };
+
+    if (editingRule) {
+      updateBookingRule(editingRule.id, payload);
+    } else {
+      addBookingRule(payload);
+    }
+
+    setIsModalOpen(false);
+  };
 
   return (
     <div className="space-y-3 w-full">
@@ -71,6 +169,33 @@ export function BookingCancellationTab() {
           >
             <Calculator className="w-3.5 h-3.5" />
             <span>Refund Rules & Calculator</span>
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {rule && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={(e) => openEditModal(rule, e)}
+                className="px-2.5 py-1.5 rounded-xl bg-slate-200 hover:bg-purple-100 text-slate-800 hover:text-purple-700 font-bold text-xs flex items-center gap-1"
+                title="Edit Current Booking Rule"
+              >
+                <Edit2 className="w-3.5 h-3.5" /> Edit Rule
+              </button>
+              <button
+                onClick={(e) => handleDeleteRule(rule.id, rule.name, e)}
+                className="px-2.5 py-1.5 rounded-xl bg-slate-200 hover:bg-rose-100 text-slate-800 hover:text-rose-700 font-bold text-xs flex items-center gap-1"
+                title="Delete Current Booking Rule"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Delete
+              </button>
+            </div>
+          )}
+          <button
+            onClick={openAddModal}
+            className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-2xs flex items-center gap-1"
+          >
+            <Plus className="w-3.5 h-3.5" /> Add Booking Profile
           </button>
         </div>
       </div>
@@ -126,21 +251,18 @@ export function BookingCancellationTab() {
           <h4 className="font-extrabold text-slate-900 text-xs">Configured Booking Parameters</h4>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
-            {/* Advance Booking */}
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
               <span className="font-extrabold text-slate-900 block">1. Advance Booking Notice</span>
               <p className="text-[11px] text-slate-600">Min Advance: <strong>{rule?.min_advance_hours} hours</strong></p>
               <p className="text-[11px] text-slate-600">Max Advance: <strong>{rule?.max_advance_days} days</strong></p>
             </div>
 
-            {/* Duration Limits */}
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
               <span className="font-extrabold text-slate-900 block">2. Session Duration</span>
               <p className="text-[11px] text-slate-600">Min Duration: <strong>{rule?.min_duration_hours} hour</strong></p>
               <p className="text-[11px] text-slate-600">Max Duration: <strong>{rule?.max_duration_hours} hours</strong></p>
             </div>
 
-            {/* Instant Booking */}
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
               <span className="font-extrabold text-slate-900 block">3. Instant Booking</span>
               <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
@@ -150,19 +272,16 @@ export function BookingCancellationTab() {
               </span>
             </div>
 
-            {/* Booking Extension */}
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
               <span className="font-extrabold text-slate-900 block">4. Extension Rules</span>
               <p className="text-[11px] text-slate-600">Companions can extend active bookings up to 4 hours with real-time customer consent.</p>
             </div>
 
-            {/* Rescheduling Rules */}
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
               <span className="font-extrabold text-slate-900 block">5. Rescheduling Rules</span>
               <p className="text-[11px] text-slate-600">Free rescheduling permitted up to 12 hours prior to scheduled start time.</p>
             </div>
 
-            {/* Admin Approval */}
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
               <span className="font-extrabold text-slate-900 block">6. Admin Approval Trigger</span>
               <p className="text-[11px] text-slate-600">Bookings exceeding ₹5,000 or night shifts require explicit supervisor signoff.</p>
@@ -216,7 +335,7 @@ export function BookingCancellationTab() {
             <h4 className="font-extrabold text-slate-900 text-xs">Tiered Refund Schedule & Fees</h4>
 
             <div className="space-y-2">
-              {rule?.cancellation_rules.tiers.map((tier, idx) => (
+              {rule?.cancellation_rules?.tiers?.map((tier, idx) => (
                 <div key={idx} className="p-3 rounded-xl bg-slate-50 border flex items-center justify-between text-xs">
                   <div>
                     <span className="font-extrabold text-slate-900 block">
@@ -273,6 +392,146 @@ export function BookingCancellationTab() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADD / EDIT BOOKING RULE MODAL */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b pb-3">
+              <h3 className="font-extrabold text-slate-900 text-sm">
+                {editingRule ? 'Edit Booking Rule Profile' : 'Create Booking Rule Profile'}
+              </h3>
+              <button onClick={() => setIsModalOpen(false)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-500">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSave} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Profile Name *</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  placeholder="e.g. Standard Companion Booking Rules"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-medium text-slate-900 outline-none focus:ring-2 focus:ring-purple-500"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Min Advance Notice (h)</label>
+                  <input
+                    type="number"
+                    value={minAdvanceHours}
+                    onChange={e => setMinAdvanceHours(Number(e.target.value))}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-medium text-slate-900 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Max Advance Booking (days)</label>
+                  <input
+                    type="number"
+                    value={maxAdvanceDays}
+                    onChange={e => setMaxAdvanceDays(Number(e.target.value))}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-medium text-slate-900 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Min Duration (h)</label>
+                  <input
+                    type="number"
+                    value={minDurationHours}
+                    onChange={e => setMinDurationHours(Number(e.target.value))}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-medium text-slate-900 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Max Duration (h)</label>
+                  <input
+                    type="number"
+                    value={maxDurationHours}
+                    onChange={e => setMaxDurationHours(Number(e.target.value))}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-medium text-slate-900 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Free Cancellation Window (h)</label>
+                  <input
+                    type="number"
+                    value={freeCancellationWindow}
+                    onChange={e => setFreeCancellationWindow(Number(e.target.value))}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-medium text-slate-900 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Status</label>
+                  <select
+                    value={status}
+                    onChange={e => setStatus(e.target.value as 'ACTIVE' | 'INACTIVE')}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-medium text-slate-900 outline-none"
+                  >
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="INACTIVE">INACTIVE</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <span className="font-extrabold text-slate-900 block text-xs">Booking & Acceptance Rules</span>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer font-semibold text-slate-800">
+                    <input type="checkbox" checked={sameDayAllowed} onChange={e => setSameDayAllowed(e.target.checked)} className="accent-purple-600 rounded" />
+                    Same Day Booking Allowed
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer font-semibold text-slate-800">
+                    <input type="checkbox" checked={instantBookingAllowed} onChange={e => setInstantBookingAllowed(e.target.checked)} className="accent-purple-600 rounded" />
+                    Instant Booking (Auto-Accept)
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer font-semibold text-slate-800">
+                    <input type="checkbox" checked={companionApprovalRequired} onChange={e => setCompanionApprovalRequired(e.target.checked)} className="accent-purple-600 rounded" />
+                    Companion Approval Required
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer font-semibold text-slate-800">
+                    <input type="checkbox" checked={userApprovalRequired} onChange={e => setUserApprovalRequired(e.target.checked)} className="accent-purple-600 rounded" />
+                    Customer Approval Required
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold"
+                >
+                  {editingRule ? 'Update Rule Profile' : 'Create Rule Profile'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
