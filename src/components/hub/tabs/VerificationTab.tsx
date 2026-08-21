@@ -2,34 +2,8 @@
 
 import React, { useState, useMemo } from 'react';
 import { useServiceHubStore } from '@/lib/serviceHubStore';
-import { UserCheck, CheckCircle2, XCircle, Search, Check, Plus, Edit2, Trash2, X } from 'lucide-react';
+import { UserCheck, CheckCircle2, XCircle, Search, Check, Plus, Edit2, Trash2, X, Sliders, Layers, FileCheck } from 'lucide-react';
 import { VerificationProfileItem, VerificationLevel } from '@/lib/types/serviceHub';
-
-const CREDENTIAL_LABELS: Record<string, string> = {
-  email: 'Email',
-  mobile: 'Mobile',
-  government_id: 'Government Id',
-  selfie: 'Selfie',
-  emergency_contact: 'Emergency Contact',
-  face_match: 'Face Match',
-  address: 'Address',
-  background_check: 'Background Check',
-  additional_document: 'Additional Document',
-  manual_review: 'Manual Review',
-};
-
-const ALL_CREDENTIAL_KEYS = [
-  'email',
-  'mobile',
-  'government_id',
-  'selfie',
-  'face_match',
-  'address',
-  'background_check',
-  'emergency_contact',
-  'additional_document',
-  'manual_review',
-] as const;
 
 export function VerificationTab() {
   const {
@@ -39,222 +13,96 @@ export function VerificationTab() {
     deleteVerificationProfile
   } = useServiceHubStore();
 
+  const [subTab, setSubTab] = useState<'profiles' | 'checks' | 'rules'>('profiles');
   const [selProfId, setSelProfId] = useState(verificationProfiles[0]?.id || '');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // CRUD Modal State
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingProfile, setEditingProfile] = useState<VerificationProfileItem | null>(null);
-
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [verificationLevel, setVerificationLevel] = useState<VerificationLevel>('Standard');
-  const [requirements, setRequirements] = useState<Record<string, boolean>>({
-    email: true,
-    mobile: true,
-    government_id: true,
-    selfie: true,
-    face_match: false,
-    address: false,
-    background_check: false,
-    emergency_contact: true,
-    additional_document: false,
-    manual_review: false,
-  });
-
-  const filteredProfiles = useMemo(() =>
-    verificationProfiles.filter(v => !searchTerm || v.name.toLowerCase().includes(searchTerm.toLowerCase()) || v.description.toLowerCase().includes(searchTerm.toLowerCase())),
-    [verificationProfiles, searchTerm]
-  );
-
   const activeProfile = verificationProfiles.find(v => v.id === selProfId) || verificationProfiles[0];
 
-  const requiredCredentials = useMemo(() => {
-    if (!activeProfile) return [];
-    return Object.entries(activeProfile.requirements).filter(([_, isReq]) => isReq);
-  }, [activeProfile]);
-
-  const optionalCredentials = useMemo(() => {
-    if (!activeProfile) return [];
-    return Object.entries(activeProfile.requirements).filter(([_, isReq]) => !isReq);
-  }, [activeProfile]);
-
-  const totalReqCount = requiredCredentials.length;
-  const totalCredCount = Object.keys(activeProfile?.requirements || {}).length;
-
-  const handleOpenAddModal = () => {
-    setEditingProfile(null);
-    setName('');
-    setDescription('');
-    setVerificationLevel('Standard');
-    setRequirements({
-      email: true,
-      mobile: true,
-      government_id: true,
-      selfie: true,
-      face_match: false,
-      address: false,
-      background_check: false,
-      emergency_contact: true,
-      additional_document: false,
-      manual_review: false,
-    });
-    setIsModalOpen(true);
-  };
-
-  const handleOpenEditModal = (prof: VerificationProfileItem, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditingProfile(prof);
-    setName(prof.name);
-    setDescription(prof.description);
-    setVerificationLevel(prof.verification_level);
-    setRequirements({ ...prof.requirements });
-    setIsModalOpen(true);
-  };
-
-  const handleDeleteProfile = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (confirm('Are you sure you want to delete this verification profile?')) {
-      deleteVerificationProfile(id);
-      if (selProfId === id && verificationProfiles.length > 1) {
-        const remaining = verificationProfiles.filter(v => v.id !== id);
-        setSelProfId(remaining[0]?.id || '');
-      }
-    }
-  };
-
-  const handleSaveProfile = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name) return;
-
-    const formattedReqs = requirements as VerificationProfileItem['requirements'];
-
-    if (editingProfile) {
-      updateVerificationProfile(editingProfile.id, {
-        name,
-        description,
-        verification_level: verificationLevel,
-        requirements: formattedReqs,
-      });
-    } else {
-      const newProf = addVerificationProfile({
-        name,
-        description,
-        verification_level: verificationLevel,
-        status: 'ACTIVE',
-        requirements: formattedReqs,
-      });
-      setSelProfId(newProf.id);
-    }
-
-    setIsModalOpen(false);
-  };
-
-  const toggleCredentialRequirement = (key: string) => {
-    if (!activeProfile) return;
-    const updatedReqs = {
-      ...activeProfile.requirements,
-      [key]: !activeProfile.requirements[key as keyof typeof activeProfile.requirements]
-    };
-    updateVerificationProfile(activeProfile.id, { requirements: updatedReqs });
-  };
+  const CHECKS_LIST = [
+    { key: 'identity', name: 'Identity Verification', desc: 'Government ID / Aadhaar verification', level: 'Mandatory' },
+    { key: 'contact', name: 'Contact Verification', desc: 'OTP Mobile & Email verification', level: 'Mandatory' },
+    { key: 'face', name: 'Face Match', desc: 'Biometric selfie matching with photo ID', level: 'Mandatory' },
+    { key: 'address', name: 'Address Proof', desc: 'Verified residential address verification', level: 'Enhanced' },
+    { key: 'background', name: 'Background Check', desc: 'Police clearance certificate & court check', level: 'Enhanced' },
+    { key: 'emergency', name: 'Emergency Contact Check', desc: 'Verified family/next of kin phone check', level: 'Mandatory' },
+    { key: 'additional', name: 'Additional Documents', desc: 'Degree, character certificate, bank details', level: 'Restricted' },
+  ];
 
   return (
     <div className="space-y-3 w-full">
-      {/* Search Bar */}
-      <div className="relative">
-        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-          placeholder="Search verification profiles..."
-          className="w-full bg-white border border-slate-200/90 rounded-xl pl-9 pr-3.5 py-1.5 text-[11px] text-slate-900 placeholder-slate-400 outline-none focus:border-purple-500 shadow-2xs transition-colors"
-        />
+      {/* Sub Navigation Bar */}
+      <div className="flex items-center justify-between p-2 rounded-xl bg-slate-100 border border-slate-200/80">
+        <div className="flex items-center gap-1 flex-wrap">
+          <button
+            onClick={() => setSubTab('profiles')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+              subTab === 'profiles'
+                ? 'bg-purple-600 text-white shadow-2xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>1. Verification Profiles</span>
+          </button>
+
+          <button
+            onClick={() => setSubTab('checks')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+              subTab === 'checks'
+                ? 'bg-purple-600 text-white shadow-2xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+            }`}
+          >
+            <FileCheck className="w-3.5 h-3.5" />
+            <span>2. Verification Checks</span>
+          </button>
+
+          <button
+            onClick={() => setSubTab('rules')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+              subTab === 'rules'
+                ? 'bg-purple-600 text-white shadow-2xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+            }`}
+          >
+            <Sliders className="w-3.5 h-3.5" />
+            <span>3. Verification Rules</span>
+          </button>
+        </div>
       </div>
 
-      {/* Top Profile Selector Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {filteredProfiles.map(prof => {
-          const isSelected = selProfId === prof.id || activeProfile?.id === prof.id;
+      {/* 1. VERIFICATION PROFILES SUB-TAB */}
+      {subTab === 'profiles' && (
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {verificationProfiles.map(prof => {
+              const isSelected = selProfId === prof.id || activeProfile?.id === prof.id;
 
-          return (
-            <div
-              key={prof.id}
-              onClick={() => setSelProfId(prof.id)}
-              className={`p-3.5 rounded-2xl transition-all cursor-pointer space-y-2.5 relative flex flex-col justify-between ${
-                isSelected
-                  ? 'bg-white border-2 border-purple-500 shadow-2xs ring-1 ring-purple-500/20'
-                  : 'bg-white border border-slate-200/90 shadow-2xs hover:border-purple-300'
-              }`}
-            >
-              <div className="space-y-2">
-                {/* Selected Top Row Badges */}
-                <div className="flex items-center justify-between min-h-[18px]">
-                  {isSelected ? (
-                    <span className="px-2 py-0.2 rounded bg-purple-100 text-purple-700 text-[9px] font-bold">
-                      Selected Profile
-                    </span>
-                  ) : (
-                    <div></div>
-                  )}
-                  {isSelected && (
-                    <div className="w-4 h-4 rounded-full bg-purple-600 text-white flex items-center justify-center">
-                      <Check className="w-2.5 h-2.5 stroke-[3]" />
-                    </div>
-                  )}
-                </div>
-
-                <h4 className="font-extrabold text-slate-900 text-xs leading-snug">{prof.name}</h4>
-
-                <div>
-                  <span className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-100 text-[10px] font-bold inline-block">
-                    {prof.verification_level}
-                  </span>
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-slate-100">
-                <p className="text-[10px] text-slate-500 font-medium line-clamp-2">{prof.description}</p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Detail Inspector Box */}
-      {activeProfile && (
-        <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-3">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-            <div>
-              <h4 className="font-extrabold text-slate-900 text-xs">{activeProfile.name} Requirements Checklist</h4>
-              <p className="text-[10px] text-slate-500 font-medium">
-                Mandatory checks before companion onboarding: <strong className="text-purple-700 font-mono">{totalReqCount}/{totalCredCount} Mandatory</strong>
-              </p>
-            </div>
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-extrabold">
-              Level: {activeProfile.verification_level}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 text-[11px]">
-            {Object.entries(activeProfile.requirements).map(([key, isRequired]) => {
-              const label = CREDENTIAL_LABELS[key] || key;
               return (
                 <div
-                  key={key}
-                  className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 transition-all ${
-                    isRequired
-                      ? 'bg-emerald-50/50 border-emerald-200/90 text-emerald-950'
-                      : 'bg-slate-50/80 border-slate-200/70 text-slate-400'
+                  key={prof.id}
+                  onClick={() => setSelProfId(prof.id)}
+                  className={`p-3.5 rounded-2xl transition-all cursor-pointer space-y-2.5 flex flex-col justify-between shadow-2xs ${
+                    isSelected
+                      ? 'bg-white border-2 border-purple-500 ring-2 ring-purple-500/10'
+                      : 'bg-white border border-slate-200/90 hover:border-purple-300'
                   }`}
                 >
-                  <span className="font-semibold">{label}</span>
-                  {isRequired ? (
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  ) : (
-                    <XCircle className="w-3.5 h-3.5 text-slate-300 shrink-0" />
-                  )}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 text-[10px] font-bold">
+                        {prof.verification_level}
+                      </span>
+                      {isSelected && (
+                        <span className="w-4 h-4 rounded-full bg-purple-600 text-white flex items-center justify-center">
+                          <Check className="w-2.5 h-2.5 stroke-[3]" />
+                        </span>
+                      )}
+                    </div>
+                    <h4 className="font-extrabold text-slate-900 text-xs">{prof.name}</h4>
+                    <p className="text-[10px] text-slate-500 font-medium line-clamp-2">{prof.description}</p>
+                  </div>
                 </div>
               );
             })}
@@ -262,90 +110,52 @@ export function VerificationTab() {
         </div>
       )}
 
-      {/* CRUD Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-slate-200 max-w-lg w-full p-6 space-y-4 shadow-2xl animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-base font-extrabold text-slate-900">
-                {editingProfile ? 'Edit Verification Profile' : 'Add Verification Profile'}
-              </h3>
-              <button onClick={() => setIsModalOpen(false)} className="p-1 rounded-lg text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
+      {/* 2. VERIFICATION CHECKS SUB-TAB */}
+      {subTab === 'checks' && (
+        <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-3">
+          <h4 className="font-extrabold text-slate-900 text-xs">Standard Verification Checks Matrix</h4>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+            {CHECKS_LIST.map(item => (
+              <div key={item.key} className="p-3 rounded-xl bg-slate-50 border space-y-1">
+                <div className="flex justify-between items-center">
+                  <span className="font-extrabold text-slate-900">{item.name}</span>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                    {item.level}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 3. VERIFICATION RULES SUB-TAB */}
+      {subTab === 'rules' && (
+        <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-3">
+          <h4 className="font-extrabold text-slate-900 text-xs">Configured Verification Enforcement Rules</h4>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div className="p-3 rounded-xl bg-purple-50/60 border border-purple-200 space-y-1">
+              <span className="font-extrabold text-purple-950 block">1. Mandatory vs Optional Rules</span>
+              <p className="text-[11px] text-purple-900">Government ID and Selfie match are non-negotiable mandatory checks prior to companion listing.</p>
             </div>
 
-            <form onSubmit={handleSaveProfile} className="space-y-4 text-xs">
-              <div>
-                <label className="block text-slate-700 font-bold mb-1">Profile Name</label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  placeholder="e.g. Premium VIP Verification"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-900 outline-none focus:border-purple-500"
-                />
-              </div>
+            <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-200 space-y-1">
+              <span className="font-extrabold text-indigo-950 block">2. Document Expiry & Re-Verification</span>
+              <p className="text-[11px] text-indigo-900">Government IDs re-evaluated every 365 days. Police clearance re-verified every 180 days.</p>
+            </div>
 
-              <div>
-                <label className="block text-slate-700 font-bold mb-1">Verification Level</label>
-                <select
-                  value={verificationLevel}
-                  onChange={e => setVerificationLevel(e.target.value as VerificationLevel)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-900 outline-none focus:border-purple-500"
-                >
-                  <option value="Basic">Basic</option>
-                  <option value="Standard">Standard</option>
-                  <option value="Enhanced">Enhanced</option>
-                  <option value="Restricted">Restricted</option>
-                </select>
-              </div>
+            <div className="p-3 rounded-xl bg-rose-50/60 border border-rose-200 space-y-1">
+              <span className="font-extrabold text-rose-950 block">3. Failure Handling & Rejection</span>
+              <p className="text-[11px] text-rose-900">3 failed facial match attempts locks account and routes to manual admin review queue.</p>
+            </div>
 
-              <div>
-                <label className="block text-slate-700 font-bold mb-1">Description</label>
-                <textarea
-                  value={description}
-                  onChange={e => setDescription(e.target.value)}
-                  rows={2}
-                  placeholder="Describe identity verification standards..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-900 outline-none focus:border-purple-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-bold mb-2">Required Credentials</label>
-                <div className="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                  {ALL_CREDENTIAL_KEYS.map(key => (
-                    <label key={key} className="flex items-center gap-2 cursor-pointer p-1.5 hover:bg-white rounded-lg transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={!!requirements[key]}
-                        onChange={e => setRequirements(prev => ({ ...prev, [key]: e.target.checked }))}
-                        className="accent-purple-600 rounded"
-                      />
-                      <span className="font-semibold text-slate-800">{CREDENTIAL_LABELS[key]}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold shadow-sm shadow-purple-200"
-                >
-                  {editingProfile ? 'Update Profile' : 'Create Profile'}
-                </button>
-              </div>
-            </form>
+            <div className="p-3 rounded-xl bg-amber-50/60 border border-amber-200 space-y-1">
+              <span className="font-extrabold text-amber-950 block">4. Manual Supervisor Review</span>
+              <p className="text-[11px] text-amber-900">Unclear documents flagged for human review by compliance officer within 2 hours.</p>
+            </div>
           </div>
         </div>
       )}
