@@ -6,7 +6,7 @@ import { CategoryItem } from '@/lib/types/serviceHub';
 import { ImageLightboxModal } from '@/components/common/ImageLightboxModal';
 import {
   Users, Plus, Edit2, Trash2, Copy, Star, Layers, ShieldAlert, Maximize2,
-  Search, ChevronLeft, ChevronRight, SlidersHorizontal, X
+  Search, ChevronLeft, ChevronRight, SlidersHorizontal, X, Power, Calendar, Sparkles, Compass, Heart, Hash, ArrowUpDown
 } from 'lucide-react';
 
 const PAGE_SIZE_OPTIONS = [6, 12, 24, 48] as const;
@@ -41,12 +41,17 @@ export function CategoriesTab() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<typeof PAGE_SIZE_OPTIONS[number]>(12);
 
-  // Form State
+  // Form State (All 9 requested category fields)
+  const [code, setCode] = useState('');
   const [name, setName] = useState('');
+  const [shortDescription, setShortDescription] = useState('');
   const [description, setDescription] = useState('');
   const [icon, setIcon] = useState('Users');
-  const [minAge, setMinAge] = useState(18);
+  const [image, setImage] = useState('');
+  const [status, setStatus] = useState<'ACTIVE' | 'INACTIVE' | 'ARCHIVED'>('ACTIVE');
+  const [displayOrder, setDisplayOrder] = useState(1);
   const [isFeatured, setIsFeatured] = useState(false);
+  const [minAge, setMinAge] = useState(18);
 
   // Filtered & paginated
   const searchTerm = localSearch || globalSearch;
@@ -54,6 +59,8 @@ export function CategoriesTab() {
     return categories.filter(c => {
       const matchesSearch = !searchTerm ||
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (c.code && c.code.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (c.short_description && c.short_description.toLowerCase().includes(searchTerm.toLowerCase())) ||
         c.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'ALL' ||
         (statusFilter === 'ACTIVE' && c.status === 'ACTIVE') ||
@@ -73,14 +80,31 @@ export function CategoriesTab() {
 
   const handleOpenCreate = () => {
     setEditingCategory(null);
-    setName(''); setDescription(''); setIcon('Users'); setMinAge(18); setIsFeatured(false);
+    setCode(`CAT-EVT-${Date.now().toString().slice(-4)}`);
+    setName('Events & Social');
+    setShortDescription('Corporate galas, weddings, networking expos & social gatherings');
+    setDescription('Professional companion support for formal events, award ceremonies, and family celebrations.');
+    setIcon('Users');
+    setImage('https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=80');
+    setStatus('ACTIVE');
+    setDisplayOrder(categories.length + 1);
+    setIsFeatured(true);
+    setMinAge(21);
     setIsFormOpen(true);
   };
 
   const handleOpenEdit = (cat: CategoryItem) => {
     setEditingCategory(cat);
-    setName(cat.name); setDescription(cat.description); setIcon(cat.icon || 'Users');
-    setMinAge(cat.minimum_age || 18); setIsFeatured(cat.is_featured || false);
+    setCode(cat.code || `CAT-${cat.id.slice(-4)}`);
+    setName(cat.name);
+    setShortDescription(cat.short_description || '');
+    setDescription(cat.description);
+    setIcon(cat.icon || 'Users');
+    setImage(cat.banner_image || cat.image || '');
+    setStatus(cat.status || 'ACTIVE');
+    setDisplayOrder(cat.display_order || 1);
+    setIsFeatured(cat.is_featured || false);
+    setMinAge(cat.minimum_age || 18);
     setIsFormOpen(true);
   };
 
@@ -88,15 +112,31 @@ export function CategoriesTab() {
     e.preventDefault();
     if (!name.trim()) return;
     if (editingCategory) {
-      updateCategory(editingCategory.id, { name: name.trim(), description: description.trim(), icon, minimum_age: Number(minAge), is_featured: isFeatured });
-    } else {
-      addCategory({
+      updateCategory(editingCategory.id, {
+        code: code.trim(),
         name: name.trim(),
-        slug: name.toLowerCase().replace(/\s+/g, '-'),
+        short_description: shortDescription.trim(),
         description: description.trim(),
         icon,
-        display_order: categories.length + 1,
-        status: 'ACTIVE',
+        image: image.trim(),
+        banner_image: image.trim(),
+        status,
+        display_order: Number(displayOrder),
+        is_featured: isFeatured,
+        minimum_age: Number(minAge)
+      });
+    } else {
+      addCategory({
+        code: code.trim(),
+        name: name.trim(),
+        slug: name.toLowerCase().replace(/\s+/g, '-'),
+        short_description: shortDescription.trim(),
+        description: description.trim(),
+        icon,
+        image: image.trim(),
+        banner_image: image.trim(),
+        display_order: Number(displayOrder),
+        status,
         is_featured: isFeatured,
         minimum_age: Number(minAge)
       });
@@ -109,157 +149,176 @@ export function CategoriesTab() {
     if (activeSubServices.length > 0) {
       setDeleteWarningModalCat({ cat, serviceCount: activeSubServices.length });
     } else {
-      if (confirm(`Are you sure you want to delete category "${cat.name}"?`)) deleteCategory(cat.id);
+      deleteCategory(cat.id);
     }
   };
 
   return (
-    <div className="space-y-4 sm:space-y-5 w-full">
-      {/* Search & Filter Bar */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2.5 sm:gap-3 w-full">
-        {/* Local Search */}
-        <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={localSearch}
-            onChange={e => handleFilterChange(() => setLocalSearch(e.target.value))}
-            placeholder="Search categories..."
-            className="w-full bg-white border border-slate-200/90 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 outline-none focus:border-purple-500 shadow-xs transition-colors"
-          />
+    <div className="space-y-4 w-full">
+      {/* Top Action & Search Bar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-slate-200/90 shadow-2xs">
+        <div className="flex items-center gap-2 flex-1 flex-wrap sm:flex-nowrap">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={localSearch}
+              onChange={e => handleFilterChange(() => setLocalSearch(e.target.value))}
+              placeholder="Search category name, code, description..."
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 outline-none focus:border-purple-500 focus:bg-white transition-colors"
+            />
+          </div>
+
+          <select
+            value={statusFilter}
+            onChange={e => handleFilterChange(() => setStatusFilter(e.target.value as any))}
+            className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-purple-500 cursor-pointer"
+          >
+            <option value="ALL">All Status</option>
+            <option value="ACTIVE">Active Only</option>
+            <option value="INACTIVE">Inactive Only</option>
+          </select>
+
+          <select
+            value={featuredFilter}
+            onChange={e => handleFilterChange(() => setFeaturedFilter(e.target.value as any))}
+            className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-purple-500 cursor-pointer"
+          >
+            <option value="ALL">All Featured</option>
+            <option value="FEATURED">Featured Only</option>
+            <option value="STANDARD">Standard Only</option>
+          </select>
         </div>
 
-        {/* Dropdown Filters Grid on Mobile */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:flex items-center gap-2 w-full md:w-auto">
-          {/* Status Filter */}
-          <div className="flex items-center justify-between gap-1.5 bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs shadow-xs">
-            <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-            <select
-              value={statusFilter}
-              onChange={e => handleFilterChange(() => setStatusFilter(e.target.value as any))}
-              className="bg-transparent text-slate-700 font-medium outline-none cursor-pointer text-xs w-full"
-            >
-              <option value="ALL">All Status</option>
-              <option value="ACTIVE">Active Only</option>
-              <option value="INACTIVE">Inactive Only</option>
-            </select>
-          </div>
-          {/* Featured Filter */}
-          <div className="flex items-center justify-between gap-1.5 bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs shadow-xs">
-            <Star className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-            <select
-              value={featuredFilter}
-              onChange={e => handleFilterChange(() => setFeaturedFilter(e.target.value as any))}
-              className="bg-transparent text-slate-700 font-medium outline-none cursor-pointer text-xs w-full"
-            >
-              <option value="ALL">All Types</option>
-              <option value="FEATURED">Featured</option>
-              <option value="STANDARD">Standard</option>
-            </select>
-          </div>
-          {/* Page Size */}
-          <div className="flex items-center justify-between gap-1.5 bg-white border border-slate-200/90 rounded-xl px-3 py-2 text-xs col-span-2 sm:col-span-1 shadow-xs">
-            <span className="text-slate-500 font-medium text-xs">Show</span>
-            <select
-              value={pageSize}
-              onChange={e => { setPageSize(Number(e.target.value) as any); setCurrentPage(1); }}
-              className="bg-transparent text-slate-900 font-bold outline-none cursor-pointer text-xs"
-            >
-              {PAGE_SIZE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-        </div>
+        <button
+          onClick={handleOpenCreate}
+          className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-all shrink-0"
+        >
+          <Plus className="w-4 h-4" /> Add Category
+        </button>
       </div>
 
-      {/* Grid of Categories */}
+      {/* Grid of Categories showing all 9 Fields */}
       {paginatedCategories.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
-          {paginatedCategories.map((cat) => {
-            const serviceCount = services.filter(s => s.category_id === cat.id && s.status !== 'ARCHIVED').length;
-            const banner = cat.banner_image || 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=80';
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {paginatedCategories.map(cat => {
+            const catImg = cat.banner_image || cat.image || 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=80';
+            const linkedSubServices = services.filter(s => s.category_id === cat.id);
+
             return (
-              <div
-                key={cat.id}
-                className={`rounded-2xl border transition-all flex flex-col overflow-hidden group hover:shadow-lg hover:-translate-y-0.5 ${
-                  cat.status === 'ACTIVE' ? 'bg-white border-slate-200/90 hover:border-purple-300' : 'bg-slate-50 border-slate-200 opacity-60'
-                }`}
-              >
-                {/* Banner Image Section */}
-                <div
-                  className="relative h-40 sm:h-44 overflow-hidden bg-slate-900 cursor-pointer"
-                  onClick={() => setLightboxImage(banner)}
-                  title="Click to preview image"
-                >
-                  <img src={banner} alt={cat.name} className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/30 to-transparent" />
-                  <div className="absolute inset-0 bg-slate-950/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none z-10">
-                    <span className="px-3 py-1.5 rounded-full bg-slate-950/85 backdrop-blur-md text-white text-xs font-bold flex items-center gap-1.5 border border-white/20 shadow-xl">
-                      <Maximize2 className="w-3.5 h-3.5 text-purple-400" /> Preview
-                    </span>
-                  </div>
-                  {/* Badges Overlay */}
-                  <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between z-10">
-                    <span className="px-2 py-0.5 rounded-full bg-purple-100/90 text-purple-800 text-[10px] font-extrabold border border-purple-200/80 shadow-xs backdrop-blur-xs">
-                      Age: {cat.minimum_age || 18}+
+              <div key={cat.id} className="rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:shadow-md transition-all overflow-hidden flex flex-col justify-between">
+                {/* Category Image Banner with Lightbox & Featured Badge */}
+                <div className="relative h-32 w-full bg-slate-900 group">
+                  <img src={catImg} alt={cat.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/30" />
+
+                  {/* Icon & Code Badge */}
+                  <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                    <span className="px-2 py-0.5 rounded-lg bg-slate-900/90 text-purple-300 font-mono font-bold text-[10px] backdrop-blur-md border border-slate-700">
+                      {cat.code || `CAT-${cat.id.slice(-4)}`}
                     </span>
                     {cat.is_featured && (
-                      <span className="px-2 py-0.5 rounded-full bg-amber-400 text-amber-950 text-[10px] font-extrabold flex items-center gap-1 shadow-xs">
-                        <Star className="w-3 h-3 fill-amber-950" /> Featured
+                      <span className="px-2 py-0.5 rounded-lg bg-amber-500/90 text-slate-950 font-extrabold text-[10px] flex items-center gap-1 shadow-xs backdrop-blur-md">
+                        <Star className="w-3 h-3 fill-slate-950" /> Featured
                       </span>
                     )}
                   </div>
-                  {/* Title & Count Overlay at Bottom */}
-                  <div className="absolute bottom-3 left-3.5 right-3.5 z-10">
-                    <h4 className="font-extrabold text-white text-sm sm:text-base leading-tight drop-shadow-sm truncate">{cat.name}</h4>
-                    <p className="text-[11px] sm:text-xs text-slate-200 font-medium drop-shadow-sm">{serviceCount} Services</p>
+
+                  {/* Status & Display Order */}
+                  <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
+                    <span className="px-2 py-0.5 rounded-lg bg-slate-900/80 text-white font-mono text-[10px] font-bold">
+                      Order #{cat.display_order || 1}
+                    </span>
+                    <button
+                      onClick={() => toggleCategoryActive(cat.id)}
+                      className={`px-2 py-0.5 rounded-lg font-bold text-[10px] transition-all backdrop-blur-md ${
+                        cat.status === 'ACTIVE' ? 'bg-emerald-500/90 text-white' : 'bg-slate-700/90 text-slate-300'
+                      }`}
+                    >
+                      {cat.status || 'ACTIVE'}
+                    </button>
+                    <button
+                      onClick={() => setLightboxImage(catImg)}
+                      className="p-1 rounded-lg bg-black/60 hover:bg-black/90 text-white transition-colors"
+                      title="Expand Banner Image"
+                    >
+                      <Maximize2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {/* Title overlay */}
+                  <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-end justify-between text-white">
+                    <h5 className="font-extrabold text-sm text-white drop-shadow-md">{cat.name}</h5>
                   </div>
                 </div>
 
-                {/* Card Body */}
-                <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between space-y-3">
-                  <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">{cat.description}</p>
+                {/* Card Content Body */}
+                <div className="p-3.5 space-y-2.5 flex-1 flex flex-col justify-between">
+                  <div className="space-y-2">
+                    {/* Short Description */}
+                    {cat.short_description && (
+                      <p className="text-[11px] font-bold text-purple-700 leading-snug line-clamp-1">
+                        {cat.short_description}
+                      </p>
+                    )}
 
-                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => toggleCategoryActive(cat.id)}
-                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all border ${
-                          cat.status === 'ACTIVE'
-                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                            : 'bg-slate-100 border-slate-200 text-slate-500'
-                        }`}
-                      >
-                        <span className={`w-2 h-2 rounded-full ${cat.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
-                        {cat.status === 'ACTIVE' ? 'Active' : 'Disabled'}
-                      </button>
+                    {/* Full Description */}
+                    <p className="text-[11px] text-slate-600 leading-snug line-clamp-2">
+                      {cat.description}
+                    </p>
+
+                    {/* Sub-Services Pill Badges */}
+                    <div className="space-y-1 pt-1">
+                      <span className="text-[9px] uppercase font-bold text-slate-400 flex items-center gap-1">
+                        <Layers className="w-3 h-3 text-purple-600" /> Linked Services ({linkedSubServices.length}):
+                      </span>
+                      <div className="flex items-center gap-1 flex-wrap">
+                        {linkedSubServices.length > 0 ? (
+                          linkedSubServices.map(srv => (
+                            <span key={srv.id} className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-100 font-bold text-[10px]">
+                              {srv.name}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-[10px] text-slate-400 italic">No linked services</span>
+                        )}
+                      </div>
                     </div>
+                  </div>
+
+                  {/* Bottom Action Controls */}
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                    <button
+                      onClick={() => toggleCategoryFeatured(cat.id)}
+                      className={`text-[10px] font-bold flex items-center gap-1 px-2 py-1 rounded-lg border transition-all ${
+                        cat.is_featured
+                          ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                          : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      <Star className={`w-3 h-3 ${cat.is_featured ? 'fill-amber-500 text-amber-500' : ''}`} />
+                      {cat.is_featured ? 'Featured' : 'Mark Featured'}
+                    </button>
 
                     <div className="flex items-center gap-1">
                       <button
-                        onClick={() => toggleCategoryFeatured(cat.id)}
-                        className={`p-1.5 rounded-lg transition-colors ${cat.is_featured ? 'text-amber-500 bg-amber-50' : 'text-slate-400 hover:text-amber-500 hover:bg-slate-50'}`}
-                        title="Toggle Featured"
-                      >
-                        <Star className={`w-3.5 h-3.5 ${cat.is_featured ? 'fill-amber-500' : ''}`} />
-                      </button>
-                      <button
                         onClick={() => duplicateCategory(cat.id)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors"
-                        title="Duplicate"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-slate-100 transition-colors"
+                        title="Duplicate Category"
                       >
                         <Copy className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => handleOpenEdit(cat)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition-colors"
-                        title="Edit"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-slate-100 transition-colors"
+                        title="Edit Category"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => handleDeleteAttempt(cat)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                        title="Delete"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition-colors"
+                        title="Delete Category"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -271,12 +330,12 @@ export function CategoriesTab() {
           })}
         </div>
       ) : (
-        <div className="p-8 sm:p-12 text-center rounded-2xl bg-white border border-slate-200/90 space-y-3 shadow-xs">
+        <div className="p-8 text-center rounded-2xl bg-white border border-slate-200/90 space-y-3 shadow-xs">
           <Layers className="w-8 h-8 text-slate-400 mx-auto" />
           <h4 className="font-bold text-slate-900 text-sm">No Categories Found</h4>
           <p className="text-xs text-slate-500">Try adjusting your search or filter, or add a new category.</p>
           <button onClick={handleOpenCreate} className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-xs transition-colors">
-            <Plus className="w-3.5 h-3.5" /> Add First Category
+            <Plus className="w-3.5 h-3.5" /> Add Category
           </button>
         </div>
       )}
@@ -321,61 +380,117 @@ export function CategoriesTab() {
         </div>
       )}
 
-      {/* Delete Protection Modal */}
+      {/* Unsafe Delete Prevention Modal */}
       {deleteWarningModalCat && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-rose-500/30 rounded-3xl max-w-md w-full p-5 sm:p-6 space-y-4 shadow-2xl text-center">
+          <div className="bg-slate-900 border border-rose-500/30 rounded-3xl max-w-md w-full p-5 space-y-4 shadow-2xl text-center">
             <div className="w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-400 flex items-center justify-center mx-auto">
               <ShieldAlert className="w-6 h-6" />
             </div>
             <h4 className="font-extrabold text-white text-base">Unsafe Category Deletion Blocked</h4>
             <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-slate-300 font-mono text-left space-y-1">
               <p className="font-bold text-rose-400">Category "{deleteWarningModalCat.cat.name}" has:</p>
-              <p>• {deleteWarningModalCat.serviceCount} Active Services</p>
-              <p>• Associated Pricing Profiles & Policies</p>
+              <p>• {deleteWarningModalCat.serviceCount} Active Sub-Services</p>
             </div>
-            <p className="text-xs text-slate-400">Archive or reassign all sub-services before deleting a category.</p>
-            <button onClick={() => setDeleteWarningModalCat(null)} className="px-5 py-2.5 rounded-xl bg-slate-800 text-white font-bold text-xs hover:bg-slate-700 w-full sm:w-auto">
+            <button onClick={() => setDeleteWarningModalCat(null)} className="px-5 py-2.5 rounded-xl bg-slate-800 text-white font-bold text-xs hover:bg-slate-700 w-full">
               Acknowledge & Close
             </button>
           </div>
         </div>
       )}
 
-      {/* Create / Edit Form Modal */}
+      {/* Complete Create / Edit Form Modal with All 9 Fields */}
       {isFormOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-5 sm:p-6 space-y-4 shadow-2xl my-auto">
-            <div className="flex items-center justify-between">
-              <h4 className="font-extrabold text-white text-base sm:text-lg">
-                {editingCategory ? `Edit: ${editingCategory.name}` : 'Create New Category'}
-              </h4>
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-5 space-y-4 shadow-2xl my-auto text-xs text-white">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <h4 className="font-extrabold text-white text-base">
+                  {editingCategory ? `Edit Category: ${editingCategory.code || editingCategory.name}` : 'Configure New Category'}
+                </h4>
+                <p className="text-[11px] text-slate-400">Category Name, Code, Descriptions, Icon, Banner Image, Order & Featured Status</p>
+              </div>
               <button onClick={() => setIsFormOpen(false)} className="p-1 rounded-lg text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleSave} className="space-y-4 text-xs">
-              <div>
-                <label className="block text-slate-400 font-bold mb-1">Category Name *</label>
-                <input type="text" required value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Events & Social"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white outline-none focus:border-indigo-500 transition-colors" />
-              </div>
-              <div>
-                <label className="block text-slate-400 font-bold mb-1">Description *</label>
-                <textarea required rows={3} value={description} onChange={e => setDescription(e.target.value)} placeholder="Describe the category scope..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white outline-none focus:border-indigo-500 resize-none transition-colors" />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+            <form onSubmit={handleSave} className="space-y-3.5 text-xs">
+              {/* Field 1 & 2: Category Name & Category Code */}
+              <div className="grid grid-cols-3 gap-2.5">
                 <div>
-                  <label className="block text-slate-400 font-bold mb-1">Minimum Age Limit</label>
-                  <input type="number" value={minAge} min={16} max={60} onChange={e => setMinAge(Number(e.target.value))}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white outline-none focus:border-indigo-500 transition-colors" />
+                  <label className="block text-slate-400 font-bold mb-1">Category Code *</label>
+                  <input type="text" required value={code} onChange={e => setCode(e.target.value)} placeholder="CAT-EVT-01"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-purple-400 font-mono font-bold outline-none focus:border-purple-500" />
                 </div>
-                <div className="flex items-center gap-2 pt-2 sm:pt-5">
-                  <input type="checkbox" id="feat-cat" checked={isFeatured} onChange={e => setIsFeatured(e.target.checked)} className="w-4 h-4 accent-indigo-600 rounded cursor-pointer" />
-                  <label htmlFor="feat-cat" className="text-white font-bold cursor-pointer">Mark as Featured</label>
+                <div className="col-span-2">
+                  <label className="block text-slate-400 font-bold mb-1">Category Name *</label>
+                  <input type="text" required value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Events & Social"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white outline-none focus:border-purple-500" />
                 </div>
               </div>
+
+              {/* Field 3: Short Description */}
+              <div>
+                <label className="block text-slate-400 font-bold mb-1">Short Description *</label>
+                <input type="text" required value={shortDescription} onChange={e => setShortDescription(e.target.value)} placeholder="e.g. Corporate galas, weddings & social gatherings"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500" />
+              </div>
+
+              {/* Field 4: Full Description */}
+              <div>
+                <label className="block text-slate-400 font-bold mb-1">Full Description *</label>
+                <textarea required rows={2} value={description} onChange={e => setDescription(e.target.value)} placeholder="Detailed category overview..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white outline-none focus:border-purple-500 resize-none" />
+              </div>
+
+              {/* Field 5 & 6: Category Icon & Category Image Banner URL */}
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">Category Icon *</label>
+                  <select value={icon} onChange={e => setIcon(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-purple-400 font-bold outline-none focus:border-purple-500">
+                    <option value="Users">Users (Social & Events)</option>
+                    <option value="Calendar">Calendar (Scheduled Events)</option>
+                    <option value="Sparkles">Sparkles (VIP & Premium)</option>
+                    <option value="Compass">Compass (Travel & Guides)</option>
+                    <option value="Heart">Heart (Emotional Companion)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">Display Order #</label>
+                  <input type="number" value={displayOrder} onChange={e => setDisplayOrder(Number(e.target.value))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono outline-none focus:border-purple-500" />
+                </div>
+              </div>
+
+              {/* Field 6: Category Banner Image URL */}
+              <div>
+                <label className="block text-slate-400 font-bold mb-1">Category Image Banner URL</label>
+                <input type="url" value={image} onChange={e => setImage(e.target.value)} placeholder="https://images.unsplash.com/photo-..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono text-[11px] outline-none focus:border-purple-500" />
+              </div>
+
+              {/* Field 7 & 9: Status & Featured Toggle */}
+              <div className="grid grid-cols-2 gap-2.5 p-3 bg-slate-950 border border-slate-800 rounded-xl">
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">Status</label>
+                  <select value={status} onChange={e => setStatus(e.target.value as any)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-bold">
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="INACTIVE">INACTIVE</option>
+                    <option value="ARCHIVED">ARCHIVED</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-2 pt-4">
+                  <input type="checkbox" id="feat-cat-input" checked={isFeatured} onChange={e => setIsFeatured(e.target.checked)} className="w-4 h-4 accent-amber-500 rounded cursor-pointer" />
+                  <label htmlFor="feat-cat-input" className="text-white font-bold cursor-pointer flex items-center gap-1">
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" /> Mark as Featured
+                  </label>
+                </div>
+              </div>
+
               <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">
                 <button type="button" onClick={() => setIsFormOpen(false)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold">Cancel</button>
                 <button type="submit" className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold">

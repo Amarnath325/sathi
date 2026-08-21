@@ -52,7 +52,7 @@ export type RiskLevelCode = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
 export type VerificationLevel = 'Basic' | 'Standard' | 'Enhanced' | 'Restricted';
 
-export type SafetyControlState = 'Enabled' | 'Disabled' | 'Required' | 'Optional';
+export type SafetyControlState = 'REQUIRED' | 'RECOMMENDED' | 'OPTIONAL' | 'DISABLED' | 'Required' | 'Recommended' | 'Optional' | 'Disabled';
 
 export type EligibilityStatus = 
   | 'ELIGIBLE' 
@@ -64,6 +64,7 @@ export type EligibilityStatus =
 
 export interface CategoryItem {
   id: string;
+  code?: string; // Category Code e.g. "CAT-EVT-01"
   name: string;
   slug: string;
   short_description?: string;
@@ -191,17 +192,66 @@ export interface PricingProfile {
   historical_price_lock?: boolean;
 }
 
-export interface RuleItem {
+export interface RuleCondition {
   id: string;
-  name: string;
-  rule_type: RuleType;
-  description: string;
-  condition: string; // e.g. "duration_hours"
+  field: string;
   operator: RuleOperator;
   value: string | number | boolean;
-  action: RuleAction;
+  logical_operator?: 'AND' | 'OR';
+}
+
+export interface RuleAuditLog {
+  timestamp: string;
+  action: 'CREATE' | 'UPDATE' | 'VERSION_BUMP' | 'STATUS_CHANGE';
+  author: string;
+  note: string;
+}
+
+export interface RuleItem {
+  id: string;
+  code: string; // e.g. "RULE-DUR-01"
+  name: string;
+  description: string;
+  rule_type: RuleType; // 'Duration Rule' | 'Location Rule' | 'Safety Rule' | 'Booking Rule' | 'Eligibility Rule'
+  priority: number; // 1 (Highest) to 10 (Lowest)
+  
+  // 2. Scope & Mapping
+  scope_type: 'GLOBAL' | 'CATEGORY' | 'SERVICE' | 'LOCATION';
+  category_id?: string;
+  category_name?: string;
+  service_id?: string;
+  service_name?: string;
+  location_name?: string;
+
+  // 3. Conditions
+  condition_group_operator: 'AND' | 'OR';
+  conditions: RuleCondition[];
+  condition: string; // Legacy fallback
+  operator: RuleOperator;
+  value: string | number | boolean;
+
+  // 4. Actions
+  action: RuleAction; // 'REQUIRE_APPROVAL' | 'BLOCK' | 'WARN' | 'APPLY_DISCOUNT' | 'SURGE_PRICE'
+  additional_requirements?: string[]; // e.g. ["IDENTITY_VERIFICATION", "GUARDIAN_CONSENT"]
+  approval_level?: 'SYSTEM_AUTO' | 'ADMIN_MANUAL' | 'MANAGER_REVIEW';
+  restriction_message?: string;
+
+  // 5. Advanced Settings
+  risk_level_required?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  verification_required?: boolean;
+  allow_override?: boolean;
+  override_role?: 'SUPER_ADMIN' | 'SUPPORT_LEAD' | 'OPERATIONS_MANAGER';
+  validity_start?: string;
+  validity_end?: string;
+  escalation_action?: string;
+
+  // 6. Review & Audit
+  version: string; // e.g. "v1.0"
   severity: RuleSeverity;
   status: 'ACTIVE' | 'INACTIVE';
+  createdAt?: string;
+  updatedAt?: string;
+  audit_history?: RuleAuditLog[];
 }
 
 export interface RulesProfile {
@@ -214,64 +264,193 @@ export interface RulesProfile {
   updatedAt?: string;
 }
 
+export type PolicyCategoryDomain = 'General' | 'Booking' | 'Safety' | 'Conduct & Restrictions' | 'Cancellation & Disputes';
+
 export interface PolicyVersionItem {
   version: number;
   effective_from: string;
   effective_until?: string;
   description: string;
   prohibited_activity_text?: string;
+  published_by?: string;
 }
 
 export interface PolicyItem {
   id: string;
+  code: string; // e.g. "POL-GEN-01", "POL-SAF-01"
   name: string;
+  policy_domain: PolicyCategoryDomain;
   description: string;
+  
+  // Category & Service Relation Mapping
+  scope_type: 'GLOBAL' | 'CATEGORY' | 'SERVICE' | 'LOCATION';
+  category_id?: string;
+  category_name?: string;
+  service_id?: string;
+  service_name?: string;
+
+  // Version & Status
   version: number;
   status: 'DRAFT' | 'PUBLISHED' | 'DEACTIVATED';
   effective_from: string;
   effective_until?: string;
+
+  // 1. General Policy
+  eligibility_text?: string;
   minimum_age: number;
   kyc_required: boolean;
   background_check_required: boolean;
-  emergency_contact_required: boolean;
+  consent_required: boolean;
+  allowed_categories_text?: string;
+  time_location_rules_text?: string;
+  general_restrictions_text?: string;
+
+  // 2. Booking Policy
+  min_duration_hours?: number;
+  max_duration_hours?: number;
+  advance_booking_hours?: number;
+  same_day_booking_allowed?: boolean;
+  approval_required_for_booking?: boolean;
+  extension_allowed?: boolean;
+  rescheduling_allowed?: boolean;
+  payment_requirement?: 'FULL_ADVANCE' | 'PARTIAL_DEPOSIT' | 'POST_PAY';
+
+  // 3. Safety Policy
   public_location_only: boolean;
   live_location_required: boolean;
+  check_in_out_required?: boolean;
+  periodic_check_in_interval_mins?: number;
   sos_required: boolean;
+  emergency_contact_required: boolean;
+  night_booking_restricted?: boolean;
+  restricted_locations_text?: string;
+  auto_sos_escalation_minutes?: number;
+
+  // 4. Conduct & Restrictions Policy
+  companion_rules_text?: string;
+  customer_rules_text?: string;
+  prohibited_activity_text?: string;
+  restricted_services_text?: string;
+  communication_rules_text?: string;
+  zero_tolerance_violations_text?: string;
   chat_moderation_required: boolean;
   incident_reporting_enabled: boolean;
-  consent_required: boolean;
-  prohibited_activity_text?: string;
+
+  // 5. Cancellation & Disputes Policy
+  customer_cancellation_rules_text?: string;
+  companion_cancellation_rules_text?: string;
+  no_show_policy_text?: string;
+  refund_rules_text?: string;
+  complaint_protocol_text?: string;
+  incident_escalation_text?: string;
+  dispute_resolution_text?: string;
+  enforcement_type?: 'STRICT_BLOCK' | 'WARNING_ACKNOWLEDGEMENT' | 'MANUAL_REVIEW';
+  exceptions_allowed?: boolean;
+  exception_process_text?: string;
+
+  // History & Audit
+  approval_status?: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED';
+  approved_by?: string;
+  approved_at?: string;
   versions?: PolicyVersionItem[];
   createdAt?: string;
   updatedAt?: string;
 }
 
+export interface RiskFactorWeight {
+  factor_name: 'Service Risk' | 'Duration Risk' | 'Time Risk' | 'Location Risk' | 'User Risk' | 'Verification Risk' | 'Booking Risk';
+  weight_score: number; // 0 to 100
+  enabled: boolean;
+  notes?: string;
+}
+
 export interface RiskLevelItem {
   id: string;
+  code: RiskLevelCode; // 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
   name: string;
-  code: RiskLevelCode;
-  score: number;
   description: string;
-  color: string;
-  verification_level: VerificationLevel;
-  monitoring_level: string;
+  score_min: number; // e.g. 0
+  score_max: number; // e.g. 25
+  score?: number; // Legacy score
+  color: string; // 'emerald' | 'amber' | 'orange' | 'purple'
+  status: 'ACTIVE' | 'INACTIVE';
+
+  // Category & Service Relation Mapping
+  scope_type: 'GLOBAL' | 'CATEGORY' | 'SERVICE';
+  category_id?: string;
+  category_name?: string;
+  service_id?: string;
+  service_name?: string;
+
+  // 2. Risk Factors
+  factors: {
+    service_risk: RiskFactorWeight;
+    duration_risk: RiskFactorWeight;
+    time_risk: RiskFactorWeight;
+    location_risk: RiskFactorWeight;
+    user_risk: RiskFactorWeight;
+    verification_risk: RiskFactorWeight;
+    booking_risk: RiskFactorWeight;
+  };
+
+  // 3. Risk Rules & Required Controls
+  required_verification_tier: 'Basic' | 'Standard' | 'Enhanced' | 'Restricted';
+  verification_level?: VerificationLevel; // Legacy fallback
+  monitoring_level: 'Standard' | 'Enhanced' | 'Continuous' | 'RealTime_Audit';
   manual_approval_required: boolean;
   live_location_required: boolean;
   emergency_contact_required: boolean;
   sos_required: boolean;
+  periodic_checkin_mins?: number;
   maximum_booking_duration: number;
-  status: 'ACTIVE' | 'INACTIVE';
+
+  // Escalation & Threshold Rules
+  escalation_action: 'AUTO_BLOCK' | 'EMERGENCY_OPS_ALERT' | 'IMMEDIATE_ESCALATION' | 'STANDARD_MONITOR';
+  escalation_target_role?: 'OPS_LEAD' | 'SAFETY_DESK' | 'SUPER_ADMIN';
+
   createdAt?: string;
   updatedAt?: string;
 }
 
+export type VerificationLevelTier = 'Basic' | 'Standard' | 'Enhanced' | 'Restricted';
+
+export interface VerificationCheckDetail {
+  enabled: boolean;
+  required: boolean; // Required vs Optional
+  expiry_days?: number;
+  re_verification_trigger?: 'ANNUAL' | 'QUARTERLY' | 'POST_INCIDENT' | 'ON_DEMAND';
+  accepted_documents_text?: string;
+}
+
 export interface VerificationProfileItem {
   id: string;
+  code: string; // e.g. "VER-BAS-01", "VER-STD-02"
   name: string;
   description: string;
-  verification_level: VerificationLevel;
+  profile_tier: VerificationLevelTier;
+  verification_level?: VerificationLevel; // Legacy fallback
   status: 'ACTIVE' | 'INACTIVE';
-  requirements: {
+  
+  // Category & Service Relation Mapping
+  scope_type: 'GLOBAL' | 'CATEGORY' | 'SERVICE';
+  category_id?: string;
+  category_name?: string;
+  service_id?: string;
+  service_name?: string;
+
+  // 2. Verification Checks
+  checks: {
+    identity: VerificationCheckDetail;
+    contact: VerificationCheckDetail;
+    face: VerificationCheckDetail;
+    address: VerificationCheckDetail;
+    background: VerificationCheckDetail;
+    emergency: VerificationCheckDetail;
+    additional_documents: VerificationCheckDetail;
+  };
+
+  // Legacy fallback boolean requirements
+  requirements?: {
     email: boolean;
     mobile: boolean;
     government_id: boolean;
@@ -283,15 +462,36 @@ export interface VerificationProfileItem {
     additional_document: boolean;
     manual_review: boolean;
   };
+
+  // 3. Verification Governance Rules
+  applicability_roles: ('COMPANION' | 'CLIENT' | 'AGENT')[];
+  applicability_trigger?: 'ALL_USERS' | 'HIGH_RISK_BOOKINGS' | 'NIGHT_BOOKINGS';
+  expiry_duration_days: number;
+  re_verification_policy: 'ANNUAL_RENEWAL' | 'QUARTERLY_RECHECK' | 'POST_INCIDENT_MANDATORY';
+  failure_action: 'AUTO_SUSPEND' | 'BLOCK_BOOKINGS' | 'FLAG_FOR_REVIEW';
+  max_retry_attempts: number;
+  manual_review_required: boolean;
+  auto_approval_enabled: boolean;
+
   createdAt?: string;
   updatedAt?: string;
 }
 
 export interface SafetyProfileItem {
   id: string;
+  code: string; // e.g. "SAF-STD-01", "SAF-MAX-02"
   name: string;
   description: string;
   status: 'ACTIVE' | 'INACTIVE';
+
+  // Category & Service Relation Mapping
+  scope_type: 'GLOBAL' | 'CATEGORY' | 'SERVICE';
+  category_id?: string;
+  category_name?: string;
+  service_id?: string;
+  service_name?: string;
+
+  // 1. Safety Controls
   controls: {
     sos: SafetyControlState;
     emergency_contact: SafetyControlState;
@@ -299,15 +499,36 @@ export interface SafetyProfileItem {
     periodic_checkin: SafetyControlState;
     booking_start_checkin: SafetyControlState;
     booking_end_checkout: SafetyControlState;
-    geofence: SafetyControlState;
     safe_location_requirement: SafetyControlState;
     public_place_requirement: SafetyControlState;
+    location_monitoring: SafetyControlState;
+  };
+
+  // 2. Safety Automation
+  automation: {
+    geofence: SafetyControlState;
     emergency_notification: SafetyControlState;
     admin_emergency_escalation: SafetyControlState;
     incident_reporting: SafetyControlState;
     chat_monitoring: SafetyControlState;
-    location_monitoring: SafetyControlState;
   };
+
+  // 3. Emergency & Incident Protocols
+  emergency_protocols: {
+    sos_dispatch_mode: 'AUTO_POLICE_AND_CONTACTS' | 'OPS_DESK_REVIEW' | 'CONTACTS_ONLY';
+    emergency_escalation_queue: 'SAFETY_DESK' | 'OPS_MANAGER' | 'POLICE_HOTLINE';
+    incident_response_sla_mins: number;
+    auto_contact_dispatch_delay_seconds: number;
+    response_rules_matrix_text: string;
+  };
+
+  // 4. Security & Audit Settings
+  audit_settings: {
+    log_all_events: boolean;
+    export_logs_enabled: boolean;
+    retention_days: number;
+  };
+
   createdAt?: string;
   updatedAt?: string;
 }
@@ -320,35 +541,113 @@ export interface CancellationTierRule {
 
 export interface BookingRuleItem {
   id: string;
+  code: string; // e.g. "BKG-STD-01", "BKG-FLX-02"
   name: string;
-  min_advance_hours: number;
-  max_advance_days: number;
-  min_duration_hours: number;
-  max_duration_hours: number;
-  same_day_allowed: boolean;
-  instant_booking_allowed: boolean;
-  companion_approval_required: boolean;
-  user_approval_required: boolean;
-  cancellation_rules: {
-    free_cancellation_window_hours: number;
-    tiers: CancellationTierRule[];
-    no_show_refund_percent: number;
-  };
+  description: string;
   status: 'ACTIVE' | 'INACTIVE';
+
+  // Category & Service Relation Mapping
+  scope_type: 'GLOBAL' | 'CATEGORY' | 'SERVICE';
+  category_id?: string;
+  category_name?: string;
+  service_id?: string;
+  service_name?: string;
+
+  // 1. Booking Rules
+  booking_rules: {
+    min_advance_hours: number;
+    max_advance_days: number;
+    instant_booking_allowed: boolean;
+    min_duration_hours: number;
+    max_duration_hours: number;
+    extension_allowed: boolean;
+    max_extension_hours: number;
+    rescheduling_allowed: boolean;
+    reschedule_cutoff_hours: number;
+    companion_approval_required: boolean;
+    admin_approval_required: boolean;
+  };
+
+  // 2. Cancellation Rules
+  cancellation_rules: {
+    free_cancellation_window_mins: number;
+    customer_cancellation_allowed: boolean;
+    companion_cancellation_penalty_score: number;
+    companion_reassignment_enabled: boolean;
+    tiers: CancellationTierRule[];
+    no_show_grace_period_mins: number;
+    no_show_fee_percent: number;
+    emergency_cancellation_allowed: boolean;
+    emergency_cancellation_policy_text: string;
+  };
+
+  // 3. Refund Rules
+  refund_rules: {
+    refund_schedule: 'INSTANT_PAYMENT_METHOD' | 'THREE_TO_FIVE_DAYS' | 'WALLET_CREDIT';
+    platform_fee_non_refundable: boolean;
+    platform_fee_percent: number;
+    gateway_fee_retention_percent: number;
+    partial_refund_enabled: boolean;
+    partial_refund_formula_text: string;
+    auto_refund_processing: boolean;
+  };
+
+  // Legacy fallback fields
+  min_advance_hours?: number;
+  max_advance_days?: number;
+  min_duration_hours?: number;
+  max_duration_hours?: number;
+  same_day_allowed?: boolean;
+  instant_booking_allowed?: boolean;
+  companion_approval_required?: boolean;
+
   createdAt?: string;
   updatedAt?: string;
 }
 
+export type EligibilityTier = 'Basic' | 'Standard' | 'Enhanced' | 'Restricted';
+
 export interface EligibilityProfileItem {
   id: string;
+  code: string; // e.g. "ELG-BAS-01", "ELG-VIP-02"
   name: string;
   description: string;
-  minimum_age: number;
-  maximum_age: number;
-  minimum_rating: number;
-  minimum_bookings_done: number;
-  required_documents: string[];
+  tier: EligibilityTier;
   status: 'ACTIVE' | 'INACTIVE';
+
+  // Category & Service Relation Mapping
+  scope_type: 'GLOBAL' | 'CATEGORY' | 'SERVICE';
+  category_id?: string;
+  category_name?: string;
+  service_id?: string;
+  service_name?: string;
+
+  // 2. Eligibility Rules
+  rules: {
+    min_age: number;
+    max_age: number;
+    min_rating: number;
+    required_verification_level: 'Basic' | 'Standard' | 'Enhanced' | 'Restricted';
+    required_documents: string[];
+    min_completed_sessions: number;
+    require_good_account_standing: boolean;
+    max_active_strikes_allowed: number;
+    restricted_services_text: string;
+  };
+
+  // 3. Evaluator Config
+  evaluator: {
+    auto_evaluation_enabled: boolean;
+    manual_override_allowed_roles: string[];
+    re_evaluation_interval_days: number;
+  };
+
+  // Legacy fallback fields
+  minimum_age?: number;
+  maximum_age?: number;
+  minimum_rating?: number;
+  minimum_bookings_done?: number;
+
   createdAt?: string;
   updatedAt?: string;
 }

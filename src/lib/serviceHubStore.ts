@@ -6,6 +6,7 @@ import {
   PricingProfile,
   RulesProfile,
   RuleItem,
+  RuleAuditLog,
   PolicyItem,
   RiskLevelItem,
   VerificationProfileItem,
@@ -97,28 +98,44 @@ interface ServiceHubStore {
   // Configuration Profile Actions
   addPricingProfile: (prof: Omit<PricingProfile, 'id'>) => PricingProfile;
   updatePricingProfile: (id: string, updates: Partial<PricingProfile>) => void;
-  addRuleToProfile: (profileId: string, rule: Omit<RuleItem, 'id' | 'status'>) => void;
+  deletePricingProfile: (id: string) => void;
+  assignPricingProfileToCategories: (profileId: string, categoryIds: string[]) => void;
+  addRuleToProfile: (profileId: string, rule: Omit<RuleItem, 'id'>) => RuleItem;
   updateRuleInProfile: (profileId: string, ruleId: string, updates: Partial<RuleItem>) => void;
   deleteRuleFromProfile: (profileId: string, ruleId: string) => void;
+  toggleRuleActive: (profileId: string, ruleId: string) => void;
+  duplicateRuleInProfile: (profileId: string, ruleId: string) => RuleItem | null;
   addPolicy: (pol: Omit<PolicyItem, 'id' | 'version' | 'effective_from'>) => PolicyItem;
   updatePolicy: (id: string, updates: Partial<PolicyItem>) => void;
   publishNewPolicyVersion: (policyId: string, versionDesc: string) => void;
   deletePolicy: (id: string) => void;
+  togglePolicyStatus: (id: string) => void;
+  duplicatePolicy: (id: string) => PolicyItem | null;
   addRiskLevel: (risk: Omit<RiskLevelItem, 'id' | 'createdAt' | 'updatedAt'>) => RiskLevelItem;
   updateRiskLevel: (id: string, updates: Partial<RiskLevelItem>) => void;
   deleteRiskLevel: (id: string) => void;
+  toggleRiskLevelStatus: (id: string) => void;
+  duplicateRiskLevel: (id: string) => RiskLevelItem | null;
   addVerificationProfile: (prof: Omit<VerificationProfileItem, 'id' | 'createdAt' | 'updatedAt'>) => VerificationProfileItem;
   updateVerificationProfile: (id: string, updates: Partial<VerificationProfileItem>) => void;
   deleteVerificationProfile: (id: string) => void;
+  toggleVerificationProfileStatus: (id: string) => void;
+  duplicateVerificationProfile: (id: string) => VerificationProfileItem | null;
   addSafetyProfile: (prof: Omit<SafetyProfileItem, 'id' | 'createdAt' | 'updatedAt'>) => SafetyProfileItem;
   updateSafetyProfile: (id: string, updates: Partial<SafetyProfileItem>) => void;
   deleteSafetyProfile: (id: string) => void;
+  toggleSafetyProfileStatus: (id: string) => void;
+  duplicateSafetyProfile: (id: string) => SafetyProfileItem | null;
   addBookingRule: (rule: Omit<BookingRuleItem, 'id' | 'createdAt' | 'updatedAt'>) => BookingRuleItem;
   updateBookingRule: (id: string, updates: Partial<BookingRuleItem>) => void;
   deleteBookingRule: (id: string) => void;
+  toggleBookingRuleStatus: (id: string) => void;
+  duplicateBookingRule: (id: string) => BookingRuleItem | null;
   addEligibilityProfile: (prof: Omit<EligibilityProfileItem, 'id' | 'createdAt' | 'updatedAt'>) => EligibilityProfileItem;
   updateEligibilityProfile: (id: string, updates: Partial<EligibilityProfileItem>) => void;
   deleteEligibilityProfile: (id: string) => void;
+  toggleEligibilityProfileStatus: (id: string) => void;
+  duplicateEligibilityProfile: (id: string) => EligibilityProfileItem | null;
 
   // Bulk Actions
   bulkUpdateServiceStatus: (ids: string[], status: ServicePublishStatus) => void;
@@ -371,18 +388,65 @@ export const useServiceHubStore = create<ServiceHubStore>()(
         get().addAuditLog('Pricing', id, 'UPDATE', null, updates);
       },
 
+      deletePricingProfile: (id) => {
+        set(state => ({
+          pricingProfiles: state.pricingProfiles.filter(p => p.id !== id),
+          categories: state.categories.map(c => c.default_pricing_profile_id === id ? { ...c, default_pricing_profile_id: undefined } : c)
+        }));
+        get().addAuditLog('Pricing', id, 'DELETE', null, { id });
+      },
+
+      assignPricingProfileToCategories: (profileId, categoryIds) => {
+        set(state => ({
+          categories: state.categories.map(c => {
+            if (categoryIds.includes(c.id)) {
+              return { ...c, default_pricing_profile_id: profileId };
+            } else if (c.default_pricing_profile_id === profileId) {
+              return { ...c, default_pricing_profile_id: undefined };
+            }
+            return c;
+          })
+        }));
+        get().addAuditLog('Pricing', profileId, 'UPDATE_LINKED_CATEGORIES', null, { profileId, categoryIds });
+      },
+
       addRuleToProfile: (profileId, rule) => {
         const newRuleItem: RuleItem = {
           id: 'r-' + Date.now(),
+          code: rule.code || `RULE-${Date.now().toString().slice(-4)}`,
           name: rule.name,
           rule_type: rule.rule_type,
+          priority: rule.priority || 5,
+          scope_type: rule.scope_type || 'GLOBAL',
+          category_id: rule.category_id,
+          category_name: rule.category_name,
+          service_id: rule.service_id,
+          service_name: rule.service_name,
+          condition_group_operator: rule.condition_group_operator || 'AND',
+          conditions: rule.conditions || [{ id: 'c-1', field: rule.condition, operator: rule.operator, value: rule.value }],
           condition: rule.condition,
           operator: rule.operator,
           value: rule.value,
           action: rule.action,
+          additional_requirements: rule.additional_requirements || [],
+          approval_level: rule.approval_level || 'SYSTEM_AUTO',
+          restriction_message: rule.restriction_message || '',
+          risk_level_required: rule.risk_level_required || 'MEDIUM',
+          verification_required: rule.verification_required ?? true,
+          allow_override: rule.allow_override ?? true,
+          override_role: rule.override_role || 'OPERATIONS_MANAGER',
+          validity_start: rule.validity_start || new Date().toISOString().split('T')[0],
+          validity_end: rule.validity_end,
+          escalation_action: rule.escalation_action,
+          version: rule.version || 'v1.0',
           severity: rule.severity || 'MEDIUM',
           description: rule.description,
-          status: 'ACTIVE'
+          status: rule.status || 'ACTIVE',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          audit_history: [
+            { timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16), action: 'CREATE', author: 'Admin User', note: 'Created new operational rule' }
+          ]
         };
         set(state => ({
           rulesProfiles: state.rulesProfiles.map(rp => {
@@ -393,7 +457,8 @@ export const useServiceHubStore = create<ServiceHubStore>()(
             };
           })
         }));
-        get().addAuditLog('Rules', profileId, 'ADD_RULE', null, rule);
+        get().addAuditLog('Rules', profileId, 'ADD_RULE', null, newRuleItem);
+        return newRuleItem;
       },
 
       updateRuleInProfile: (profileId, ruleId, updates) => {
@@ -402,11 +467,72 @@ export const useServiceHubStore = create<ServiceHubStore>()(
             if (rp.id !== profileId) return rp;
             return {
               ...rp,
-              rules: rp.rules.map(r => r.id === ruleId ? { ...r, ...updates } : r)
+              rules: rp.rules.map(r => {
+                if (r.id !== ruleId) return r;
+                const newAudit: RuleAuditLog = {
+                  timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16),
+                  action: 'UPDATE',
+                  author: 'Admin User',
+                  note: 'Updated rule configuration'
+                };
+                return {
+                  ...r,
+                  ...updates,
+                  updatedAt: new Date().toISOString(),
+                  audit_history: [...(r.audit_history || []), newAudit]
+                };
+              })
             };
           })
         }));
-        get().addAuditLog('Rules', profileId, 'UPDATE_RULE', null, updates);
+        get().addAuditLog('Rules', profileId, 'UPDATE_RULE', { ruleId }, updates);
+      },
+
+      toggleRuleActive: (profileId, ruleId) => {
+        set(state => ({
+          rulesProfiles: state.rulesProfiles.map(rp => {
+            if (rp.id !== profileId) return rp;
+            return {
+              ...rp,
+              rules: rp.rules.map(r => {
+                if (r.id !== ruleId) return r;
+                const nextStatus = r.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+                return { ...r, status: nextStatus, updatedAt: new Date().toISOString() };
+              })
+            };
+          })
+        }));
+        get().addAuditLog('Rules', profileId, 'TOGGLE_RULE_STATUS', { ruleId }, {});
+      },
+
+      duplicateRuleInProfile: (profileId, ruleId) => {
+        const profile = get().rulesProfiles.find(p => p.id === profileId);
+        const sourceRule = profile?.rules.find(r => r.id === ruleId);
+        if (!sourceRule) return null;
+
+        const duplicated: RuleItem = {
+          ...sourceRule,
+          id: 'r-' + Date.now(),
+          code: `${sourceRule.code}-COPY`,
+          name: `${sourceRule.name} (Copy)`,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          audit_history: [
+            { timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16), action: 'CREATE', author: 'Admin User', note: `Duplicated from ${sourceRule.code}` }
+          ]
+        };
+
+        set(state => ({
+          rulesProfiles: state.rulesProfiles.map(rp => {
+            if (rp.id !== profileId) return rp;
+            return {
+              ...rp,
+              rules: [...rp.rules, duplicated]
+            };
+          })
+        }));
+        get().addAuditLog('Rules', profileId, 'DUPLICATE_RULE', { sourceRuleId: ruleId }, duplicated);
+        return duplicated;
       },
 
       deleteRuleFromProfile: (profileId, ruleId) => {
@@ -467,7 +593,46 @@ export const useServiceHubStore = create<ServiceHubStore>()(
 
       deletePolicy: (id) => {
         set(state => ({ policies: state.policies.filter(p => p.id !== id) }));
-        get().addAuditLog('Policies', id, 'DELETE');
+        get().addAuditLog('Policies', id, 'DELETE', null, { id });
+      },
+
+      togglePolicyStatus: (id) => {
+        set(state => ({
+          policies: state.policies.map(p => {
+            if (p.id !== id) return p;
+            const nextStatus = p.status === 'PUBLISHED' ? 'DEACTIVATED' : 'PUBLISHED';
+            return { ...p, status: nextStatus, updatedAt: new Date().toISOString() };
+          })
+        }));
+        get().addAuditLog('Policies', id, 'TOGGLE_STATUS', {}, {});
+      },
+
+      duplicatePolicy: (id) => {
+        const source = get().policies.find(p => p.id === id);
+        if (!source) return null;
+
+        const duplicated: PolicyItem = {
+          ...source,
+          id: 'pol-' + Date.now(),
+          code: `${source.code || 'POL'}-COPY`,
+          name: `${source.name} (Copy)`,
+          status: 'DRAFT',
+          version: 1,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          versions: [
+            {
+              version: 1,
+              effective_from: new Date().toISOString(),
+              description: `Duplicated from ${source.name}`,
+              published_by: 'Admin User'
+            }
+          ]
+        };
+
+        set(state => ({ policies: [...state.policies, duplicated] }));
+        get().addAuditLog('Policies', id, 'DUPLICATE', { sourceId: id }, duplicated);
+        return duplicated;
       },
 
       addRiskLevel: (risk) => {
@@ -494,6 +659,35 @@ export const useServiceHubStore = create<ServiceHubStore>()(
         get().addAuditLog('Risk Levels', id, 'DELETE');
       },
 
+      toggleRiskLevelStatus: (id) => {
+        set(state => ({
+          riskLevels: state.riskLevels.map(r => {
+            if (r.id !== id) return r;
+            const nextStatus = r.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+            return { ...r, status: nextStatus, updatedAt: new Date().toISOString() };
+          })
+        }));
+        get().addAuditLog('Risk Levels', id, 'TOGGLE_STATUS', {}, {});
+      },
+
+      duplicateRiskLevel: (id) => {
+        const source = get().riskLevels.find(r => r.id === id);
+        if (!source) return null;
+
+        const duplicated: RiskLevelItem = {
+          ...source,
+          id: 'rk-' + Date.now(),
+          code: source.code,
+          name: `${source.name} (Copy)`,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        set(state => ({ riskLevels: [...state.riskLevels, duplicated] }));
+        get().addAuditLog('Risk Levels', id, 'DUPLICATE', { sourceId: id }, duplicated);
+        return duplicated;
+      },
+
       addVerificationProfile: (prof) => {
         const newProf: VerificationProfileItem = {
           ...prof,
@@ -516,6 +710,35 @@ export const useServiceHubStore = create<ServiceHubStore>()(
       deleteVerificationProfile: (id) => {
         set(state => ({ verificationProfiles: state.verificationProfiles.filter(v => v.id !== id) }));
         get().addAuditLog('Verification Requirements', id, 'DELETE');
+      },
+
+      toggleVerificationProfileStatus: (id) => {
+        set(state => ({
+          verificationProfiles: state.verificationProfiles.map(v => {
+            if (v.id !== id) return v;
+            const nextStatus = v.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+            return { ...v, status: nextStatus, updatedAt: new Date().toISOString() };
+          })
+        }));
+        get().addAuditLog('Verification Requirements', id, 'TOGGLE_STATUS', {}, {});
+      },
+
+      duplicateVerificationProfile: (id) => {
+        const source = get().verificationProfiles.find(v => v.id === id);
+        if (!source) return null;
+
+        const duplicated: VerificationProfileItem = {
+          ...source,
+          id: 'ver-' + Date.now(),
+          code: `${source.code || 'VER'}-COPY`,
+          name: `${source.name} (Copy)`,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        set(state => ({ verificationProfiles: [...state.verificationProfiles, duplicated] }));
+        get().addAuditLog('Verification Requirements', id, 'DUPLICATE', { sourceId: id }, duplicated);
+        return duplicated;
       },
 
       addSafetyProfile: (prof) => {
@@ -542,6 +765,35 @@ export const useServiceHubStore = create<ServiceHubStore>()(
         get().addAuditLog('Safety & Trust', id, 'DELETE');
       },
 
+      toggleSafetyProfileStatus: (id) => {
+        set(state => ({
+          safetyProfiles: state.safetyProfiles.map(s => {
+            if (s.id !== id) return s;
+            const nextStatus = s.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+            return { ...s, status: nextStatus, updatedAt: new Date().toISOString() };
+          })
+        }));
+        get().addAuditLog('Safety & Trust', id, 'TOGGLE_STATUS', {}, {});
+      },
+
+      duplicateSafetyProfile: (id) => {
+        const source = get().safetyProfiles.find(s => s.id === id);
+        if (!source) return null;
+
+        const duplicated: SafetyProfileItem = {
+          ...source,
+          id: 'saf-' + Date.now(),
+          code: `${source.code || 'SAF'}-COPY`,
+          name: `${source.name} (Copy)`,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        set(state => ({ safetyProfiles: [...state.safetyProfiles, duplicated] }));
+        get().addAuditLog('Safety & Trust', id, 'DUPLICATE', { sourceId: id }, duplicated);
+        return duplicated;
+      },
+
       addBookingRule: (rule) => {
         const newRule: BookingRuleItem = {
           ...rule,
@@ -566,6 +818,35 @@ export const useServiceHubStore = create<ServiceHubStore>()(
         get().addAuditLog('Booking & Cancellation', id, 'DELETE');
       },
 
+      toggleBookingRuleStatus: (id) => {
+        set(state => ({
+          bookingRules: state.bookingRules.map(b => {
+            if (b.id !== id) return b;
+            const nextStatus = b.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+            return { ...b, status: nextStatus, updatedAt: new Date().toISOString() };
+          })
+        }));
+        get().addAuditLog('Booking & Cancellation', id, 'TOGGLE_STATUS', {}, {});
+      },
+
+      duplicateBookingRule: (id) => {
+        const source = get().bookingRules.find(b => b.id === id);
+        if (!source) return null;
+
+        const duplicated: BookingRuleItem = {
+          ...source,
+          id: 'bk-' + Date.now(),
+          code: `${source.code || 'BKG'}-COPY`,
+          name: `${source.name} (Copy)`,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        set(state => ({ bookingRules: [...state.bookingRules, duplicated] }));
+        get().addAuditLog('Booking & Cancellation', id, 'DUPLICATE', { sourceId: id }, duplicated);
+        return duplicated;
+      },
+
       addEligibilityProfile: (prof) => {
         const newProf: EligibilityProfileItem = {
           ...prof,
@@ -588,6 +869,35 @@ export const useServiceHubStore = create<ServiceHubStore>()(
       deleteEligibilityProfile: (id) => {
         set(state => ({ eligibilityProfiles: state.eligibilityProfiles.filter(e => e.id !== id) }));
         get().addAuditLog('Service Eligibility', id, 'DELETE');
+      },
+
+      toggleEligibilityProfileStatus: (id) => {
+        set(state => ({
+          eligibilityProfiles: state.eligibilityProfiles.map(e => {
+            if (e.id !== id) return e;
+            const nextStatus = e.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+            return { ...e, status: nextStatus, updatedAt: new Date().toISOString() };
+          })
+        }));
+        get().addAuditLog('Service Eligibility', id, 'TOGGLE_STATUS', {}, {});
+      },
+
+      duplicateEligibilityProfile: (id) => {
+        const source = get().eligibilityProfiles.find(e => e.id === id);
+        if (!source) return null;
+
+        const duplicated: EligibilityProfileItem = {
+          ...source,
+          id: 'el-' + Date.now(),
+          code: `${source.code || 'ELG'}-COPY`,
+          name: `${source.name} (Copy)`,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        set(state => ({ eligibilityProfiles: [...state.eligibilityProfiles, duplicated] }));
+        get().addAuditLog('Service Eligibility', id, 'DUPLICATE', { sourceId: id }, duplicated);
+        return duplicated;
       },
 
       // Bulk Actions

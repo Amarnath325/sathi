@@ -8,7 +8,7 @@ import { PricingTab } from './tabs/PricingTab';
 import { RulesTab } from './tabs/RulesTab';
 import { PoliciesTab } from './tabs/PoliciesTab';
 import { RiskLevelsTab } from './tabs/RiskLevelsTab';
-import { VerificationTab } from './tabs/VerificationTab';
+import { VerificationsTab } from './tabs/VerificationsTab';
 import { SafetyTab } from './tabs/SafetyTab';
 import { BookingCancellationTab } from './tabs/BookingCancellationTab';
 import { EligibilityTab } from './tabs/EligibilityTab';
@@ -185,7 +185,7 @@ export function ServiceCategoryHub() {
         {activeTab === 'rules' && <RulesTab />}
         {activeTab === 'policies' && <PoliciesTab />}
         {activeTab === 'risk' && <RiskLevelsTab />}
-        {activeTab === 'verification' && <VerificationTab />}
+        {activeTab === 'verification' && <VerificationsTab />}
         {activeTab === 'safety' && <SafetyTab />}
         {activeTab === 'booking' && <BookingCancellationTab />}
         {activeTab === 'eligibility' && <EligibilityTab />}

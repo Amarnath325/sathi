@@ -351,20 +351,25 @@ export class CompanionEligibilityEvaluator {
       };
     }
 
-    if (companion.age >= profile.minimum_age && companion.age <= profile.maximum_age) {
-      passed.push(`Age ${companion.age} satisfies [${profile.minimum_age}-${profile.maximum_age}] limit`);
+    const minAge = profile.rules?.min_age ?? profile.minimum_age ?? 18;
+    const maxAge = profile.rules?.max_age ?? profile.maximum_age ?? 75;
+    const minRating = profile.rules?.min_rating ?? profile.minimum_rating ?? 4.0;
+    const reqDocs = profile.rules?.required_documents ?? (profile as any).required_documents ?? ['GOVERNMENT_ID'];
+
+    if (companion.age >= minAge && companion.age <= maxAge) {
+      passed.push(`Age ${companion.age} satisfies [${minAge}-${maxAge}] limit`);
     } else {
-      missing.push(`Age ${companion.age} is outside mandatory [${profile.minimum_age}-${profile.maximum_age}] range`);
+      missing.push(`Age ${companion.age} is outside mandatory [${minAge}-${maxAge}] range`);
     }
 
-    if (companion.ratingAvg >= profile.minimum_rating) {
-      passed.push(`Rating ${companion.ratingAvg} >= ${profile.minimum_rating}`);
+    if (companion.ratingAvg >= minRating) {
+      passed.push(`Rating ${companion.ratingAvg} >= ${minRating}`);
     } else {
-      missing.push(`Rating ${companion.ratingAvg} is below minimum requirement of ${profile.minimum_rating}`);
+      missing.push(`Rating ${companion.ratingAvg} is below minimum requirement of ${minRating}`);
     }
 
-    profile.required_documents.forEach(docKey => {
-      if (companion.documents[docKey]) {
+    reqDocs.forEach((docKey: string) => {
+      if ((companion.documents as any)[docKey]) {
         passed.push(`Document Verified: ${docKey}`);
       } else {
         missing.push(`Missing Required Credential: ${docKey}`);
@@ -405,13 +410,17 @@ export class CancellationCalculator {
     const refundAmount = (totalPaidAmount * refundPercent) / 100;
     const feeAmount = totalPaidAmount - refundAmount;
 
+    const freeWinHours = rules.free_cancellation_window_mins
+      ? Math.round(rules.free_cancellation_window_mins / 60)
+      : ((rules as any).free_cancellation_window_hours || 24);
+
     return {
       refundAmount: Math.round(refundAmount),
       refundPercent,
       feeAmount: Math.round(feeAmount),
       feePercent,
-      policyTierMessage: hoursUntilBooking >= rules.free_cancellation_window_hours
-        ? `Full ${refundPercent}% Refund (Cancelled > ${rules.free_cancellation_window_hours}h in advance)`
+      policyTierMessage: hoursUntilBooking >= freeWinHours
+        ? `Full ${refundPercent}% Refund (Cancelled > ${freeWinHours}h in advance)`
         : `${refundPercent}% Refund Applicable (${hoursUntilBooking.toFixed(1)}h prior to session start)`
     };
   }

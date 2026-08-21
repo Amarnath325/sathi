@@ -1,105 +1,223 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useServiceHubStore } from '@/lib/serviceHubStore';
-import { CompanionEligibilityEvaluator } from '@/lib/serviceHubEngines';
 import {
-  UserCheck, CheckCircle2, AlertTriangle, Star, Shield, FileCheck, Check, X,
-  Sliders, Award, ShieldAlert, FileText, Activity, Layers, CheckSquare, Clock, Plus, Edit2, Trash2
+  UserCheck, ShieldCheck, Search, Plus, X, Edit2, Trash2, Copy, Power,
+  CheckCircle2, AlertTriangle, Layers, Award, Star, Play, FileCheck, CheckSquare, Sparkles, XCircle
 } from 'lucide-react';
-import { EligibilityProfileItem } from '@/lib/types/serviceHub';
+import { EligibilityProfileItem, EligibilityTier } from '@/lib/types/serviceHub';
 
 export function EligibilityTab() {
-  const { eligibilityProfiles, addEligibilityProfile, updateEligibilityProfile, deleteEligibilityProfile } = useServiceHubStore();
-  const [subTab, setSubTab] = useState<'profiles' | 'rules' | 'evaluator'>('profiles');
-  const [selectedProfileId, setSelectedProfileId] = useState(eligibilityProfiles[0]?.id || '');
+  const {
+    eligibilityProfiles,
+    categories,
+    services,
+    addEligibilityProfile,
+    updateEligibilityProfile,
+    deleteEligibilityProfile,
+    toggleEligibilityProfileStatus,
+    duplicateEligibilityProfile,
+    searchQuery: globalSearch
+  } = useServiceHubStore();
 
-  const profile = eligibilityProfiles.find(p => p.id === selectedProfileId) || eligibilityProfiles[0];
+  const [selectedProfId, setSelectedProfId] = useState<string>(eligibilityProfiles[0]?.id || '');
+  const [activeTierFilter, setActiveTierFilter] = useState<'ALL' | EligibilityTier>('ALL');
+  const [localSearch, setLocalSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
 
-  // Modal State for Add / Edit Eligibility Profile
+  // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingProf, setEditingProf] = useState<EligibilityProfileItem | null>(null);
+  const [activeModalTab, setActiveModalTab] = useState<'RULES' | 'EVALUATOR' | 'PREVIEW'>('RULES');
+  const [editingProfile, setEditingProfile] = useState<EligibilityProfileItem | null>(null);
+  const [deleteConfirmProf, setDeleteConfirmProf] = useState<EligibilityProfileItem | null>(null);
 
-  // Form Fields
+  // Form Fields State
+  // Identity & Scope
+  const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [minimumAge, setMinimumAge] = useState(18);
-  const [maximumAge, setMaximumAge] = useState(60);
-  const [minimumRating, setMinimumRating] = useState(4.0);
-  const [minimumBookingsDone, setMinimumBookingsDone] = useState(5);
+  const [tier, setTier] = useState<EligibilityTier>('Standard');
   const [status, setStatus] = useState<'ACTIVE' | 'INACTIVE'>('ACTIVE');
+  const [scopeType, setScopeType] = useState<'GLOBAL' | 'CATEGORY' | 'SERVICE'>('GLOBAL');
+  const [categoryId, setCategoryId] = useState('');
+  const [serviceId, setServiceId] = useState('');
 
-  // Documents Checklist
-  const [reqGovtId, setReqGovtId] = useState(true);
-  const [reqSelfie, setReqSelfie] = useState(true);
-  const [reqEmergencyContact, setReqEmergencyContact] = useState(true);
-  const [reqPoliceCheck, setReqPoliceCheck] = useState(false);
+  // 2. Eligibility Rules
+  const [minAge, setMinAge] = useState(21);
+  const [maxAge, setMaxAge] = useState(65);
+  const [minRating, setMinRating] = useState(4.3);
+  const [requiredVerificationLevel, setRequiredVerificationLevel] = useState<'Basic' | 'Standard' | 'Enhanced' | 'Restricted'>('Standard');
+  const [requiredDocumentsText, setRequiredDocumentsText] = useState('GOVERNMENT_ID, SELFIE_MATCH, ADDRESS_PROOF');
+  const [minCompletedSessions, setMinCompletedSessions] = useState(5);
+  const [requireGoodAccountStanding, setRequireGoodAccountStanding] = useState(true);
+  const [maxActiveStrikesAllowed, setMaxActiveStrikesAllowed] = useState(1);
+  const [restrictedServicesText, setRestrictedServicesText] = useState('Restricted for unverified late-night events.');
 
-  const openAddModal = () => {
-    setEditingProf(null);
-    setName('');
-    setDescription('');
-    setMinimumAge(18);
-    setMaximumAge(60);
-    setMinimumRating(4.0);
-    setMinimumBookingsDone(5);
-    setStatus('ACTIVE');
-    setReqGovtId(true);
-    setReqSelfie(true);
-    setReqEmergencyContact(true);
-    setReqPoliceCheck(false);
-    setIsModalOpen(true);
-  };
+  // 3. Evaluator Config
+  const [autoEvaluationEnabled, setAutoEvaluationEnabled] = useState(true);
+  const [reEvaluationIntervalDays, setReEvaluationIntervalDays] = useState(60);
 
-  const openEditModal = (p: EligibilityProfileItem, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    setEditingProf(p);
-    setName(p.name);
-    setDescription(p.description);
-    setMinimumAge(p.minimum_age || 18);
-    setMaximumAge(p.maximum_age || 60);
-    setMinimumRating(p.minimum_rating || 4.0);
-    setMinimumBookingsDone(p.minimum_bookings_done || 0);
-    setStatus(p.status || 'ACTIVE');
+  // Live Interactive Evaluator & Simulator Candidate State
+  const [simAge, setSimAge] = useState(24);
+  const [simRating, setSimRating] = useState(4.5);
+  const [simVerificationLevel, setSimVerificationLevel] = useState<'Basic' | 'Standard' | 'Enhanced' | 'Restricted'>('Standard');
+  const [simSessions, setSimSessions] = useState(12);
+  const [simStrikes, setSimStrikes] = useState(0);
+  const [simAccountStanding, setSimAccountStanding] = useState(true);
 
-    const docs = p.required_documents || [];
-    setReqGovtId(docs.includes('GOVERNMENT_ID'));
-    setReqSelfie(docs.includes('SELFIE_LIVE'));
-    setReqEmergencyContact(docs.includes('EMERGENCY_CONTACT'));
-    setReqPoliceCheck(docs.includes('POLICE_CLEARANCE'));
-    setIsModalOpen(true);
-  };
+  // Filtered Profiles
+  const searchTerm = localSearch || globalSearch;
+  const filteredProfiles = useMemo(() => {
+    return eligibilityProfiles.filter(p => {
+      const matchesSearch = !searchTerm ||
+        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p.code && p.code.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        p.description.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesCategory = categoryFilter === 'ALL' || p.category_id === categoryFilter;
+      const matchesTier = activeTierFilter === 'ALL' || p.tier === activeTierFilter;
+      return matchesSearch && matchesCategory && matchesTier;
+    });
+  }, [eligibilityProfiles, searchTerm, categoryFilter, activeTierFilter]);
 
-  const handleDeleteProfile = (id: string, pName: string, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    if (confirm(`Are you sure you want to delete eligibility profile "${pName}"?`)) {
-      deleteEligibilityProfile(id);
-    }
-  };
+  const activeProfile = eligibilityProfiles.find(p => p.id === selectedProfId) || eligibilityProfiles[0];
 
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) { alert('Please enter profile name.'); return; }
-
-    const docs: string[] = [];
-    if (reqGovtId) docs.push('GOVERNMENT_ID');
-    if (reqSelfie) docs.push('SELFIE_LIVE');
-    if (reqEmergencyContact) docs.push('EMERGENCY_CONTACT');
-    if (reqPoliceCheck) docs.push('POLICE_CLEARANCE');
-
-    const payload = {
-      name,
-      description,
-      minimum_age: minimumAge,
-      maximum_age: maximumAge,
-      minimum_rating: minimumRating,
-      minimum_bookings_done: minimumBookingsDone,
-      required_documents: docs,
-      status
+  // Simulator Evaluation Logic
+  const evaluationResult = useMemo(() => {
+    if (!activeProfile) return null;
+    const r = activeProfile.rules || {
+      min_age: activeProfile.minimum_age || 18,
+      max_age: activeProfile.maximum_age || 75,
+      min_rating: activeProfile.minimum_rating || 4.0,
+      required_verification_level: 'Standard',
+      min_completed_sessions: activeProfile.minimum_bookings_done || 0,
+      require_good_account_standing: true,
+      max_active_strikes_allowed: 1
     };
 
-    if (editingProf) {
-      updateEligibilityProfile(editingProf.id, payload);
+    const checks = [
+      { name: 'Age Requirement', passed: simAge >= r.min_age && simAge <= r.max_age, detail: `Candidate Age ${simAge} (Required: ${r.min_age}-${r.max_age})` },
+      { name: 'Rating Requirement', passed: simRating >= r.min_rating, detail: `Candidate Rating ${simRating}★ (Required: ${r.min_rating}★)` },
+      { name: 'Verification Tier', passed: simVerificationLevel === r.required_verification_level || simVerificationLevel === 'Restricted' || simVerificationLevel === 'Enhanced', detail: `Candidate Level: ${simVerificationLevel} (Required: ${r.required_verification_level})` },
+      { name: 'Completed Sessions', passed: simSessions >= r.min_completed_sessions, detail: `Candidate Sessions: ${simSessions} (Required: ${r.min_completed_sessions})` },
+      { name: 'Active Strikes', passed: simStrikes <= r.max_active_strikes_allowed, detail: `Candidate Strikes: ${simStrikes} (Max Allowed: ${r.max_active_strikes_allowed})` },
+      { name: 'Account Standing', passed: simAccountStanding || !r.require_good_account_standing, detail: `Candidate Account Standing: ${simAccountStanding ? 'GOOD' : 'FLAGGED'}` },
+    ];
+
+    const failedChecks = checks.filter(c => !c.passed);
+    const isEligible = failedChecks.length === 0;
+
+    return {
+      checks,
+      failedChecks,
+      status: isEligible ? 'ELIGIBLE' : failedChecks.length <= 1 ? 'CONDITIONAL' : 'NOT_ELIGIBLE'
+    };
+  }, [activeProfile, simAge, simRating, simVerificationLevel, simSessions, simStrikes, simAccountStanding]);
+
+  // Handlers
+  const handleOpenCreate = () => {
+    setEditingProfile(null);
+    setCode(`ELG-STD-${Date.now().toString().slice(-4)}`);
+    setName('Standard Companion Eligibility Profile');
+    setDescription('Age 21-65, rating 4.3+, standard verification & 5 completed sessions.');
+    setTier('Standard');
+    setStatus('ACTIVE');
+    setScopeType('GLOBAL');
+    setCategoryId('');
+    setServiceId('');
+
+    setMinAge(21);
+    setMaxAge(65);
+    setMinRating(4.3);
+    setRequiredVerificationLevel('Standard');
+    setRequiredDocumentsText('GOVERNMENT_ID, SELFIE_MATCH, ADDRESS_PROOF');
+    setMinCompletedSessions(5);
+    setRequireGoodAccountStanding(true);
+    setMaxActiveStrikesAllowed(1);
+    setRestrictedServicesText('Restricted for unverified late-night events.');
+
+    setAutoEvaluationEnabled(true);
+    setReEvaluationIntervalDays(60);
+
+    setActiveModalTab('RULES');
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (prof: EligibilityProfileItem) => {
+    setEditingProfile(prof);
+    setCode(prof.code || `ELG-${prof.id.slice(-4)}`);
+    setName(prof.name);
+    setDescription(prof.description);
+    setTier(prof.tier || 'Standard');
+    setStatus(prof.status);
+    setScopeType(prof.scope_type || 'GLOBAL');
+    setCategoryId(prof.category_id || '');
+    setServiceId(prof.service_id || '');
+
+    if (prof.rules) {
+      setMinAge(prof.rules.min_age);
+      setMaxAge(prof.rules.max_age);
+      setMinRating(prof.rules.min_rating);
+      setRequiredVerificationLevel(prof.rules.required_verification_level);
+      setRequiredDocumentsText((prof.rules.required_documents || []).join(', '));
+      setMinCompletedSessions(prof.rules.min_completed_sessions);
+      setRequireGoodAccountStanding(prof.rules.require_good_account_standing);
+      setMaxActiveStrikesAllowed(prof.rules.max_active_strikes_allowed);
+      setRestrictedServicesText(prof.rules.restricted_services_text || '');
+    }
+
+    if (prof.evaluator) {
+      setAutoEvaluationEnabled(prof.evaluator.auto_evaluation_enabled);
+      setReEvaluationIntervalDays(prof.evaluator.re_evaluation_interval_days);
+    }
+
+    setActiveModalTab('RULES');
+    setIsModalOpen(true);
+  };
+
+  const handleSaveProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+
+    const payload: Omit<EligibilityProfileItem, 'id' | 'createdAt' | 'updatedAt'> = {
+      code: code.trim(),
+      name: name.trim(),
+      description: description.trim(),
+      tier,
+      status,
+      scope_type: scopeType,
+      category_id: categoryId,
+      category_name: categories.find(c => c.id === categoryId)?.name,
+      service_id: serviceId,
+      service_name: services.find(s => s.id === serviceId)?.name,
+
+      rules: {
+        min_age: Number(minAge),
+        max_age: Number(maxAge),
+        min_rating: Number(minRating),
+        required_verification_level: requiredVerificationLevel,
+        required_documents: requiredDocumentsText.split(',').map(s => s.trim()).filter(Boolean),
+        min_completed_sessions: Number(minCompletedSessions),
+        require_good_account_standing: requireGoodAccountStanding,
+        max_active_strikes_allowed: Number(maxActiveStrikesAllowed),
+        restricted_services_text: restrictedServicesText.trim()
+      },
+
+      evaluator: {
+        auto_evaluation_enabled: autoEvaluationEnabled,
+        manual_override_allowed_roles: ['OPS_LEAD', 'SUPER_ADMIN'],
+        re_evaluation_interval_days: Number(reEvaluationIntervalDays)
+      },
+
+      minimum_age: Number(minAge),
+      maximum_age: Number(maxAge),
+      minimum_rating: Number(minRating),
+      minimum_bookings_done: Number(minCompletedSessions)
+    };
+
+    if (editingProfile) {
+      updateEligibilityProfile(editingProfile.id, payload);
     } else {
       addEligibilityProfile(payload);
     }
@@ -107,521 +225,454 @@ export function EligibilityTab() {
     setIsModalOpen(false);
   };
 
-  // Companion Simulator State
-  const [compAge, setCompAge] = useState(24);
-  const [compRating, setCompRating] = useState(4.8);
-  const [completedBookings, setCompletedBookings] = useState(15);
-  const [hasGovtId, setHasGovtId] = useState(true);
-  const [hasSelfie, setHasSelfie] = useState(true);
-  const [hasEmergency, setHasEmergency] = useState(true);
-  const [hasPoliceCheck, setHasPoliceCheck] = useState(true);
-  const [isSuspended, setIsSuspended] = useState(false);
-
-  // Evaluator computation
-  const evalResult = profile ? CompanionEligibilityEvaluator.evaluate({
-    id: 'companion-demo-101',
-    age: compAge,
-    ratingAvg: compRating,
-    completedBookings,
-    isSuspended,
-    documents: {
-      GOVERNMENT_ID: hasGovtId,
-      SELFIE_LIVE: hasSelfie,
-      EMERGENCY_CONTACT: hasEmergency,
-      POLICE_CLEARANCE: hasPoliceCheck
-    }
-  }, profile) : null;
-
   return (
-    <div className="space-y-3 w-full">
-      {/* Top Internal Navigation Header */}
-      <div className="flex items-center justify-between p-2 rounded-xl bg-slate-100 border border-slate-200/80">
-        <div className="flex items-center gap-1">
+    <div className="space-y-3.5 w-full">
+      {/* Tier Filter Bar */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-200/80">
+        {[
+          { id: 'ALL', label: 'All Eligibility Profiles' },
+          { id: 'Basic', label: 'Basic Tier' },
+          { id: 'Standard', label: 'Standard Tier' },
+          { id: 'Enhanced', label: 'Enhanced Tier' },
+          { id: 'Restricted', label: 'Restricted Tier' },
+        ].map(t => (
           <button
-            onClick={() => setSubTab('profiles')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-              subTab === 'profiles'
+            key={t.id}
+            onClick={() => setActiveTierFilter(t.id as any)}
+            className={`px-3 py-1.5 rounded-xl font-bold text-[11px] shrink-0 transition-all ${
+              activeTierFilter === t.id
                 ? 'bg-purple-600 text-white shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
             }`}
           >
-            <Layers className="w-3.5 h-3.5" />
-            <span>1. Eligibility Profiles</span>
+            {t.label}
           </button>
-
-          <button
-            onClick={() => setSubTab('rules')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-              subTab === 'rules'
-                ? 'bg-purple-600 text-white shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-            }`}
-          >
-            <Sliders className="w-3.5 h-3.5" />
-            <span>2. Eligibility Rules</span>
-          </button>
-
-          <button
-            onClick={() => setSubTab('evaluator')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-              subTab === 'evaluator'
-                ? 'bg-purple-600 text-white shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-            }`}
-          >
-            <Activity className="w-3.5 h-3.5" />
-            <span>3. Eligibility Evaluator</span>
-          </button>
-        </div>
-
-        {/* Profile Selector Badge & Add Profile */}
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] font-bold text-slate-500">Active Profile:</span>
-          <select
-            value={selectedProfileId}
-            onChange={e => setSelectedProfileId(e.target.value)}
-            className="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-bold text-purple-700 outline-none shadow-2xs"
-          >
-            {eligibilityProfiles.map(p => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-          <button
-            onClick={openAddModal}
-            className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-2xs flex items-center gap-1"
-          >
-            <Plus className="w-3.5 h-3.5" /> Add Profile
-          </button>
-        </div>
+        ))}
       </div>
 
-      {/* SUB-TAB 1: ELIGIBILITY PROFILES */}
-      {subTab === 'profiles' && (
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {eligibilityProfiles.map(p => {
-              const isSelected = selectedProfileId === p.id;
-              return (
-                <div
-                  key={p.id}
-                  onClick={() => setSelectedProfileId(p.id)}
-                  className={`p-3.5 rounded-2xl border transition-all cursor-pointer space-y-2.5 shadow-2xs hover:shadow-xs ${
-                    isSelected
-                      ? 'bg-white border-2 border-purple-500 ring-2 ring-purple-500/10'
-                      : 'bg-white border-slate-200/90'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold border bg-purple-50 text-purple-700 border-purple-200">
-                      {p.name}
-                    </span>
-                    <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                      <button
-                        onClick={(e) => openEditModal(p, e)}
-                        className="p-1 rounded-md bg-slate-100 hover:bg-purple-100 text-slate-600 hover:text-purple-700"
-                        title="Edit Profile"
-                      >
-                        <Edit2 className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={(e) => handleDeleteProfile(p.id, p.name, e)}
-                        className="p-1 rounded-md bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700"
-                        title="Delete Profile"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="font-extrabold text-slate-900 text-xs">{p.name}</h4>
-                    <p className="text-[10px] text-slate-500 font-medium leading-tight mt-0.5">{p.description}</p>
-                  </div>
-                  <div className="pt-2 border-t border-slate-100 grid grid-cols-3 gap-1 text-[10px] font-mono text-center">
-                    <div className="bg-slate-50 p-1 rounded"><span className="text-slate-400 block text-[8px]">AGE</span><strong className="text-slate-800">{p.minimum_age}–{p.maximum_age}</strong></div>
-                    <div className="bg-slate-50 p-1 rounded"><span className="text-slate-400 block text-[8px]">MIN RATING</span><strong className="text-amber-700">{p.minimum_rating}★</strong></div>
-                    <div className="bg-slate-50 p-1 rounded"><span className="text-slate-400 block text-[8px]">DOCS</span><strong className="text-indigo-700">{p.required_documents?.length || 0} Req</strong></div>
-                  </div>
-                </div>
-              );
-            })}
+      {/* Search & Actions Bar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+        <div className="flex items-center gap-2 flex-1">
+          <div className="relative flex-1">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={localSearch}
+              onChange={e => setLocalSearch(e.target.value)}
+              placeholder="Search companion eligibility profiles by code or requirements..."
+              className="w-full bg-white border border-slate-200/90 rounded-xl pl-9 pr-3.5 py-1.5 text-[11px] text-slate-900 placeholder-slate-400 outline-none focus:border-purple-500 shadow-2xs transition-colors"
+            />
           </div>
 
-          {/* Profile Active Config Details */}
-          {profile && (
-            <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="font-extrabold text-slate-900 text-xs flex items-center gap-1.5">
-                  <FileText className="w-4 h-4 text-purple-600" /> Currently Selected Profile: <span className="text-purple-700">{profile.name}</span>
-                </h4>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={(e) => openEditModal(profile, e)}
-                    className="px-2.5 py-1 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs flex items-center gap-1"
+          <select
+            value={categoryFilter}
+            onChange={e => setCategoryFilter(e.target.value)}
+            className="bg-white border border-slate-200/90 rounded-xl px-2.5 py-1.5 text-[11px] font-bold text-slate-700 outline-none focus:border-purple-500 shadow-2xs"
+          >
+            <option value="ALL">All Categories</option>
+            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </div>
+
+        <button
+          onClick={handleOpenCreate}
+          className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-[11px] shadow-2xs flex items-center justify-center gap-1.5 transition-all shrink-0"
+        >
+          <Plus className="w-3.5 h-3.5" /> Add Eligibility Profile
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
+        {/* Section 1 & 2: Configured Eligibility Profiles Grid */}
+        <div className="lg:col-span-2 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <h4 className="font-extrabold text-slate-900 text-xs">
+              Companion Eligibility Profiles & Criteria
+              <span className="ml-1.5 text-slate-500 text-[10px] font-normal">({filteredProfiles.length} active)</span>
+            </h4>
+          </div>
+
+          {filteredProfiles.length > 0 ? (
+            <div className="space-y-2.5">
+              {filteredProfiles.map(prof => {
+                const isSelected = selectedProfId === prof.id;
+
+                return (
+                  <div
+                    key={prof.id}
+                    className={`p-3.5 rounded-2xl bg-white border transition-all space-y-2.5 cursor-pointer ${
+                      isSelected
+                        ? 'border-2 border-purple-500 shadow-2xs ring-1 ring-purple-500/20'
+                        : 'border-slate-200/90 shadow-2xs hover:border-purple-200'
+                    }`}
+                    onClick={() => setSelectedProfId(prof.id)}
                   >
-                    <Edit2 className="w-3.5 h-3.5" /> Edit Profile
-                  </button>
-                  <button
-                    onClick={(e) => handleDeleteProfile(profile.id, profile.name, e)}
-                    className="px-2.5 py-1 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center gap-1"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" /> Delete
-                  </button>
-                </div>
-              </div>
-              <p className="text-xs text-slate-600">{profile.description}</p>
-              <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
-                <span className="px-2.5 py-1 rounded-lg bg-purple-50 border border-purple-100 text-[11px] font-bold text-purple-800">
-                  Minimum Age: {profile.minimum_age} years
-                </span>
-                <span className="px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-100 text-[11px] font-bold text-amber-800">
-                  Minimum Rating: {profile.minimum_rating} ★
-                </span>
-                <span className="px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-100 text-[11px] font-bold text-indigo-800">
-                  Mandatory Docs: {(profile.required_documents || []).join(', ').replace(/_/g, ' ')}
-                </span>
-              </div>
+                    {/* Header */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="px-2 py-0.5 rounded-md bg-slate-900 text-purple-300 font-mono font-bold text-[10px]">
+                          {prof.code || `ELG-${prof.id.slice(-4)}`}
+                        </span>
+                        <h5 className="font-extrabold text-slate-900 text-xs">{prof.name}</h5>
+                        <span className="px-2 py-0.2 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-bold text-[9px]">
+                          {prof.tier || 'Standard'} Tier
+                        </span>
+                        <span className={`px-2 py-0.2 rounded-full font-bold text-[9px] ${
+                          prof.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-500 border border-slate-200'
+                        }`}>
+                          {prof.status}
+                        </span>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); toggleEligibilityProfileStatus(prof.id); }}
+                          className={`p-1.5 rounded-lg text-xs font-bold transition-all ${
+                            prof.status === 'ACTIVE' ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100' : 'text-slate-400 bg-slate-100 hover:bg-slate-200'
+                          }`}
+                          title="Toggle Status"
+                        >
+                          <Power className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); duplicateEligibilityProfile(prof.id); }}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-slate-100 transition-colors"
+                          title="Duplicate Profile"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleOpenEdit(prof); }}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-slate-100 transition-colors"
+                          title="Edit Profile"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setDeleteConfirmProf(prof); }}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition-colors"
+                          title="Delete Profile"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <p className="text-[11px] text-slate-600 leading-snug">{prof.description}</p>
+
+                    {/* Category & Service Relational Mapping */}
+                    <div className="flex items-center gap-2 text-[10px] pt-0.5">
+                      <span className="text-slate-400 font-bold flex items-center gap-1">
+                        <Layers className="w-3 h-3 text-purple-600" /> Relational Scope:
+                      </span>
+                      <span className="px-2 py-0.2 rounded-md bg-purple-50 text-purple-700 border border-purple-100 font-bold text-[9px]">
+                        {prof.category_name || 'Global (All Categories & Services)'}
+                      </span>
+                      {prof.service_name && (
+                        <span className="px-2 py-0.2 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100 font-bold text-[9px]">
+                          Service: {prof.service_name}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Rules Criteria Matrix Pills */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-[10px] bg-slate-50 p-2.5 rounded-xl border border-slate-200/80">
+                      <div>
+                        <span className="text-slate-400 uppercase font-bold block text-[9px]">Age Range</span>
+                        <span className="font-bold text-slate-900">{prof.rules?.min_age || prof.minimum_age || 18} - {prof.rules?.max_age || prof.maximum_age || 65} Yrs</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 uppercase font-bold block text-[9px]">Min Rating</span>
+                        <span className="font-bold text-amber-600">★ {prof.rules?.min_rating || prof.minimum_rating || 4.0} Stars</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 uppercase font-bold block text-[9px]">Verification Level</span>
+                        <span className="font-bold text-purple-700">{prof.rules?.required_verification_level || 'Standard'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 uppercase font-bold block text-[9px]">Min Sessions</span>
+                        <span className="font-bold text-emerald-700">{prof.rules?.min_completed_sessions || prof.minimum_bookings_done || 0} Sessions</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="p-6 text-center text-slate-500 text-[11px] bg-white border border-slate-200/90 rounded-2xl shadow-2xs">
+              No eligibility profiles match your search.
             </div>
           )}
         </div>
-      )}
 
-      {/* SUB-TAB 2: ELIGIBILITY RULES */}
-      {subTab === 'rules' && (
-        <div className="space-y-3">
-          <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-3">
-            <h4 className="font-extrabold text-slate-900 text-xs flex items-center justify-between">
-              <span>Configured Companion Eligibility Rules Matrix</span>
-              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800">7 Active Criteria</span>
-            </h4>
+        {/* Section 3: Live Interactive Eligibility Evaluator & Simulator */}
+        <div className="p-3.5 rounded-2xl bg-white border border-slate-200/90 space-y-3 h-fit shadow-2xs sticky top-3">
+          <h4 className="font-extrabold text-slate-900 text-xs flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-purple-600" /> Interactive Eligibility Evaluator
+            </span>
+            {activeProfile && <span className="text-[10px] font-mono text-purple-600 font-bold">{activeProfile.code || 'ELG-STD-01'}</span>}
+          </h4>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                <div className="flex justify-between items-center">
-                  <span className="font-extrabold text-slate-900">1. Age Threshold</span>
-                  <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.2 rounded border border-purple-200">Min {profile?.minimum_age || 18} Yrs</span>
-                </div>
-                <p className="text-[11px] text-slate-500">Companion must be legally adult within allowed minimum age limit.</p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                <div className="flex justify-between items-center">
-                  <span className="font-extrabold text-slate-900">2. Customer Rating</span>
-                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.2 rounded border border-amber-200">Min {profile?.minimum_rating || 4.0} ★</span>
-                </div>
-                <p className="text-[11px] text-slate-500">Average historical rating across completed companion bookings.</p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                <div className="flex justify-between items-center">
-                  <span className="font-extrabold text-slate-900">3. Identity Verification</span>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.2 rounded border border-emerald-200">KYC + Face Match</span>
-                </div>
-                <p className="text-[11px] text-slate-500">Aadhaar/Govt ID verification and live biometric selfie match.</p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                <div className="flex justify-between items-center">
-                  <span className="font-extrabold text-slate-900">4. Mandatory Documents</span>
-                  <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.2 rounded border border-indigo-200">{profile?.required_documents?.length || 0} Documents</span>
-                </div>
-                <p className="text-[11px] text-slate-500">All required documents must be uploaded and verified by admin.</p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                <div className="flex justify-between items-center">
-                  <span className="font-extrabold text-slate-900">5. Experience & History</span>
-                  <span className="text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-0.2 rounded border border-slate-300">Min {profile?.minimum_bookings_done || 0} Bookings</span>
-                </div>
-                <p className="text-[11px] text-slate-500">Required minimum successful bookings for tier escalation.</p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                <div className="flex justify-between items-center">
-                  <span className="font-extrabold text-slate-900">6. Account Standing</span>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.2 rounded border border-emerald-200">Clean Record</span>
-                </div>
-                <p className="text-[11px] text-slate-500">Account must not be suspended, flagged for fraud, or under audit.</p>
-              </div>
-
-              <div className="p-3 rounded-xl md:col-span-2 bg-purple-50/60 border border-purple-200 space-y-1">
-                <div className="flex justify-between items-center">
-                  <span className="font-extrabold text-purple-950">7. Service-Specific Eligibility</span>
-                  <span className="text-[10px] font-bold text-purple-700 bg-purple-100 px-2 py-0.2 rounded">Dynamic Mapping</span>
-                </div>
-                <p className="text-[11px] text-purple-800">Higher risk services require higher eligibility profile compliance.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* SUB-TAB 3: ELIGIBILITY EVALUATOR */}
-      {subTab === 'evaluator' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
-          {/* Controls Column */}
-          <div className="p-3.5 rounded-2xl bg-white border border-slate-200/90 space-y-3 shadow-2xs">
-            <h4 className="font-extrabold text-slate-900 text-xs flex items-center gap-1.5">
-              <UserCheck className="w-4 h-4 text-purple-600" /> Evaluator Simulator Inputs
-            </h4>
-
-            <div className="space-y-3 text-xs">
+          {/* Simulator Inputs Panel */}
+          <div className="p-3 rounded-xl bg-slate-900 text-white space-y-2.5 text-[11px]">
+            <p className="text-purple-300 font-bold text-[10px]">Companion Candidate Inputs:</p>
+            <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Select Profile for Test</label>
-                <select
-                  value={selectedProfileId}
-                  onChange={e => setSelectedProfileId(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-bold text-slate-900 outline-none"
-                >
-                  {eligibilityProfiles.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
+                <label className="block text-slate-400 text-[9px]">Age (Yrs):</label>
+                <input type="number" value={simAge} onChange={e => setSimAge(Number(e.target.value))} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-white font-mono text-[10px]" />
+              </div>
+              <div>
+                <label className="block text-slate-400 text-[9px]">Rating (★):</label>
+                <input type="number" step="0.1" value={simRating} onChange={e => setSimRating(Number(e.target.value))} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-amber-400 font-mono text-[10px]" />
+              </div>
+              <div>
+                <label className="block text-slate-400 text-[9px]">Verification Level:</label>
+                <select value={simVerificationLevel} onChange={e => setSimVerificationLevel(e.target.value as any)} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-purple-400 font-mono text-[10px]">
+                  <option value="Basic">Basic</option>
+                  <option value="Standard">Standard</option>
+                  <option value="Enhanced">Enhanced</option>
+                  <option value="Restricted">Restricted</option>
                 </select>
               </div>
-
               <div>
-                <label className="block text-slate-700 font-bold mb-0.5">Companion Age: <strong className="text-slate-900">{compAge} yrs</strong></label>
-                <input type="range" min={16} max={75} value={compAge} onChange={e => setCompAge(Number(e.target.value))} className="w-full accent-purple-600 h-1 bg-slate-200 rounded-full" />
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-bold mb-0.5">Rating Avg: <strong className="text-amber-700">{compRating} ★</strong></label>
-                <input type="range" min={1.0} max={5.0} step={0.1} value={compRating} onChange={e => setCompRating(Number(e.target.value))} className="w-full accent-purple-600 h-1 bg-slate-200 rounded-full" />
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-bold mb-0.5">Completed Bookings: <strong className="text-indigo-700">{completedBookings}</strong></label>
-                <input type="range" min={0} max={50} value={completedBookings} onChange={e => setCompletedBookings(Number(e.target.value))} className="w-full accent-purple-600 h-1 bg-slate-200 rounded-full" />
-              </div>
-
-              <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                <label className="flex items-center gap-2 cursor-pointer font-semibold text-slate-800">
-                  <input type="checkbox" checked={hasGovtId} onChange={e => setHasGovtId(e.target.checked)} className="accent-purple-600 w-3.5 h-3.5 rounded" />
-                  Verified Government ID
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer font-semibold text-slate-800">
-                  <input type="checkbox" checked={hasSelfie} onChange={e => setHasSelfie(e.target.checked)} className="accent-purple-600 w-3.5 h-3.5 rounded" />
-                  Verified Live Selfie
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer font-semibold text-slate-800">
-                  <input type="checkbox" checked={hasEmergency} onChange={e => setHasEmergency(e.target.checked)} className="accent-purple-600 w-3.5 h-3.5 rounded" />
-                  Emergency Contact Added
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer font-semibold text-slate-800">
-                  <input type="checkbox" checked={hasPoliceCheck} onChange={e => setHasPoliceCheck(e.target.checked)} className="accent-purple-600 w-3.5 h-3.5 rounded" />
-                  Police Verification Clearance
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer font-bold text-rose-700">
-                  <input type="checkbox" checked={isSuspended} onChange={e => setIsSuspended(e.target.checked)} className="accent-rose-600 w-3.5 h-3.5 rounded" />
-                  Account Suspended / Flagged
-                </label>
+                <label className="block text-slate-400 text-[9px]">Completed Sessions:</label>
+                <input type="number" value={simSessions} onChange={e => setSimSessions(Number(e.target.value))} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-emerald-400 font-mono text-[10px]" />
               </div>
             </div>
           </div>
 
-          {/* Results Column */}
-          <div className="lg:col-span-2 space-y-3">
-            {evalResult && (
-              <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-3">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                  <div>
-                    <h4 className="font-extrabold text-slate-900 text-sm">Evaluation Decision Output</h4>
-                    <p className="text-[11px] text-slate-500 font-medium">Evaluated against profile: <strong>{profile?.name}</strong></p>
-                  </div>
-
-                  <span className={`px-3 py-1 rounded-xl text-xs font-black tracking-wider uppercase ${
-                    evalResult.status === 'ELIGIBLE' ? 'bg-emerald-600 text-white shadow-xs shadow-emerald-200' : 'bg-rose-600 text-white shadow-xs shadow-rose-200'
-                  }`}>
-                    Final: {evalResult.status}
-                  </span>
-                </div>
-
-                <div className="space-y-2">
-                  <h5 className="font-extrabold text-slate-900 text-xs">Granular Criteria Rule Evaluation</h5>
-                  <div className="space-y-1.5 font-mono text-[11px]">
-                    <div className="p-2 rounded-xl bg-slate-50 border flex justify-between items-center">
-                      <span className="font-sans font-semibold">1. Age Requirement ({profile?.minimum_age}+ yrs):</span>
-                      <strong className={compAge >= (profile?.minimum_age || 18) ? 'text-emerald-600 font-extrabold' : 'text-rose-600 font-extrabold'}>
-                        {compAge >= (profile?.minimum_age || 18) ? 'PASSED' : 'FAILED'}
-                      </strong>
-                    </div>
-
-                    <div className="p-2 rounded-xl bg-slate-50 border flex justify-between items-center">
-                      <span className="font-sans font-semibold">2. Rating Requirement ({profile?.minimum_rating}+ ★):</span>
-                      <strong className={compRating >= (profile?.minimum_rating || 4.0) ? 'text-emerald-600 font-extrabold' : 'text-rose-600 font-extrabold'}>
-                        {compRating >= (profile?.minimum_rating || 4.0) ? 'PASSED' : 'FAILED'}
-                      </strong>
-                    </div>
-
-                    <div className="p-2 rounded-xl bg-slate-50 border flex justify-between items-center">
-                      <span className="font-sans font-semibold">3. Account Status (Not Suspended):</span>
-                      <strong className={!isSuspended ? 'text-emerald-600 font-extrabold' : 'text-rose-600 font-extrabold'}>
-                        {!isSuspended ? 'PASSED' : 'FAILED'}
-                      </strong>
-                    </div>
-
-                    <div className="p-2 rounded-xl bg-slate-50 border flex justify-between items-center">
-                      <span className="font-sans font-semibold">4. Mandatory Document Checklist:</span>
-                      <strong className={evalResult.missingRequirements.length === 0 ? 'text-emerald-600 font-extrabold' : 'text-rose-600 font-extrabold'}>
-                        {evalResult.missingRequirements.length === 0 ? 'PASSED' : 'FAILED'}
-                      </strong>
-                    </div>
-                  </div>
-                </div>
-
-                {evalResult.missingRequirements.length > 0 && (
-                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-950 space-y-1">
-                    <h6 className="font-extrabold text-xs flex items-center gap-1 text-rose-800">
-                      <AlertTriangle className="w-4 h-4 text-rose-600" /> Failed Criteria Reasons:
-                    </h6>
-                    <div className="text-[11px] space-y-0.5 pl-5 list-disc text-rose-900 font-medium">
-                      {evalResult.missingRequirements.map((r, i) => (
-                        <p key={i}>• {r}</p>
-                      ))}
-                    </div>
-                  </div>
-                )}
+          {/* Live Evaluation Decision Matrix */}
+          {evaluationResult && (
+            <div className="space-y-2 text-[11px]">
+              <div className={`p-2.5 rounded-xl border font-mono font-bold flex items-center justify-between ${
+                evaluationResult.status === 'ELIGIBLE' ? 'bg-emerald-50 text-emerald-900 border-emerald-200' :
+                evaluationResult.status === 'CONDITIONAL' ? 'bg-amber-50 text-amber-900 border-amber-200' : 'bg-rose-50 text-rose-900 border-rose-200'
+              }`}>
+                <span>Candidate Status:</span>
+                <span className="text-xs">{evaluationResult.status}</span>
               </div>
-            )}
-          </div>
-        </div>
-      )}
 
-      {/* ADD / EDIT ELIGIBILITY PROFILE MODAL */}
+              {/* Checks List */}
+              <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
+                {evaluationResult.checks.map((chk, idx) => (
+                  <div key={idx} className="p-2 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-[10px]">
+                    <span className="text-slate-700 font-bold">{chk.name}</span>
+                    {chk.passed ? (
+                      <span className="text-emerald-600 font-bold flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Pass</span>
+                    ) : (
+                      <span className="text-rose-600 font-bold flex items-center gap-1"><XCircle className="w-3 h-3" /> Fail</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {evaluationResult.failedChecks.length > 0 && (
+                <div className="p-2 rounded-xl bg-rose-50 border border-rose-200 text-[10px] text-rose-900 font-mono space-y-0.5">
+                  <p className="font-bold">Failed Criteria ({evaluationResult.failedChecks.length}):</p>
+                  {evaluationResult.failedChecks.map((f, i) => (
+                    <p key={i}>• {f.detail}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Complete Multi-Section Create / Edit Eligibility Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-xl border border-slate-200 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b pb-3">
-              <h3 className="font-extrabold text-slate-900 text-sm">
-                {editingProf ? 'Edit Eligibility Profile' : 'Create Eligibility Profile'}
-              </h3>
-              <button onClick={() => setIsModalOpen(false)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-500">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full p-5 space-y-4 shadow-2xl my-auto text-xs text-white">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <h4 className="font-extrabold text-white text-sm">
+                  {editingProfile ? `Edit Eligibility Profile: ${editingProfile.code || editingProfile.name}` : 'Configure Companion Eligibility Profile'}
+                </h4>
+                <p className="text-[11px] text-slate-400">Eligibility Tiers, Rules Criteria & Automated Evaluator Configuration</p>
+              </div>
+              <button onClick={() => setIsModalOpen(false)} className="p-1 rounded-lg text-slate-400 hover:text-white">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="space-y-3 text-xs">
-              <div>
-                <label className="block text-slate-700 font-bold mb-1">Profile Title *</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  placeholder="e.g. Senior Companion Eligibility Profile"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-medium text-slate-900 outline-none focus:ring-2 focus:ring-purple-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-bold mb-1">Description</label>
-                <textarea
-                  value={description}
-                  onChange={e => setDescription(e.target.value)}
-                  rows={2}
-                  placeholder="Summarize eligibility requirements..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-medium text-slate-900 outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">Minimum Age</label>
-                  <input
-                    type="number"
-                    value={minimumAge}
-                    onChange={e => setMinimumAge(Number(e.target.value))}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-medium text-slate-900 outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">Maximum Age</label>
-                  <input
-                    type="number"
-                    value={maximumAge}
-                    onChange={e => setMaximumAge(Number(e.target.value))}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-medium text-slate-900 outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">Min Rating (1-5)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={minimumRating}
-                    onChange={e => setMinimumRating(Number(e.target.value))}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-medium text-slate-900 outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">Min Completed Bookings</label>
-                  <input
-                    type="number"
-                    value={minimumBookingsDone}
-                    onChange={e => setMinimumBookingsDone(Number(e.target.value))}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-medium text-slate-900 outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">Status</label>
-                  <select
-                    value={status}
-                    onChange={e => setStatus(e.target.value as 'ACTIVE' | 'INACTIVE')}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-medium text-slate-900 outline-none"
-                  >
-                    <option value="ACTIVE">ACTIVE</option>
-                    <option value="INACTIVE">INACTIVE</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-2 pt-2 border-t border-slate-100">
-                <span className="font-extrabold text-slate-900 block text-xs">Required Document Verification Checklist</span>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <label className="flex items-center gap-2 cursor-pointer font-semibold text-slate-800">
-                    <input type="checkbox" checked={reqGovtId} onChange={e => setReqGovtId(e.target.checked)} className="accent-purple-600 rounded" />
-                    Government ID / Aadhaar
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer font-semibold text-slate-800">
-                    <input type="checkbox" checked={reqSelfie} onChange={e => setReqSelfie(e.target.checked)} className="accent-purple-600 rounded" />
-                    Live Selfie Match
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer font-semibold text-slate-800">
-                    <input type="checkbox" checked={reqEmergencyContact} onChange={e => setReqEmergencyContact(e.target.checked)} className="accent-purple-600 rounded" />
-                    Emergency Contact Number
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer font-semibold text-slate-800">
-                    <input type="checkbox" checked={reqPoliceCheck} onChange={e => setReqPoliceCheck(e.target.checked)} className="accent-purple-600 rounded" />
-                    Police Verification Clearance
-                  </label>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3 border-t">
+            {/* Modal Section Tabs */}
+            <div className="flex items-center gap-1 border-b border-slate-800 pb-2">
+              {[
+                { id: 'RULES', label: '1. Profile & Eligibility Rules' },
+                { id: 'EVALUATOR', label: '2. Evaluator Config' },
+              ].map(t => (
                 <button
+                  key={t.id}
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold"
+                  onClick={() => setActiveModalTab(t.id as any)}
+                  className={`px-3 py-1.5 rounded-xl font-bold text-[11px] shrink-0 transition-all ${
+                    activeModalTab === t.id ? 'bg-purple-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                  }`}
                 >
-                  Cancel
+                  {t.label}
                 </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold"
-                >
-                  {editingProf ? 'Update Profile' : 'Create Profile'}
+              ))}
+            </div>
+
+            <form onSubmit={handleSaveProfile} className="space-y-3 text-[11px]">
+              {/* TAB 1: RULES */}
+              {activeModalTab === 'RULES' && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2.5">
+                    <div>
+                      <label className="block text-slate-400 font-bold mb-1">Profile Code *</label>
+                      <input type="text" required value={code} onChange={e => setCode(e.target.value)} placeholder="ELG-STD-01"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-purple-400 font-mono font-bold outline-none focus:border-purple-500 text-[11px]" />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-slate-400 font-bold mb-1">Profile Name *</label>
+                      <input type="text" required value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Standard Companion Eligibility Profile"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-white outline-none focus:border-purple-500 text-[11px]" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2.5">
+                    <div>
+                      <label className="block text-slate-400 font-bold mb-1">Eligibility Tier</label>
+                      <select value={tier} onChange={e => setTier(e.target.value as any)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-purple-400 font-bold outline-none focus:border-purple-500 text-[11px]">
+                        <option value="Basic">Basic</option>
+                        <option value="Standard">Standard</option>
+                        <option value="Enhanced">Enhanced</option>
+                        <option value="Restricted">Restricted</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 font-bold mb-1">Scope Mapping</label>
+                      <select value={scopeType} onChange={e => setScopeType(e.target.value as any)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-white outline-none focus:border-purple-500 text-[11px]">
+                        <option value="GLOBAL">Global (All Categories)</option>
+                        <option value="CATEGORY">Category Specific</option>
+                        <option value="SERVICE">Service Specific</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 font-bold mb-1">Status</label>
+                      <select value={status} onChange={e => setStatus(e.target.value as any)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-white outline-none focus:border-purple-500 text-[11px]">
+                        <option value="ACTIVE">ACTIVE</option>
+                        <option value="INACTIVE">INACTIVE</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {scopeType === 'CATEGORY' && (
+                    <div>
+                      <label className="block text-slate-400 font-bold mb-1">Target Category Relation</label>
+                      <select value={categoryId} onChange={e => setCategoryId(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-white outline-none focus:border-purple-500 text-[11px]">
+                        <option value="">Select Category...</option>
+                        {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-4 gap-2">
+                    <div>
+                      <label className="block text-slate-400 font-bold mb-1">Min Age</label>
+                      <input type="number" value={minAge} onChange={e => setMinAge(Number(e.target.value))}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-white outline-none focus:border-purple-500 text-[11px]" />
+                    </div>
+                    <div>
+                      <label className="block text-slate-400 font-bold mb-1">Max Age</label>
+                      <input type="number" value={maxAge} onChange={e => setMaxAge(Number(e.target.value))}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-white outline-none focus:border-purple-500 text-[11px]" />
+                    </div>
+                    <div>
+                      <label className="block text-slate-400 font-bold mb-1">Min Rating (★)</label>
+                      <input type="number" step="0.1" value={minRating} onChange={e => setMinRating(Number(e.target.value))}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-amber-400 font-mono font-bold outline-none focus:border-purple-500 text-[11px]" />
+                    </div>
+                    <div>
+                      <label className="block text-slate-400 font-bold mb-1">Min Sessions</label>
+                      <input type="number" value={minCompletedSessions} onChange={e => setMinCompletedSessions(Number(e.target.value))}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-white outline-none focus:border-purple-500 text-[11px]" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-400 font-bold mb-1">Required Verification Level</label>
+                    <select value={requiredVerificationLevel} onChange={e => setRequiredVerificationLevel(e.target.value as any)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-purple-400 font-bold outline-none focus:border-purple-500 text-[11px]">
+                      <option value="Basic">Basic Verification</option>
+                      <option value="Standard">Standard Verification</option>
+                      <option value="Enhanced">Enhanced Verification</option>
+                      <option value="Restricted">Restricted Verification</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: EVALUATOR CONFIG */}
+              {activeModalTab === 'EVALUATOR' && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-4 p-3 bg-slate-950 border border-slate-800 rounded-xl">
+                    <label className="flex items-center gap-2 cursor-pointer text-slate-300 font-bold">
+                      <input type="checkbox" checked={autoEvaluationEnabled} onChange={e => setAutoEvaluationEnabled(e.target.checked)} className="accent-purple-500 rounded w-4 h-4" />
+                      <span>Automated Real-Time Evaluation Engine</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer text-slate-300 font-bold">
+                      <input type="checkbox" checked={requireGoodAccountStanding} onChange={e => setRequireGoodAccountStanding(e.target.checked)} className="accent-emerald-500 rounded w-4 h-4" />
+                      <span>Require Good Account Standing</span>
+                    </label>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-slate-400 font-bold mb-1">Re-Evaluation Interval (Days)</label>
+                      <input type="number" value={reEvaluationIntervalDays} onChange={e => setReEvaluationIntervalDays(Number(e.target.value))}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-white outline-none focus:border-purple-500 text-[11px]" />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 font-bold mb-1">Max Active Strikes Allowed</label>
+                      <input type="number" value={maxActiveStrikesAllowed} onChange={e => setMaxActiveStrikesAllowed(Number(e.target.value))}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-rose-400 font-bold outline-none focus:border-purple-500 text-[11px]" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-3.5 py-1.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-[11px]">Cancel</button>
+                <button type="submit" className="px-4 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-[11px]">
+                  {editingProfile ? 'Save Profile Changes' : 'Create Profile'}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmProf && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-5 space-y-4 shadow-2xl text-xs text-white">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-extrabold text-sm text-white">Delete Eligibility Profile?</h4>
+                <p className="text-[11px] text-slate-400 mt-0.5">Are you sure you want to delete <strong className="text-white">{deleteConfirmProf.code || deleteConfirmProf.name}</strong>?</p>
+              </div>
+            </div>
+            <div className="pt-2 border-t border-slate-800 flex justify-end gap-2">
+              <button onClick={() => setDeleteConfirmProf(null)} className="px-3.5 py-1.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-[11px]">Cancel</button>
+              <button onClick={() => { deleteEligibilityProfile(deleteConfirmProf.id); setDeleteConfirmProf(null); }} className="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-[11px]">
+                Delete Profile
+              </button>
+            </div>
           </div>
         </div>
       )}

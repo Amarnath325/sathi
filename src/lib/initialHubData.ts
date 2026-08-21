@@ -45,6 +45,16 @@ export const DEFAULT_PRICING_PROFILES: PricingProfile[] = [
     peak_hours_start: '18:00',
     peak_hours_end: '23:00',
     demand_pricing_multiplier: 1.1,
+    surge_rules: {
+      surge_multiplier: 1.2,
+      peak_hours_start: '18:00',
+      peak_hours_end: '23:00',
+      demand_pricing_multiplier: 1.1,
+      weekend_multiplier: 1.15,
+      holiday_multiplier: 1.25,
+      rule_name: 'Standard Peak Evening Surge Rule',
+      status: 'ACTIVE'
+    },
 
     // 5. Fees, Tax & Earnings
     platform_fee: 15,
@@ -104,6 +114,13 @@ export const DEFAULT_PRICING_PROFILES: PricingProfile[] = [
     surge_multiplier: 1.0,
     peak_hours_start: '19:00',
     peak_hours_end: '01:00',
+    surge_rules: {
+      surge_multiplier: 1.0,
+      peak_hours_start: '19:00',
+      peak_hours_end: '01:00',
+      rule_name: 'Event Fixed Rate Surge Rule',
+      status: 'INACTIVE'
+    },
 
     // 5. Fees, Tax & Earnings
     platform_fee: 15,
@@ -194,32 +211,113 @@ export const DEFAULT_RULES_PROFILES: RulesProfile[] = [
   {
     id: 'rl-std-safety',
     name: 'Standard Operational Rules',
-    description: 'Basic duration, age, and location verification rules',
+    description: 'Basic duration, age, and location verification rules across categories',
     status: 'ACTIVE',
     rules: [
       {
         id: 'r-101',
+        code: 'RULE-DUR-01',
         name: 'Duration Max Threshold',
         rule_type: 'Duration Rule',
-        description: 'Bookings longer than 8 hours require explicit admin approval',
+        description: 'Bookings longer than 8 hours require explicit manager approval and guardian consent',
+        priority: 1,
+        scope_type: 'GLOBAL',
+        category_name: 'All Categories',
+        condition_group_operator: 'AND',
+        conditions: [
+          { id: 'c-1', field: 'duration_hours', operator: 'GREATER_THAN', value: 8, logical_operator: 'AND' }
+        ],
         condition: 'duration_hours',
         operator: 'GREATER_THAN',
         value: 8,
         action: 'REQUIRE_APPROVAL',
-        severity: 'MEDIUM',
-        status: 'ACTIVE'
+        additional_requirements: ['IDENTITY_VERIFICATION', 'GUARDIAN_CONSENT'],
+        approval_level: 'MANAGER_REVIEW',
+        restriction_message: 'High duration booking requires Operations Manager manual approval.',
+        risk_level_required: 'HIGH',
+        verification_required: true,
+        allow_override: true,
+        override_role: 'OPERATIONS_MANAGER',
+        validity_start: '2026-01-01',
+        validity_end: '2026-12-31',
+        escalation_action: 'Escalate to Safety Support Desk if unapproved after 2 hours',
+        version: 'v1.2',
+        severity: 'HIGH',
+        status: 'ACTIVE',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-02-15T00:00:00.000Z',
+        audit_history: [
+          { timestamp: '2026-01-01 10:00', action: 'CREATE', author: 'System Admin', note: 'Created initial duration safety rule' },
+          { timestamp: '2026-02-15 14:30', action: 'UPDATE', author: 'Safety Lead', note: 'Updated threshold to 8 hours & added manager review requirement' }
+        ]
       },
       {
         id: 'r-102',
-        name: 'Live Location Permission Required',
+        code: 'RULE-LOC-02',
+        name: 'Live GPS Location Requirement',
         rule_type: 'Location Rule',
-        description: 'Mandatory live GPS streaming during offline sessions',
+        description: 'Mandatory live GPS streaming during offline sessions for companion safety',
+        priority: 2,
+        scope_type: 'GLOBAL',
+        category_name: 'All Categories',
+        condition_group_operator: 'AND',
+        conditions: [
+          { id: 'c-2', field: 'live_location_enabled', operator: 'EQUALS', value: false, logical_operator: 'AND' }
+        ],
         condition: 'live_location_enabled',
         operator: 'EQUALS',
         value: false,
         action: 'BLOCK',
-        severity: 'HIGH',
-        status: 'ACTIVE'
+        additional_requirements: ['GPS_TRACKING', 'EMERGENCY_CONTACT'],
+        approval_level: 'SYSTEM_AUTO',
+        restriction_message: 'Session cannot start without enabling active GPS location sharing.',
+        risk_level_required: 'CRITICAL',
+        verification_required: true,
+        allow_override: false,
+        validity_start: '2026-01-01',
+        version: 'v1.0',
+        severity: 'CRITICAL',
+        status: 'ACTIVE',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        audit_history: [
+          { timestamp: '2026-01-01 10:00', action: 'CREATE', author: 'System Admin', note: 'Created mandatory GPS location policy' }
+        ]
+      },
+      {
+        id: 'r-103',
+        code: 'RULE-SAF-03',
+        name: 'High Value Booking Escort Restriction',
+        rule_type: 'Safety Rule',
+        description: 'Bookings over ₹5,000 require full government ID verification before confirmation',
+        priority: 3,
+        scope_type: 'CATEGORY',
+        category_id: 'cat-1',
+        category_name: 'Events & Social',
+        condition_group_operator: 'AND',
+        conditions: [
+          { id: 'c-3', field: 'booking_amount', operator: 'GREATER_THAN', value: 5000, logical_operator: 'AND' }
+        ],
+        condition: 'booking_amount',
+        operator: 'GREATER_THAN',
+        value: 5000,
+        action: 'REQUIRE_APPROVAL',
+        additional_requirements: ['GOVT_ID_VERIFICATION', 'FACE_MATCH'],
+        approval_level: 'ADMIN_MANUAL',
+        restriction_message: 'High value event booking requires verified Govt ID badge.',
+        risk_level_required: 'MEDIUM',
+        verification_required: true,
+        allow_override: true,
+        override_role: 'SUPER_ADMIN',
+        validity_start: '2026-01-01',
+        version: 'v1.1',
+        severity: 'MEDIUM',
+        status: 'ACTIVE',
+        createdAt: '2026-01-10T00:00:00.000Z',
+        updatedAt: '2026-02-01T00:00:00.000Z',
+        audit_history: [
+          { timestamp: '2026-01-10 12:00', action: 'CREATE', author: 'Compliance Lead', note: 'Added high value transaction safety rule' }
+        ]
       }
     ]
   }
@@ -227,30 +325,177 @@ export const DEFAULT_RULES_PROFILES: RulesProfile[] = [
 
 export const DEFAULT_POLICIES: PolicyItem[] = [
   {
-    id: 'pol-std-v1',
-    name: 'Standard Companion Policy v1.0',
-    description: 'Standard usage policy, public place rules, and mandatory check-in protocol',
+    id: 'pol-gen-01',
+    code: 'POL-GEN-01',
+    name: 'General Platform Eligibility Policy',
+    policy_domain: 'General',
+    description: 'General user eligibility, age verification 18+, and allowed categories rules',
+    scope_type: 'GLOBAL',
+    category_name: 'All Categories',
     version: 1,
     status: 'PUBLISHED',
     effective_from: '2026-01-01T00:00:00.000Z',
+    eligibility_text: 'Active Govt ID Verified Users aged 18+ with clear background check.',
     minimum_age: 18,
     kyc_required: true,
-    background_check_required: false,
-    emergency_contact_required: true,
+    background_check_required: true,
+    consent_required: true,
+    allowed_categories_text: 'Events & Social, Travel & Exploration, Fitness & Shopping',
+    time_location_rules_text: 'Public locations between 06:00 to 23:00 hours.',
+    general_restrictions_text: 'No unverified private residential meetings.',
     public_location_only: true,
     live_location_required: true,
     sos_required: true,
+    emergency_contact_required: true,
     chat_moderation_required: true,
     incident_reporting_enabled: true,
-    consent_required: true,
-    prohibited_activity_text: 'Strictly no illegal activities, private residential meetings without prior verification, or unsafe environments.',
+    enforcement_type: 'STRICT_BLOCK',
+    approval_status: 'APPROVED',
+    approved_by: 'Compliance Desk',
     versions: [
-      {
-        version: 1,
-        effective_from: '2026-01-01T00:00:00.000Z',
-        description: 'Initial release of Standard Companion Safety Policy',
-        prohibited_activity_text: 'Strictly no illegal activities or private non-verified locations.'
-      }
+      { version: 1, effective_from: '2026-01-01T00:00:00.000Z', description: 'Initial General Eligibility Policy', published_by: 'Compliance Team' }
+    ]
+  },
+  {
+    id: 'pol-bkg-02',
+    code: 'POL-BKG-02',
+    name: 'Booking Duration & Advance Notice Policy',
+    policy_domain: 'Booking',
+    description: 'Booking limits (1h to 12h), advance notice 2h, same-day rules, and deposit requirements',
+    scope_type: 'CATEGORY',
+    category_id: 'cat-1',
+    category_name: 'Events & Social',
+    version: 1,
+    status: 'PUBLISHED',
+    effective_from: '2026-01-01T00:00:00.000Z',
+    min_duration_hours: 1,
+    max_duration_hours: 12,
+    advance_booking_hours: 2,
+    same_day_booking_allowed: true,
+    approval_required_for_booking: true,
+    extension_allowed: true,
+    rescheduling_allowed: true,
+    payment_requirement: 'FULL_ADVANCE',
+    minimum_age: 18,
+    kyc_required: true,
+    background_check_required: false,
+    consent_required: true,
+    public_location_only: true,
+    live_location_required: true,
+    sos_required: true,
+    emergency_contact_required: true,
+    chat_moderation_required: true,
+    incident_reporting_enabled: true,
+    enforcement_type: 'WARNING_ACKNOWLEDGEMENT',
+    approval_status: 'APPROVED',
+    approved_by: 'Operations Desk',
+    versions: [
+      { version: 1, effective_from: '2026-01-01T00:00:00.000Z', description: 'Initial Booking Rules Policy', published_by: 'Ops Team' }
+    ]
+  },
+  {
+    id: 'pol-saf-03',
+    code: 'POL-SAF-03',
+    name: 'Live GPS & Emergency SOS Safety Policy',
+    policy_domain: 'Safety',
+    description: 'Mandatory live GPS tracking, 30-min periodic check-ins, SOS panic button, and escalation timer',
+    scope_type: 'GLOBAL',
+    category_name: 'All Categories',
+    version: 1,
+    status: 'PUBLISHED',
+    effective_from: '2026-01-01T00:00:00.000Z',
+    public_location_only: true,
+    live_location_required: true,
+    check_in_out_required: true,
+    periodic_check_in_interval_mins: 30,
+    sos_required: true,
+    emergency_contact_required: true,
+    night_booking_restricted: true,
+    restricted_locations_text: 'Unlit isolated areas, unverified private residences',
+    auto_sos_escalation_minutes: 5,
+    minimum_age: 18,
+    kyc_required: true,
+    background_check_required: true,
+    consent_required: true,
+    chat_moderation_required: true,
+    incident_reporting_enabled: true,
+    enforcement_type: 'STRICT_BLOCK',
+    approval_status: 'APPROVED',
+    approved_by: 'Chief Safety Officer',
+    versions: [
+      { version: 1, effective_from: '2026-01-01T00:00:00.000Z', description: 'Initial Safety & SOS Policy', published_by: 'Safety Team' }
+    ]
+  },
+  {
+    id: 'pol-cnd-04',
+    code: 'POL-CND-04',
+    name: 'Conduct, Communication & Zero-Tolerance Policy',
+    policy_domain: 'Conduct & Restrictions',
+    description: 'Code of conduct for companion & customer, prohibited activities, and zero-tolerance violations',
+    scope_type: 'GLOBAL',
+    category_name: 'All Categories',
+    version: 1,
+    status: 'PUBLISHED',
+    effective_from: '2026-01-01T00:00:00.000Z',
+    companion_rules_text: 'Professional decorum, punctual check-in, active GPS sharing, respectful boundaries.',
+    customer_rules_text: 'Respectful conduct, public meeting places only, no coercion or illegal requests.',
+    prohibited_activity_text: 'Strictly zero tolerance for harassment, substance abuse, physical coercion, or illegal activity.',
+    restricted_services_text: 'No private unverified overnight stays or non-public locations.',
+    communication_rules_text: 'All messaging must happen through in-app moderated chat.',
+    zero_tolerance_violations_text: 'Immediate account ban and legal escalation upon violation report.',
+    minimum_age: 18,
+    kyc_required: true,
+    background_check_required: true,
+    consent_required: true,
+    public_location_only: true,
+    live_location_required: true,
+    sos_required: true,
+    emergency_contact_required: true,
+    chat_moderation_required: true,
+    incident_reporting_enabled: true,
+    enforcement_type: 'STRICT_BLOCK',
+    approval_status: 'APPROVED',
+    approved_by: 'Legal & Conduct Desk',
+    versions: [
+      { version: 1, effective_from: '2026-01-01T00:00:00.000Z', description: 'Initial Conduct Code Policy', published_by: 'Legal Team' }
+    ]
+  },
+  {
+    id: 'pol-can-05',
+    code: 'POL-CAN-05',
+    name: 'Cancellation, No-Show & Incident Dispute Policy',
+    policy_domain: 'Cancellation & Disputes',
+    description: 'Rules for customer/companion cancellations, no-show fees, refund schedules, and dispute resolution',
+    scope_type: 'CATEGORY',
+    category_id: 'cat-2',
+    category_name: 'Travel & Exploration',
+    version: 1,
+    status: 'PUBLISHED',
+    effective_from: '2026-01-01T00:00:00.000Z',
+    customer_cancellation_rules_text: 'Full refund if cancelled > 4h before booking; 50% refund within 2h to 4h.',
+    companion_cancellation_rules_text: 'Companion cancellation incurs penalty score and instant reassignment.',
+    no_show_policy_text: 'No-show after 20 mins grace period incurs 100% booking charge.',
+    refund_rules_text: 'Processed back to original payment method within 3-5 business days.',
+    complaint_protocol_text: 'Report via app within 24 hours of booking completion.',
+    incident_escalation_text: 'Safety Desk response within 15 minutes for flagged incidents.',
+    dispute_resolution_text: 'Independent dispute arbitration panel review within 48 hours.',
+    minimum_age: 18,
+    kyc_required: true,
+    background_check_required: false,
+    consent_required: true,
+    public_location_only: true,
+    live_location_required: true,
+    sos_required: true,
+    emergency_contact_required: true,
+    chat_moderation_required: true,
+    incident_reporting_enabled: true,
+    enforcement_type: 'MANUAL_REVIEW',
+    exceptions_allowed: true,
+    exception_process_text: 'Medical emergency exceptions reviewed by Support Lead.',
+    approval_status: 'APPROVED',
+    approved_by: 'Disputes Desk',
+    versions: [
+      { version: 1, effective_from: '2026-01-01T00:00:00.000Z', description: 'Initial Cancellation & Dispute Policy', published_by: 'Finance Team' }
     ]
   }
 ];
@@ -258,170 +503,353 @@ export const DEFAULT_POLICIES: PolicyItem[] = [
 export const DEFAULT_RISK_LEVELS: RiskLevelItem[] = [
   {
     id: 'rk-low',
-    name: 'Low Risk',
     code: 'LOW',
+    name: 'Low Risk Tier (Score 0-25)',
+    description: 'Standard companion bookings during regular hours in verified public places.',
+    score_min: 0,
+    score_max: 25,
     score: 10,
-    description: 'Basic verification and safety controls required.',
     color: 'emerald',
+    status: 'ACTIVE',
+    scope_type: 'GLOBAL',
+    category_name: 'All Categories',
+    factors: {
+      service_risk: { factor_name: 'Service Risk', weight_score: 10, enabled: true, notes: 'Virtual or public guided tours' },
+      duration_risk: { factor_name: 'Duration Risk', weight_score: 10, enabled: true, notes: 'Short sessions < 4 hours' },
+      time_risk: { factor_name: 'Time Risk', weight_score: 5, enabled: true, notes: 'Daytime hours (08:00 - 20:00)' },
+      location_risk: { factor_name: 'Location Risk', weight_score: 5, enabled: true, notes: 'High traffic verified public places' },
+      user_risk: { factor_name: 'User Risk', weight_score: 10, enabled: true, notes: 'Repeat verified client' },
+      verification_risk: { factor_name: 'Verification Risk', weight_score: 10, enabled: true, notes: 'Basic Govt ID & OTP verified' },
+      booking_risk: { factor_name: 'Booking Risk', weight_score: 5, enabled: true, notes: 'Standard pricing < ₹2,000' }
+    },
+    required_verification_tier: 'Basic',
     verification_level: 'Basic',
     monitoring_level: 'Standard',
     manual_approval_required: false,
     live_location_required: true,
     emergency_contact_required: true,
     sos_required: true,
+    periodic_checkin_mins: 60,
     maximum_booking_duration: 12,
-    status: 'ACTIVE'
+    escalation_action: 'STANDARD_MONITOR',
+    escalation_target_role: 'SAFETY_DESK'
   },
   {
     id: 'rk-med',
-    name: 'Medium Risk',
     code: 'MEDIUM',
+    name: 'Medium Risk Tier (Score 26-50)',
+    description: 'Evening events or extended duration sessions requiring periodic check-ins.',
+    score_min: 26,
+    score_max: 50,
     score: 35,
-    description: 'Additional verification and periodic check-in monitoring.',
     color: 'amber',
+    status: 'ACTIVE',
+    scope_type: 'CATEGORY',
+    category_id: 'cat-1',
+    category_name: 'Events & Social',
+    factors: {
+      service_risk: { factor_name: 'Service Risk', weight_score: 25, enabled: true, notes: 'Social escort or party companion' },
+      duration_risk: { factor_name: 'Duration Risk', weight_score: 25, enabled: true, notes: 'Duration 4 to 8 hours' },
+      time_risk: { factor_name: 'Time Risk', weight_score: 20, enabled: true, notes: 'Late evening hours (20:00 - 23:00)' },
+      location_risk: { factor_name: 'Location Risk', weight_score: 20, enabled: true, notes: 'Crowded night venues' },
+      user_risk: { factor_name: 'User Risk', weight_score: 25, enabled: true, notes: 'First-time client account' },
+      verification_risk: { factor_name: 'Verification Risk', weight_score: 20, enabled: true, notes: 'Standard verification' },
+      booking_risk: { factor_name: 'Booking Risk', weight_score: 20, enabled: true, notes: 'Value ₹2,000 - ₹5,000' }
+    },
+    required_verification_tier: 'Standard',
     verification_level: 'Standard',
     monitoring_level: 'Enhanced',
     manual_approval_required: false,
     live_location_required: true,
     emergency_contact_required: true,
     sos_required: true,
+    periodic_checkin_mins: 30,
     maximum_booking_duration: 8,
-    status: 'ACTIVE'
+    escalation_action: 'EMERGENCY_OPS_ALERT',
+    escalation_target_role: 'SAFETY_DESK'
   },
   {
     id: 'rk-high',
-    name: 'High Risk',
     code: 'HIGH',
+    name: 'High Risk Tier (Score 51-75)',
+    description: 'Night time escorts or high-value bookings requiring PCC background check & admin sign-off.',
+    score_min: 51,
+    score_max: 75,
     score: 65,
-    description: 'Enhanced background verification and manual admin approval.',
-    color: 'rose',
+    color: 'orange',
+    status: 'ACTIVE',
+    scope_type: 'CATEGORY',
+    category_id: 'cat-2',
+    category_name: 'Travel & Exploration',
+    factors: {
+      service_risk: { factor_name: 'Service Risk', weight_score: 55, enabled: true, notes: 'Outstation travel companion' },
+      duration_risk: { factor_name: 'Duration Risk', weight_score: 60, enabled: true, notes: 'Full-day session > 8 hours' },
+      time_risk: { factor_name: 'Time Risk', weight_score: 65, enabled: true, notes: 'Night hours (23:00 - 05:00)' },
+      location_risk: { factor_name: 'Location Risk', weight_score: 60, enabled: true, notes: 'Inter-state highway or remote zone' },
+      user_risk: { factor_name: 'User Risk', weight_score: 50, enabled: true, notes: 'Unrated client account' },
+      verification_risk: { factor_name: 'Verification Risk', weight_score: 55, enabled: true, notes: 'PCC background check pending' },
+      booking_risk: { factor_name: 'Booking Risk', weight_score: 60, enabled: true, notes: 'High value > ₹5,000' }
+    },
+    required_verification_tier: 'Enhanced',
     verification_level: 'Enhanced',
-    monitoring_level: 'Strict',
-    manual_approval_required: true,
-    live_location_required: true,
-    emergency_contact_required: true,
-    sos_required: true,
-    maximum_booking_duration: 6,
-    status: 'ACTIVE'
-  },
-  {
-    id: 'rk-crit',
-    name: 'Critical Risk',
-    code: 'CRITICAL',
-    score: 90,
-    description: 'Restricted service requiring strict admin sign-off and continuous monitoring.',
-    color: 'purple',
-    verification_level: 'Restricted',
     monitoring_level: 'Continuous',
     manual_approval_required: true,
     live_location_required: true,
     emergency_contact_required: true,
     sos_required: true,
+    periodic_checkin_mins: 15,
+    maximum_booking_duration: 6,
+    escalation_action: 'IMMEDIATE_ESCALATION',
+    escalation_target_role: 'OPS_LEAD'
+  },
+  {
+    id: 'rk-crit',
+    code: 'CRITICAL',
+    name: 'Critical Risk Tier (Score 76-100)',
+    description: 'Maximum security risk requiring strict admin manual sign-off, live audit, & auto-block protocols.',
+    score_min: 76,
+    score_max: 100,
+    score: 90,
+    color: 'purple',
+    status: 'ACTIVE',
+    scope_type: 'SERVICE',
+    service_id: 'srv-101',
+    service_name: 'VIP Event Escort Companion',
+    factors: {
+      service_risk: { factor_name: 'Service Risk', weight_score: 85, enabled: true, notes: 'VIP private escort service' },
+      duration_risk: { factor_name: 'Duration Risk', weight_score: 80, enabled: true, notes: 'Multi-day overnight booking' },
+      time_risk: { factor_name: 'Time Risk', weight_score: 90, enabled: true, notes: 'Midnight & early morning' },
+      location_risk: { factor_name: 'Location Risk', weight_score: 85, enabled: true, notes: 'Private non-verified premises' },
+      user_risk: { factor_name: 'User Risk', weight_score: 80, enabled: true, notes: 'Flagged client profile' },
+      verification_risk: { factor_name: 'Verification Risk', weight_score: 85, enabled: true, notes: 'Restricted 3D liveness required' },
+      booking_risk: { factor_name: 'Booking Risk', weight_score: 90, enabled: true, notes: 'Ultra high value > ₹10,000' }
+    },
+    required_verification_tier: 'Restricted',
+    verification_level: 'Restricted',
+    monitoring_level: 'RealTime_Audit',
+    manual_approval_required: true,
+    live_location_required: true,
+    emergency_contact_required: true,
+    sos_required: true,
+    periodic_checkin_mins: 10,
     maximum_booking_duration: 4,
-    status: 'ACTIVE'
+    escalation_action: 'AUTO_BLOCK',
+    escalation_target_role: 'SUPER_ADMIN'
   }
 ];
 
 export const DEFAULT_VERIFICATION_PROFILES: VerificationProfileItem[] = [
   {
     id: 'vf-basic',
+    code: 'VER-BAS-01',
     name: 'Basic Verification Profile',
-    description: 'Email, mobile, government ID, and selfie check',
+    profile_tier: 'Basic',
     verification_level: 'Basic',
+    description: 'Email, mobile OTP, government ID, and live selfie check',
     status: 'ACTIVE',
+    scope_type: 'GLOBAL',
+    category_name: 'All Categories',
+    checks: {
+      identity: { enabled: true, required: true, expiry_days: 365, accepted_documents_text: 'Aadhaar, Passport, Voter ID' },
+      contact: { enabled: true, required: true, expiry_days: 365, accepted_documents_text: 'Phone OTP & Verified Email' },
+      face: { enabled: true, required: true, expiry_days: 180, accepted_documents_text: 'Live Camera Selfie' },
+      address: { enabled: false, required: false },
+      background: { enabled: false, required: false },
+      emergency: { enabled: true, required: true, accepted_documents_text: '1 Primary Emergency Contact' },
+      additional_documents: { enabled: false, required: false }
+    },
     requirements: {
-      email: true,
-      mobile: true,
-      government_id: true,
-      selfie: true,
-      face_match: false,
-      address: false,
-      background_check: false,
-      emergency_contact: true,
-      additional_document: false,
-      manual_review: false
-    }
+      email: true, mobile: true, government_id: true, selfie: true, face_match: false,
+      address: false, background_check: false, emergency_contact: true, additional_document: false, manual_review: false
+    },
+    applicability_roles: ['CLIENT', 'COMPANION'],
+    applicability_trigger: 'ALL_USERS',
+    expiry_duration_days: 365,
+    re_verification_policy: 'ANNUAL_RENEWAL',
+    failure_action: 'BLOCK_BOOKINGS',
+    max_retry_attempts: 3,
+    manual_review_required: false,
+    auto_approval_enabled: true
   },
   {
     id: 'vf-standard',
+    code: 'VER-STD-02',
     name: 'Standard Verification Profile',
-    description: 'Basic verification + face match and address proof',
+    profile_tier: 'Standard',
     verification_level: 'Standard',
+    description: 'Basic verification + AI biometric face match and current address proof',
     status: 'ACTIVE',
+    scope_type: 'CATEGORY',
+    category_id: 'cat-1',
+    category_name: 'Events & Social',
+    checks: {
+      identity: { enabled: true, required: true, expiry_days: 365, accepted_documents_text: 'Aadhaar, Driving License, Passport' },
+      contact: { enabled: true, required: true, expiry_days: 365, accepted_documents_text: 'Phone OTP & Email Verification' },
+      face: { enabled: true, required: true, expiry_days: 180, accepted_documents_text: 'AI Biometric Liveness & Face Match' },
+      address: { enabled: true, required: true, expiry_days: 365, accepted_documents_text: 'Utility Bill, Rent Agreement, Passport' },
+      background: { enabled: false, required: false },
+      emergency: { enabled: true, required: true, accepted_documents_text: '2 Emergency Contacts' },
+      additional_documents: { enabled: false, required: false }
+    },
     requirements: {
-      email: true,
-      mobile: true,
-      government_id: true,
-      selfie: true,
-      face_match: true,
-      address: true,
-      background_check: false,
-      emergency_contact: true,
-      additional_document: false,
-      manual_review: false
-    }
+      email: true, mobile: true, government_id: true, selfie: true, face_match: true,
+      address: true, background_check: false, emergency_contact: true, additional_document: false, manual_review: false
+    },
+    applicability_roles: ['COMPANION'],
+    applicability_trigger: 'ALL_USERS',
+    expiry_duration_days: 365,
+    re_verification_policy: 'ANNUAL_RENEWAL',
+    failure_action: 'BLOCK_BOOKINGS',
+    max_retry_attempts: 3,
+    manual_review_required: false,
+    auto_approval_enabled: true
   },
   {
     id: 'vf-enhanced',
+    code: 'VER-ENH-03',
     name: 'Enhanced Verification Profile',
-    description: 'Standard + background check and additional credentials',
+    profile_tier: 'Enhanced',
     verification_level: 'Enhanced',
+    description: 'Standard + police criminal background check and 2 emergency contacts',
     status: 'ACTIVE',
+    scope_type: 'CATEGORY',
+    category_id: 'cat-2',
+    category_name: 'Travel & Exploration',
+    checks: {
+      identity: { enabled: true, required: true, expiry_days: 365, accepted_documents_text: 'Govt Issued Photo ID & PAN' },
+      contact: { enabled: true, required: true, expiry_days: 365, accepted_documents_text: 'Phone OTP & Work Email' },
+      face: { enabled: true, required: true, expiry_days: 180, accepted_documents_text: 'Biometric Face Match 95%+ Confidence' },
+      address: { enabled: true, required: true, expiry_days: 365, accepted_documents_text: 'Permanent & Current Address Proof' },
+      background: { enabled: true, required: true, expiry_days: 180, accepted_documents_text: 'Police Clearance Certificate (PCC)' },
+      emergency: { enabled: true, required: true, accepted_documents_text: '2 Primary Emergency Contacts' },
+      additional_documents: { enabled: true, required: false, accepted_documents_text: 'Medical Fitness Certificate' }
+    },
     requirements: {
-      email: true,
-      mobile: true,
-      government_id: true,
-      selfie: true,
-      face_match: true,
-      address: true,
-      background_check: true,
-      emergency_contact: true,
-      additional_document: true,
-      manual_review: false
-    }
+      email: true, mobile: true, government_id: true, selfie: true, face_match: true,
+      address: true, background_check: true, emergency_contact: true, additional_document: true, manual_review: false
+    },
+    applicability_roles: ['COMPANION'],
+    applicability_trigger: 'HIGH_RISK_BOOKINGS',
+    expiry_duration_days: 180,
+    re_verification_policy: 'QUARTERLY_RECHECK',
+    failure_action: 'AUTO_SUSPEND',
+    max_retry_attempts: 2,
+    manual_review_required: true,
+    auto_approval_enabled: false
   },
   {
     id: 'vf-restricted',
-    name: 'Restricted Service Verification Profile',
-    description: 'Enhanced verification + manual admin review',
+    code: 'VER-RES-04',
+    name: 'Restricted Escort Verification Profile',
+    profile_tier: 'Restricted',
     verification_level: 'Restricted',
+    description: 'Enhanced verification + mandatory manual admin audit queue sign-off',
     status: 'ACTIVE',
+    scope_type: 'SERVICE',
+    service_id: 'srv-101',
+    service_name: 'VIP Event Escort Companion',
+    checks: {
+      identity: { enabled: true, required: true, expiry_days: 180, accepted_documents_text: 'Passport & Govt Clearance' },
+      contact: { enabled: true, required: true, expiry_days: 180, accepted_documents_text: 'Phone OTP & Verified Email' },
+      face: { enabled: true, required: true, expiry_days: 90, accepted_documents_text: '3D Face Liveness & Anti-spoof Scan' },
+      address: { enabled: true, required: true, expiry_days: 180, accepted_documents_text: 'Verified Residence Proof' },
+      background: { enabled: true, required: true, expiry_days: 90, accepted_documents_text: 'Deep Criminal Background & Legal Audit' },
+      emergency: { enabled: true, required: true, accepted_documents_text: '2 Verified Primary Contacts + Guardian' },
+      additional_documents: { enabled: true, required: true, accepted_documents_text: 'Medical & Character Reference' }
+    },
     requirements: {
-      email: true,
-      mobile: true,
-      government_id: true,
-      selfie: true,
-      face_match: true,
-      address: true,
-      background_check: true,
-      emergency_contact: true,
-      additional_document: true,
-      manual_review: true
-    }
+      email: true, mobile: true, government_id: true, selfie: true, face_match: true,
+      address: true, background_check: true, emergency_contact: true, additional_document: true, manual_review: true
+    },
+    applicability_roles: ['COMPANION'],
+    applicability_trigger: 'NIGHT_BOOKINGS',
+    expiry_duration_days: 90,
+    re_verification_policy: 'POST_INCIDENT_MANDATORY',
+    failure_action: 'AUTO_SUSPEND',
+    max_retry_attempts: 1,
+    manual_review_required: true,
+    auto_approval_enabled: false
   }
 ];
 
 export const DEFAULT_SAFETY_PROFILES: SafetyProfileItem[] = [
   {
     id: 'sf-std-controls',
-    name: 'Standard Safety & Trust Profile',
-    description: 'Full active safety suite including SOS, live location, and check-in/out',
+    code: 'SAF-STD-01',
+    name: 'Standard Companion Safety & Trust Profile',
+    description: 'Full active safety controls including panic SOS, live GPS tracking, 30-min check-in, and auto-dispatch.',
     status: 'ACTIVE',
+    scope_type: 'GLOBAL',
+    category_name: 'All Categories',
     controls: {
-      sos: 'Required',
-      emergency_contact: 'Required',
-      live_location: 'Required',
-      periodic_checkin: 'Required',
-      booking_start_checkin: 'Required',
-      booking_end_checkout: 'Required',
-      geofence: 'Enabled',
-      safe_location_requirement: 'Required',
-      public_place_requirement: 'Required',
-      emergency_notification: 'Enabled',
-      admin_emergency_escalation: 'Enabled',
-      incident_reporting: 'Enabled',
-      chat_monitoring: 'Enabled',
-      location_monitoring: 'Required'
+      sos: 'REQUIRED',
+      emergency_contact: 'REQUIRED',
+      live_location: 'REQUIRED',
+      periodic_checkin: 'REQUIRED',
+      booking_start_checkin: 'REQUIRED',
+      booking_end_checkout: 'REQUIRED',
+      safe_location_requirement: 'REQUIRED',
+      public_place_requirement: 'REQUIRED',
+      location_monitoring: 'REQUIRED'
+    },
+    automation: {
+      geofence: 'REQUIRED',
+      emergency_notification: 'REQUIRED',
+      admin_emergency_escalation: 'REQUIRED',
+      incident_reporting: 'REQUIRED',
+      chat_monitoring: 'REQUIRED'
+    },
+    emergency_protocols: {
+      sos_dispatch_mode: 'AUTO_POLICE_AND_CONTACTS',
+      emergency_escalation_queue: 'SAFETY_DESK',
+      incident_response_sla_mins: 5,
+      auto_contact_dispatch_delay_seconds: 30,
+      response_rules_matrix_text: 'Instant SMS alert to 2 primary contacts, live GPS link broadcast, and emergency desk pop-up.'
+    },
+    audit_settings: {
+      log_all_events: true,
+      export_logs_enabled: true,
+      retention_days: 90
+    }
+  },
+  {
+    id: 'sf-vip-controls',
+    code: 'SAF-VIP-02',
+    name: 'VIP Escort Maximum Security Safety Profile',
+    description: 'Maximum security controls, continuous 10-min check-ins, 3D geofencing, and immediate police escalation hotline.',
+    status: 'ACTIVE',
+    scope_type: 'SERVICE',
+    service_id: 'srv-101',
+    service_name: 'VIP Event Escort Companion',
+    controls: {
+      sos: 'REQUIRED',
+      emergency_contact: 'REQUIRED',
+      live_location: 'REQUIRED',
+      periodic_checkin: 'REQUIRED',
+      booking_start_checkin: 'REQUIRED',
+      booking_end_checkout: 'REQUIRED',
+      safe_location_requirement: 'REQUIRED',
+      public_place_requirement: 'REQUIRED',
+      location_monitoring: 'REQUIRED'
+    },
+    automation: {
+      geofence: 'REQUIRED',
+      emergency_notification: 'REQUIRED',
+      admin_emergency_escalation: 'REQUIRED',
+      incident_reporting: 'REQUIRED',
+      chat_monitoring: 'REQUIRED'
+    },
+    emergency_protocols: {
+      sos_dispatch_mode: 'AUTO_POLICE_AND_CONTACTS',
+      emergency_escalation_queue: 'POLICE_HOTLINE',
+      incident_response_sla_mins: 2,
+      auto_contact_dispatch_delay_seconds: 0,
+      response_rules_matrix_text: 'Zero-delay dispatch, direct hotline to local emergency desk, and continuous audio/video incident recording.'
+    },
+    audit_settings: {
+      log_all_events: true,
+      export_logs_enabled: true,
+      retention_days: 365
     }
   }
 ];
@@ -429,45 +857,212 @@ export const DEFAULT_SAFETY_PROFILES: SafetyProfileItem[] = [
 export const DEFAULT_BOOKING_RULES: BookingRuleItem[] = [
   {
     id: 'bk-std-rule',
+    code: 'BKG-STD-01',
     name: 'Standard Booking & Cancellation Policy',
+    description: '2h advance notice, 1h-12h session duration, free cancellation > 24h, and tiered refunds.',
+    status: 'ACTIVE',
+    scope_type: 'GLOBAL',
+    category_name: 'All Categories',
+    booking_rules: {
+      min_advance_hours: 2,
+      max_advance_days: 30,
+      instant_booking_allowed: true,
+      min_duration_hours: 1,
+      max_duration_hours: 12,
+      extension_allowed: true,
+      max_extension_hours: 4,
+      rescheduling_allowed: true,
+      reschedule_cutoff_hours: 4,
+      companion_approval_required: true,
+      admin_approval_required: false
+    },
+    cancellation_rules: {
+      free_cancellation_window_mins: 1440, // 24 hours
+      customer_cancellation_allowed: true,
+      companion_cancellation_penalty_score: 10,
+      companion_reassignment_enabled: true,
+      tiers: [
+        { hoursBeforeBooking: 24, refundPercentage: 100, cancellationFeePercent: 0 },
+        { hoursBeforeBooking: 12, refundPercentage: 75, cancellationFeePercent: 25 },
+        { hoursBeforeBooking: 2, refundPercentage: 50, cancellationFeePercent: 50 }
+      ],
+      no_show_grace_period_mins: 20,
+      no_show_fee_percent: 100,
+      emergency_cancellation_allowed: true,
+      emergency_cancellation_policy_text: 'Full refund for verified medical emergencies or severe weather alerts.'
+    },
+    refund_rules: {
+      refund_schedule: 'THREE_TO_FIVE_DAYS',
+      platform_fee_non_refundable: true,
+      platform_fee_percent: 5,
+      gateway_fee_retention_percent: 2,
+      partial_refund_enabled: true,
+      partial_refund_formula_text: 'Pro-rata refund for unused hours minus 15% administrative fee.',
+      auto_refund_processing: true
+    },
     min_advance_hours: 2,
     max_advance_days: 30,
     min_duration_hours: 1,
     max_duration_hours: 12,
     same_day_allowed: true,
     instant_booking_allowed: true,
-    companion_approval_required: true,
-    user_approval_required: false,
-    cancellation_rules: {
-      free_cancellation_window_hours: 24,
-      tiers: [
-        { hoursBeforeBooking: 24, refundPercentage: 100, cancellationFeePercent: 0 },
-        { hoursBeforeBooking: 12, refundPercentage: 75, cancellationFeePercent: 25 },
-        { hoursBeforeBooking: 2, refundPercentage: 50, cancellationFeePercent: 50 }
-      ],
-      no_show_refund_percent: 0
+    companion_approval_required: true
+  },
+  {
+    id: 'bk-vip-rule',
+    code: 'BKG-VIP-02',
+    name: 'VIP Escort Booking & Strict Cancellation Policy',
+    description: 'Requires 4h advance notice, 4h min duration, strict 48h cancellation window, and admin sign-off.',
+    status: 'ACTIVE',
+    scope_type: 'SERVICE',
+    service_id: 'srv-101',
+    service_name: 'VIP Event Escort Companion',
+    booking_rules: {
+      min_advance_hours: 4,
+      max_advance_days: 14,
+      instant_booking_allowed: false,
+      min_duration_hours: 4,
+      max_duration_hours: 8,
+      extension_allowed: false,
+      max_extension_hours: 0,
+      rescheduling_allowed: true,
+      reschedule_cutoff_hours: 12,
+      companion_approval_required: true,
+      admin_approval_required: true
     },
-    status: 'ACTIVE'
+    cancellation_rules: {
+      free_cancellation_window_mins: 2880, // 48 hours
+      customer_cancellation_allowed: true,
+      companion_cancellation_penalty_score: 25,
+      companion_reassignment_enabled: false,
+      tiers: [
+        { hoursBeforeBooking: 48, refundPercentage: 100, cancellationFeePercent: 0 },
+        { hoursBeforeBooking: 24, refundPercentage: 50, cancellationFeePercent: 50 },
+        { hoursBeforeBooking: 6, refundPercentage: 25, cancellationFeePercent: 75 }
+      ],
+      no_show_grace_period_mins: 15,
+      no_show_fee_percent: 100,
+      emergency_cancellation_allowed: true,
+      emergency_cancellation_policy_text: 'Strict review by Operations Desk.'
+    },
+    refund_rules: {
+      refund_schedule: 'INSTANT_PAYMENT_METHOD',
+      platform_fee_non_refundable: true,
+      platform_fee_percent: 10,
+      gateway_fee_retention_percent: 3,
+      partial_refund_enabled: false,
+      partial_refund_formula_text: 'No partial refunds for VIP escort sessions.',
+      auto_refund_processing: false
+    },
+    min_advance_hours: 4,
+    max_advance_days: 14,
+    min_duration_hours: 4,
+    max_duration_hours: 8,
+    same_day_allowed: false,
+    instant_booking_allowed: false,
+    companion_approval_required: true
   }
 ];
 
 export const DEFAULT_ELIGIBILITY_PROFILES: EligibilityProfileItem[] = [
   {
-    id: 'eg-std-profile',
-    name: 'Standard Companion Eligibility Profile',
-    description: 'Age 18+, rating 4.0+, verified KYC & emergency contact',
+    id: 'eg-bas-profile',
+    code: 'ELG-BAS-01',
+    name: 'Basic Companion Eligibility Profile',
+    tier: 'Basic',
+    description: 'Age 18-70, minimum rating 4.0, basic KYC verification required.',
+    status: 'ACTIVE',
+    scope_type: 'GLOBAL',
+    category_name: 'All Categories',
+    rules: {
+      min_age: 18,
+      max_age: 70,
+      min_rating: 4.0,
+      required_verification_level: 'Basic',
+      required_documents: ['GOVERNMENT_ID', 'SELFIE_LIVE', 'EMERGENCY_CONTACT'],
+      min_completed_sessions: 0,
+      require_good_account_standing: true,
+      max_active_strikes_allowed: 2,
+      restricted_services_text: 'None'
+    },
+    evaluator: {
+      auto_evaluation_enabled: true,
+      manual_override_allowed_roles: ['OPS_LEAD', 'SUPER_ADMIN'],
+      re_evaluation_interval_days: 90
+    },
     minimum_age: 18,
-    maximum_age: 75,
+    maximum_age: 70,
     minimum_rating: 4.0,
-    minimum_bookings_done: 0,
-    required_documents: ['GOVERNMENT_ID', 'SELFIE_LIVE', 'EMERGENCY_CONTACT'],
-    status: 'ACTIVE'
+    minimum_bookings_done: 0
+  },
+  {
+    id: 'eg-std-profile',
+    code: 'ELG-STD-02',
+    name: 'Standard Social Companion Eligibility Profile',
+    tier: 'Standard',
+    description: 'Age 21-65, rating 4.3+, standard verification & 5 completed sessions.',
+    status: 'ACTIVE',
+    scope_type: 'CATEGORY',
+    category_id: 'cat-1',
+    category_name: 'Events & Social',
+    rules: {
+      min_age: 21,
+      max_age: 65,
+      min_rating: 4.3,
+      required_verification_level: 'Standard',
+      required_documents: ['GOVERNMENT_ID', 'SELFIE_MATCH', 'ADDRESS_PROOF'],
+      min_completed_sessions: 5,
+      require_good_account_standing: true,
+      max_active_strikes_allowed: 1,
+      restricted_services_text: 'Restricted for unverified late-night events.'
+    },
+    evaluator: {
+      auto_evaluation_enabled: true,
+      manual_override_allowed_roles: ['OPS_LEAD', 'SUPER_ADMIN'],
+      re_evaluation_interval_days: 60
+    },
+    minimum_age: 21,
+    maximum_age: 65,
+    minimum_rating: 4.3,
+    minimum_bookings_done: 5
+  },
+  {
+    id: 'eg-vip-profile',
+    code: 'ELG-RES-04',
+    name: 'Restricted VIP Escort Companion Eligibility Profile',
+    tier: 'Restricted',
+    description: 'Age 21-50, rating 4.8+, police background PCC check, 20+ completed sessions, and mandatory admin review.',
+    status: 'ACTIVE',
+    scope_type: 'SERVICE',
+    service_id: 'srv-101',
+    service_name: 'VIP Event Escort Companion',
+    rules: {
+      min_age: 21,
+      max_age: 50,
+      min_rating: 4.8,
+      required_verification_level: 'Restricted',
+      required_documents: ['GOVERNMENT_ID', 'PCC_POLICE_CLEARANCE', 'MEDICAL_CERTIFICATE', 'INTERVIEW_SIGN_OFF'],
+      min_completed_sessions: 20,
+      require_good_account_standing: true,
+      max_active_strikes_allowed: 0,
+      restricted_services_text: 'Requires high-security ops desk manual sign-off.'
+    },
+    evaluator: {
+      auto_evaluation_enabled: false,
+      manual_override_allowed_roles: ['SUPER_ADMIN'],
+      re_evaluation_interval_days: 30
+    },
+    minimum_age: 21,
+    maximum_age: 50,
+    minimum_rating: 4.8,
+    minimum_bookings_done: 20
   }
 ];
 
 export const INITIAL_CATEGORIES: CategoryItem[] = [
   {
     id: 'cat-1',
+    code: 'CAT-EVT-01',
     name: 'Events & Social',
     slug: 'events-social',
     short_description: 'Corporate galas, weddings, networking expos & social gatherings',
