@@ -23,7 +23,7 @@ async function seedInitialCategoriesIfEmpty() {
             description: cat.description,
             iconName: cat.iconName || 'Users',
             bannerUrl: cat.bannerUrl || null,
-            riskLevel: cat.riskLevel || 'LOW',
+            riskLevel: (cat.riskLevel as any) || 'LOW',
             baseRateMultiplier: cat.baseRateMultiplier || 1.0,
             minAgeLimit: cat.minAgeLimit || 18,
             isFeatured: cat.isFeatured || false,
@@ -32,7 +32,7 @@ async function seedInitialCategoriesIfEmpty() {
             safetyPolicy: cat.safetyPolicy || null,
             subcategories: {
               create: (cat.subcategories || []).map((s: any) => ({
-                id: s.id.startsWith('sub-') ? s.id : undefined,
+                id: s.id && s.id.startsWith('sub-') ? s.id : undefined,
                 name: s.name,
                 description: s.description,
                 basePrice: s.basePrice,
@@ -64,7 +64,7 @@ async function seedInitialCategoriesIfEmpty() {
   }
 }
 
-// GET /api/categories — list all categories with optional search, riskLevel, and active filter
+// GET /api/categories — list all categories from Neon DB
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const query = searchParams.get('q')?.toLowerCase();
@@ -151,7 +151,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/categories — create new category in Neon DB
+// POST /api/categories — create or upsert category directly in Neon DB
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -159,35 +159,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Name and description are required.' }, { status: 400 });
     }
 
+    const name = body.name.trim();
+    const slug = body.slug || name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
     const categoryData = {
-      name: body.name,
-      slug: body.slug || body.name.toLowerCase().replace(/\s+/g, '-'),
+      name,
+      slug,
       description: body.description,
-      iconName: body.iconName || 'Users',
-      bannerUrl: body.bannerUrl || 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=80',
-      riskLevel: body.riskLevel || 'LOW',
+      iconName: body.iconName || body.icon || 'Users',
+      bannerUrl: body.bannerUrl || body.image || 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=80',
+      riskLevel: (body.riskLevel as any) || 'LOW',
       baseRateMultiplier: Number(body.baseRateMultiplier) || 1.0,
-      minAgeLimit: Number(body.minAgeLimit) || 18,
-      isFeatured: Boolean(body.isFeatured),
-      isActive: true,
-      safetyPolicy: body.safetyPolicy || 'Standard safety policy applies.',
+      minAgeLimit: Number(body.minAgeLimit || body.minimum_age) || 18,
+      isFeatured: Boolean(body.isFeatured || body.is_featured),
+      isActive: body.isActive !== undefined ? Boolean(body.isActive) : true,
+      safetyPolicy: body.safetyPolicy || 'Standard safety policy applies.'
     };
 
-    const subcats = Array.isArray(body.subcategories) ? body.subcategories : [];
-
     try {
-      const created = await prisma.category.create({
-        data: {
-          ...categoryData,
-          subcategories: {
-            create: subcats.map((s: any) => ({
-              name: s.name,
-              description: s.description || 'Custom service offering.',
-              basePrice: Number(s.basePrice) || 50,
-              requiredVerification: Boolean(s.requiredVerification)
-            }))
-          }
-        },
+      const created = await prisma.category.upsert({
+        where: { slug: slug },
+        update: categoryData,
+        create: categoryData,
         include: {
           subcategories: true
         }
@@ -217,28 +210,14 @@ export async function POST(req: NextRequest) {
         }))
       };
 
-      inMemoryStore.push(formatted);
-
       return NextResponse.json({
         success: true,
-        message: 'Category created successfully in database.',
+        message: `Category "${created.name}" saved successfully in Neon DB.`,
         data: formatted
       }, { status: 201 });
     } catch (dbErr) {
-      console.warn('DB creation failed, saving to in-memory fallback:', dbErr);
-      const newCategory: ServiceCategory = {
-        id: 'c-' + Date.now(),
-        ...categoryData,
-        companionCount: 0,
-        subcategories: subcats,
-        createdAt: new Date().toISOString()
-      };
-      inMemoryStore.push(newCategory);
-      return NextResponse.json({
-        success: true,
-        message: 'Category created successfully.',
-        data: newCategory
-      }, { status: 201 });
+      console.error('Neon DB category create/upsert error:', dbErr);
+      return NextResponse.json({ error: 'Failed to write category to database.' }, { status: 500 });
     }
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 });
