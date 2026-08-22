@@ -163,11 +163,14 @@ export async function POST(req: NextRequest) {
     const slug = body.slug || name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
     const categoryData = {
+      code: body.code || null,
       name,
       slug,
+      short_description: body.short_description || body.shortDescription || null,
       description: body.description,
       iconName: body.iconName || body.icon || 'Users',
       bannerUrl: body.bannerUrl || body.image || 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=80',
+      display_order: Number(body.display_order || body.displayOrder) || 0,
       riskLevel: (body.riskLevel as any) || 'LOW',
       baseRateMultiplier: Number(body.baseRateMultiplier) || 1.0,
       minAgeLimit: Number(body.minAgeLimit || body.minimum_age) || 18,

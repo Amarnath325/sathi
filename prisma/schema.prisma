@@ -85,11 +85,14 @@ model ServicePolicy {
 
 model Category {
   id                   String       @id @default(uuid())
+  code                 String?
   name                 String       @unique
   slug                 String       @unique
+  short_description    String?
   description          String
   iconName             String       @default("Users")
   bannerUrl            String?
+  display_order        Int          @default(0)
   riskLevel            RiskLevel    @default(LOW)
   baseRateMultiplier   Float        @default(1.0)
   minAgeLimit          Int          @default(18)
@@ -1071,6 +1074,7 @@ enum ServicePublishStatus {
 
 model HubCategory {
   id                              String       @id @default(uuid())
+  code                            String?
   name                            String       @unique
   slug                            String       @unique
   short_description               String?

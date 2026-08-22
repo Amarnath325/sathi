@@ -94,11 +94,14 @@ export async function PATCH(req: NextRequest, props: Props) {
         const updated = await prisma.category.update({
           where: { id: existing.id },
           data: {
+            ...(updates.code ? { code: updates.code.trim() } : {}),
             ...(updates.name ? { name: updates.name.trim() } : {}),
             ...(updates.slug ? { slug: updates.slug.trim() } : {}),
+            ...(updates.short_description || updates.shortDescription ? { short_description: (updates.short_description || updates.shortDescription).trim() } : {}),
             ...(updates.description ? { description: updates.description.trim() } : {}),
             ...(updates.iconName || updates.icon ? { iconName: updates.iconName || updates.icon } : {}),
             ...(updates.bannerUrl !== undefined || updates.image !== undefined ? { bannerUrl: updates.bannerUrl || updates.image } : {}),
+            ...(updates.display_order !== undefined || updates.displayOrder !== undefined ? { display_order: Number(updates.display_order || updates.displayOrder) } : {}),
             ...(updates.riskLevel ? { riskLevel: updates.riskLevel } : {}),
             ...(updates.baseRateMultiplier !== undefined ? { baseRateMultiplier: Number(updates.baseRateMultiplier) } : {}),
             ...(updates.minAgeLimit !== undefined || updates.minimum_age !== undefined ? { minAgeLimit: Number(updates.minAgeLimit || updates.minimum_age) } : {}),
