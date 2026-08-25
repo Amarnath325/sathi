@@ -695,7 +695,7 @@ export default function CompanionOnboardingWizard() {
   // KYC Overall Status
   const [kycStatus, setKycStatus] = useState<'NOT_STARTED' | 'IN_PROGRESS' | 'UNDER_REVIEW' | 'VERIFIED' | 'REJECTED'>('NOT_STARTED');
 
-  // Real File Upload & AI OCR Scanner Handler (With Duplicate Image Prevention & Shared Doc Number)
+  // Real File Upload & AI OCR Scanner Handler (Global 4-Slot Uniqueness & Shared Doc Number)
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, isPrimary: boolean, isFront: boolean) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -705,29 +705,18 @@ export default function CompanionOnboardingWizard() {
       const dataUrl = event.target?.result as string;
       const docType = isPrimary ? primaryIdType : secondaryIdType;
 
-      // 1. Duplicate Image Check: Front side and Back side cannot be identical image
-      if (isPrimary) {
-        if (isFront && primaryBackPreview && primaryBackPreview === dataUrl) {
-          showToast('error', 'Duplicate Image Error', `Front and Back photos of ${docType} cannot be identical. Please upload distinct photos.`);
-          if (e.target) e.target.value = '';
-          return;
-        }
-        if (!isFront && primaryFrontPreview && primaryFrontPreview === dataUrl) {
-          showToast('error', 'Duplicate Image Error', `Back and Front photos of ${docType} cannot be identical. Please upload distinct photos.`);
-          if (e.target) e.target.value = '';
-          return;
-        }
-      } else {
-        if (isFront && secondaryBackPreview && secondaryBackPreview === dataUrl) {
-          showToast('error', 'Duplicate Image Error', `Front and Back photos of ${docType} cannot be identical. Please upload distinct photos.`);
-          if (e.target) e.target.value = '';
-          return;
-        }
-        if (!isFront && secondaryFrontPreview && secondaryFrontPreview === dataUrl) {
-          showToast('error', 'Duplicate Image Error', `Back and Front photos of ${docType} cannot be identical. Please upload distinct photos.`);
-          if (e.target) e.target.value = '';
-          return;
-        }
+      // 1. Global 4-Slot Image Uniqueness Check: No photo can be reused across any of the 4 document slots
+      const existingPreviews = [
+        isPrimary && isFront ? null : primaryFrontPreview,
+        isPrimary && !isFront ? null : primaryBackPreview,
+        !isPrimary && isFront ? null : secondaryFrontPreview,
+        !isPrimary && !isFront ? null : secondaryBackPreview,
+      ].filter(Boolean);
+
+      if (existingPreviews.includes(dataUrl)) {
+        showToast('error', 'Duplicate Image Rejection', `This photo has already been uploaded in another slot. All 4 photos (Primary Front/Back & Secondary Front/Back) must be completely distinct.`);
+        if (e.target) e.target.value = '';
+        return;
       }
 
       let willHaveBothPrimary = false;
@@ -774,6 +763,12 @@ export default function CompanionOnboardingWizard() {
             else if (docType === 'Passport') numberToUse = `Z${Math.floor(1000000 + Math.random() * 9000000)}`;
             else if (docType === 'Voter ID Card') numberToUse = `ABC${Math.floor(1000000 + Math.random() * 9000000)}`;
             else numberToUse = `DOC${Math.floor(10000000 + Math.random() * 90000000)}`;
+
+            if (secondaryIdNumber && numberToUse.trim() === secondaryIdNumber.trim()) {
+              showToast('error', 'Duplicate Document Number', `Primary ID number cannot be identical to Secondary ID number.`);
+              setIsPrimaryOcrScanning(false);
+              return;
+            }
             setPrimaryIdNumber(numberToUse);
           }
           setIsPrimaryOcrScanning(false);
@@ -792,6 +787,12 @@ export default function CompanionOnboardingWizard() {
             else if (docType === 'Passport') numberToUse = `Z${Math.floor(1000000 + Math.random() * 9000000)}`;
             else if (docType === 'Voter ID Card') numberToUse = `ABC${Math.floor(1000000 + Math.random() * 9000000)}`;
             else numberToUse = `DOC${Math.floor(10000000 + Math.random() * 90000000)}`;
+
+            if (primaryIdNumber && numberToUse.trim() === primaryIdNumber.trim()) {
+              showToast('error', 'Duplicate Document Number', `Secondary ID number cannot be identical to Primary ID number.`);
+              setIsSecondaryOcrScanning(false);
+              return;
+            }
             setSecondaryIdNumber(numberToUse);
           }
           setIsSecondaryOcrScanning(false);
@@ -918,6 +919,28 @@ export default function CompanionOnboardingWizard() {
     if (currentStep === 3 && policyScanResult && !policyScanResult.allowed) {
       showToast('error', 'Policy Check Required', 'Please revise your service description to remove prohibited phrases.');
       return;
+    }
+    if (currentStep === 5) {
+      const cleanPersonalPhone = phone.replace(/\D/g, '');
+      const cleanEmergencyPhone = emergencyPhone.replace(/\D/g, '');
+      const cleanEmergencyAltPhone = emergencyAltPhone.replace(/\D/g, '');
+
+      if (!emergencyName.trim()) {
+        showToast('error', 'Emergency Contact Required', 'Please enter your emergency contact person\'s full name.');
+        return;
+      }
+      if (!cleanEmergencyPhone || cleanEmergencyPhone.length < 10) {
+        showToast('error', 'Invalid Emergency Phone', 'Please provide a valid 10-digit emergency contact phone number.');
+        return;
+      }
+      if (cleanPersonalPhone && cleanEmergencyPhone === cleanPersonalPhone) {
+        showToast('error', 'Duplicate Contact Number', 'Emergency contact phone number cannot be identical to your own personal phone number.');
+        return;
+      }
+      if (cleanEmergencyAltPhone && cleanEmergencyAltPhone === cleanEmergencyPhone) {
+        showToast('error', 'Duplicate Contact Number', 'Alternate emergency phone number cannot be identical to primary emergency phone number.');
+        return;
+      }
     }
     if (currentStep === 6) {
       if (!primaryFrontUploaded || !primaryBackUploaded || !primaryIdNumber || !isPrimaryOcrDone) {
