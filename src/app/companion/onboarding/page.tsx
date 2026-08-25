@@ -69,6 +69,15 @@ export default function CompanionOnboardingWizard() {
         const json = await res.json();
         if (json.success && Array.isArray(json.data) && json.data.length > 0) {
           setDbCategories(json.data);
+          // Set initial default selections matching actual DB categories if none selected yet
+          setSelectedCategories(prev => {
+            if (prev.length === 0) {
+              const defaults: ServiceCategory[] = json.data.slice(0, 2);
+              setSelectedCategoryIds(defaults.map((c: ServiceCategory) => c.id));
+              return defaults.map((c: ServiceCategory) => c.name);
+            }
+            return prev;
+          });
         } else {
           setDbCategories([]);
         }
@@ -316,8 +325,8 @@ export default function CompanionOnboardingWizard() {
 
   const [experienceLevel, setExperienceLevel] = useState('3-5 Years');
   const [profileVisibility, setProfileVisibility] = useState('PUBLIC');
-  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(['cat-events', 'cat-travel']);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(['Events', 'Travel']);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   // Helper functions for tags
   const handleAddTag = (
@@ -381,8 +390,8 @@ export default function CompanionOnboardingWizard() {
       ];
     }
 
-    const activeCats = selectedCategories.length > 0
-      ? dbCategories.filter(c => selectedCategories.includes(c.name))
+    const activeCats = (selectedCategories.length > 0 || selectedCategoryIds.length > 0)
+      ? dbCategories.filter(c => selectedCategories.includes(c.name) || selectedCategoryIds.includes(c.id))
       : dbCategories;
 
     const subList: { id: string; name: string; categoryName: string }[] = [];
@@ -619,7 +628,7 @@ export default function CompanionOnboardingWizard() {
 
   // General Toggle Helpers
   const handleCategoryToggle = (catObj: ServiceCategory) => {
-    const isSelected = selectedCategories.includes(catObj.name);
+    const isSelected = selectedCategories.includes(catObj.name) || selectedCategoryIds.includes(catObj.id);
     if (isSelected) {
       setSelectedCategories(prev => prev.filter(c => c !== catObj.name));
       setSelectedCategoryIds(prev => prev.filter(id => id !== catObj.id));
@@ -628,8 +637,8 @@ export default function CompanionOnboardingWizard() {
         showToast('error', 'Limit Reached', 'You can select up to 5 categories.');
         return;
       }
-      setSelectedCategories(prev => [...prev, catObj.name]);
-      setSelectedCategoryIds(prev => [...prev, catObj.id]);
+      setSelectedCategories(prev => (prev.includes(catObj.name) ? prev : [...prev, catObj.name]));
+      setSelectedCategoryIds(prev => (prev.includes(catObj.id) ? prev : [...prev, catObj.id]));
     }
   };
 
@@ -1300,7 +1309,7 @@ export default function CompanionOnboardingWizard() {
               ) : (
                 <div className="max-h-40 overflow-y-auto pr-1 flex flex-wrap gap-1.5">
                   {dbCategories.map((catObj) => {
-                    const isSelected = selectedCategories.includes(catObj.name);
+                    const isSelected = selectedCategories.includes(catObj.name) || selectedCategoryIds.includes(catObj.id);
                     const subCount = catObj.subcategories ? catObj.subcategories.length : 0;
                     return (
                       <button
