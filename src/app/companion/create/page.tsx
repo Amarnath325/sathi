@@ -20,29 +20,29 @@ export default function CreateCompanionPage() {
     name: '',
     email: '',
     phone: '',
-    age: 25,
-    gender: 'Female',
-    city: 'San Francisco',
-    country: 'USA',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
+    age: '' as any,
+    gender: '',
+    city: '',
+    country: '',
+    avatar: '',
     photos: [],
-    categories: ['Event Companion'],
-    skills: ['Multilingual', 'Etiquette'],
-    languages: ['English'],
-    hourlyRate: 45,
-    dailyRate: 320,
-    weeklyRate: 1800,
+    categories: [],
+    skills: [],
+    languages: [],
+    hourlyRate: '' as any,
+    dailyRate: '' as any,
+    weeklyRate: '' as any,
     bio: '',
-    education: 'B.A. International Relations',
-    experienceYears: 3,
+    education: '',
+    experienceYears: '' as any,
     status: 'PENDING_VERIFICATION' as CompanionStatus,
     availability: {
-      Mon: [9, 10, 11, 14, 15, 16],
-      Tue: [9, 10, 11, 14, 15, 16],
-      Wed: [9, 10, 11],
-      Thu: [14, 15, 16],
-      Fri: [9, 10, 11, 14, 15, 16],
-      Sat: [10, 11, 12, 13, 14, 15],
+      Mon: [],
+      Tue: [],
+      Wed: [],
+      Thu: [],
+      Fri: [],
+      Sat: [],
       Sun: []
     }
   });
@@ -116,11 +116,12 @@ export default function CreateCompanionPage() {
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Age</label>
-                <input type="number" value={formData.age || 25} onChange={e => set('age', Number(e.target.value))} className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-sm text-white focus:border-indigo-500 focus:outline-none" />
+                <input type="number" value={formData.age || ''} onChange={e => set('age', Number(e.target.value))} className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-sm text-white focus:border-indigo-500 focus:outline-none" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Gender</label>
-                <select value={formData.gender || 'Female'} onChange={e => set('gender', e.target.value)} className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-sm text-white focus:border-indigo-500 focus:outline-none">
+                <select value={formData.gender || ''} onChange={e => set('gender', e.target.value)} className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-sm text-white focus:border-indigo-500 focus:outline-none">
+                  <option value="">Select Gender</option>
                   <option value="Female">Female</option>
                   <option value="Male">Male</option>
                   <option value="Non-binary">Non-binary</option>
@@ -165,15 +166,15 @@ export default function CreateCompanionPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Hourly Rate ($)</label>
-                <input type="number" value={formData.hourlyRate || 45} onChange={e => set('hourlyRate', Number(e.target.value))} className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-sm text-white focus:border-indigo-500 focus:outline-none" />
+                <input type="number" value={formData.hourlyRate || ''} onChange={e => set('hourlyRate', Number(e.target.value))} className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-sm text-white focus:border-indigo-500 focus:outline-none" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Daily Rate ($)</label>
-                <input type="number" value={formData.dailyRate || 320} onChange={e => set('dailyRate', Number(e.target.value))} className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-sm text-white focus:border-indigo-500 focus:outline-none" />
+                <input type="number" value={formData.dailyRate || ''} onChange={e => set('dailyRate', Number(e.target.value))} className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-sm text-white focus:border-indigo-500 focus:outline-none" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Weekly Pass ($)</label>
-                <input type="number" value={formData.weeklyRate || 1800} onChange={e => set('weeklyRate', Number(e.target.value))} className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-sm text-white focus:border-indigo-500 focus:outline-none" />
+                <input type="number" value={formData.weeklyRate || ''} onChange={e => set('weeklyRate', Number(e.target.value))} className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-sm text-white focus:border-indigo-500 focus:outline-none" />
               </div>
             </div>
           </div>

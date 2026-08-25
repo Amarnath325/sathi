@@ -69,15 +69,6 @@ export default function CompanionOnboardingWizard() {
         const json = await res.json();
         if (json.success && Array.isArray(json.data) && json.data.length > 0) {
           setDbCategories(json.data);
-          // Set initial default selections matching actual DB categories if none selected yet
-          setSelectedCategories(prev => {
-            if (prev.length === 0) {
-              const defaults: ServiceCategory[] = json.data.slice(0, 2);
-              setSelectedCategoryIds(defaults.map((c: ServiceCategory) => c.id));
-              return defaults.map((c: ServiceCategory) => c.name);
-            }
-            return prev;
-          });
         } else {
           setDbCategories([]);
         }
@@ -94,22 +85,22 @@ export default function CompanionOnboardingWizard() {
   // =========================================================================
   // STEP 1: ACCOUNT & ELIGIBILITY STATE
   // =========================================================================
-  const [firstName, setFirstName] = useState('Aria');
-  const [lastName, setLastName] = useState('Vance');
-  const [dob, setDob] = useState('2001-05-14'); // YYYY-MM-DD
-  const [country, setCountry] = useState('India');
-  const [email, setEmail] = useState('aria.vance@example.com');
-  const [phone, setPhone] = useState('9876543210');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [dob, setDob] = useState(''); // YYYY-MM-DD
+  const [country, setCountry] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [enablePasskey, setEnablePasskey] = useState(true);
-  const [enable2FA, setEnable2FA] = useState(true);
-  const [agreeAccountCheck, setAgreeAccountCheck] = useState(true);
+  const [enablePasskey, setEnablePasskey] = useState(false);
+  const [enable2FA, setEnable2FA] = useState(false);
+  const [agreeAccountCheck, setAgreeAccountCheck] = useState(false);
 
   // OTP Verification States
-  const [isEmailVerified, setIsEmailVerified] = useState(true);
-  const [isPhoneVerified, setIsPhoneVerified] = useState(true);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
   const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
   const [otpTarget, setOtpTarget] = useState<'email' | 'phone'>('email');
   const [otpTargetValue, setOtpTargetValue] = useState('');
@@ -308,22 +299,22 @@ export default function CompanionOnboardingWizard() {
   // =========================================================================
   // STEP 2: PROFILE & SERVICES STATE (PUBLIC PROFILE)
   // =========================================================================
-  const [displayName, setDisplayName] = useState('Aria Vance');
-  const [legalName, setLegalName] = useState('Aria Vance');
-  const [gender, setGender] = useState('Female');
-  const [bio, setBio] = useState('Professional event companion, art enthusiast, and city tour buddy with 3+ years of experience.');
+  const [displayName, setDisplayName] = useState('');
+  const [legalName, setLegalName] = useState('');
+  const [gender, setGender] = useState('');
+  const [bio, setBio] = useState('');
   
   // Tag Manager States
-  const [languagesList, setLanguagesList] = useState<string[]>(['English', 'Hindi', 'French']);
+  const [languagesList, setLanguagesList] = useState<string[]>([]);
   const [newLanguageInput, setNewLanguageInput] = useState('');
 
-  const [skillsList, setSkillsList] = useState<string[]>(['Public Speaking', 'Event Etiquette', 'Museum Guide', 'Networking']);
+  const [skillsList, setSkillsList] = useState<string[]>([]);
   const [newSkillInput, setNewSkillInput] = useState('');
 
-  const [interestsList, setInterestsList] = useState<string[]>(['Art & Culture', 'Fine Dining', 'Conferences', 'Travel']);
+  const [interestsList, setInterestsList] = useState<string[]>([]);
   const [newInterestInput, setNewInterestInput] = useState('');
 
-  const [experienceLevel, setExperienceLevel] = useState('3-5 Years');
+  const [experienceLevel, setExperienceLevel] = useState('');
   const [profileVisibility, setProfileVisibility] = useState('PUBLIC');
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -351,32 +342,32 @@ export default function CompanionOnboardingWizard() {
   // =========================================================================
   // STEP 3: SERVICES & SAFETY BOUNDARIES STATE
   // =========================================================================
-  const [serviceDescription, setServiceDescription] = useState('Professional companion for social events, corporate gatherings, and city tours. All bookings are strictly non-sexual.');
+  const [serviceDescription, setServiceDescription] = useState('');
   const [policyScanResult, setPolicyScanResult] = useState<any>(null);
 
   // Companion Safety Preferences State
-  const [requirePublicStart, setRequirePublicStart] = useState<boolean>(true);
-  const [requireInAppChatPreBooking, setRequireInAppChatPreBooking] = useState<boolean>(true);
-  const [enableEmergencyGpsSharing, setEnableEmergencyGpsSharing] = useState<boolean>(true);
-  const [allowGroupSocialEvents, setAllowGroupSocialEvents] = useState<boolean>(true);
+  const [requirePublicStart, setRequirePublicStart] = useState<boolean>(false);
+  const [requireInAppChatPreBooking, setRequireInAppChatPreBooking] = useState<boolean>(false);
+  const [enableEmergencyGpsSharing, setEnableEmergencyGpsSharing] = useState<boolean>(false);
+  const [allowGroupSocialEvents, setAllowGroupSocialEvents] = useState<boolean>(false);
 
   // Prohibited Activities Checkbox Group
   const [prohibitedActivities, setProhibitedActivities] = useState({
-    sexualServices: true,
-    adultContent: true,
-    illegalActivities: true,
-    drugsSubstances: true,
-    violenceWeapons: true,
-    offPlatformPayments: true,
-    unverifiedPrivateResidences: true,
-    overnightUnmonitoredStays: true
+    sexualServices: false,
+    adultContent: false,
+    illegalActivities: false,
+    drugsSubstances: false,
+    violenceWeapons: false,
+    offPlatformPayments: false,
+    unverifiedPrivateResidences: false,
+    overnightUnmonitoredStays: false
   });
 
   // Service Availability State
-  const [serviceAvailabilityStatus, setServiceAvailabilityStatus] = useState('AVAILABLE');
-  const [serviceNoticeWindow, setServiceNoticeWindow] = useState('6 Hours');
-  const [minBookingDuration, setMinBookingDuration] = useState<number>(1);
-  const [maxBookingDuration, setMaxBookingDuration] = useState<number>(8);
+  const [serviceAvailabilityStatus, setServiceAvailabilityStatus] = useState('');
+  const [serviceNoticeWindow, setServiceNoticeWindow] = useState('');
+  const [minBookingDuration, setMinBookingDuration] = useState<number | ''>('');
+  const [maxBookingDuration, setMaxBookingDuration] = useState<number | ''>('');
 
   // Dynamic Category Safety & Boundaries Engine based on Selected Categories
   const dynamicCategoryBoundaries = useMemo(() => {
@@ -465,38 +456,36 @@ export default function CompanionOnboardingWizard() {
   // =========================================================================
   // STEP 4: RATES & SCHEDULE STATE (PRICING & DAY-BY-DAY HOURS)
   // =========================================================================
-  const [hourlyRate, setHourlyRate] = useState<number>(1500);
-  const [halfDayRate, setHalfDayRate] = useState<number>(5000);
-  const [fullDayRate, setFullDayRate] = useState<number>(8000);
+  const [hourlyRate, setHourlyRate] = useState<number | ''>('');
+  const [halfDayRate, setHalfDayRate] = useState<number | ''>('');
+  const [fullDayRate, setFullDayRate] = useState<number | ''>('');
 
   // Surcharges & Charges
-  const [weekendSurcharge, setWeekendSurcharge] = useState<number>(500);
-  const [holidaySurcharge, setHolidaySurcharge] = useState<number>(1000);
-  const [travelChargePerKm, setTravelChargePerKm] = useState<number>(20);
-  const [extraHourCharge, setExtraHourCharge] = useState<number>(1800);
+  const [weekendSurcharge, setWeekendSurcharge] = useState<number | ''>('');
+  const [holidaySurcharge, setHolidaySurcharge] = useState<number | ''>('');
+  const [travelChargePerKm, setTravelChargePerKm] = useState<number | ''>('');
+  const [extraHourCharge, setExtraHourCharge] = useState<number | ''>('');
 
   // Schedule & Working Days
-  const [workingDays, setWorkingDays] = useState<string[]>([
-    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
-  ]);
+  const [workingDays, setWorkingDays] = useState<string[]>([]);
 
   // Structured Day-Wise Working Hours
   const [dayWiseHours, setDayWiseHours] = useState<{ [day: string]: { start: string; end: string; enabled: boolean } }>({
-    Monday: { start: '12:00', end: '22:00', enabled: true },
-    Tuesday: { start: '12:00', end: '22:00', enabled: true },
-    Wednesday: { start: '12:00', end: '22:00', enabled: true },
-    Thursday: { start: '12:00', end: '22:00', enabled: true },
-    Friday: { start: '12:00', end: '22:00', enabled: true },
-    Saturday: { start: '12:00', end: '22:00', enabled: true },
-    Sunday: { start: '12:00', end: '22:00', enabled: true },
+    Monday: { start: '', end: '', enabled: false },
+    Tuesday: { start: '', end: '', enabled: false },
+    Wednesday: { start: '', end: '', enabled: false },
+    Thursday: { start: '', end: '', enabled: false },
+    Friday: { start: '', end: '', enabled: false },
+    Saturday: { start: '', end: '', enabled: false },
+    Sunday: { start: '', end: '', enabled: false },
   });
 
-  const [advanceNotice, setAdvanceNotice] = useState('6 Hours');
-  const [sameDayBooking, setSameDayBooking] = useState(true);
-  const [minNoticeHours, setMinNoticeHours] = useState(3);
-  const [maxBookingsPerDay, setMaxBookingsPerDay] = useState(2);
-  const [bufferTimeBetweenBookings, setBufferTimeBetweenBookings] = useState('2 Hours');
-  const [cancellationPreference, setCancellationPreference] = useState('Moderate — 100% up to 24h');
+  const [advanceNotice, setAdvanceNotice] = useState('');
+  const [sameDayBooking, setSameDayBooking] = useState(false);
+  const [minNoticeHours, setMinNoticeHours] = useState<number | ''>('');
+  const [maxBookingsPerDay, setMaxBookingsPerDay] = useState<number | ''>('');
+  const [bufferTimeBetweenBookings, setBufferTimeBetweenBookings] = useState('');
+  const [cancellationPreference, setCancellationPreference] = useState('');
 
   // Helper to copy Monday hours to all active days
   const handleApplyMondayHoursToAll = () => {
@@ -515,29 +504,29 @@ export default function CompanionOnboardingWizard() {
   // STEP 5: LOCATION & EMERGENCY STATE
   // =========================================================================
   // Section 1: Operating Location & Travel (Public)
-  const [operatingCountry, setOperatingCountry] = useState('India');
-  const [operatingState, setOperatingState] = useState('Maharashtra');
-  const [operatingCity, setOperatingCity] = useState('Mumbai Metro');
-  const [localityArea, setLocalityArea] = useState('Bandra West / South Mumbai');
-  const [travelRadiusKm, setTravelRadiusKm] = useState<number>(25);
-  const [localTravelEnabled, setLocalTravelEnabled] = useState(true);
+  const [operatingCountry, setOperatingCountry] = useState('');
+  const [operatingState, setOperatingState] = useState('');
+  const [operatingCity, setOperatingCity] = useState('');
+  const [localityArea, setLocalityArea] = useState('');
+  const [travelRadiusKm, setTravelRadiusKm] = useState<number | ''>('');
+  const [localTravelEnabled, setLocalTravelEnabled] = useState(false);
   const [intercityTravelEnabled, setIntercityTravelEnabled] = useState(false);
   const [outstationTravelEnabled, setOutstationTravelEnabled] = useState(false);
-  const [travelAllowancePerKm, setTravelAllowancePerKm] = useState<number>(20);
-  const [transportationPreference, setTransportationPreference] = useState('Cab / Rideshare');
+  const [travelAllowancePerKm, setTravelAllowancePerKm] = useState<number | ''>('');
+  const [transportationPreference, setTransportationPreference] = useState('');
 
   // Section 2: Private Verified Address (Moved from Tab 1)
-  const [address, setAddress] = useState('Flat 402, Sunshine Heights, Hill Road');
-  const [city, setCity] = useState('Mumbai');
-  const [state, setState] = useState('Maharashtra');
-  const [pincode, setPincode] = useState('400050');
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [pincode, setPincode] = useState('');
 
   // Section 3: Trusted Emergency Contact
-  const [emergencyName, setEmergencyName] = useState('Suresh Sharma');
-  const [emergencyRelationship, setEmergencyRelationship] = useState('Parent');
-  const [emergencyPhone, setEmergencyPhone] = useState('+91 9876543210');
-  const [emergencyAltPhone, setEmergencyAltPhone] = useState('+91 9876543211');
-  const [emergencyConsent, setEmergencyConsent] = useState(true);
+  const [emergencyName, setEmergencyName] = useState('');
+  const [emergencyRelationship, setEmergencyRelationship] = useState('');
+  const [emergencyPhone, setEmergencyPhone] = useState('');
+  const [emergencyAltPhone, setEmergencyAltPhone] = useState('');
+  const [emergencyConsent, setEmergencyConsent] = useState(false);
 
   // =========================================================================
   // STEP 6: IDENTITY & VERIFICATION STATE (DUAL-DOCUMENT OCR & AI LIVENESS)
@@ -814,22 +803,22 @@ export default function CompanionOnboardingWizard() {
   // =========================================================================
   // STEP 7: REVIEW & PAYOUT STATE
   // =========================================================================
-  const [bankAccountHolder, setBankAccountHolder] = useState('Aria Vance');
-  const [bankAccountNumber, setBankAccountNumber] = useState('918273645019');
-  const [confirmBankAccountNumber, setConfirmBankAccountNumber] = useState('918273645019');
-  const [ifscCode, setIfscCode] = useState('HDFC0001234');
-  const [bankName, setBankName] = useState('HDFC Bank Ltd.');
-  const [payoutMethod, setPayoutMethod] = useState('Direct Bank Transfer (IMPS/NEFT)');
-  const [upiId, setUpiId] = useState('aria.vance@upi');
+  const [bankAccountHolder, setBankAccountHolder] = useState('');
+  const [bankAccountNumber, setBankAccountNumber] = useState('');
+  const [confirmBankAccountNumber, setConfirmBankAccountNumber] = useState('');
+  const [ifscCode, setIfscCode] = useState('');
+  const [bankName, setBankName] = useState('');
+  const [payoutMethod, setPayoutMethod] = useState('');
+  const [upiId, setUpiId] = useState('');
   
   // Final Declaration Checkboxes
-  const [declAccuracy, setDeclAccuracy] = useState(true);
-  const [declSafetyPolicy, setDeclSafetyPolicy] = useState(true);
-  const [declNonSexual, setDeclNonSexual] = useState(true);
-  const [declTerms, setDeclTerms] = useState(true);
-  const [declPrivacy, setDeclPrivacy] = useState(true);
-  const [declPayoutTerms, setDeclPayoutTerms] = useState(true);
-  const [declBackgroundConsent, setDeclBackgroundConsent] = useState(true);
+  const [declAccuracy, setDeclAccuracy] = useState(false);
+  const [declSafetyPolicy, setDeclSafetyPolicy] = useState(false);
+  const [declNonSexual, setDeclNonSexual] = useState(false);
+  const [declTerms, setDeclTerms] = useState(false);
+  const [declPrivacy, setDeclPrivacy] = useState(false);
+  const [declPayoutTerms, setDeclPayoutTerms] = useState(false);
+  const [declBackgroundConsent, setDeclBackgroundConsent] = useState(false);
 
   // AUTOMATED IDENTITY MATCHING CHECK
   const identityMatchCheck = useMemo(() => {
@@ -1209,6 +1198,7 @@ export default function CompanionOnboardingWizard() {
                     onChange={e => setCountry(e.target.value)}
                     className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none"
                   >
+                    <option value="">Select Country</option>
                     <option value="India">India</option>
                     <option value="United States">United States</option>
                     <option value="United Kingdom">United Kingdom</option>
@@ -1425,6 +1415,7 @@ export default function CompanionOnboardingWizard() {
                     onChange={e => setGender(e.target.value)}
                     className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none"
                   >
+                    <option value="">Select Gender</option>
                     <option value="Female">Female</option>
                     <option value="Male">Male</option>
                     <option value="Non-Binary">Non-Binary</option>
@@ -1497,6 +1488,7 @@ export default function CompanionOnboardingWizard() {
                     onChange={e => setExperienceLevel(e.target.value)}
                     className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white"
                   >
+                    <option value="">Select Experience Level</option>
                     <option value="Fresh / New Companion">Fresh / New Companion</option>
                     <option value="1-2 Years">1-2 Years Experience</option>
                     <option value="3-5 Years">3-5 Years Experience</option>
@@ -1887,11 +1879,11 @@ export default function CompanionOnboardingWizard() {
                   <input 
                     type="number" 
                     value={hourlyRate}
-                    onChange={e => setHourlyRate(Number(e.target.value))}
+                    onChange={e => setHourlyRate(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-full px-3 py-1 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs font-mono font-bold text-slate-900 dark:text-white"
                   />
                   <p className="text-[9px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">
-                    You Earn: ₹{Math.round(hourlyRate * 0.9)}/hr
+                    You Earn: ₹{Math.round((Number(hourlyRate) || 0) * 0.9)}/hr
                   </p>
                 </div>
 
@@ -1901,11 +1893,11 @@ export default function CompanionOnboardingWizard() {
                   <input 
                     type="number" 
                     value={halfDayRate}
-                    onChange={e => setHalfDayRate(Number(e.target.value))}
+                    onChange={e => setHalfDayRate(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-full px-3 py-1 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs font-mono font-bold text-slate-900 dark:text-white"
                   />
                   <p className="text-[9px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">
-                    You Earn: ₹{Math.round(halfDayRate * 0.9)}/session
+                    You Earn: ₹{Math.round((Number(halfDayRate) || 0) * 0.9)}/session
                   </p>
                 </div>
 
@@ -1915,11 +1907,11 @@ export default function CompanionOnboardingWizard() {
                   <input 
                     type="number" 
                     value={fullDayRate}
-                    onChange={e => setFullDayRate(Number(e.target.value))}
+                    onChange={e => setFullDayRate(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-full px-3 py-1 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs font-mono font-bold text-slate-900 dark:text-white"
                   />
                   <p className="text-[9px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">
-                    You Earn: ₹{Math.round(fullDayRate * 0.9)}/day
+                    You Earn: ₹{Math.round((Number(fullDayRate) || 0) * 0.9)}/day
                   </p>
                 </div>
               </div>
@@ -1934,7 +1926,7 @@ export default function CompanionOnboardingWizard() {
                   <input 
                     type="number" 
                     value={weekendSurcharge}
-                    onChange={e => setWeekendSurcharge(Number(e.target.value))}
+                    onChange={e => setWeekendSurcharge(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-full px-2.5 py-1 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white"
                   />
                 </div>
@@ -1944,7 +1936,7 @@ export default function CompanionOnboardingWizard() {
                   <input 
                     type="number" 
                     value={holidaySurcharge}
-                    onChange={e => setHolidaySurcharge(Number(e.target.value))}
+                    onChange={e => setHolidaySurcharge(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-full px-2.5 py-1 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white"
                   />
                 </div>
@@ -1954,7 +1946,7 @@ export default function CompanionOnboardingWizard() {
                   <input 
                     type="number" 
                     value={travelChargePerKm}
-                    onChange={e => setTravelChargePerKm(Number(e.target.value))}
+                    onChange={e => setTravelChargePerKm(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-full px-2.5 py-1 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white"
                   />
                 </div>
@@ -1964,7 +1956,7 @@ export default function CompanionOnboardingWizard() {
                   <input 
                     type="number" 
                     value={extraHourCharge}
-                    onChange={e => setExtraHourCharge(Number(e.target.value))}
+                    onChange={e => setExtraHourCharge(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-full px-2.5 py-1 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white"
                   />
                 </div>
@@ -2052,6 +2044,7 @@ export default function CompanionOnboardingWizard() {
                     onChange={e => setAdvanceNotice(e.target.value)}
                     className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white"
                   >
+                    <option value="">Select Advance Notice</option>
                     <option value="2 Hours">2 Hours Notice</option>
                     <option value="6 Hours">6 Hours Notice</option>
                     <option value="12 Hours">12 Hours Notice</option>
@@ -2066,6 +2059,7 @@ export default function CompanionOnboardingWizard() {
                     onChange={e => setBufferTimeBetweenBookings(e.target.value)}
                     className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white"
                   >
+                    <option value="">Select Buffer Time</option>
                     <option value="1 Hour">1 Hour Buffer</option>
                     <option value="2 Hours">2 Hours Buffer</option>
                     <option value="3 Hours">3 Hours Buffer</option>
@@ -2079,6 +2073,7 @@ export default function CompanionOnboardingWizard() {
                     onChange={e => setCancellationPreference(e.target.value)}
                     className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white"
                   >
+                    <option value="">Select Cancellation Policy</option>
                     <option value="Flexible — 100% up to 12h">Flexible (100% up to 12h prior)</option>
                     <option value="Moderate — 100% up to 24h">Moderate (100% up to 24h prior)</option>
                     <option value="Strict — 50% non-refundable">Strict (50% non-refundable)</option>
@@ -2120,6 +2115,7 @@ export default function CompanionOnboardingWizard() {
                     onChange={e => setOperatingCity(e.target.value)}
                     className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white"
                   >
+                    <option value="">Select Operating City</option>
                     <option value="Mumbai Metro">Mumbai Metro</option>
                     <option value="Delhi NCR">Delhi NCR</option>
                     <option value="Bangalore">Bangalore</option>
@@ -2268,6 +2264,7 @@ export default function CompanionOnboardingWizard() {
                     onChange={e => setEmergencyRelationship(e.target.value)}
                     className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white"
                   >
+                    <option value="">Select Relationship</option>
                     <option value="Parent">Parent</option>
                     <option value="Spouse">Spouse</option>
                     <option value="Sibling">Sibling</option>
@@ -2901,6 +2898,7 @@ export default function CompanionOnboardingWizard() {
                     onChange={e => setPayoutMethod(e.target.value)}
                     className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white"
                   >
+                    <option value="">Select Payout Method</option>
                     <option value="Direct Bank Transfer (IMPS/NEFT)">Direct Bank Transfer (IMPS/NEFT)</option>
                     <option value="UPI Instant Transfer">UPI Instant Transfer</option>
                   </select>

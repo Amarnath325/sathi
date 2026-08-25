@@ -18,28 +18,28 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
     name: '',
     email: '',
     phone: '',
-    age: 25,
-    gender: 'Female',
-    city: 'San Francisco',
-    country: 'USA',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
+    age: '' as any,
+    gender: '',
+    city: '',
+    country: '',
+    avatar: '',
     photos: [],
-    categories: ['Event Companion'],
-    skills: ['Multilingual'],
-    languages: ['English'],
-    hourlyRate: 45,
-    dailyRate: 320,
+    categories: [],
+    skills: [],
+    languages: [],
+    hourlyRate: '' as any,
+    dailyRate: '' as any,
     bio: '',
     education: '',
-    experienceYears: 2,
+    experienceYears: '' as any,
     status: 'ACTIVE' as CompanionStatus,
     availability: {
-      Mon: [9, 10, 11, 14, 15, 16],
-      Tue: [9, 10, 11, 14, 15, 16],
-      Wed: [9, 10, 11],
-      Thu: [14, 15, 16],
-      Fri: [9, 10, 11, 14, 15, 16],
-      Sat: [10, 11, 12, 13, 14, 15],
+      Mon: [],
+      Tue: [],
+      Wed: [],
+      Thu: [],
+      Fri: [],
+      Sat: [],
       Sun: []
     }
   });
@@ -108,16 +108,17 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
             <div>
               <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Age</label>
               <input
-                type="number" min={18} max={80} value={formData.age || 25} onChange={e => set('age', Number(e.target.value))}
+                type="number" min={18} max={80} value={formData.age || ''} onChange={e => set('age', Number(e.target.value))}
                 className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-sm text-white focus:border-indigo-500 focus:outline-none"
               />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Gender</label>
               <select
-                value={formData.gender || 'Female'} onChange={e => set('gender', e.target.value)}
+                value={formData.gender || ''} onChange={e => set('gender', e.target.value)}
                 className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-sm text-white focus:border-indigo-500 focus:outline-none"
               >
+                <option value="">Select Gender</option>
                 <option value="Female">Female</option>
                 <option value="Male">Male</option>
                 <option value="Non-binary">Non-binary</option>
@@ -144,14 +145,14 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
             <div>
               <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Hourly Rate ($)</label>
               <input
-                type="number" min={10} max={500} value={formData.hourlyRate || 45} onChange={e => set('hourlyRate', Number(e.target.value))}
+                type="number" min={10} max={500} value={formData.hourlyRate || ''} onChange={e => set('hourlyRate', Number(e.target.value))}
                 className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-sm text-white focus:border-indigo-500 focus:outline-none"
               />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Daily Rate ($)</label>
               <input
-                type="number" value={formData.dailyRate || 320} onChange={e => set('dailyRate', Number(e.target.value))}
+                type="number" value={formData.dailyRate || ''} onChange={e => set('dailyRate', Number(e.target.value))}
                 className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-sm text-white focus:border-indigo-500 focus:outline-none"
               />
             </div>
