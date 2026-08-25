@@ -49,6 +49,29 @@ import { useToast } from '@/components/ui/Toast';
 import { ServicePolicyEngine } from '@/lib/servicePolicyEngine';
 import { ServiceCategory } from '@/lib/types';
 
+// Pre-defined Suggestions Pool for Autocomplete & Quick Chips
+const POPULAR_LANGUAGES = [
+  'English', 'Hindi', 'Spanish', 'French', 'German', 
+  'Mandarin', 'Japanese', 'Arabic', 'Russian', 'Italian', 
+  'Bengali', 'Marathi', 'Tamil', 'Telugu', 'Punjabi'
+];
+
+const POPULAR_SKILLS = [
+  'Corporate Etiquette', 'Active Listening', 'Public Speaking', 
+  'Fine Dining Etiquette', 'VIP Event Protocol', 'City & Heritage Tour Guiding', 
+  'Foreign Language Translation', 'Art & Museum Curation', 'Tech & AI Savvy', 
+  'Fitness & Wellness Companion', 'Diplomatic Discretion', 'Intellectual Conversation', 
+  'Emotional Intelligence', 'Party & Social Host', 'Travel Accompaniment'
+];
+
+const POPULAR_INTERESTS = [
+  'Classical Music', 'Wine & Gastronomy', 'Modern Art & Literature', 
+  'Travel & Exploration', 'Philosophy & Debates', 'Mindfulness & Yoga', 
+  'Cinema & Theatre', 'Board Games & Chess', 'Fitness & Marathon', 
+  'Photography', 'Astronomy & Science', 'Jazz & Blues', 
+  'Tech & Startups', 'Culinary Arts', 'Fashion & Styling', 'Outdoor Hiking'
+];
+
 export default function CompanionOnboardingWizard() {
   const router = useRouter();
   const { showToast } = useToast();
@@ -319,6 +342,44 @@ export default function CompanionOnboardingWizard() {
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
+  // Profile Photo Upload & Drag/Drop State
+  const profilePhotoInputRef = useRef<HTMLInputElement | null>(null);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [profilePhotoName, setProfilePhotoName] = useState<string>('');
+  const [profilePhotoSize, setProfilePhotoSize] = useState<string>('');
+  const [isDraggingPhoto, setIsDraggingPhoto] = useState<boolean>(false);
+
+  const handlePhotoUploadFile = (file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showToast('error', 'Invalid File Type', 'Please upload a valid image file (JPG, PNG, WebP).');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('error', 'File Too Large', 'Maximum profile photo size is 5MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        setProfilePhoto(e.target.result as string);
+        setProfilePhotoName(file.name);
+        setProfilePhotoSize(`${(file.size / (1024 * 1024)).toFixed(2)} MB`);
+        showToast('success', 'Profile Photo Added!', `${file.name} uploaded successfully.`);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handlePhotoDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDraggingPhoto(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handlePhotoUploadFile(e.dataTransfer.files[0]);
+    }
+  };
+
   // Helper functions for tags
   const handleAddTag = (
     type: 'lang' | 'skill' | 'interest',
@@ -466,38 +527,69 @@ export default function CompanionOnboardingWizard() {
   const [travelChargePerKm, setTravelChargePerKm] = useState<number | ''>('');
   const [extraHourCharge, setExtraHourCharge] = useState<number | ''>('');
 
-  // Schedule & Working Days
-  const [workingDays, setWorkingDays] = useState<string[]>([]);
+  // Schedule & Working Days (Default Active Monday-Saturday)
+  const [workingDays, setWorkingDays] = useState<string[]>([
+    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
+  ]);
 
   // Structured Day-Wise Working Hours
   const [dayWiseHours, setDayWiseHours] = useState<{ [day: string]: { start: string; end: string; enabled: boolean } }>({
-    Monday: { start: '', end: '', enabled: false },
-    Tuesday: { start: '', end: '', enabled: false },
-    Wednesday: { start: '', end: '', enabled: false },
-    Thursday: { start: '', end: '', enabled: false },
-    Friday: { start: '', end: '', enabled: false },
-    Saturday: { start: '', end: '', enabled: false },
+    Monday: { start: '09:00', end: '20:00', enabled: true },
+    Tuesday: { start: '09:00', end: '20:00', enabled: true },
+    Wednesday: { start: '09:00', end: '20:00', enabled: true },
+    Thursday: { start: '09:00', end: '20:00', enabled: true },
+    Friday: { start: '09:00', end: '22:00', enabled: true },
+    Saturday: { start: '10:00', end: '23:00', enabled: true },
     Sunday: { start: '', end: '', enabled: false },
   });
 
-  const [advanceNotice, setAdvanceNotice] = useState('');
-  const [sameDayBooking, setSameDayBooking] = useState(false);
-  const [minNoticeHours, setMinNoticeHours] = useState<number | ''>('');
-  const [maxBookingsPerDay, setMaxBookingsPerDay] = useState<number | ''>('');
-  const [bufferTimeBetweenBookings, setBufferTimeBetweenBookings] = useState('');
-  const [cancellationPreference, setCancellationPreference] = useState('');
+  const [advanceNotice, setAdvanceNotice] = useState('6 Hours');
+  const [sameDayBooking, setSameDayBooking] = useState(true);
+  const [minNoticeHours, setMinNoticeHours] = useState<number | ''>(2);
+  const [maxBookingsPerDay, setMaxBookingsPerDay] = useState<number | ''>(4);
+  const [bufferTimeBetweenBookings, setBufferTimeBetweenBookings] = useState('1 Hour');
+  const [cancellationPreference, setCancellationPreference] = useState('Moderate — 100% up to 24h');
+
+  // Toggle day active/inactive in operating schedule
+  const handleDayToggle = (day: string) => {
+    const isCurrentlyActive = workingDays.includes(day);
+    if (isCurrentlyActive) {
+      setWorkingDays(prev => prev.filter(d => d !== day));
+      setDayWiseHours(prev => ({
+        ...prev,
+        [day]: { ...(prev[day] || { start: '09:00', end: '20:00' }), enabled: false }
+      }));
+    } else {
+      setWorkingDays(prev => [...prev, day]);
+      setDayWiseHours(prev => {
+        const current = prev[day] || { start: '', end: '', enabled: false };
+        return {
+          ...prev,
+          [day]: { 
+            start: current.start || '09:00', 
+            end: current.end || '20:00', 
+            enabled: true 
+          }
+        };
+      });
+    }
+  };
 
   // Helper to copy Monday hours to all active days
   const handleApplyMondayHoursToAll = () => {
-    const mon = dayWiseHours['Monday'] || { start: '12:00', end: '22:00', enabled: true };
+    const mon = dayWiseHours['Monday'] || { start: '09:00', end: '20:00', enabled: true };
+    const s = mon.start || '09:00';
+    const e = mon.end || '20:00';
+    const allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     setDayWiseHours(prev => {
       const next = { ...prev };
-      Object.keys(next).forEach(day => {
-        next[day] = { ...next[day], start: mon.start, end: mon.end };
+      allDays.forEach(day => {
+        next[day] = { start: s, end: e, enabled: true };
       });
       return next;
     });
-    showToast('success', 'Schedule Updated', 'Applied Monday working hours to all operating days.');
+    setWorkingDays(allDays);
+    showToast('success', 'Schedule Updated ✓', `Applied Monday working hours (${s} – ${e}) to all operating days.`);
   };
 
   // =========================================================================
@@ -858,23 +950,6 @@ export default function CompanionOnboardingWizard() {
     }
   };
 
-
-  const handleDayToggle = (day: string) => {
-    if (workingDays.includes(day)) {
-      setWorkingDays(prev => prev.filter(d => d !== day));
-      setDayWiseHours(prev => ({
-        ...prev,
-        [day]: { ...prev[day], enabled: false }
-      }));
-    } else {
-      setWorkingDays(prev => [...prev, day]);
-      setDayWiseHours(prev => ({
-        ...prev,
-        [day]: { ...prev[day], enabled: true }
-      }));
-    }
-  };
-
   const handleScanServiceText = (text: string) => {
     setServiceDescription(text);
     const scan = ServicePolicyEngine.evaluateProposedService(text);
@@ -1067,7 +1142,7 @@ export default function CompanionOnboardingWizard() {
         </div>
 
         {/* 7 Step Navigation Buttons */}
-        <div className="grid grid-cols-4 sm:grid-cols-7 gap-1 lg:gap-1.5 pt-0.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1.5 pt-0.5">
           {STEPS.map((s) => {
             const isActive = currentStep === s.id;
             const isDone = currentStep > s.id;
@@ -1077,13 +1152,13 @@ export default function CompanionOnboardingWizard() {
                 key={s.id}
                 type="button"
                 onClick={() => {
-                  if (s.id < currentStep || isDone) setCurrentStep(s.id);
+                  if (s.id <= currentStep || isDone) setCurrentStep(s.id);
                 }}
-                className={`p-1 lg:p-1.5 rounded-xl border text-left transition-all flex items-center gap-1.5 ${
+                className={`p-1.5 rounded-xl border text-left transition-all flex items-center gap-1.5 ${
                   isActive
-                    ? 'bg-indigo-600 border-indigo-500 text-white shadow-md'
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 border-indigo-500 text-white shadow-md ring-2 ring-indigo-500/20'
                     : isDone
-                    ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 hover:border-emerald-400'
+                    ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 hover:border-emerald-400'
                     : 'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
@@ -1100,10 +1175,12 @@ export default function CompanionOnboardingWizard() {
                 </div>
 
                 <div className="overflow-hidden min-w-0">
-                  <h4 className={`text-[9px] lg:text-[10px] font-bold truncate leading-tight ${isActive ? 'text-white' : 'text-slate-800 dark:text-slate-200'}`}>
+                  <h4 className={`text-[9px] lg:text-[10px] font-bold truncate leading-tight ${isActive ? 'text-white' : isDone ? 'text-emerald-900 dark:text-emerald-200' : 'text-slate-800 dark:text-slate-200'}`}>
                     {s.title}
                   </h4>
-                  <p className={`text-[8px] truncate leading-tight hidden lg:block ${isActive ? 'text-indigo-100' : 'text-slate-400'}`}>{s.subtitle}</p>
+                  <p className={`text-[8px] truncate leading-tight ${isActive ? 'text-indigo-100' : isDone ? 'text-emerald-600/80 dark:text-emerald-400/70' : 'text-slate-400'}`}>
+                    {s.subtitle}
+                  </p>
                 </div>
               </button>
             );
@@ -1426,16 +1503,82 @@ export default function CompanionOnboardingWizard() {
 
               {/* Photo & Short Bio */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 lg:gap-3">
-                <div className="p-3 rounded-xl bg-white dark:bg-slate-950 border-2 border-dashed border-indigo-300 dark:border-indigo-800 text-center flex flex-col items-center justify-center">
-                  <UploadCloud className="w-5 h-5 text-indigo-600 mb-1" />
-                  <p className="text-[11px] font-bold text-slate-900 dark:text-white">Profile Photo *</p>
-                  <p className="text-[9px] text-slate-400">Clear face photo • max 5 MB</p>
+                {/* Profile Photo Upload with Drag & Drop */}
+                <div>
+                  <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Profile Photo *</label>
+                  <input 
+                    type="file" 
+                    ref={profilePhotoInputRef}
+                    onChange={e => e.target.files?.[0] && handlePhotoUploadFile(e.target.files[0])}
+                    accept="image/png,image/jpeg,image/webp,image/jpg"
+                    className="hidden"
+                  />
+
+                  {profilePhoto ? (
+                    <div className="p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-indigo-300 dark:border-indigo-800/80 flex flex-col items-center justify-center text-center space-y-1.5 shadow-sm">
+                      <div className="relative group">
+                        <img 
+                          src={profilePhoto} 
+                          alt="Profile Preview" 
+                          className="w-16 h-16 rounded-full object-cover border-2 border-indigo-500 shadow-md"
+                        />
+                        <div 
+                          className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer"
+                          onClick={() => profilePhotoInputRef.current?.click()}
+                        >
+                          <Camera className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                      
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold text-slate-900 dark:text-white truncate max-w-[140px]">{profilePhotoName || 'Profile Photo'}</p>
+                        <p className="text-[8px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">✓ Ready ({profilePhotoSize || '1.2 MB'})</p>
+                      </div>
+
+                      <div className="flex gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => profilePhotoInputRef.current?.click()}
+                          className="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 text-[9px] font-bold hover:bg-indigo-100"
+                        >
+                          Change
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProfilePhoto(null);
+                            setProfilePhotoName('');
+                            setProfilePhotoSize('');
+                          }}
+                          className="px-2 py-0.5 rounded-md bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-400 text-[9px] font-bold hover:bg-rose-100"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div 
+                      onClick={() => profilePhotoInputRef.current?.click()}
+                      onDragOver={e => { e.preventDefault(); setIsDraggingPhoto(true); }}
+                      onDragLeave={() => setIsDraggingPhoto(false)}
+                      onDrop={handlePhotoDrop}
+                      className={`p-3 rounded-xl border-2 border-dashed text-center flex flex-col items-center justify-center cursor-pointer transition-all min-h-[110px] ${
+                        isDraggingPhoto
+                          ? 'border-indigo-600 bg-indigo-50/60 dark:bg-indigo-950/40 ring-2 ring-indigo-500/20'
+                          : 'border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-950 hover:border-indigo-500 hover:bg-indigo-50/20'
+                      }`}
+                    >
+                      <UploadCloud className="w-5 h-5 text-indigo-600 mb-1" />
+                      <p className="text-[11px] font-bold text-slate-900 dark:text-white">Profile Photo *</p>
+                      <p className="text-[9px] text-slate-400">Drag & drop or click • max 5 MB</p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="sm:col-span-2">
                   <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Short Professional Bio *</label>
                   <textarea 
-                    rows={3}
+                    rows={4}
                     value={bio}
                     onChange={e => setBio(e.target.value)}
                     placeholder="Describe your background, companion style, and conversation topics..."
@@ -1445,9 +1588,9 @@ export default function CompanionOnboardingWizard() {
               </div>
 
               {/* Languages Tag Manager */}
-              <div>
-                <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Languages Spoken *</label>
-                <div className="flex items-center gap-1.5 mb-1.5">
+              <div className="space-y-1">
+                <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block">Languages Spoken *</label>
+                <div className="flex items-center gap-1.5 mb-1">
                   <input 
                     type="text" 
                     value={newLanguageInput}
@@ -1459,22 +1602,39 @@ export default function CompanionOnboardingWizard() {
                       }
                     }}
                     placeholder="Add language (e.g. German) & press Enter"
-                    className="flex-1 px-3 py-1 text-xs rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none"
+                    className="flex-1 px-3 py-1.5 text-xs rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none"
                   />
                   <button 
                     type="button" 
                     onClick={() => handleAddTag('lang', newLanguageInput, setLanguagesList, setNewLanguageInput)}
-                    className="px-3 py-1 rounded-lg bg-indigo-600 text-white text-[10px] font-bold"
+                    className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold shadow-sm"
                   >
                     Add
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-1">
+
+                {/* Selected Languages */}
+                <div className="flex flex-wrap gap-1 mb-1">
                   {languagesList.map(lang => (
                     <span key={lang} className="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-[10px] font-bold flex items-center gap-1">
                       {lang}
                       <button type="button" onClick={() => handleRemoveTag(lang, setLanguagesList)} className="text-indigo-400 hover:text-indigo-600">×</button>
                     </span>
+                  ))}
+                </div>
+
+                {/* Auto Suggestions Tray */}
+                <div className="flex flex-wrap items-center gap-1">
+                  <span className="text-[9px] text-slate-400 font-mono">Suggested:</span>
+                  {POPULAR_LANGUAGES.filter(l => !languagesList.includes(l)).slice(0, 6).map(lang => (
+                    <button
+                      key={lang}
+                      type="button"
+                      onClick={() => handleAddTag('lang', lang, setLanguagesList, setNewLanguageInput)}
+                      className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 text-[9px] hover:bg-indigo-100 hover:text-indigo-700 dark:hover:bg-indigo-950/80 transition-colors"
+                    >
+                      + {lang}
+                    </button>
                   ))}
                 </div>
               </div>
@@ -1510,10 +1670,10 @@ export default function CompanionOnboardingWizard() {
                 </div>
               </div>
 
-              {/* Skills Tag Manager */}
-              <div>
-                <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Key Skills & Capabilities</label>
-                <div className="flex items-center gap-1.5 mb-1.5">
+              {/* Skills Tag Manager with Auto Suggestions */}
+              <div className="space-y-1">
+                <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block">Key Skills & Capabilities</label>
+                <div className="flex items-center gap-1.5 mb-1">
                   <input 
                     type="text" 
                     value={newSkillInput}
@@ -1525,30 +1685,47 @@ export default function CompanionOnboardingWizard() {
                       }
                     }}
                     placeholder="Add skill (e.g. Corporate Etiquette) & press Enter"
-                    className="flex-1 px-3 py-1 text-xs rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none"
+                    className="flex-1 px-3 py-1.5 text-xs rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none"
                   />
                   <button 
                     type="button" 
                     onClick={() => handleAddTag('skill', newSkillInput, setSkillsList, setNewSkillInput)}
-                    className="px-3 py-1 rounded-lg bg-indigo-600 text-white text-[10px] font-bold"
+                    className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-bold shadow-sm"
                   >
                     Add
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-1">
+
+                {/* Selected Skills Badges */}
+                <div className="flex flex-wrap gap-1 mb-1">
                   {skillsList.map(skill => (
-                    <span key={skill} className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[10px] font-bold flex items-center gap-1">
+                    <span key={skill} className="px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-[10px] font-bold flex items-center gap-1">
                       {skill}
-                      <button type="button" onClick={() => handleRemoveTag(skill, setSkillsList)} className="text-emerald-400 hover:text-emerald-600">×</button>
+                      <button type="button" onClick={() => handleRemoveTag(skill, setSkillsList)} className="text-purple-400 hover:text-purple-600">×</button>
                     </span>
+                  ))}
+                </div>
+
+                {/* Auto Suggestions Tray */}
+                <div className="flex flex-wrap items-center gap-1">
+                  <span className="text-[9px] text-slate-400 font-mono">Suggested:</span>
+                  {POPULAR_SKILLS.filter(s => !skillsList.includes(s)).slice(0, 5).map(skill => (
+                    <button
+                      key={skill}
+                      type="button"
+                      onClick={() => handleAddTag('skill', skill, setSkillsList, setNewSkillInput)}
+                      className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 text-[9px] hover:bg-purple-100 hover:text-purple-700 dark:hover:bg-purple-950/80 transition-colors"
+                    >
+                      + {skill}
+                    </button>
                   ))}
                 </div>
               </div>
 
-              {/* Personality / Interests Tag Manager */}
-              <div>
-                <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Personality & Interests</label>
-                <div className="flex items-center gap-1.5 mb-1.5">
+              {/* Personality / Interests Tag Manager with Auto Suggestions */}
+              <div className="space-y-1">
+                <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block">Personality & Interests</label>
+                <div className="flex items-center gap-1.5 mb-1">
                   <input 
                     type="text" 
                     value={newInterestInput}
@@ -1560,22 +1737,39 @@ export default function CompanionOnboardingWizard() {
                       }
                     }}
                     placeholder="Add interest (e.g. Classical Music) & press Enter"
-                    className="flex-1 px-3 py-1 text-xs rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none"
+                    className="flex-1 px-3 py-1.5 text-xs rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none"
                   />
                   <button 
                     type="button" 
                     onClick={() => handleAddTag('interest', newInterestInput, setInterestsList, setNewInterestInput)}
-                    className="px-3 py-1 rounded-lg bg-indigo-600 text-white text-[10px] font-bold"
+                    className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-[10px] font-bold shadow-sm"
                   >
                     Add
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-1">
+
+                {/* Selected Interests Badges */}
+                <div className="flex flex-wrap gap-1 mb-1">
                   {interestsList.map(interest => (
                     <span key={interest} className="px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-[10px] font-bold flex items-center gap-1">
                       {interest}
                       <button type="button" onClick={() => handleRemoveTag(interest, setInterestsList)} className="text-amber-400 hover:text-amber-600">×</button>
                     </span>
+                  ))}
+                </div>
+
+                {/* Auto Suggestions Tray */}
+                <div className="flex flex-wrap items-center gap-1">
+                  <span className="text-[9px] text-slate-400 font-mono">Suggested:</span>
+                  {POPULAR_INTERESTS.filter(i => !interestsList.includes(i)).slice(0, 5).map(interest => (
+                    <button
+                      key={interest}
+                      type="button"
+                      onClick={() => handleAddTag('interest', interest, setInterestsList, setNewInterestInput)}
+                      className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 text-[9px] hover:bg-amber-100 hover:text-amber-700 dark:hover:bg-amber-950/80 transition-colors"
+                    >
+                      + {interest}
+                    </button>
                   ))}
                 </div>
               </div>
@@ -1964,67 +2158,111 @@ export default function CompanionOnboardingWizard() {
             </div>
 
             {/* STRUCTURED DAY-BY-DAY WORKING HOURS */}
-            <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-2">
-              <div className="flex justify-between items-center">
+            <div className="p-3 lg:p-4 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-2.5">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <div>
-                  <span className="font-bold text-xs text-slate-900 dark:text-white block">Day-wise Operating Schedule</span>
-                  <p className="text-[9px] text-slate-500">Configure exact working start & end times for each day of the week.</p>
+                  <span className="font-bold text-xs lg:text-sm text-slate-900 dark:text-white block">Day-wise Operating Schedule</span>
+                  <p className="text-[10px] text-slate-500">Configure active working days and specific start/end operational hours.</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleApplyMondayHoursToAll}
-                  className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold hover:bg-indigo-100"
-                >
-                  Apply Monday Hours to All
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                      setWorkingDays(allDays);
+                      setDayWiseHours(prev => {
+                        const next = { ...prev };
+                        allDays.forEach(d => {
+                          next[d] = { start: '09:00', end: '21:00', enabled: true };
+                        });
+                        return next;
+                      });
+                      showToast('success', 'All Days Enabled', 'Set 09:00 AM – 09:00 PM for all 7 days.');
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-bold hover:bg-slate-100"
+                  >
+                    Select All Days
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleApplyMondayHoursToAll}
+                    className="px-3 py-1 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-[10px] font-bold shadow-sm flex items-center gap-1"
+                  >
+                    <Sparkles className="w-3 h-3 text-indigo-200" />
+                    <span>Apply Monday to All</span>
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-1.5">
                 {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => {
-                  const dayObj = dayWiseHours[day] || { start: '12:00', end: '22:00', enabled: true };
+                  const dayObj = dayWiseHours[day] || { start: '09:00', end: '20:00', enabled: false };
                   const isDayActive = workingDays.includes(day);
 
                   return (
-                    <div key={day} className={`p-2 rounded-xl border flex items-center justify-between gap-2 text-xs transition-all ${
+                    <div key={day} className={`p-2 lg:p-2.5 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs transition-all ${
                       isDayActive
-                        ? 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800'
-                        : 'bg-slate-100/50 dark:bg-slate-900/30 border-slate-200/50 opacity-60'
+                        ? 'bg-white dark:bg-slate-950 border-indigo-200 dark:border-indigo-900/60 shadow-sm ring-1 ring-indigo-500/10'
+                        : 'bg-slate-100/60 dark:bg-slate-900/40 border-slate-200/60 dark:border-slate-800/60 opacity-60'
                     }`}>
-                      <div className="flex items-center gap-2 w-28">
+                      <div className="flex items-center gap-2.5 min-w-[130px]">
                         <input 
                           type="checkbox" 
+                          id={`day-check-${day}`}
                           checked={isDayActive}
                           onChange={() => handleDayToggle(day)}
-                          className="w-3.5 h-3.5 rounded text-indigo-600"
+                          className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                         />
-                        <span className="font-bold text-slate-800 dark:text-slate-200">{day}</span>
+                        <label htmlFor={`day-check-${day}`} className="font-bold text-slate-900 dark:text-white cursor-pointer select-none">
+                          {day}
+                        </label>
                       </div>
 
                       {isDayActive ? (
-                        <div className="flex items-center gap-2 flex-1 justify-end font-mono">
-                          <span className="text-[10px] text-slate-400">Start:</span>
-                          <input 
-                            type="time" 
-                            value={dayObj.start}
-                            onChange={e => setDayWiseHours({
-                              ...dayWiseHours,
-                              [day]: { ...dayObj, start: e.target.value }
-                            })}
-                            className="px-2 py-0.5 rounded bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white"
-                          />
-                          <span className="text-[10px] text-slate-400">End:</span>
-                          <input 
-                            type="time" 
-                            value={dayObj.end}
-                            onChange={e => setDayWiseHours({
-                              ...dayWiseHours,
-                              [day]: { ...dayObj, end: e.target.value }
-                            })}
-                            className="px-2 py-0.5 rounded bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white"
-                          />
+                        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:justify-end font-mono">
+                          <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-900 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800">
+                            <span className="text-[10px] text-slate-400 font-sans">Start:</span>
+                            <input 
+                              type="time" 
+                              value={dayObj.start || '09:00'}
+                              onChange={e => setDayWiseHours({
+                                ...dayWiseHours,
+                                [day]: { ...dayObj, start: e.target.value }
+                              })}
+                              className="bg-transparent text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
+                            />
+                          </div>
+
+                          <span className="text-slate-400 text-xs hidden sm:inline">→</span>
+
+                          <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-900 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800">
+                            <span className="text-[10px] text-slate-400 font-sans">End:</span>
+                            <input 
+                              type="time" 
+                              value={dayObj.end || '20:00'}
+                              onChange={e => setDayWiseHours({
+                                ...dayWiseHours,
+                                [day]: { ...dayObj, end: e.target.value }
+                              })}
+                              className="bg-transparent text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
+                            />
+                          </div>
+
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 text-[9px] font-bold border border-emerald-200 dark:border-emerald-800 font-sans">
+                            Active
+                          </span>
                         </div>
                       ) : (
-                        <span className="text-[10px] font-mono text-slate-400 italic">Day Off / Unavailable</span>
+                        <div className="flex items-center justify-between w-full sm:w-auto gap-3">
+                          <span className="text-[10px] font-mono text-slate-400 italic">Day Off / Unavailable</span>
+                          <button
+                            type="button"
+                            onClick={() => handleDayToggle(day)}
+                            className="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-[9px] font-bold hover:bg-indigo-100"
+                          >
+                            + Enable Day
+                          </button>
+                        </div>
                       )}
                     </div>
                   );
@@ -2681,25 +2919,37 @@ export default function CompanionOnboardingWizard() {
                     </div>
                   )}
 
-                  <div className="h-44 rounded-lg bg-slate-950 border border-slate-800 flex flex-col items-center justify-center relative overflow-hidden">
+                  <div className="relative w-full aspect-[4/3] sm:aspect-[16/9] max-h-[360px] rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 flex flex-col items-center justify-center shadow-2xl">
                     {/* Real HTML5 WebRTC Video Stream Element */}
                     <video 
                       ref={videoRef} 
                       autoPlay 
                       playsInline 
                       muted 
-                      className="absolute inset-0 w-full h-full object-cover rounded-lg scale-x-[-1]"
+                      className="absolute inset-0 w-full h-full object-cover scale-x-[-1]"
                     />
 
+                    {/* HUD Vignette Overlay */}
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-black/20 to-black/60 pointer-events-none" />
+
                     {/* Animated Oval Facial Frame Overlay */}
-                    <div className="w-24 h-32 rounded-full border-2 border-dashed border-emerald-400 flex items-center justify-center animate-pulse z-10 bg-slate-950/20 backdrop-blur-[1px]">
-                      <span className="text-[9px] font-mono text-emerald-300 font-bold bg-slate-950/80 px-2 py-0.5 rounded border border-emerald-500/30">FACE FRAME</span>
+                    <div className="relative w-36 h-48 sm:w-44 sm:h-56 rounded-[50%] border-2 border-dashed border-emerald-400/90 shadow-[0_0_25px_rgba(52,211,153,0.35)] flex flex-col items-center justify-between py-3 animate-pulse z-10 bg-black/10 backdrop-blur-[0.5px]">
+                      <div className="w-8 h-1 bg-emerald-400/80 rounded-full" />
+                      <span className="text-[9px] font-mono text-emerald-300 font-bold bg-slate-950/85 px-2.5 py-0.5 rounded-full border border-emerald-500/40 shadow-sm">
+                        FIT FACE HERE
+                      </span>
+                      <div className="w-8 h-1 bg-emerald-400/80 rounded-full" />
                     </div>
 
-                    <div className="absolute bottom-2 z-20 bg-slate-900/90 px-3 py-1 rounded-full border border-slate-700 text-[10px] font-mono text-emerald-400 font-bold flex items-center gap-1.5 shadow-lg">
-                      <Loader2 className="w-3 h-3 animate-spin text-emerald-400" />
+                    {/* Scanning Laser Beam */}
+                    {livenessStep !== 'PASSED' && (
+                      <div className="absolute inset-x-0 top-1/4 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent animate-bounce opacity-80 z-10" />
+                    )}
+
+                    <div className="absolute bottom-3 z-20 bg-slate-900/95 px-3.5 py-1.5 rounded-full border border-slate-700/80 text-[10px] sm:text-xs font-mono text-emerald-400 font-bold flex items-center gap-2 shadow-xl backdrop-blur-md">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400 shrink-0" />
                       <span>
-                        {livenessStep === 'DETECTING' && 'Step 1/3: Position face in oval frame...'}
+                        {livenessStep === 'DETECTING' && 'Step 1/3: Position face inside oval frame...'}
                         {livenessStep === 'BLINK' && 'Step 2/3: Please blink your eyes twice...'}
                         {livenessStep === 'TURN' && 'Step 3/3: Turn head slightly to the right...'}
                         {livenessStep === 'PASSED' && '✓ Facial Liveness Match Verified (99.6%)'}
