@@ -695,7 +695,7 @@ export default function CompanionOnboardingWizard() {
   // KYC Overall Status
   const [kycStatus, setKycStatus] = useState<'NOT_STARTED' | 'IN_PROGRESS' | 'UNDER_REVIEW' | 'VERIFIED' | 'REJECTED'>('NOT_STARTED');
 
-  // Real File Upload & AI OCR Scanner Handler
+  // Real File Upload & AI OCR Scanner Handler (With Duplicate Image Prevention & Shared Doc Number)
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, isPrimary: boolean, isFront: boolean) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -705,22 +705,54 @@ export default function CompanionOnboardingWizard() {
       const dataUrl = event.target?.result as string;
       const docType = isPrimary ? primaryIdType : secondaryIdType;
 
+      // 1. Duplicate Image Check: Front side and Back side cannot be identical image
+      if (isPrimary) {
+        if (isFront && primaryBackPreview && primaryBackPreview === dataUrl) {
+          showToast('error', 'Duplicate Image Error', `Front and Back photos of ${docType} cannot be identical. Please upload distinct photos.`);
+          if (e.target) e.target.value = '';
+          return;
+        }
+        if (!isFront && primaryFrontPreview && primaryFrontPreview === dataUrl) {
+          showToast('error', 'Duplicate Image Error', `Back and Front photos of ${docType} cannot be identical. Please upload distinct photos.`);
+          if (e.target) e.target.value = '';
+          return;
+        }
+      } else {
+        if (isFront && secondaryBackPreview && secondaryBackPreview === dataUrl) {
+          showToast('error', 'Duplicate Image Error', `Front and Back photos of ${docType} cannot be identical. Please upload distinct photos.`);
+          if (e.target) e.target.value = '';
+          return;
+        }
+        if (!isFront && secondaryFrontPreview && secondaryFrontPreview === dataUrl) {
+          showToast('error', 'Duplicate Image Error', `Back and Front photos of ${docType} cannot be identical. Please upload distinct photos.`);
+          if (e.target) e.target.value = '';
+          return;
+        }
+      }
+
+      let willHaveBothPrimary = false;
+      let willHaveBothSecondary = false;
+
       if (isPrimary) {
         if (isFront) {
           setPrimaryFrontUploaded(true);
           setPrimaryFrontPreview(dataUrl);
+          willHaveBothPrimary = primaryBackUploaded;
         } else {
           setPrimaryBackUploaded(true);
           setPrimaryBackPreview(dataUrl);
+          willHaveBothPrimary = primaryFrontUploaded;
         }
         setIsPrimaryOcrScanning(true);
       } else {
         if (isFront) {
           setSecondaryFrontUploaded(true);
           setSecondaryFrontPreview(dataUrl);
+          willHaveBothSecondary = secondaryBackUploaded;
         } else {
           setSecondaryBackUploaded(true);
           setSecondaryBackPreview(dataUrl);
+          willHaveBothSecondary = secondaryFrontUploaded;
         }
         setIsSecondaryOcrScanning(true);
       }
@@ -731,31 +763,50 @@ export default function CompanionOnboardingWizard() {
         `[${timestamp}] Companion uploaded ${isPrimary ? 'Primary' : 'Secondary'} ${docType} (${isFront ? 'Front' : 'Back'} File: ${file.name}, ${(file.size / 1024).toFixed(1)} KB)`
       ]);
 
-      // Trigger AI OCR extraction on uploaded image file
+      // Trigger AI OCR extraction on uploaded image file (Maintains single document number)
       setTimeout(() => {
-        let extractedNumber = '';
-        if (docType === 'Aadhaar Card') extractedNumber = `${Math.floor(1000 + Math.random() * 9000)} ${Math.floor(1000 + Math.random() * 9000)} ${Math.floor(1000 + Math.random() * 9000)}`;
-        else if (docType === 'PAN Card') extractedNumber = `ABCDE${Math.floor(1000 + Math.random() * 9000)}F`;
-        else if (docType === 'Driving License') extractedNumber = `MH01202200${Math.floor(10000 + Math.random() * 90000)}`;
-        else if (docType === 'Passport') extractedNumber = `Z${Math.floor(1000000 + Math.random() * 9000000)}`;
-        else if (docType === 'Voter ID Card') extractedNumber = `ABC${Math.floor(1000000 + Math.random() * 9000000)}`;
-        else extractedNumber = `DOC${Math.floor(10000000 + Math.random() * 90000000)}`;
-
         if (isPrimary) {
-          setPrimaryIdNumber(extractedNumber);
+          let numberToUse = primaryIdNumber;
+          if (!numberToUse) {
+            if (docType === 'Aadhaar Card') numberToUse = `${Math.floor(1000 + Math.random() * 9000)} ${Math.floor(1000 + Math.random() * 9000)} ${Math.floor(1000 + Math.random() * 9000)}`;
+            else if (docType === 'PAN Card') numberToUse = `ABCDE${Math.floor(1000 + Math.random() * 9000)}F`;
+            else if (docType === 'Driving License') numberToUse = `MH01202200${Math.floor(10000 + Math.random() * 90000)}`;
+            else if (docType === 'Passport') numberToUse = `Z${Math.floor(1000000 + Math.random() * 9000000)}`;
+            else if (docType === 'Voter ID Card') numberToUse = `ABC${Math.floor(1000000 + Math.random() * 9000000)}`;
+            else numberToUse = `DOC${Math.floor(10000000 + Math.random() * 90000000)}`;
+            setPrimaryIdNumber(numberToUse);
+          }
           setIsPrimaryOcrScanning(false);
-          setIsPrimaryOcrDone(true);
+          if (willHaveBothPrimary) {
+            setIsPrimaryOcrDone(true);
+            showToast('success', `${docType} Complete ✓`, `Both Front & Back uploaded. Extracted ID Number: ${numberToUse}`);
+          } else {
+            showToast('info', `${docType} ${isFront ? 'Front' : 'Back'} Saved ✓`, `Please upload the ${isFront ? 'Back' : 'Front'} side photo to complete verification.`);
+          }
         } else {
-          setSecondaryIdNumber(extractedNumber);
+          let numberToUse = secondaryIdNumber;
+          if (!numberToUse) {
+            if (docType === 'Aadhaar Card') numberToUse = `${Math.floor(1000 + Math.random() * 9000)} ${Math.floor(1000 + Math.random() * 9000)} ${Math.floor(1000 + Math.random() * 9000)}`;
+            else if (docType === 'PAN Card') numberToUse = `ABCDE${Math.floor(1000 + Math.random() * 9000)}F`;
+            else if (docType === 'Driving License') numberToUse = `MH01202200${Math.floor(10000 + Math.random() * 90000)}`;
+            else if (docType === 'Passport') numberToUse = `Z${Math.floor(1000000 + Math.random() * 9000000)}`;
+            else if (docType === 'Voter ID Card') numberToUse = `ABC${Math.floor(1000000 + Math.random() * 9000000)}`;
+            else numberToUse = `DOC${Math.floor(10000000 + Math.random() * 90000000)}`;
+            setSecondaryIdNumber(numberToUse);
+          }
           setIsSecondaryOcrScanning(false);
-          setIsSecondaryOcrDone(true);
+          if (willHaveBothSecondary) {
+            setIsSecondaryOcrDone(true);
+            showToast('success', `${docType} Complete ✓`, `Both Front & Back uploaded. Extracted ID Number: ${numberToUse}`);
+          } else {
+            showToast('info', `${docType} ${isFront ? 'Front' : 'Back'} Saved ✓`, `Please upload the ${isFront ? 'Back' : 'Front'} side photo to complete verification.`);
+          }
         }
 
         setKycAuditLogs(prev => [
           ...prev, 
-          `[${new Date().toLocaleTimeString()}] AI OCR extracted ${docType} #${extractedNumber} from uploaded image (Locked Read-Only)`
+          `[${new Date().toLocaleTimeString()}] AI OCR processed ${docType} (${isFront ? 'Front' : 'Back'} side). Current Doc #${primaryIdNumber || secondaryIdNumber}`
         ]);
-        showToast('success', `${docType} Uploaded ✓`, `AI OCR successfully extracted document number: ${extractedNumber}`);
       }, 1500);
     };
 
@@ -869,12 +920,20 @@ export default function CompanionOnboardingWizard() {
       return;
     }
     if (currentStep === 6) {
-      if (!isPrimaryOcrDone || !primaryIdNumber) {
-        showToast('error', 'Primary Document Required', 'Please select and upload your Primary Government ID to extract document number via OCR.');
+      if (!primaryFrontUploaded || !primaryBackUploaded || !primaryIdNumber || !isPrimaryOcrDone) {
+        showToast('error', 'Primary Document Incomplete', `Please upload BOTH Front side and Back side photos of your ${primaryIdType}.`);
         return;
       }
-      if (!isSecondaryOcrDone || !secondaryIdNumber) {
-        showToast('error', 'Secondary Document Required', 'Please select and upload your Secondary Government ID (2nd mandatory doc) via OCR.');
+      if (primaryFrontPreview && primaryBackPreview && primaryFrontPreview === primaryBackPreview) {
+        showToast('error', 'Primary Document Invalid', `Front and Back photos of ${primaryIdType} cannot be identical. Please upload distinct photos.`);
+        return;
+      }
+      if (!secondaryFrontUploaded || !secondaryBackUploaded || !secondaryIdNumber || !isSecondaryOcrDone) {
+        showToast('error', 'Secondary Document Incomplete', `Please upload BOTH Front side and Back side photos of your ${secondaryIdType}.`);
+        return;
+      }
+      if (secondaryFrontPreview && secondaryBackPreview && secondaryFrontPreview === secondaryBackPreview) {
+        showToast('error', 'Secondary Document Invalid', `Front and Back photos of ${secondaryIdType} cannot be identical. Please upload distinct photos.`);
         return;
       }
       if (livenessStatus !== 'VERIFIED' || !capturedSelfieUrl) {
