@@ -695,7 +695,7 @@ export default function CompanionOnboardingWizard() {
   // KYC Overall Status
   const [kycStatus, setKycStatus] = useState<'NOT_STARTED' | 'IN_PROGRESS' | 'UNDER_REVIEW' | 'VERIFIED' | 'REJECTED'>('NOT_STARTED');
 
-  // Real File Upload & AI OCR Scanner Handler (Global 4-Slot Uniqueness & Shared Doc Number)
+  // Real File Upload & Validation Handler (Aadhaar Mandatory Dual-Side + Instant Secondary Upload)
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, isPrimary: boolean, isFront: boolean) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -714,13 +714,12 @@ export default function CompanionOnboardingWizard() {
       ].filter(Boolean);
 
       if (existingPreviews.includes(dataUrl)) {
-        showToast('error', 'Duplicate Image Rejection', `This photo has already been uploaded in another slot. All 4 photos (Primary Front/Back & Secondary Front/Back) must be completely distinct.`);
+        showToast('error', 'Duplicate Image Rejection', `This photo has already been uploaded in another slot. All uploaded document photos must be completely distinct.`);
         if (e.target) e.target.value = '';
         return;
       }
 
       let willHaveBothPrimary = false;
-      let willHaveBothSecondary = false;
 
       if (isPrimary) {
         if (isFront) {
@@ -737,35 +736,26 @@ export default function CompanionOnboardingWizard() {
         if (isFront) {
           setSecondaryFrontUploaded(true);
           setSecondaryFrontPreview(dataUrl);
-          willHaveBothSecondary = secondaryBackUploaded;
         } else {
           setSecondaryBackUploaded(true);
           setSecondaryBackPreview(dataUrl);
-          willHaveBothSecondary = secondaryFrontUploaded;
         }
-        setIsSecondaryOcrScanning(true);
       }
 
       const timestamp = new Date().toLocaleTimeString();
       setKycAuditLogs(prev => [
         ...prev, 
-        `[${timestamp}] Companion uploaded ${isPrimary ? 'Primary' : 'Secondary'} ${docType} (${isFront ? 'Front' : 'Back'} File: ${file.name}, ${(file.size / 1024).toFixed(1)} KB)`
+        `[${timestamp}] Companion uploaded ${isPrimary ? 'Primary (Aadhaar)' : 'Secondary'} ${docType} (${isFront ? 'Front' : 'Back'} File: ${file.name}, ${(file.size / 1024).toFixed(1)} KB)`
       ]);
 
-      // Trigger AI OCR extraction on uploaded image file (Maintains single document number)
-      setTimeout(() => {
-        if (isPrimary) {
+      if (isPrimary) {
+        // AI OCR extraction for Primary Document (Aadhaar Card - Front + Back Mandatory)
+        setTimeout(() => {
           let numberToUse = primaryIdNumber;
           if (!numberToUse) {
-            if (docType === 'Aadhaar Card') numberToUse = `${Math.floor(1000 + Math.random() * 9000)} ${Math.floor(1000 + Math.random() * 9000)} ${Math.floor(1000 + Math.random() * 9000)}`;
-            else if (docType === 'PAN Card') numberToUse = `ABCDE${Math.floor(1000 + Math.random() * 9000)}F`;
-            else if (docType === 'Driving License') numberToUse = `MH01202200${Math.floor(10000 + Math.random() * 90000)}`;
-            else if (docType === 'Passport') numberToUse = `Z${Math.floor(1000000 + Math.random() * 9000000)}`;
-            else if (docType === 'Voter ID Card') numberToUse = `ABC${Math.floor(1000000 + Math.random() * 9000000)}`;
-            else numberToUse = `DOC${Math.floor(10000000 + Math.random() * 90000000)}`;
-
+            numberToUse = `${Math.floor(1000 + Math.random() * 9000)} ${Math.floor(1000 + Math.random() * 9000)} ${Math.floor(1000 + Math.random() * 9000)}`;
             if (secondaryIdNumber && numberToUse.trim() === secondaryIdNumber.trim()) {
-              showToast('error', 'Duplicate Document Number', `Primary ID number cannot be identical to Secondary ID number.`);
+              showToast('error', 'Duplicate Document Number', `Aadhaar ID number cannot be identical to Secondary ID number.`);
               setIsPrimaryOcrScanning(false);
               return;
             }
@@ -774,41 +764,38 @@ export default function CompanionOnboardingWizard() {
           setIsPrimaryOcrScanning(false);
           if (willHaveBothPrimary) {
             setIsPrimaryOcrDone(true);
-            showToast('success', `${docType} Complete ✓`, `Both Front & Back uploaded. Extracted ID Number: ${numberToUse}`);
+            showToast('success', `Aadhaar Card Verification Complete ✓`, `Both Front & Back uploaded. Extracted Aadhaar #: ${numberToUse}`);
           } else {
-            showToast('info', `${docType} ${isFront ? 'Front' : 'Back'} Saved ✓`, `Please upload the ${isFront ? 'Back' : 'Front'} side photo to complete verification.`);
+            showToast('info', `Aadhaar Card ${isFront ? 'Front' : 'Back'} Saved ✓`, `Please upload the remaining ${isFront ? 'Back' : 'Front'} side photo to complete Aadhaar verification.`);
           }
-        } else {
-          let numberToUse = secondaryIdNumber;
-          if (!numberToUse) {
-            if (docType === 'Aadhaar Card') numberToUse = `${Math.floor(1000 + Math.random() * 9000)} ${Math.floor(1000 + Math.random() * 9000)} ${Math.floor(1000 + Math.random() * 9000)}`;
-            else if (docType === 'PAN Card') numberToUse = `ABCDE${Math.floor(1000 + Math.random() * 9000)}F`;
-            else if (docType === 'Driving License') numberToUse = `MH01202200${Math.floor(10000 + Math.random() * 90000)}`;
-            else if (docType === 'Passport') numberToUse = `Z${Math.floor(1000000 + Math.random() * 9000000)}`;
-            else if (docType === 'Voter ID Card') numberToUse = `ABC${Math.floor(1000000 + Math.random() * 9000000)}`;
-            else numberToUse = `DOC${Math.floor(10000000 + Math.random() * 90000000)}`;
+          setKycAuditLogs(prev => [
+            ...prev, 
+            `[${new Date().toLocaleTimeString()}] AI OCR processed Aadhaar Card (${isFront ? 'Front' : 'Back'} side). Current Doc #${numberToUse}`
+          ]);
+        }, 1200);
+      } else {
+        // Secondary Document (Instant Registration - No Heavy OCR Required)
+        let secNumber = secondaryIdNumber;
+        if (!secNumber) {
+          if (docType === 'PAN Card') secNumber = `ABCDE${Math.floor(1000 + Math.random() * 9000)}F`;
+          else if (docType === 'Driving License') secNumber = `MH01202200${Math.floor(10000 + Math.random() * 90000)}`;
+          else if (docType === 'Passport') secNumber = `Z${Math.floor(1000000 + Math.random() * 9000000)}`;
+          else if (docType === 'Voter ID Card') secNumber = `ABC${Math.floor(1000000 + Math.random() * 9000000)}`;
+          else secNumber = `DOC${Math.floor(10000000 + Math.random() * 90000000)}`;
 
-            if (primaryIdNumber && numberToUse.trim() === primaryIdNumber.trim()) {
-              showToast('error', 'Duplicate Document Number', `Secondary ID number cannot be identical to Primary ID number.`);
-              setIsSecondaryOcrScanning(false);
-              return;
-            }
-            setSecondaryIdNumber(numberToUse);
+          if (primaryIdNumber && secNumber.trim() === primaryIdNumber.trim()) {
+            showToast('error', 'Duplicate Document Number', `Secondary ID number cannot be identical to Aadhaar number.`);
+            return;
           }
-          setIsSecondaryOcrScanning(false);
-          if (willHaveBothSecondary) {
-            setIsSecondaryOcrDone(true);
-            showToast('success', `${docType} Complete ✓`, `Both Front & Back uploaded. Extracted ID Number: ${numberToUse}`);
-          } else {
-            showToast('info', `${docType} ${isFront ? 'Front' : 'Back'} Saved ✓`, `Please upload the ${isFront ? 'Back' : 'Front'} side photo to complete verification.`);
-          }
+          setSecondaryIdNumber(secNumber);
         }
-
+        setIsSecondaryOcrDone(true);
+        showToast('success', `${docType} Uploaded ✓`, `Secondary Document photo saved. ID #: ${secNumber}`);
         setKycAuditLogs(prev => [
           ...prev, 
-          `[${new Date().toLocaleTimeString()}] AI OCR processed ${docType} (${isFront ? 'Front' : 'Back'} side). Current Doc #${primaryIdNumber || secondaryIdNumber}`
+          `[${new Date().toLocaleTimeString()}] Secondary document (${docType}) uploaded (${isFront ? 'Front' : 'Back'} side). Registered ID #${secNumber}`
         ]);
-      }, 1500);
+      }
     };
 
     reader.readAsDataURL(file);
@@ -944,15 +931,15 @@ export default function CompanionOnboardingWizard() {
     }
     if (currentStep === 6) {
       if (!primaryFrontUploaded || !primaryBackUploaded || !primaryIdNumber || !isPrimaryOcrDone) {
-        showToast('error', 'Primary Document Incomplete', `Please upload BOTH Front side and Back side photos of your ${primaryIdType}.`);
+        showToast('error', 'Aadhaar Card Mandatory', 'Aadhaar Card is mandatory. Please upload BOTH Front side and Back side photos of your Aadhaar Card.');
         return;
       }
       if (primaryFrontPreview && primaryBackPreview && primaryFrontPreview === primaryBackPreview) {
-        showToast('error', 'Primary Document Invalid', `Front and Back photos of ${primaryIdType} cannot be identical. Please upload distinct photos.`);
+        showToast('error', 'Aadhaar Card Invalid', 'Front and Back photos of Aadhaar Card cannot be identical. Please upload distinct photos.');
         return;
       }
-      if (!secondaryFrontUploaded || !secondaryBackUploaded || !secondaryIdNumber || !isSecondaryOcrDone) {
-        showToast('error', 'Secondary Document Incomplete', `Please upload BOTH Front side and Back side photos of your ${secondaryIdType}.`);
+      if (!secondaryFrontUploaded || !secondaryIdNumber || !isSecondaryOcrDone) {
+        showToast('error', 'Secondary Document Incomplete', `Please upload the Front side photo of your ${secondaryIdType}.`);
         return;
       }
       if (secondaryFrontPreview && secondaryBackPreview && secondaryFrontPreview === secondaryBackPreview) {
@@ -2363,47 +2350,32 @@ export default function CompanionOnboardingWizard() {
               </div>
             </div>
 
-            {/* DOCUMENT 1: PRIMARY GOVERNMENT ID (MANDATORY) */}
+            {/* DOCUMENT 1: PRIMARY GOVERNMENT ID (MANDATORY AADHAAR CARD) */}
             <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-2">
               <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-900 pb-1.5">
                 <div className="flex items-center gap-1.5">
                   <span className="w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-[10px] flex items-center justify-center">1</span>
-                  <span className="font-bold text-xs text-slate-900 dark:text-white">Primary Government ID Document *</span>
+                  <span className="font-bold text-xs text-slate-900 dark:text-white">Primary Government ID Document (Aadhaar Card) *</span>
                 </div>
                 <span className="text-[9px] font-mono text-emerald-600 font-bold bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
-                  MANDATORY DOC #1
+                  MANDATORY DOC #1 (FRONT & BACK REQUIRED)
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Select Primary Document Type *</label>
-                  <select 
-                    value={primaryIdType}
-                    onChange={e => {
-                      setPrimaryIdType(e.target.value);
-                      setPrimaryIdNumber('');
-                      setIsPrimaryOcrDone(false);
-                      setPrimaryFrontPreview(null);
-                      setPrimaryBackPreview(null);
-                      setPrimaryFrontUploaded(false);
-                      setPrimaryBackUploaded(false);
-                    }}
-                    className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white font-bold focus:outline-none focus:border-indigo-500"
-                  >
-                    {documentOptions.map(doc => (
-                      <option key={doc.type} value={doc.type}>
-                        {doc.type} ({doc.format})
-                      </option>
-                    ))}
-                  </select>
+                  <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Primary Mandatory Document Type *</label>
+                  <div className="w-full px-3 py-1.5 rounded-lg bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-xs font-bold text-indigo-950 dark:text-indigo-200 flex justify-between items-center">
+                    <span>Aadhaar Card (12-Digit Identity)</span>
+                    <span className="text-[8px] font-mono font-bold bg-indigo-600 text-white px-2 py-0.5 rounded">FRONT & BACK MANDATORY</span>
+                  </div>
                 </div>
 
                 <div>
                   <div className="flex justify-between items-center mb-0.5">
                     <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
                       <Lock className="w-3 h-3 text-indigo-600" />
-                      <span>Extracted Document Number (Read Only) *</span>
+                      <span>Extracted Aadhaar Number (Read Only) *</span>
                     </label>
                     <button 
                       type="button" 
@@ -2419,7 +2391,7 @@ export default function CompanionOnboardingWizard() {
                     <input 
                       type="text" 
                       readOnly={true}
-                      value={isPrimaryOcrScanning ? 'Scanning Document via AI OCR...' : formatMasked(primaryIdNumber, showPrimaryPlain)}
+                      value={isPrimaryOcrScanning ? 'Scanning Aadhaar via AI OCR...' : formatMasked(primaryIdNumber, showPrimaryPlain)}
                       className="w-full pl-3 pr-20 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-900/90 border border-slate-300 dark:border-slate-800 text-xs font-mono font-bold text-slate-900 dark:text-white cursor-not-allowed select-none"
                     />
                     {primaryIdNumber ? (
@@ -2462,20 +2434,20 @@ export default function CompanionOnboardingWizard() {
                   {isPrimaryOcrScanning ? (
                     <div className="flex items-center justify-center gap-2 text-indigo-600 py-1">
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="text-[10px] font-bold">Scanning Front Image via OCR...</span>
+                      <span className="text-[10px] font-bold">Scanning Aadhaar Front Image via OCR...</span>
                     </div>
                   ) : primaryFrontPreview ? (
                     <div className="flex items-center gap-2.5 text-left">
-                      <img src={primaryFrontPreview} alt="Primary Front" className="w-12 h-10 rounded object-cover border border-emerald-500 shadow-sm" />
+                      <img src={primaryFrontPreview} alt="Aadhaar Front" className="w-12 h-10 rounded object-cover border border-emerald-500 shadow-sm" />
                       <div>
-                        <span className="text-[10px] font-bold text-slate-900 dark:text-white block">{primaryIdType} Front Side</span>
+                        <span className="text-[10px] font-bold text-slate-900 dark:text-white block">Aadhaar Card Front Side</span>
                         <span className="text-[8px] font-mono text-emerald-600 font-bold">✓ Image Uploaded & OCR Scanned</span>
                       </div>
                     </div>
                   ) : (
                     <>
                       <UploadCloud className="w-4 h-4 text-indigo-600 mx-auto group-hover:scale-110 transition-transform" />
-                      <span className="text-[10px] font-bold text-slate-900 dark:text-white block">Upload {primaryIdType} Front Side *</span>
+                      <span className="text-[10px] font-bold text-slate-900 dark:text-white block">Upload Aadhaar Card Front Side *</span>
                       <span className="text-[8px] font-mono text-slate-400 block">Click to choose image file (JPG, PNG, PDF)</span>
                     </>
                   )}
@@ -2490,20 +2462,20 @@ export default function CompanionOnboardingWizard() {
                   {isPrimaryOcrScanning ? (
                     <div className="flex items-center justify-center gap-2 text-indigo-600 py-1">
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="text-[10px] font-bold">Scanning Back Image via OCR...</span>
+                      <span className="text-[10px] font-bold">Scanning Aadhaar Back Image via OCR...</span>
                     </div>
                   ) : primaryBackPreview ? (
                     <div className="flex items-center gap-2.5 text-left">
-                      <img src={primaryBackPreview} alt="Primary Back" className="w-12 h-10 rounded object-cover border border-emerald-500 shadow-sm" />
+                      <img src={primaryBackPreview} alt="Aadhaar Back" className="w-12 h-10 rounded object-cover border border-emerald-500 shadow-sm" />
                       <div>
-                        <span className="text-[10px] font-bold text-slate-900 dark:text-white block">{primaryIdType} Back Side</span>
+                        <span className="text-[10px] font-bold text-slate-900 dark:text-white block">Aadhaar Card Back Side</span>
                         <span className="text-[8px] font-mono text-emerald-600 font-bold">✓ Image Uploaded & OCR Scanned</span>
                       </div>
                     </div>
                   ) : (
                     <>
                       <UploadCloud className="w-4 h-4 text-indigo-600 mx-auto group-hover:scale-110 transition-transform" />
-                      <span className="text-[10px] font-bold text-slate-900 dark:text-white block">Upload {primaryIdType} Back Side *</span>
+                      <span className="text-[10px] font-bold text-slate-900 dark:text-white block">Upload Aadhaar Card Back Side *</span>
                       <span className="text-[8px] font-mono text-slate-400 block">Click to choose image file (JPG, PNG, PDF)</span>
                     </>
                   )}
@@ -2519,7 +2491,7 @@ export default function CompanionOnboardingWizard() {
                   <span className="font-bold text-xs text-slate-900 dark:text-white">Secondary Government ID Document *</span>
                 </div>
                 <span className="text-[9px] font-mono text-indigo-600 font-bold bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">
-                  MANDATORY DOC #2 (MUST BE DIFFERENT)
+                  MANDATORY DOC #2
                 </span>
               </div>
 
@@ -2539,7 +2511,7 @@ export default function CompanionOnboardingWizard() {
                     }}
                     className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white font-bold focus:outline-none focus:border-indigo-500"
                   >
-                    {documentOptions.filter(d => d.type !== primaryIdType).map(doc => (
+                    {documentOptions.filter(d => d.type !== 'Aadhaar Card').map(doc => (
                       <option key={doc.type} value={doc.type}>
                         {doc.type} ({doc.format})
                       </option>
@@ -2551,7 +2523,7 @@ export default function CompanionOnboardingWizard() {
                   <div className="flex justify-between items-center mb-0.5">
                     <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
                       <Lock className="w-3 h-3 text-indigo-600" />
-                      <span>Extracted Document Number (Read Only) *</span>
+                      <span>Registered Document Number (Read Only) *</span>
                     </label>
                     <button 
                       type="button" 
@@ -2567,13 +2539,13 @@ export default function CompanionOnboardingWizard() {
                     <input 
                       type="text" 
                       readOnly={true}
-                      value={isSecondaryOcrScanning ? 'Scanning Secondary Doc via AI OCR...' : formatMasked(secondaryIdNumber, showSecondaryPlain)}
+                      value={formatMasked(secondaryIdNumber, showSecondaryPlain)}
                       className="w-full pl-3 pr-20 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-900/90 border border-slate-300 dark:border-slate-800 text-xs font-mono font-bold text-slate-900 dark:text-white cursor-not-allowed select-none"
                     />
                     {secondaryIdNumber ? (
                       <span className="absolute right-2 top-1.5 text-[8px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 flex items-center gap-1">
                         <Lock className="w-2.5 h-2.5" />
-                        <span>OCR LOCKED</span>
+                        <span>REGISTERED</span>
                       </span>
                     ) : (
                       <span className="absolute right-2 top-1.5 text-[8px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800 flex items-center gap-1">
@@ -2607,17 +2579,12 @@ export default function CompanionOnboardingWizard() {
                     secondaryFrontUploaded ? 'border-emerald-500 bg-emerald-50/10' : 'border-indigo-300 dark:border-indigo-900/60 hover:border-indigo-500'
                   } cursor-pointer text-center space-y-1 transition-all group`}
                 >
-                  {isSecondaryOcrScanning ? (
-                    <div className="flex items-center justify-center gap-2 text-indigo-600 py-1">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="text-[10px] font-bold">Scanning Front Image via OCR...</span>
-                    </div>
-                  ) : secondaryFrontPreview ? (
+                  {secondaryFrontPreview ? (
                     <div className="flex items-center gap-2.5 text-left">
                       <img src={secondaryFrontPreview} alt="Secondary Front" className="w-12 h-10 rounded object-cover border border-emerald-500 shadow-sm" />
                       <div>
                         <span className="text-[10px] font-bold text-slate-900 dark:text-white block">{secondaryIdType} Front Side</span>
-                        <span className="text-[8px] font-mono text-emerald-600 font-bold">✓ Image Uploaded & OCR Scanned</span>
+                        <span className="text-[8px] font-mono text-emerald-600 font-bold">✓ Image Uploaded</span>
                       </div>
                     </div>
                   ) : (
@@ -2629,33 +2596,36 @@ export default function CompanionOnboardingWizard() {
                   )}
                 </div>
 
-                <div 
-                  onClick={() => secondaryBackInputRef.current?.click()}
-                  className={`p-2.5 rounded-lg bg-white dark:bg-slate-950 border border-dashed ${
-                    secondaryBackUploaded ? 'border-emerald-500 bg-emerald-50/10' : 'border-indigo-300 dark:border-indigo-900/60 hover:border-indigo-500'
-                  } cursor-pointer text-center space-y-1 transition-all group`}
-                >
-                  {isSecondaryOcrScanning ? (
-                    <div className="flex items-center justify-center gap-2 text-indigo-600 py-1">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="text-[10px] font-bold">Scanning Back Image via OCR...</span>
-                    </div>
-                  ) : secondaryBackPreview ? (
-                    <div className="flex items-center gap-2.5 text-left">
-                      <img src={secondaryBackPreview} alt="Secondary Back" className="w-12 h-10 rounded object-cover border border-emerald-500 shadow-sm" />
-                      <div>
-                        <span className="text-[10px] font-bold text-slate-900 dark:text-white block">{secondaryIdType} Back Side</span>
-                        <span className="text-[8px] font-mono text-emerald-600 font-bold">✓ Image Uploaded & OCR Scanned</span>
+                {secondaryIdType === 'PAN Card' || secondaryIdType === 'Passport' ? (
+                  <div className="p-2.5 rounded-lg bg-slate-100/70 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 text-center space-y-1 opacity-70 cursor-not-allowed select-none flex flex-col justify-center items-center">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block">{secondaryIdType} Back Side Not Required</span>
+                    <span className="text-[8px] font-mono text-slate-400 block">Single-sided document format</span>
+                  </div>
+                ) : (
+                  <div 
+                    onClick={() => secondaryBackInputRef.current?.click()}
+                    className={`p-2.5 rounded-lg bg-white dark:bg-slate-950 border border-dashed ${
+                      secondaryBackUploaded ? 'border-emerald-500 bg-emerald-50/10' : 'border-slate-300 dark:border-slate-800 hover:border-indigo-500'
+                    } cursor-pointer text-center space-y-1 transition-all group`}
+                  >
+                    {secondaryBackPreview ? (
+                      <div className="flex items-center gap-2.5 text-left">
+                        <img src={secondaryBackPreview} alt="Secondary Back" className="w-12 h-10 rounded object-cover border border-emerald-500 shadow-sm" />
+                        <div>
+                          <span className="text-[10px] font-bold text-slate-900 dark:text-white block">{secondaryIdType} Back Side</span>
+                          <span className="text-[8px] font-mono text-emerald-600 font-bold">✓ Image Uploaded (Optional)</span>
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <>
-                      <UploadCloud className="w-4 h-4 text-indigo-600 mx-auto group-hover:scale-110 transition-transform" />
-                      <span className="text-[10px] font-bold text-slate-900 dark:text-white block">Upload {secondaryIdType} Back Side *</span>
-                      <span className="text-[8px] font-mono text-slate-400 block">Click to choose image file (JPG, PNG, PDF)</span>
-                    </>
-                  )}
-                </div>
+                    ) : (
+                      <>
+                        <UploadCloud className="w-4 h-4 text-slate-400 mx-auto group-hover:scale-110 transition-transform" />
+                        <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block">Upload {secondaryIdType} Back Side (Optional)</span>
+                        <span className="text-[8px] font-mono text-slate-400 block">Click to choose image file if available</span>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
