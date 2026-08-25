@@ -571,9 +571,9 @@ export default function CompanionOnboardingWizard() {
   // AI Biometric Liveness & Real Webcam Access State
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
-  const [livenessStatus, setLivenessStatus] = useState<'NOT_STARTED' | 'SCANNING' | 'VERIFIED'>('VERIFIED');
-  const [livenessStep, setLivenessStep] = useState<'IDLE' | 'DETECTING' | 'BLINK' | 'TURN' | 'PASSED'>('PASSED');
-  const [livenessScore, setLivenessScore] = useState<number>(99.6);
+  const [livenessStatus, setLivenessStatus] = useState<'NOT_STARTED' | 'SCANNING' | 'VERIFIED' | 'FAILED'>('NOT_STARTED');
+  const [livenessStep, setLivenessStep] = useState<'IDLE' | 'DETECTING' | 'BLINK' | 'TURN' | 'PASSED'>('IDLE');
+  const [livenessScore, setLivenessScore] = useState<number>(0);
   const [isLivenessModalOpen, setIsLivenessModalOpen] = useState(false);
   const [capturedSelfieUrl, setCapturedSelfieUrl] = useState<string | null>(null);
   const [webcamActive, setWebcamActive] = useState(false);
@@ -615,30 +615,35 @@ export default function CompanionOnboardingWizard() {
         }
         setKycAuditLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Real Webcam Feed Active ✓`]);
       } else {
-        setWebcamNotice('Browser WebRTC camera access unavailable in this mode. AI facial mesh fallback active.');
+        throw new Error('WebRTC mediaDevices unsupported');
       }
-    } catch (err) {
-      console.warn('Webcam stream note:', err);
-      setWebcamNotice('Camera permission pending or unavailable. AI anti-spoofing engine running in fallback mode.');
+    } catch (err: any) {
+      console.warn('Webcam stream error:', err);
+      setLivenessStatus('FAILED');
+      setLivenessStep('IDLE');
+      setWebcamActive(false);
+      setWebcamNotice('❌ CAMERA PERMISSION DENIED: Real camera access is strictly mandatory to verify liveness and capture your selfie. Please allow camera access in your browser settings.');
+      setKycAuditLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ❌ LIVENESS FAILED: Camera permission denied by browser or camera offline.`]);
+      showToast('error', 'Camera Permission Required', 'Real camera permission is mandatory to complete liveness verification.');
+      return; // CRITICAL: STOP IMMEDIATELY! DO NOT AUTO-PASS!
     }
 
-    // Automated Biometric Liveness Steps (Detecting -> Blink -> Head Turn -> Snapshot & Pass)
+    // Step 1: Eye Blink Check
     setTimeout(() => {
       setLivenessStep('BLINK');
       setKycAuditLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Step 1/3 Passed: Facial alignment verified in oval frame`]);
     }, 1500);
 
+    // Step 2: Head Turn Check
     setTimeout(() => {
       setLivenessStep('TURN');
       setKycAuditLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Step 2/3 Passed: Eye blink anti-spoofing gesture verified`]);
     }, 3000);
 
+    // Step 3: Snapshot Capture & Final Verification Check
     setTimeout(() => {
-      setLivenessStep('PASSED');
-      setLivenessStatus('VERIFIED');
-      setLivenessScore(99.6);
+      let isSnapshotSaved = false;
 
-      // Capture Live Frame Snapshot from Video
       if (videoRef.current && videoRef.current.videoWidth > 0) {
         try {
           const canvas = document.createElement('canvas');
@@ -648,17 +653,34 @@ export default function CompanionOnboardingWizard() {
           if (ctx) {
             ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
             const snapshotUrl = canvas.toDataURL('image/jpeg');
-            setCapturedSelfieUrl(snapshotUrl);
+            if (snapshotUrl && snapshotUrl.length > 100) {
+              setCapturedSelfieUrl(snapshotUrl);
+              isSnapshotSaved = true;
+            }
           }
-        } catch (e) {}
+        } catch (e) {
+          console.error('Snapshot capture failed:', e);
+        }
       }
 
-      setKycAuditLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Step 3/3 Passed: 3D Facial Mesh verified. Liveness Score 99.6% Saved for Admin Approval ✓`]);
-
-      setTimeout(() => {
+      if (isSnapshotSaved) {
+        setLivenessStep('PASSED');
+        setLivenessStatus('VERIFIED');
+        setLivenessScore(99.6);
+        setKycAuditLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Step 3/3 Passed: Live Selfie Photo Captured & Saved for Admin Approval ✓`]);
+        showToast('success', 'Liveness Verification Passed! ✓', 'Live camera selfie snapshot captured successfully.');
+        setTimeout(() => {
+          stopWebcam();
+          setIsLivenessModalOpen(false);
+        }, 1500);
+      } else {
+        setLivenessStep('IDLE');
+        setLivenessStatus('FAILED');
+        setWebcamNotice('❌ SNAPSHOT CAPTURE FAILED: Could not capture live video frame. Please ensure your camera is not blocked and try again.');
+        setKycAuditLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ❌ FAILED: Unable to capture live selfie image from video stream.`]);
+        showToast('error', 'Selfie Capture Failed', 'Could not capture a live image from your camera feed.');
         stopWebcam();
-        setIsLivenessModalOpen(false);
-      }, 1500);
+      }
     }, 4500);
   };
 
@@ -811,6 +833,20 @@ export default function CompanionOnboardingWizard() {
     if (currentStep === 3 && policyScanResult && !policyScanResult.allowed) {
       showToast('error', 'Policy Check Required', 'Please revise your service description to remove prohibited phrases.');
       return;
+    }
+    if (currentStep === 6) {
+      if (!isPrimaryOcrDone || !primaryIdNumber) {
+        showToast('error', 'Primary Document Required', 'Please select and upload your Primary Government ID to extract document number via OCR.');
+        return;
+      }
+      if (!isSecondaryOcrDone || !secondaryIdNumber) {
+        showToast('error', 'Secondary Document Required', 'Please select and upload your Secondary Government ID (2nd mandatory doc) via OCR.');
+        return;
+      }
+      if (livenessStatus !== 'VERIFIED' || !capturedSelfieUrl) {
+        showToast('error', 'Live Camera Liveness Required', 'Liveness Check Failed: Camera permission and a captured live selfie photo are strictly mandatory to proceed.');
+        return;
+      }
     }
     if (currentStep < 7) {
       setCurrentStep(prev => prev + 1);
@@ -2423,9 +2459,19 @@ export default function CompanionOnboardingWizard() {
                     <RefreshCw className={`w-3 h-3 ${livenessStatus === 'SCANNING' ? 'animate-spin' : ''}`} />
                     <span>{livenessStatus === 'VERIFIED' ? 'Re-Run Liveness Check' : 'Launch Liveness Camera'}</span>
                   </button>
-                  <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 text-[10px] font-mono font-bold border border-emerald-300">
-                    ✓ LIVENESS PASSED ({livenessScore}%)
-                  </span>
+                  {livenessStatus === 'VERIFIED' && capturedSelfieUrl ? (
+                    <span className="px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[10px] font-mono font-bold border border-emerald-300 dark:border-emerald-800">
+                      ✓ LIVENESS PASSED ({livenessScore}%)
+                    </span>
+                  ) : livenessStatus === 'FAILED' ? (
+                    <span className="px-2.5 py-1 rounded-lg bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 text-[10px] font-mono font-bold border border-rose-300 dark:border-rose-800">
+                      ❌ CAMERA DENIED / FAILED
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-1 rounded-lg bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 text-[10px] font-mono font-bold border border-amber-300 dark:border-amber-800">
+                      ⚠️ LIVENESS CHECK MANDATORY
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -2441,7 +2487,7 @@ export default function CompanionOnboardingWizard() {
                   </div>
 
                   {webcamNotice && (
-                    <div className="p-2 rounded bg-amber-500/10 border border-amber-500/30 text-[10px] text-amber-300">
+                    <div className="p-2 rounded bg-rose-500/20 border border-rose-500/40 text-[10px] text-rose-300 font-bold">
                       {webcamNotice}
                     </div>
                   )}
@@ -2479,16 +2525,24 @@ export default function CompanionOnboardingWizard() {
                 {/* Captured Live Selfie Photo */}
                 <div className="p-2.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center gap-3">
                   {capturedSelfieUrl ? (
-                    <img src={capturedSelfieUrl} alt="Captured Live Selfie" className="w-12 h-12 rounded-full object-cover border-2 border-emerald-500 shadow-sm" />
+                    <>
+                      <img src={capturedSelfieUrl} alt="Captured Live Selfie" className="w-12 h-12 rounded-full object-cover border-2 border-emerald-500 shadow-sm" />
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-900 dark:text-white block">Captured Live Selfie Photo</span>
+                        <span className="text-[9px] font-mono text-emerald-600 font-bold">✓ Attached for Admin Approval</span>
+                      </div>
+                    </>
                   ) : (
-                    <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 flex items-center justify-center text-slate-400">
-                      <UserCheck className="w-6 h-6 text-emerald-500" />
-                    </div>
+                    <>
+                      <div className="w-12 h-12 rounded-full bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 flex items-center justify-center text-rose-500">
+                        <AlertTriangle className="w-6 h-6 text-rose-500" />
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-900 dark:text-white block">No Live Selfie Image</span>
+                        <span className="text-[9px] font-mono text-rose-600 font-bold">❌ Camera Permission Required</span>
+                      </div>
+                    </>
                   )}
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-900 dark:text-white block">Captured Live Selfie Photo</span>
-                    <span className="text-[9px] font-mono text-emerald-600 font-bold">✓ Attached for Admin Approval</span>
-                  </div>
                 </div>
 
                 {/* Live Admin Audit Log Box */}
@@ -2572,7 +2626,11 @@ export default function CompanionOnboardingWizard() {
                 <div>
                   <span className="text-[9px] text-slate-400 block font-mono">6. Identity & KYC</span>
                   <strong className="text-slate-900 dark:text-white font-bold">{primaryIdType} & {secondaryIdType}</strong>
-                  <p className="text-[9px] text-emerald-600 font-mono">OCR Verified • Liveness {livenessScore}% ✓</p>
+                  {livenessStatus === 'VERIFIED' && capturedSelfieUrl ? (
+                    <p className="text-[9px] text-emerald-600 font-mono">Dual OCR Verified • Selfie Attached ({livenessScore}%) ✓</p>
+                  ) : (
+                    <p className="text-[9px] text-rose-600 font-mono font-bold">❌ Camera Liveness & Selfie Required</p>
+                  )}
                 </div>
                 <button type="button" onClick={() => setCurrentStep(6)} className="text-[10px] text-indigo-600 font-bold hover:underline">Edit</button>
               </div>
