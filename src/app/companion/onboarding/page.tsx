@@ -1027,11 +1027,11 @@ export default function CompanionOnboardingWizard() {
   };
 
   const handleSubmitApplication = async () => {
-    if (!declAccuracy || !declSafetyPolicy || !declNonSexual || !declTerms || !declPrivacy || !declPayoutTerms || !declBackgroundConsent) {
-      showToast('error', 'Consent Required', 'Please check all final declaration confirmation boxes before submitting.');
+    if (!declAccuracy || !declSafetyPolicy || !declNonSexual || !declTerms) {
+      showToast('error', 'Consent Required', 'Please check all 4 final declaration confirmation boxes before submitting.');
       return;
     }
-    if (bankAccountNumber !== confirmBankAccountNumber) {
+    if (bankAccountNumber && confirmBankAccountNumber && bankAccountNumber !== confirmBankAccountNumber) {
       showToast('error', 'Bank Details Mismatch', 'Bank Account Number and Confirm Account Number do not match.');
       return;
     }
