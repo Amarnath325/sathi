@@ -957,64 +957,158 @@ export default function CompanionOnboardingWizard() {
   };
 
   const handleNext = () => {
+    // Step 1 Validation
     if (currentStep === 1) {
+      if (!firstName.trim()) {
+        showToast('error', 'First Name Missing', 'Please enter your First Name.');
+        return;
+      }
+      if (!lastName.trim()) {
+        showToast('error', 'Last Name Missing', 'Please enter your Last Name.');
+        return;
+      }
+      if (!dob) {
+        showToast('error', 'Date of Birth Missing', 'Please select your Date of Birth.');
+        return;
+      }
       if (!dobAgeInfo.isEligible) {
         showToast('error', 'Ineligible Age', dobAgeInfo.message);
         return;
       }
-      if (!isEmailVerified || !isPhoneVerified) {
-        showToast('error', 'OTP Verification Required', 'Please verify both your email address and mobile number before proceeding.');
+      if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) {
+        showToast('error', 'Valid Email Required', 'Please provide a valid email address.');
+        return;
+      }
+      if (!phone.trim() || phone.replace(/\D/g, '').length < 10) {
+        showToast('error', 'Valid Mobile Number Required', 'Please enter a 10-digit mobile number.');
+        return;
+      }
+      if (!isEmailVerified) {
+        showToast('error', 'Email OTP Required', 'Please click "Verify Email" and complete the OTP verification.');
+        return;
+      }
+      if (!isPhoneVerified) {
+        showToast('error', 'Phone OTP Required', 'Please click "Verify Phone" and complete the SMS OTP verification.');
+        return;
+      }
+      if (!password || password.length < 6) {
+        showToast('error', 'Password Required', 'Password must be at least 6 characters long.');
+        return;
+      }
+      if (password !== confirmPassword) {
+        showToast('error', 'Password Mismatch', 'Password and Confirm Password do not match.');
         return;
       }
     }
-    if (currentStep === 3 && policyScanResult && !policyScanResult.allowed) {
-      showToast('error', 'Policy Check Required', 'Please revise your service description to remove prohibited phrases.');
-      return;
+
+    // Step 2 Validation
+    if (currentStep === 2) {
+      if (!gender) {
+        showToast('error', 'Gender Selection Required', 'Please select your gender identity.');
+        return;
+      }
+      if (!bio.trim() || bio.trim().length < 15) {
+        showToast('error', 'Professional Bio Required', 'Please write a brief professional bio (minimum 15 characters).');
+        return;
+      }
+      if (selectedCategories.length === 0) {
+        showToast('error', 'Service Category Required', 'Please select at least 1 companion service category.');
+        return;
+      }
+      if (languagesList.length === 0) {
+        showToast('error', 'Languages Required', 'Please add at least 1 language you can speak.');
+        return;
+      }
     }
+
+    // Step 3 Validation
+    if (currentStep === 3) {
+      if (policyScanResult && !policyScanResult.allowed) {
+        showToast('error', 'Safety Policy Violation', 'Please revise your service description to remove prohibited activities.');
+        return;
+      }
+    }
+
+    // Step 4 Validation
+    if (currentStep === 4) {
+      if (!hourlyRate || Number(hourlyRate) <= 0) {
+        showToast('error', 'Hourly Rate Required', 'Please enter a valid base hourly rate.');
+        return;
+      }
+      if (workingDays.length === 0) {
+        showToast('error', 'Operating Schedule Required', 'Please select at least 1 active working day in your schedule.');
+        return;
+      }
+    }
+
+    // Step 5 Validation
     if (currentStep === 5) {
+      if (!operatingCity.trim()) {
+        showToast('error', 'Operating City Required', 'Please enter your primary operating city.');
+        return;
+      }
       const cleanPersonalPhone = phone.replace(/\D/g, '');
       const cleanEmergencyPhone = emergencyPhone.replace(/\D/g, '');
       const cleanEmergencyAltPhone = emergencyAltPhone.replace(/\D/g, '');
 
       if (!emergencyName.trim()) {
-        showToast('error', 'Emergency Contact Required', 'Please enter your emergency contact person\'s full name.');
+        showToast('error', 'Emergency Contact Name Missing', 'Please enter your emergency contact person\'s full name.');
+        return;
+      }
+      if (!emergencyRelationship.trim()) {
+        showToast('error', 'Relationship Missing', 'Please specify your relationship with your emergency contact.');
         return;
       }
       if (!cleanEmergencyPhone || cleanEmergencyPhone.length < 10) {
-        showToast('error', 'Invalid Emergency Phone', 'Please provide a valid 10-digit emergency contact phone number.');
+        showToast('error', 'Emergency Phone Required', 'Please provide a valid 10-digit emergency contact phone number.');
         return;
       }
       if (cleanPersonalPhone && cleanEmergencyPhone === cleanPersonalPhone) {
-        showToast('error', 'Duplicate Contact Number', 'Emergency contact phone number cannot be identical to your own personal phone number.');
+        showToast('error', 'Duplicate Contact Number', 'Emergency contact phone cannot be identical to your own personal number.');
         return;
       }
       if (cleanEmergencyAltPhone && cleanEmergencyAltPhone === cleanEmergencyPhone) {
-        showToast('error', 'Duplicate Contact Number', 'Alternate emergency phone number cannot be identical to primary emergency phone number.');
+        showToast('error', 'Duplicate Contact Number', 'Alternate emergency phone cannot be identical to primary emergency phone.');
         return;
       }
     }
+
+    // Step 6 Validation
     if (currentStep === 6) {
-      if (!primaryFrontUploaded || !primaryBackUploaded || !primaryIdNumber || !isPrimaryOcrDone) {
-        showToast('error', 'Aadhaar Card Mandatory', 'Aadhaar Card is mandatory. Please upload BOTH Front side and Back side photos of your Aadhaar Card.');
+      if (!primaryFrontUploaded) {
+        showToast('error', 'Aadhaar Front Photo Missing', 'Please upload the Front side photo of your Aadhaar Card.');
+        return;
+      }
+      if (!primaryBackUploaded) {
+        showToast('error', 'Aadhaar Back Photo Missing', 'Please upload the Back side photo of your Aadhaar Card.');
+        return;
+      }
+      if (!primaryIdNumber || !isPrimaryOcrDone) {
+        showToast('error', 'Aadhaar Verification Pending', 'Please complete the Aadhaar Card document verification.');
         return;
       }
       if (primaryFrontPreview && primaryBackPreview && primaryFrontPreview === primaryBackPreview) {
-        showToast('error', 'Aadhaar Card Invalid', 'Front and Back photos of Aadhaar Card cannot be identical. Please upload distinct photos.');
+        showToast('error', 'Duplicate Aadhaar Photos', 'Front and Back photos of Aadhaar Card cannot be identical.');
         return;
       }
-      if (!secondaryFrontUploaded || !secondaryIdNumber || !isSecondaryOcrDone) {
-        showToast('error', 'Secondary Document Incomplete', `Please upload the Front side photo of your ${secondaryIdType}.`);
+      if (!secondaryFrontUploaded) {
+        showToast('error', 'Secondary Document Missing', `Please upload the Front side photo of your ${secondaryIdType}.`);
+        return;
+      }
+      if (!secondaryIdNumber || !isSecondaryOcrDone) {
+        showToast('error', 'Secondary ID Pending', `Please enter/verify your ${secondaryIdType} number.`);
         return;
       }
       if (secondaryFrontPreview && secondaryBackPreview && secondaryFrontPreview === secondaryBackPreview) {
-        showToast('error', 'Secondary Document Invalid', `Front and Back photos of ${secondaryIdType} cannot be identical. Please upload distinct photos.`);
+        showToast('error', 'Duplicate Secondary Photos', `Front and Back photos of ${secondaryIdType} cannot be identical.`);
         return;
       }
       if (livenessStatus !== 'VERIFIED' || !capturedSelfieUrl) {
-        showToast('error', 'Live Camera Liveness Required', 'Liveness Check Failed: Camera permission and a captured live selfie photo are strictly mandatory to proceed.');
+        showToast('error', 'Live Camera Liveness Mandatory', 'AI Liveness Check is required: please click "Run Real-Time Biometric Scan" to capture your live selfie.');
         return;
       }
     }
+
     if (currentStep < 7) {
       setCurrentStep(prev => prev + 1);
     }
@@ -1027,12 +1121,41 @@ export default function CompanionOnboardingWizard() {
   };
 
   const handleSubmitApplication = async () => {
-    if (!declAccuracy || !declSafetyPolicy || !declNonSexual || !declTerms) {
-      showToast('error', 'Consent Required', 'Please check all 4 final declaration confirmation boxes before submitting.');
+    // Step 7 Validation
+    if (!bankAccountHolder.trim()) {
+      showToast('error', 'Account Holder Missing', 'Please enter the bank account holder name.');
       return;
     }
-    if (bankAccountNumber && confirmBankAccountNumber && bankAccountNumber !== confirmBankAccountNumber) {
+    if (!bankAccountNumber.trim()) {
+      showToast('error', 'Account Number Missing', 'Please enter your bank account number.');
+      return;
+    }
+    if (!confirmBankAccountNumber.trim()) {
+      showToast('error', 'Confirm Account Missing', 'Please re-enter and confirm your bank account number.');
+      return;
+    }
+    if (bankAccountNumber !== confirmBankAccountNumber) {
       showToast('error', 'Bank Details Mismatch', 'Bank Account Number and Confirm Account Number do not match.');
+      return;
+    }
+    if (!ifscCode.trim()) {
+      showToast('error', 'IFSC Code Missing', 'Please enter your bank IFSC code.');
+      return;
+    }
+    if (!declAccuracy) {
+      showToast('error', 'Declaration Required', 'Please check: "I certify that all provided information is accurate."');
+      return;
+    }
+    if (!declSafetyPolicy) {
+      showToast('error', 'Declaration Required', 'Please check: "I agree to follow all Sathi Companion Safety Guidelines."');
+      return;
+    }
+    if (!declNonSexual) {
+      showToast('error', 'Declaration Required', 'Please check: "I explicitly declare services are strictly non-sexual."');
+      return;
+    }
+    if (!declTerms) {
+      showToast('error', 'Declaration Required', 'Please check: "I agree to Platform Terms of Service and Privacy Policy."');
       return;
     }
 

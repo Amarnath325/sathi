@@ -27,7 +27,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
-    }, 4000);
+    }, 5000);
   }, []);
 
   const removeToast = (id: string) => {
@@ -37,37 +37,66 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full px-4 pointer-events-none">
-        {toasts.map(toast => (
-          <div
-            key={toast.id}
-            className={`pointer-events-auto p-4 rounded-2xl border backdrop-blur-md shadow-2xl flex items-start gap-3 transition-all animate-slide-up ${
-              toast.type === 'success' ? 'bg-slate-950/95 border-emerald-500/40 text-emerald-400' :
-              toast.type === 'error' ? 'bg-slate-950/95 border-rose-500/40 text-rose-400' :
-              toast.type === 'warning' ? 'bg-slate-950/95 border-amber-500/40 text-amber-400' :
-              'bg-slate-950/95 border-indigo-500/40 text-indigo-400'
-            }`}
-          >
-            <div className="shrink-0 pt-0.5">
-              {toast.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-400" />}
-              {toast.type === 'error' && <XCircle className="w-5 h-5 text-rose-400" />}
-              {toast.type === 'warning' && <AlertTriangle className="w-5 h-5 text-amber-400" />}
-              {toast.type === 'info' && <Info className="w-5 h-5 text-indigo-400" />}
-            </div>
+      <div className="fixed bottom-5 right-5 z-[9999] flex flex-col gap-3 max-w-md w-full px-4 pointer-events-none">
+        {toasts.map(toast => {
+          const isError = toast.type === 'error';
+          const isSuccess = toast.type === 'success';
+          const isWarning = toast.type === 'warning';
 
-            <div className="flex-1 space-y-0.5">
-              <h4 className="text-xs font-bold text-white">{toast.title}</h4>
-              {toast.message && <p className="text-[11px] text-slate-300">{toast.message}</p>}
-            </div>
-
-            <button
-              onClick={() => removeToast(toast.id)}
-              className="text-slate-400 hover:text-white p-1 rounded-lg"
+          return (
+            <div
+              key={toast.id}
+              className={`pointer-events-auto p-4 rounded-2xl border-2 backdrop-blur-xl shadow-2xl flex items-start gap-3.5 transition-all transform animate-in slide-in-from-bottom-5 duration-300 ${
+                isError
+                  ? 'bg-gradient-to-r from-red-950 via-rose-900 to-slate-950 border-rose-500/80 shadow-rose-950/60 text-white'
+                  : isSuccess
+                  ? 'bg-gradient-to-r from-emerald-950 via-teal-900 to-slate-950 border-emerald-500/80 shadow-emerald-950/60 text-white'
+                  : isWarning
+                  ? 'bg-gradient-to-r from-amber-950 via-yellow-950 to-slate-950 border-amber-500/80 shadow-amber-950/60 text-white'
+                  : 'bg-gradient-to-r from-indigo-950 via-blue-950 to-slate-950 border-indigo-500/80 shadow-indigo-950/60 text-white'
+              }`}
             >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        ))}
+              {/* Icon Container with bright badge */}
+              <div className={`p-2 rounded-xl shrink-0 ${
+                isError ? 'bg-rose-500/20 text-rose-400 ring-1 ring-rose-500/50' :
+                isSuccess ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/50' :
+                isWarning ? 'bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/50' :
+                'bg-indigo-500/20 text-indigo-400 ring-1 ring-indigo-500/50'
+              }`}>
+                {isSuccess && <CheckCircle2 className="w-5 h-5" />}
+                {isError && <XCircle className="w-5 h-5 text-rose-300" />}
+                {isWarning && <AlertTriangle className="w-5 h-5" />}
+                {toast.type === 'info' && <Info className="w-5 h-5" />}
+              </div>
+
+              {/* Title & Message */}
+              <div className="flex-1 min-w-0 space-y-1">
+                <h4 className="text-xs sm:text-sm font-extrabold text-white tracking-wide flex items-center gap-1.5">
+                  {toast.title}
+                </h4>
+                {toast.message && (
+                  <p className={`text-xs leading-relaxed font-medium ${
+                    isError ? 'text-rose-100' :
+                    isSuccess ? 'text-emerald-100' :
+                    isWarning ? 'text-amber-100' :
+                    'text-indigo-100'
+                  }`}>
+                    {toast.message}
+                  </p>
+                )}
+              </div>
+
+              {/* Dismiss Button */}
+              <button
+                onClick={() => removeToast(toast.id)}
+                className="text-white/70 hover:text-white hover:bg-white/10 p-1.5 rounded-lg transition-all shrink-0"
+                title="Dismiss"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          );
+        })}
       </div>
     </ToastContext.Provider>
   );
