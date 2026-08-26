@@ -48,6 +48,7 @@ import {
 import { useToast } from '@/components/ui/Toast';
 import { ServicePolicyEngine } from '@/lib/servicePolicyEngine';
 import { ServiceCategory } from '@/lib/types';
+import { extractDocumentNumberFromImage } from '@/lib/kycOcrScanner';
 
 // Pre-defined Suggestions Pool for Autocomplete & Quick Chips
 const POPULAR_LANGUAGES = [
@@ -640,6 +641,8 @@ export default function CompanionOnboardingWizard() {
   const [primaryBackUploaded, setPrimaryBackUploaded] = useState(false);
   const [primaryFrontPreview, setPrimaryFrontPreview] = useState<string | null>(null);
   const [primaryBackPreview, setPrimaryBackPreview] = useState<string | null>(null);
+  const [primaryFrontOcrNum, setPrimaryFrontOcrNum] = useState<string>('');
+  const [primaryBackOcrNum, setPrimaryBackOcrNum] = useState<string>('');
   const [isPrimaryOcrScanning, setIsPrimaryOcrScanning] = useState(false);
   const [isPrimaryOcrDone, setIsPrimaryOcrDone] = useState(false);
   const [showPrimaryPlain, setShowPrimaryPlain] = useState(false);
@@ -776,13 +779,13 @@ export default function CompanionOnboardingWizard() {
   // KYC Overall Status
   const [kycStatus, setKycStatus] = useState<'NOT_STARTED' | 'IN_PROGRESS' | 'UNDER_REVIEW' | 'VERIFIED' | 'REJECTED'>('NOT_STARTED');
 
-  // Real File Upload & Validation Handler (Aadhaar Mandatory Dual-Side + Instant Secondary Upload)
+  // Real File Upload & Validation Handler (Aadhaar Mandatory Dual-Side + Dynamic OCR)
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, isPrimary: boolean, isFront: boolean) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       const dataUrl = event.target?.result as string;
       const docType = isPrimary ? primaryIdType : secondaryIdType;
 
@@ -800,19 +803,56 @@ export default function CompanionOnboardingWizard() {
         return;
       }
 
-      let willHaveBothPrimary = false;
-
       if (isPrimary) {
         if (isFront) {
           setPrimaryFrontUploaded(true);
           setPrimaryFrontPreview(dataUrl);
-          willHaveBothPrimary = primaryBackUploaded;
         } else {
           setPrimaryBackUploaded(true);
           setPrimaryBackPreview(dataUrl);
-          willHaveBothPrimary = primaryFrontUploaded;
         }
         setIsPrimaryOcrScanning(true);
+
+        try {
+          const { extractedNumber } = await extractDocumentNumberFromImage(dataUrl, 'Aadhaar Card', isFront);
+          setIsPrimaryOcrScanning(false);
+
+          if (isFront) {
+            setPrimaryFrontOcrNum(extractedNumber);
+            setPrimaryIdNumber(extractedNumber);
+
+            if (primaryBackOcrNum && primaryBackOcrNum.replace(/\s/g, '') !== extractedNumber.replace(/\s/g, '')) {
+              showToast('error', 'Aadhaar Number Mismatch', `Front side number (${extractedNumber}) does not match Back side photo number (${primaryBackOcrNum}). Please upload matching photos of the same Aadhaar card.`);
+            } else if (primaryBackUploaded) {
+              setIsPrimaryOcrDone(true);
+              showToast('success', 'Aadhaar Card Verified ✓', `Front & Back matched. Extracted Aadhaar #: ${extractedNumber}`);
+            } else {
+              showToast('info', 'Aadhaar Front Processed ✓', `Extracted Aadhaar #: ${extractedNumber}. Please upload the Back side photo.`);
+            }
+          } else {
+            setPrimaryBackOcrNum(extractedNumber);
+
+            if (primaryFrontOcrNum && primaryFrontOcrNum.replace(/\s/g, '') !== extractedNumber.replace(/\s/g, '')) {
+              showToast('error', 'Aadhaar Number Mismatch', `Back side photo number (${extractedNumber}) does not match Front side number (${primaryFrontOcrNum}). Please upload matching photos of the same Aadhaar card.`);
+            } else if (primaryFrontUploaded) {
+              setPrimaryIdNumber(extractedNumber);
+              setIsPrimaryOcrDone(true);
+              showToast('success', 'Aadhaar Card Verified ✓', `Front & Back matched. Extracted Aadhaar #: ${extractedNumber}`);
+            } else {
+              setPrimaryIdNumber(extractedNumber);
+              showToast('info', 'Aadhaar Back Processed ✓', `Extracted Aadhaar #: ${extractedNumber}. Please upload the Front side photo.`);
+            }
+          }
+
+          setKycAuditLogs(prev => [
+            ...prev,
+            `[${new Date().toLocaleTimeString()}] Dynamic AI OCR scanned Aadhaar Card (${isFront ? 'Front' : 'Back'} side). Extracted Doc #${extractedNumber}`
+          ]);
+        } catch {
+          setIsPrimaryOcrScanning(false);
+          showToast('error', 'OCR Processing Failed', 'Unable to scan document. Please upload a clear photo.');
+        }
+
       } else {
         if (isFront) {
           setSecondaryFrontUploaded(true);
@@ -821,61 +861,23 @@ export default function CompanionOnboardingWizard() {
           setSecondaryBackUploaded(true);
           setSecondaryBackPreview(dataUrl);
         }
-      }
+        setIsSecondaryOcrScanning(true);
 
-      const timestamp = new Date().toLocaleTimeString();
-      setKycAuditLogs(prev => [
-        ...prev, 
-        `[${timestamp}] Companion uploaded ${isPrimary ? 'Primary (Aadhaar)' : 'Secondary'} ${docType} (${isFront ? 'Front' : 'Back'} File: ${file.name}, ${(file.size / 1024).toFixed(1)} KB)`
-      ]);
+        try {
+          const { extractedNumber } = await extractDocumentNumberFromImage(dataUrl, docType, isFront);
+          setIsSecondaryOcrScanning(false);
+          setSecondaryIdNumber(extractedNumber);
+          setIsSecondaryOcrDone(true);
+          showToast('success', `${docType} Verified ✓`, `Extracted ${docType} #: ${extractedNumber}`);
 
-      if (isPrimary) {
-        // AI OCR extraction for Primary Document (Aadhaar Card - Front + Back Mandatory)
-        setTimeout(() => {
-          let numberToUse = primaryIdNumber;
-          if (!numberToUse) {
-            numberToUse = `${Math.floor(1000 + Math.random() * 9000)} ${Math.floor(1000 + Math.random() * 9000)} ${Math.floor(1000 + Math.random() * 9000)}`;
-            if (secondaryIdNumber && numberToUse.trim() === secondaryIdNumber.trim()) {
-              showToast('error', 'Duplicate Document Number', `Aadhaar ID number cannot be identical to Secondary ID number.`);
-              setIsPrimaryOcrScanning(false);
-              return;
-            }
-            setPrimaryIdNumber(numberToUse);
-          }
-          setIsPrimaryOcrScanning(false);
-          if (willHaveBothPrimary) {
-            setIsPrimaryOcrDone(true);
-            showToast('success', `Aadhaar Card Verification Complete ✓`, `Both Front & Back uploaded. Extracted Aadhaar #: ${numberToUse}`);
-          } else {
-            showToast('info', `Aadhaar Card ${isFront ? 'Front' : 'Back'} Saved ✓`, `Please upload the remaining ${isFront ? 'Back' : 'Front'} side photo to complete Aadhaar verification.`);
-          }
           setKycAuditLogs(prev => [
-            ...prev, 
-            `[${new Date().toLocaleTimeString()}] AI OCR processed Aadhaar Card (${isFront ? 'Front' : 'Back'} side). Current Doc #${numberToUse}`
+            ...prev,
+            `[${new Date().toLocaleTimeString()}] Dynamic AI OCR scanned ${docType}. Extracted Doc #${extractedNumber}`
           ]);
-        }, 1200);
-      } else {
-        // Secondary Document (Instant Registration - No Heavy OCR Required)
-        let secNumber = secondaryIdNumber;
-        if (!secNumber) {
-          if (docType === 'PAN Card') secNumber = `ABCDE${Math.floor(1000 + Math.random() * 9000)}F`;
-          else if (docType === 'Driving License') secNumber = `MH01202200${Math.floor(10000 + Math.random() * 90000)}`;
-          else if (docType === 'Passport') secNumber = `Z${Math.floor(1000000 + Math.random() * 9000000)}`;
-          else if (docType === 'Voter ID Card') secNumber = `ABC${Math.floor(1000000 + Math.random() * 9000000)}`;
-          else secNumber = `DOC${Math.floor(10000000 + Math.random() * 90000000)}`;
-
-          if (primaryIdNumber && secNumber.trim() === primaryIdNumber.trim()) {
-            showToast('error', 'Duplicate Document Number', `Secondary ID number cannot be identical to Aadhaar number.`);
-            return;
-          }
-          setSecondaryIdNumber(secNumber);
+        } catch {
+          setIsSecondaryOcrScanning(false);
+          showToast('error', 'OCR Processing Failed', 'Unable to scan secondary document.');
         }
-        setIsSecondaryOcrDone(true);
-        showToast('success', `${docType} Uploaded ✓`, `Secondary Document photo saved. ID #: ${secNumber}`);
-        setKycAuditLogs(prev => [
-          ...prev, 
-          `[${new Date().toLocaleTimeString()}] Secondary document (${docType}) uploaded (${isFront ? 'Front' : 'Back'} side). Registered ID #${secNumber}`
-        ]);
       }
     };
 
@@ -1047,19 +1049,23 @@ export default function CompanionOnboardingWizard() {
         showToast('error', 'Operating City Required', 'Please enter your primary operating city.');
         return;
       }
+      if (pincode && pincode.trim().length !== 6) {
+        showToast('error', 'Invalid Pincode', 'Pincode must be exactly 6 digits.');
+        return;
+      }
       const cleanPersonalPhone = phone.replace(/\D/g, '');
       const cleanEmergencyPhone = emergencyPhone.replace(/\D/g, '');
       const cleanEmergencyAltPhone = emergencyAltPhone.replace(/\D/g, '');
 
-      if (!emergencyName.trim()) {
-        showToast('error', 'Emergency Contact Name Missing', 'Please enter your emergency contact person\'s full name.');
+      if (!emergencyName.trim() || emergencyName.trim().length < 2) {
+        showToast('error', 'Emergency Contact Name Missing', 'Please enter your emergency contact person\'s full name (min 2 chars).');
         return;
       }
       if (!emergencyRelationship.trim()) {
         showToast('error', 'Relationship Missing', 'Please specify your relationship with your emergency contact.');
         return;
       }
-      if (!cleanEmergencyPhone || cleanEmergencyPhone.length < 10) {
+      if (!cleanEmergencyPhone || cleanEmergencyPhone.length !== 10) {
         showToast('error', 'Emergency Phone Required', 'Please provide a valid 10-digit emergency contact phone number.');
         return;
       }
@@ -1089,6 +1095,10 @@ export default function CompanionOnboardingWizard() {
       }
       if (primaryFrontPreview && primaryBackPreview && primaryFrontPreview === primaryBackPreview) {
         showToast('error', 'Duplicate Aadhaar Photos', 'Front and Back photos of Aadhaar Card cannot be identical.');
+        return;
+      }
+      if (primaryFrontOcrNum && primaryBackOcrNum && primaryFrontOcrNum.replace(/\s/g, '') !== primaryBackOcrNum.replace(/\s/g, '')) {
+        showToast('error', 'Aadhaar Number Mismatch', `Front photo Aadhaar #${primaryFrontOcrNum} does not match Back photo Aadhaar #${primaryBackOcrNum}. Both sides must be from the same Aadhaar card.`);
         return;
       }
       if (!secondaryFrontUploaded) {
@@ -1122,12 +1132,12 @@ export default function CompanionOnboardingWizard() {
 
   const handleSubmitApplication = async () => {
     // Step 7 Validation
-    if (!bankAccountHolder.trim()) {
-      showToast('error', 'Account Holder Missing', 'Please enter the bank account holder name.');
+    if (!bankAccountHolder.trim() || bankAccountHolder.trim().length < 2) {
+      showToast('error', 'Account Holder Missing', 'Please enter the bank account holder full name.');
       return;
     }
-    if (!bankAccountNumber.trim()) {
-      showToast('error', 'Account Number Missing', 'Please enter your bank account number.');
+    if (!bankAccountNumber.trim() || bankAccountNumber.length < 9 || bankAccountNumber.length > 16) {
+      showToast('error', 'Invalid Account Number', 'Bank Account Number must be between 9 and 16 numeric digits.');
       return;
     }
     if (!confirmBankAccountNumber.trim()) {
@@ -1135,11 +1145,11 @@ export default function CompanionOnboardingWizard() {
       return;
     }
     if (bankAccountNumber !== confirmBankAccountNumber) {
-      showToast('error', 'Bank Details Mismatch', 'Bank Account Number and Confirm Account Number do not match.');
+      showToast('error', 'Bank Details Mismatch', 'Bank Account Number and Confirm Account Number must match exactly.');
       return;
     }
-    if (!ifscCode.trim()) {
-      showToast('error', 'IFSC Code Missing', 'Please enter your bank IFSC code.');
+    if (!ifscCode.trim() || ifscCode.length !== 11) {
+      showToast('error', 'Invalid IFSC Code', 'Bank IFSC code must be exactly 11 characters (e.g. HDFC0001234).');
       return;
     }
     if (!declAccuracy) {
@@ -1391,8 +1401,9 @@ export default function CompanionOnboardingWizard() {
                   <input 
                     type="text" 
                     value={firstName}
-                    onChange={e => setFirstName(e.target.value)}
-                    placeholder="e.g. Aria"
+                    maxLength={50}
+                    onChange={e => setFirstName(e.target.value.replace(/[^a-zA-Z\s]/g, '').slice(0, 50))}
+                    placeholder="e.g. Aria (min 2 chars)"
                     className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                   />
                 </div>
@@ -1402,8 +1413,9 @@ export default function CompanionOnboardingWizard() {
                   <input 
                     type="text" 
                     value={lastName}
-                    onChange={e => setLastName(e.target.value)}
-                    placeholder="e.g. Vance"
+                    maxLength={50}
+                    onChange={e => setLastName(e.target.value.replace(/[^a-zA-Z\s]/g, '').slice(0, 50))}
+                    placeholder="e.g. Vance (min 2 chars)"
                     className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                   />
                 </div>
@@ -1626,47 +1638,7 @@ export default function CompanionOnboardingWizard() {
 
             <div className="p-3 lg:p-4 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-2.5">
               
-              {/* Names & Gender */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 lg:gap-3">
-                <div>
-                  <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Public Display Name *</label>
-                  <input 
-                    type="text" 
-                    value={displayName}
-                    onChange={e => setDisplayName(e.target.value)}
-                    placeholder="e.g. Aria Vance"
-                    className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Legal Full Name (Private)</label>
-                  <input 
-                    type="text" 
-                    value={legalName}
-                    onChange={e => setLegalName(e.target.value)}
-                    placeholder="As per government ID"
-                    className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Gender Identity *</label>
-                  <select 
-                    value={gender}
-                    onChange={e => setGender(e.target.value)}
-                    className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none"
-                  >
-                    <option value="">Select Gender</option>
-                    <option value="Female">Female</option>
-                    <option value="Male">Male</option>
-                    <option value="Non-Binary">Non-Binary</option>
-                    <option value="Prefer not to say">Prefer not to say</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Photo & Short Bio */}
+              {/* Photo, Gender & Short Bio */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 lg:gap-3">
                 {/* Profile Photo Upload with Drag & Drop */}
                 <div>
@@ -1700,11 +1672,11 @@ export default function CompanionOnboardingWizard() {
                         <p className="text-[8px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">✓ Ready ({profilePhotoSize || '1.2 MB'})</p>
                       </div>
 
-                      <div className="flex gap-1.5">
+                      <div className="flex gap-1.5 pt-0.5">
                         <button
                           type="button"
                           onClick={() => profilePhotoInputRef.current?.click()}
-                          className="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 text-[9px] font-bold hover:bg-indigo-100"
+                          className="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-[9px] font-bold hover:bg-indigo-100"
                         >
                           Change
                         </button>
@@ -1740,13 +1712,44 @@ export default function CompanionOnboardingWizard() {
                   )}
                 </div>
 
-                <div className="sm:col-span-2">
-                  <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Short Professional Bio *</label>
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Gender Identity *</label>
+                    <select 
+                      value={gender}
+                      onChange={e => setGender(e.target.value)}
+                      className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none"
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="Female">Female</option>
+                      <option value="Male">Male</option>
+                      <option value="Non-Binary">Non-Binary</option>
+                      <option value="Prefer not to say">Prefer not to say</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Experience Level</label>
+                    <select 
+                      value={experienceLevel}
+                      onChange={e => setExperienceLevel(e.target.value)}
+                      className="w-full px-3 py-1.5 lg:py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none"
+                    >
+                      <option value="Entry / New Companion">Entry / New Companion</option>
+                      <option value="1-3 Years Experience">1-3 Years Experience</option>
+                      <option value="3+ Years Professional VIP">3+ Years Professional VIP</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] lg:text-xs font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Short Professional Bio * (min 15 chars)</label>
                   <textarea 
                     rows={4}
                     value={bio}
+                    maxLength={1000}
                     onChange={e => setBio(e.target.value)}
-                    placeholder="Describe your background, companion style, and conversation topics..."
+                    placeholder="Describe your background, companion style, and conversation topics (max 1000 chars)..."
                     className="w-full p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none"
                   ></textarea>
                 </div>
@@ -2234,11 +2237,13 @@ export default function CompanionOnboardingWizard() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 lg:gap-3">
                 {/* Hourly Rate */}
                 <div className="p-3 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1">
-                  <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block">Hourly Rate (₹)</label>
+                  <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block">Hourly Rate (₹) *</label>
                   <input 
-                    type="number" 
+                    type="text" 
                     value={hourlyRate}
-                    onChange={e => setHourlyRate(e.target.value === '' ? '' : Number(e.target.value))}
+                    maxLength={6}
+                    onChange={e => setHourlyRate(e.target.value ? Number(e.target.value.replace(/\D/g, '').slice(0, 6)) : '')}
+                    placeholder="1000"
                     className="w-full px-3 py-1 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs font-mono font-bold text-slate-900 dark:text-white"
                   />
                   <p className="text-[9px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">
@@ -2250,9 +2255,11 @@ export default function CompanionOnboardingWizard() {
                 <div className="p-3 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1">
                   <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block">Half-Day Rate (₹) [4 Hours]</label>
                   <input 
-                    type="number" 
+                    type="text" 
                     value={halfDayRate}
-                    onChange={e => setHalfDayRate(e.target.value === '' ? '' : Number(e.target.value))}
+                    maxLength={6}
+                    onChange={e => setHalfDayRate(e.target.value ? Number(e.target.value.replace(/\D/g, '').slice(0, 6)) : '')}
+                    placeholder="3500"
                     className="w-full px-3 py-1 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs font-mono font-bold text-slate-900 dark:text-white"
                   />
                   <p className="text-[9px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">
@@ -2264,9 +2271,11 @@ export default function CompanionOnboardingWizard() {
                 <div className="p-3 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1">
                   <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block">Full-Day Rate (₹) [8 Hours]</label>
                   <input 
-                    type="number" 
+                    type="text" 
                     value={fullDayRate}
-                    onChange={e => setFullDayRate(e.target.value === '' ? '' : Number(e.target.value))}
+                    maxLength={6}
+                    onChange={e => setFullDayRate(e.target.value ? Number(e.target.value.replace(/\D/g, '').slice(0, 6)) : '')}
+                    placeholder="6500"
                     className="w-full px-3 py-1 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs font-mono font-bold text-slate-900 dark:text-white"
                   />
                   <p className="text-[9px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">
@@ -2283,9 +2292,11 @@ export default function CompanionOnboardingWizard() {
                 <div>
                   <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Weekend Surcharge (₹)</label>
                   <input 
-                    type="number" 
+                    type="text" 
                     value={weekendSurcharge}
-                    onChange={e => setWeekendSurcharge(e.target.value === '' ? '' : Number(e.target.value))}
+                    maxLength={6}
+                    onChange={e => setWeekendSurcharge(e.target.value ? Number(e.target.value.replace(/\D/g, '').slice(0, 6)) : '')}
+                    placeholder="500"
                     className="w-full px-2.5 py-1 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white"
                   />
                 </div>
@@ -2293,9 +2304,11 @@ export default function CompanionOnboardingWizard() {
                 <div>
                   <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Holiday Surcharge (₹)</label>
                   <input 
-                    type="number" 
+                    type="text" 
                     value={holidaySurcharge}
-                    onChange={e => setHolidaySurcharge(e.target.value === '' ? '' : Number(e.target.value))}
+                    maxLength={6}
+                    onChange={e => setHolidaySurcharge(e.target.value ? Number(e.target.value.replace(/\D/g, '').slice(0, 6)) : '')}
+                    placeholder="1000"
                     className="w-full px-2.5 py-1 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white"
                   />
                 </div>
@@ -2303,9 +2316,11 @@ export default function CompanionOnboardingWizard() {
                 <div>
                   <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Travel Allowance (₹/km)</label>
                   <input 
-                    type="number" 
+                    type="text" 
                     value={travelChargePerKm}
-                    onChange={e => setTravelChargePerKm(e.target.value === '' ? '' : Number(e.target.value))}
+                    maxLength={6}
+                    onChange={e => setTravelChargePerKm(e.target.value ? Number(e.target.value.replace(/\D/g, '').slice(0, 6)) : '')}
+                    placeholder="20"
                     className="w-full px-2.5 py-1 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white"
                   />
                 </div>
@@ -2313,9 +2328,11 @@ export default function CompanionOnboardingWizard() {
                 <div>
                   <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">Extra Hour Rate (₹)</label>
                   <input 
-                    type="number" 
+                    type="text" 
                     value={extraHourCharge}
-                    onChange={e => setExtraHourCharge(e.target.value === '' ? '' : Number(e.target.value))}
+                    maxLength={6}
+                    onChange={e => setExtraHourCharge(e.target.value ? Number(e.target.value.replace(/\D/g, '').slice(0, 6)) : '')}
+                    placeholder="1200"
                     className="w-full px-2.5 py-1 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white"
                   />
                 </div>
@@ -2603,6 +2620,7 @@ export default function CompanionOnboardingWizard() {
                   <input 
                     type="text" 
                     value={address}
+                    maxLength={100}
                     onChange={e => setAddress(e.target.value)}
                     placeholder="Flat / Building / Street"
                     className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white"
@@ -2614,7 +2632,8 @@ export default function CompanionOnboardingWizard() {
                   <input 
                     type="text" 
                     value={city}
-                    onChange={e => setCity(e.target.value)}
+                    maxLength={50}
+                    onChange={e => setCity(e.target.value.replace(/[^a-zA-Z\s]/g, '').slice(0, 50))}
                     placeholder="e.g. Mumbai"
                     className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white"
                   />
@@ -2625,7 +2644,8 @@ export default function CompanionOnboardingWizard() {
                   <input 
                     type="text" 
                     value={state}
-                    onChange={e => setState(e.target.value)}
+                    maxLength={50}
+                    onChange={e => setState(e.target.value.replace(/[^a-zA-Z\s]/g, '').slice(0, 50))}
                     placeholder="e.g. Maharashtra"
                     className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white"
                   />
@@ -2636,8 +2656,9 @@ export default function CompanionOnboardingWizard() {
                   <input 
                     type="text" 
                     value={pincode}
+                    maxLength={6}
                     onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    placeholder="e.g. 400001"
+                    placeholder="e.g. 400001 (6 digits)"
                     className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white"
                   />
                 </div>
@@ -2654,8 +2675,9 @@ export default function CompanionOnboardingWizard() {
                   <input 
                     type="text" 
                     value={emergencyName}
-                    onChange={e => setEmergencyName(e.target.value)}
-                    placeholder="Full Name"
+                    maxLength={50}
+                    onChange={e => setEmergencyName(e.target.value.replace(/[^a-zA-Z\s]/g, '').slice(0, 50))}
+                    placeholder="Full Name (min 2 chars)"
                     className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white"
                   />
                 </div>
@@ -2681,8 +2703,9 @@ export default function CompanionOnboardingWizard() {
                   <input 
                     type="tel" 
                     value={emergencyPhone}
-                    onChange={e => setEmergencyPhone(e.target.value)}
-                    placeholder="+91 9876543210"
+                    maxLength={10}
+                    onChange={e => setEmergencyPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    placeholder="10-digit mobile number"
                     className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white"
                   />
                 </div>
@@ -2692,8 +2715,9 @@ export default function CompanionOnboardingWizard() {
                   <input 
                     type="tel" 
                     value={emergencyAltPhone}
-                    onChange={e => setEmergencyAltPhone(e.target.value)}
-                    placeholder="Optional alt phone"
+                    maxLength={10}
+                    onChange={e => setEmergencyAltPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    placeholder="10-digit mobile number"
                     className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white"
                   />
                 </div>
@@ -3192,7 +3216,7 @@ export default function CompanionOnboardingWizard() {
               <div className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 flex justify-between items-start">
                 <div>
                   <span className="text-[9px] text-slate-400 block font-mono">2. Profile</span>
-                  <strong className="text-slate-900 dark:text-white font-bold">{displayName}</strong>
+                  <strong className="text-slate-900 dark:text-white font-bold">{firstName} {lastName}</strong>
                   <p className="text-[9px] text-slate-500">{gender} • {experienceLevel}</p>
                 </div>
                 <button type="button" onClick={() => setCurrentStep(2)} className="text-[10px] text-indigo-600 font-bold hover:underline">Edit</button>
@@ -3206,7 +3230,6 @@ export default function CompanionOnboardingWizard() {
                 </div>
                 <button type="button" onClick={() => setCurrentStep(3)} className="text-[10px] text-indigo-600 font-bold hover:underline">Edit</button>
               </div>
-
 
               <div className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 flex justify-between items-start">
                 <div>
@@ -3254,7 +3277,8 @@ export default function CompanionOnboardingWizard() {
                   <input 
                     type="text" 
                     value={bankAccountHolder}
-                    onChange={e => setBankAccountHolder(e.target.value)}
+                    maxLength={60}
+                    onChange={e => setBankAccountHolder(e.target.value.replace(/[^a-zA-Z\s]/g, '').slice(0, 60))}
                     placeholder="As per bank record"
                     className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white"
                   />
@@ -3265,8 +3289,9 @@ export default function CompanionOnboardingWizard() {
                   <input 
                     type="text" 
                     value={bankAccountNumber}
-                    onChange={e => setBankAccountNumber(e.target.value)}
-                    placeholder="Enter account number"
+                    maxLength={16}
+                    onChange={e => setBankAccountNumber(e.target.value.replace(/\D/g, '').slice(0, 16))}
+                    placeholder="9-16 digit account number"
                     className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white"
                   />
                 </div>
@@ -3276,8 +3301,9 @@ export default function CompanionOnboardingWizard() {
                   <input 
                     type="password" 
                     value={confirmBankAccountNumber}
-                    onChange={e => setConfirmBankAccountNumber(e.target.value)}
-                    placeholder="Repeat account number"
+                    maxLength={16}
+                    onChange={e => setConfirmBankAccountNumber(e.target.value.replace(/\D/g, '').slice(0, 16))}
+                    placeholder="Repeat 9-16 digit account number"
                     className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white"
                   />
                 </div>
@@ -3287,8 +3313,9 @@ export default function CompanionOnboardingWizard() {
                   <input 
                     type="text" 
                     value={ifscCode}
-                    onChange={e => setIfscCode(e.target.value.toUpperCase())}
-                    placeholder="e.g. HDFC0001234"
+                    maxLength={11}
+                    onChange={e => setIfscCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 11))}
+                    placeholder="e.g. HDFC0001234 (11 chars)"
                     className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono uppercase text-slate-900 dark:text-white"
                   />
                 </div>
