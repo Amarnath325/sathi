@@ -26,12 +26,32 @@ const DEFAULT_FILTERS: CompanionFilter = {
 };
 
 export default function CompanionDirectoryPage() {
-  const [companions, setCompanions] = useState<UserProfile[]>(MOCK_COMPANIONS);
+  const [companions, setCompanions] = useState<UserProfile[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<CompanionFilter>(DEFAULT_FILTERS);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCompanion, setEditingCompanion] = useState<UserProfile | null>(null);
+
+  // Fetch live companions from Database
+  useEffect(() => {
+    async function loadCompanions() {
+      setLoading(true);
+      try {
+        const res = await fetch('/api/companions?limit=50');
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          setCompanions(json.data);
+        }
+      } catch (err) {
+        console.warn('Failed to load companions:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadCompanions();
+  }, []);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -113,7 +133,7 @@ export default function CompanionDirectoryPage() {
 
         <div className="flex items-center gap-3">
           <Link
-            href="/companion/create"
+            href="/companion/onboarding"
             className="px-4 py-2.5 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 font-bold text-xs hover:text-white hover:border-slate-700 transition-all flex items-center gap-2"
           >
             Multi-step Register
@@ -163,7 +183,12 @@ export default function CompanionDirectoryPage() {
           </div>
 
           {/* Directory Cards */}
-          {paginated.length > 0 ? (
+          {loading ? (
+            <div className="glass-panel p-12 rounded-3xl border border-slate-800 text-center space-y-4">
+              <RefreshCw className="w-8 h-8 text-indigo-400 animate-spin mx-auto" />
+              <h3 className="text-base font-bold text-white">Loading verified companions...</h3>
+            </div>
+          ) : paginated.length > 0 ? (
             <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
               {paginated.map(comp => (
                 <CompanionCard
@@ -179,10 +204,10 @@ export default function CompanionDirectoryPage() {
             <div className="glass-panel p-12 rounded-3xl border border-slate-800 text-center space-y-4">
               <Users className="w-12 h-12 text-slate-600 mx-auto" />
               <h3 className="text-lg font-bold text-white">No companions found</h3>
-              <p className="text-xs text-slate-400 max-w-sm mx-auto">Try adjusting your filters or search query to see available companions.</p>
-              <button onClick={() => setFilters(DEFAULT_FILTERS)} className="px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-indigo-400 text-xs font-bold hover:text-white">
-                Reset Filters
-              </button>
+              <p className="text-xs text-slate-400 max-w-sm mx-auto">Fill the onboarding form to register a new companion into the system.</p>
+              <Link href="/companion/onboarding" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl gradient-bg-primary text-white text-xs font-bold hover:opacity-90">
+                <Plus className="w-4 h-4" /> Become a Companion
+              </Link>
             </div>
           )}
 

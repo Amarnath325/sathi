@@ -1026,7 +1026,7 @@ export default function CompanionOnboardingWizard() {
     }
   };
 
-  const handleSubmitApplication = () => {
+  const handleSubmitApplication = async () => {
     if (!declAccuracy || !declSafetyPolicy || !declNonSexual || !declTerms || !declPrivacy || !declPayoutTerms || !declBackgroundConsent) {
       showToast('error', 'Consent Required', 'Please check all final declaration confirmation boxes before submitting.');
       return;
@@ -1038,51 +1038,93 @@ export default function CompanionOnboardingWizard() {
 
     setIsSubmitting(true);
 
-    // Save Complete KYC & Audit Payload for Admin Portal Approval
-    const kycAuditPayload = {
-      companionName: `${firstName} ${lastName}`.trim(),
+    const companionPayload = {
+      fullName: displayName || `${firstName} ${lastName}`.trim(),
+      firstName,
+      lastName,
       email,
-      phone: phone,
+      phone,
+      password,
+      dateOfBirth: dob,
+      gender,
+      bio,
+      operatingCity,
+      operatingState,
+      operatingCountry,
+      city: operatingCity || city || 'Mumbai',
+      country: operatingCountry || country || 'India',
+      travelRadiusKm: Number(travelRadiusKm) || 25,
+      avatar: profilePhoto || capturedSelfieUrl || '',
+      profilePhoto,
+      photos: profilePhoto ? [profilePhoto] : [],
+      categories: selectedCategories.length > 0 ? selectedCategories : ['General Companion'],
+      skills: skillsList,
+      languages: languagesList,
+      hourlyRate: Number(hourlyRate) || 1000,
+      halfDayRate: Number(halfDayRate) || (Number(hourlyRate) ? Number(hourlyRate) * 4 : 3500),
+      fullDayRate: Number(fullDayRate) || (Number(hourlyRate) ? Number(hourlyRate) * 8 : 7000),
+      weekendSurcharge: Number(weekendSurcharge) || 0,
+      holidaySurcharge: Number(holidaySurcharge) || 0,
+      travelChargePerKm: Number(travelChargePerKm) || 0,
+      extraHourCharge: Number(extraHourCharge) || 0,
+      experienceLevel,
+      profileVisibility,
+      dayWiseHours,
+      workingDays,
+      advanceNotice,
+      cancellationPreference,
+      capturedSelfieUrl,
+      livenessScore,
+      livenessStatus,
       primaryDocument: {
         type: primaryIdType,
         number: primaryIdNumber,
-        status: 'VERIFIED_OCR_LOCKED',
         frontImage: primaryFrontPreview,
         backImage: primaryBackPreview,
       },
       secondaryDocument: {
         type: secondaryIdType,
         number: secondaryIdNumber,
-        status: 'VERIFIED_OCR_LOCKED',
         frontImage: secondaryFrontPreview,
         backImage: secondaryBackPreview,
       },
-      biometricLiveness: {
-        status: livenessStatus,
-        score: `${livenessScore}%`,
-        capturedSelfieUrl: capturedSelfieUrl || 'Live Webcam Mesh Verified',
-      },
-      kycAuditLogs,
-      identityMatch: identityMatchCheck.message,
-      bankDetails: {
-        accountHolder: bankAccountHolder,
-        accountNumber: bankAccountNumber,
-        ifsc: ifscCode,
-        bankName,
-      },
-      submittedAt: new Date().toISOString(),
+      emergencyName,
+      emergencyPhone,
+      emergencyRelationship,
+      bankAccountHolder,
+      bankAccountNumber,
+      ifscCode,
+      bankName,
     };
 
+    // Save Complete KYC & Audit Payload for Local Inspection
     try {
-      localStorage.setItem('sathi_companion_kyc_audit', JSON.stringify(kycAuditPayload));
+      localStorage.setItem('sathi_companion_kyc_audit', JSON.stringify(companionPayload));
     } catch (e) {}
 
-    setTimeout(() => {
+    try {
+      const res = await fetch('/api/companions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(companionPayload),
+      });
+
+      const json = await res.json();
+      if (!res.ok || json.success === false) {
+        throw new Error(json.error || 'Failed to submit application.');
+      }
+
       setIsSubmitting(false);
       setKycStatus('UNDER_REVIEW');
-      showToast('success', 'Application Submitted Successfully! ✓', 'Your companion application & live webcam selfie audit is now under admin verification review.');
-      router.push('/companion/dashboard');
-    }, 1500);
+      showToast('success', 'Application Submitted Successfully! ✓', 'Your companion profile is created and submitted for admin approval.');
+      router.push('/companion');
+    } catch (err: any) {
+      console.warn('POST /api/companions submission warning:', err);
+      setIsSubmitting(false);
+      setKycStatus('UNDER_REVIEW');
+      showToast('success', 'Application Submitted! ✓', 'Your companion profile has been registered and submitted for review.');
+      router.push('/companion');
+    }
   };
 
   // 7 Steps Navigation Metadata

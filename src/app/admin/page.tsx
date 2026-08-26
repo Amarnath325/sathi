@@ -117,7 +117,7 @@ import { FinancialLedgerModal } from '@/components/payment/FinancialLedgerModal'
 import { PromoCard } from '@/components/promo/PromoCard';
 import { PromoFormModal } from '@/components/promo/PromoFormModal';
 import { PromoDetailsModal } from '@/components/promo/PromoDetailsModal';
-import { ServiceCategory, SubCategoryItem, BookingDetails, BookingStatus, EscrowStatus, LocationItem, FinancialTransaction, PayoutRecord, PaymentGatewayConfig, PromoCodeItem } from '@/lib/types';
+import { ServiceCategory, SubCategoryItem, BookingDetails, BookingStatus, EscrowStatus, LocationItem, FinancialTransaction, PayoutRecord, PaymentGatewayConfig, PromoCodeItem, UserProfile } from '@/lib/types';
 
 import Link from 'next/link';
 import ExecutiveDashboardAdminPage from '@/app/admin/executive/page';
@@ -325,6 +325,43 @@ export default function AdminDashboardPage() {
     }
     loadDbCategories();
   }, []);
+
+  // Dynamic Companion Profiles State fetched from Database / API
+  const [dbCompanions, setDbCompanions] = useState<UserProfile[]>([]);
+  const [isLoadingCompanions, setIsLoadingCompanions] = useState(false);
+
+  const loadDbCompanions = async () => {
+    setIsLoadingCompanions(true);
+    try {
+      const res = await fetch('/api/companions?limit=100');
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        setDbCompanions(json.data);
+      }
+    } catch (e) {
+      console.warn('Failed to sync companions from DB:', e);
+    } finally {
+      setIsLoadingCompanions(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDbCompanions();
+  }, []);
+
+  const handleToggleCompanionStatus = async (id: string) => {
+    const comp = dbCompanions.find(c => c.id === id);
+    if (!comp) return;
+    const newStatus = comp.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    setDbCompanions(prev => prev.map(c => c.id === id ? { ...c, status: newStatus as any } : c));
+    try {
+      await fetch(`/api/companions/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+    } catch (e) {}
+  };
 
   const [subFilter, setSubFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -960,34 +997,41 @@ export default function AdminDashboardPage() {
                   <h3 className="text-base font-bold text-white flex items-center gap-2">
                     <ShieldCheck className="w-5 h-5 text-indigo-400" /> Companion Management Hub
                   </h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Manage companion profiles, status toggles, rate caps, and verify KYC credentials.</p>
+                  <p className="text-xs text-slate-400 mt-0.5">Manage live companion profiles, status toggles, rate caps, and verify KYC credentials.</p>
                 </div>
                 <div className="flex items-center gap-3">
+                  <button
+                    onClick={loadDbCompanions}
+                    className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all"
+                    title="Refresh Companions List"
+                  >
+                    <RefreshCw className={`w-4 h-4 text-indigo-400 ${isLoadingCompanions ? 'animate-spin' : ''}`} />
+                  </button>
                   <Link
                     href="/companion"
                     className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold transition-all flex items-center gap-1.5"
                   >
                     <Globe className="w-4 h-4 text-indigo-400" /> View Public Directory
                   </Link>
-                  <button
-                    onClick={() => setShowCreateModal(true)}
-                    className="px-4 py-2 rounded-xl gradient-bg-primary text-white text-xs font-extrabold hover:opacity-90 transition-all flex items-center gap-1.5"
+                  <Link
+                    href="/companion/onboarding"
+                    className="px-4 py-2 rounded-xl gradient-bg-primary text-white text-xs font-extrabold hover:opacity-90 transition-all flex items-center gap-1.5 shadow-md shadow-indigo-600/30"
                   >
-                    <Plus className="w-4 h-4" /> Add Companion Profile
-                  </button>
+                    <Plus className="w-4 h-4" /> Register New Companion
+                  </Link>
                 </div>
               </div>
 
               {/* Sub-Filter Tabs */}
               <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-800">
                 {[
-                  { id: 'all', label: 'All Companions', count: MOCK_COMPANIONS.length },
-                  { id: 'companion-profiles', label: 'Profiles', count: MOCK_COMPANIONS.length },
-                  { id: 'pending-approval', label: 'Pending Approval', count: MOCK_COMPANIONS.filter(c => c.status === 'PENDING_VERIFICATION').length },
-                  { id: 'active-companions', label: 'Active Companions', count: MOCK_COMPANIONS.filter(c => c.status === 'ACTIVE').length },
-                  { id: 'inactive', label: 'Inactive', count: MOCK_COMPANIONS.filter(c => c.status === 'INACTIVE').length },
-                  { id: 'restricted', label: 'Restricted / Suspended', count: MOCK_COMPANIONS.filter(c => c.status === 'SUSPENDED').length },
-                  { id: 'performance', label: 'Top Rated', count: MOCK_COMPANIONS.filter(c => c.ratingAvg >= 4.9).length },
+                  { id: 'all', label: 'All Companions', count: dbCompanions.length },
+                  { id: 'companion-profiles', label: 'Profiles', count: dbCompanions.length },
+                  { id: 'pending-approval', label: 'Pending Approval', count: dbCompanions.filter(c => c.status === 'PENDING_VERIFICATION').length },
+                  { id: 'active-companions', label: 'Active Companions', count: dbCompanions.filter(c => c.status === 'ACTIVE').length },
+                  { id: 'inactive', label: 'Inactive', count: dbCompanions.filter(c => c.status === 'INACTIVE').length },
+                  { id: 'restricted', label: 'Restricted / Suspended', count: dbCompanions.filter(c => c.status === 'SUSPENDED').length },
+                  { id: 'performance', label: 'Top Rated', count: dbCompanions.filter(c => c.ratingAvg >= 4.9).length },
                 ].map((s) => (
                   <button
                     key={s.id}
@@ -1007,8 +1051,13 @@ export default function AdminDashboardPage() {
               </div>
 
               {/* Filtered Companion Cards Grid */}
-              {(() => {
-                const list = MOCK_COMPANIONS.filter(c => {
+              {isLoadingCompanions ? (
+                <div className="p-12 rounded-3xl bg-slate-900 border border-slate-800 text-center space-y-3">
+                  <RefreshCw className="w-8 h-8 text-indigo-400 animate-spin mx-auto" />
+                  <h4 className="font-bold text-white text-base">Loading live companion profiles from database...</h4>
+                </div>
+              ) : (() => {
+                const list = dbCompanions.filter(c => {
                   if (subFilter === 'pending-approval') return c.status === 'PENDING_VERIFICATION';
                   if (subFilter === 'active-companions') return c.status === 'ACTIVE';
                   if (subFilter === 'inactive') return c.status === 'INACTIVE';
@@ -1018,15 +1067,21 @@ export default function AdminDashboardPage() {
                 }).filter(c => {
                   if (!searchQuery) return true;
                   const q = searchQuery.toLowerCase();
-                  return c.name.toLowerCase().includes(q) || c.city.toLowerCase().includes(q) || c.categories.some(cat => cat.toLowerCase().includes(q));
+                  return c.name.toLowerCase().includes(q) || c.city.toLowerCase().includes(q) || (c.categories && c.categories.some((cat: string) => cat.toLowerCase().includes(q)));
                 });
 
                 if (list.length === 0) {
                   return (
                     <div className="p-12 rounded-3xl bg-slate-900 border border-slate-800 text-center space-y-3">
                       <Users className="w-10 h-10 text-slate-600 mx-auto" />
-                      <h4 className="font-bold text-white text-base">No companion profiles in this filter</h4>
-                      <p className="text-xs text-slate-400">Select another filter tab or add a new companion profile.</p>
+                      <h4 className="font-bold text-white text-base">No companion profiles found in this category</h4>
+                      <p className="text-xs text-slate-400">Fill the companion onboarding form to add new dynamic companions to the database.</p>
+                      <Link
+                        href="/companion/onboarding"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl gradient-bg-primary text-white text-xs font-bold mt-2"
+                      >
+                        <Plus className="w-4 h-4" /> Go to Companion Onboarding Form
+                      </Link>
                     </div>
                   );
                 }
@@ -1042,18 +1097,18 @@ export default function AdminDashboardPage() {
                         <div key={comp.id} className="p-6 rounded-3xl bg-slate-900 border border-slate-800 hover:border-purple-500/40 transition-all space-y-4 flex flex-col">
                           <div className="flex items-center gap-4">
                             <img
-                              src={comp.avatar}
+                              src={comp.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80'}
                               alt={comp.name}
-                              onClick={() => setLightboxImage(comp.avatar)}
+                              onClick={() => comp.avatar && setLightboxImage(comp.avatar)}
                               className="w-14 h-14 rounded-2xl object-cover border-2 border-purple-500/30 shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
                               title="Click to view image popup"
                             />
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2">
-                                <h4 className="font-extrabold text-white text-base truncate">{comp.name}, {comp.age}</h4>
+                                <h4 className="font-extrabold text-white text-base truncate">{comp.name}, {comp.age || 25}</h4>
                               </div>
                               <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                                <MapPin className="w-3.5 h-3.5 text-purple-400 shrink-0" /> {comp.city}, {comp.country}
+                                <MapPin className="w-3.5 h-3.5 text-purple-400 shrink-0" /> {comp.city || 'Mumbai'}, {comp.country || 'India'}
                               </p>
                             </div>
                           </div>
@@ -1062,8 +1117,8 @@ export default function AdminDashboardPage() {
                           <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs">
                             {comp.status && <CompanionStatusBadge status={comp.status} size="md" />}
                             <div className="flex items-center gap-1 text-amber-400 font-bold">
-                              <Star className="w-3.5 h-3.5 fill-amber-400" /> {comp.ratingAvg}
-                              <span className="text-slate-500 text-[10px] font-normal">({comp.ratingCount})</span>
+                              <Star className="w-3.5 h-3.5 fill-amber-400" /> {comp.ratingAvg || 5.0}
+                              <span className="text-slate-500 text-[10px] font-normal">({comp.ratingCount || 0})</span>
                             </div>
                           </div>
 
@@ -1071,17 +1126,17 @@ export default function AdminDashboardPage() {
                           <div className="grid grid-cols-2 gap-2 p-3 rounded-2xl bg-slate-950/60 border border-slate-800 text-xs">
                             <div>
                               <span className="text-[10px] text-slate-500 block uppercase font-mono">Hourly Rate</span>
-                              <span className="font-mono font-bold text-emerald-400">${comp.hourlyRate}/hr</span>
+                              <span className="font-mono font-bold text-emerald-400">₹{comp.hourlyRate || 1000}/hr</span>
                             </div>
                             <div>
                               <span className="text-[10px] text-slate-500 block uppercase font-mono">Bookings</span>
-                              <span className="font-bold text-white">{comp.completedBookings} Done</span>
+                              <span className="font-bold text-white">{comp.completedBookings || 0} Done</span>
                             </div>
                           </div>
 
                           {/* Categories */}
                           <div className="flex flex-wrap gap-1">
-                            {comp.categories.slice(0, 2).map((cat, idx) => (
+                            {(comp.categories || []).slice(0, 3).map((cat: string, idx: number) => (
                               <span key={idx} className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 font-medium">
                                 {cat}
                               </span>
@@ -1097,7 +1152,7 @@ export default function AdminDashboardPage() {
                               View Profile
                             </Link>
                             <button
-                              onClick={() => toggleCompanionActive(comp.id)}
+                              onClick={() => handleToggleCompanionStatus(comp.id)}
                               className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
                                 comp.status === 'ACTIVE'
                                   ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30'
