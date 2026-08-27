@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 import { 
   BarChart3, 
   Users, 
+  User,
   UserCheck, 
   ShieldCheck, 
+
   Calendar,
   Sliders, 
 
@@ -540,28 +542,35 @@ export default function AdminDashboardPage() {
       id: c.id,
       name: c.name,
       email: c.email,
-      phone: '+1 415-555-0192',
+      phone: c.phone || '+1 415-555-0192',
       role: 'VERIFIED_COMPANION',
       city: c.city || 'New York',
       country: c.country || 'USA',
+      state: c.state,
+      pincode: c.pincode,
       age: c.age || 25,
-      gender: 'Female',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
-      photos: ['https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80'],
-      categories: [c.category || 'Event Companion'],
-      skills: ['Multilingual', 'Event Hosting'],
-      languages: ['English'],
+      gender: c.gender || 'Female',
+      avatar: c.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
+      photos: c.photos && c.photos.length > 0 ? c.photos : [c.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80'],
+      categories: c.categories && c.categories.length > 0 ? c.categories : [c.category || 'Event Companion'],
+      skills: c.skills && c.skills.length > 0 ? c.skills : ['Multilingual', 'Event Hosting'],
+      languages: c.languages && c.languages.length > 0 ? c.languages : ['English'],
       hourlyRate: c.hourlyRate || 50,
-      dailyRate: (c.hourlyRate || 50) * 7,
+      dailyRate: c.dailyRate || ((c.hourlyRate || 50) * 7),
+      weeklyRate: c.weeklyRate || ((c.hourlyRate || 50) * 40),
       ratingAvg: c.ratingAvg || 5.0,
-      ratingCount: 1,
-      completedBookings: 0,
+      ratingCount: c.ratingCount || 1,
+      completedBookings: c.completedBookings || 0,
       status: (c.status as CompanionStatus) || 'ACTIVE',
       verificationBadge: true,
       isAvailableNow: true,
-      bio: 'Verified companion profile registered in Sathi ERP.',
+      bio: c.bio || 'Verified companion profile registered in Sathi ERP.',
+      createdSource: c.createdSource || 'ADMIN',
+      aadhaarNumber: c.aadhaarNumber,
+      kycStatus: c.kycStatus || 'APPROVED',
       createdAt: c.createdAt || new Date().toISOString().split('T')[0]
     }));
+
 
     const dynamicIds = new Set(dynamicMapped.map(d => d.id));
     const uniqueMocks = MOCK_COMPANIONS.filter(m => !dynamicIds.has(m.id));
@@ -1150,11 +1159,27 @@ export default function AdminDashboardPage() {
                               <div className="flex items-center gap-2">
                                 <h4 className="font-extrabold text-white text-base truncate">{comp.name}, {comp.age || 25}</h4>
                               </div>
-                              <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+
+                              {/* Creation Source Indicator Badge */}
+                              <div className="mt-1">
+                                {comp.createdSource === 'ADMIN' ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-sm">
+                                    <ShieldCheck className="w-3 h-3 text-purple-400" /> CREATED BY ADMIN
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm">
+                                    <User className="w-3 h-3 text-emerald-400" /> SELF REGISTERED USER
+                                  </span>
+                                )}
+                              </div>
+
+                              <p className="text-xs text-slate-400 flex items-center gap-1 mt-1">
                                 <MapPin className="w-3.5 h-3.5 text-purple-400 shrink-0" /> {comp.city || 'Mumbai'}, {comp.country || 'India'}
                               </p>
                             </div>
                           </div>
+
+
 
                           {/* Status Badge & Rating */}
                           <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs">
@@ -3181,31 +3206,64 @@ export default function AdminDashboardPage() {
             updateCompanion(editingCompanionModalData.id, {
               name: data.name,
               email: data.email,
+              phone: data.phone,
               city: data.city,
               country: data.country,
+              state: (data as any).state,
+              pincode: (data as any).pincode,
               age: data.age,
+              gender: data.gender,
+              avatar: data.avatar,
+              photos: data.photos,
               hourlyRate: data.hourlyRate,
+              dailyRate: data.dailyRate,
+              weeklyRate: data.weeklyRate,
               status: (data.status as any) || 'ACTIVE',
-              category: data.categories?.[0] || 'Event Companion'
+              category: data.categories?.[0] || 'Event Companion',
+              categories: data.categories,
+              skills: data.skills,
+              languages: data.languages,
+              bio: data.bio,
+              createdSource: data.createdSource || 'ADMIN',
+              aadhaarNumber: (data as any).aadhaarNumber,
+              kycStatus: data.kycStatus || 'APPROVED'
             });
             triggerNotify(`Companion profile "${data.name}" updated successfully!`);
           } else {
             addCompanion({
               name: data.name || 'New Companion',
               email: data.email || 'companion@example.com',
+              phone: data.phone || '+1 415-555-0192',
               city: data.city || 'New York',
               country: data.country || 'USA',
+              state: (data as any).state || '',
+              pincode: (data as any).pincode || '',
               age: data.age || 25,
+              gender: data.gender || 'Female',
+              avatar: data.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
+              photos: data.photos || ['https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80'],
               hourlyRate: data.hourlyRate || 75,
+              dailyRate: data.dailyRate || 350,
+              weeklyRate: data.weeklyRate || 2000,
               ratingAvg: 5.0,
+              ratingCount: 0,
+              completedBookings: 0,
               status: (data.status as any) || 'ACTIVE',
-              category: data.categories?.[0] || 'Event Companion'
+              category: data.categories?.[0] || 'Event Companion',
+              categories: data.categories || ['Event Companion'],
+              skills: data.skills || ['Multilingual'],
+              languages: data.languages || ['English'],
+              bio: data.bio || 'Registered Companion Profile',
+              createdSource: 'ADMIN',
+              aadhaarNumber: (data as any).aadhaarNumber || '',
+              kycStatus: data.kycStatus || 'APPROVED'
             });
-            triggerNotify(`New companion profile for "${data.name}" created successfully!`);
+            triggerNotify(`New companion profile for "${data.name}" created successfully by Admin!`);
           }
           setShowCreateModal(false);
           setEditingCompanionModalData(null);
         }}
+
       />
     </div>
   );

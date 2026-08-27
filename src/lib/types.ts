@@ -81,7 +81,12 @@ export interface UserProfile {
   riskLevel?: RiskLevel;
   totalEarnings?: number;
   socialLinks?: { instagram?: string; linkedin?: string; twitter?: string; facebook?: string };
+  createdSource?: 'ADMIN' | 'USER_REGISTERED';
+  state?: string;
+  pincode?: string;
+  aadhaarNumber?: string;
 }
+
 
 
 

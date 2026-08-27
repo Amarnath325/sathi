@@ -15,14 +15,32 @@ export interface BaseEntity {
 export interface DynamicCompanionItem extends BaseEntity {
   name: string;
   email: string;
+  phone?: string;
   city: string;
   country: string;
+  state?: string;
+  pincode?: string;
   age: number;
+  gender?: string;
+  avatar?: string;
+  photos?: string[];
   hourlyRate: number;
+  dailyRate?: number;
+  weeklyRate?: number;
   ratingAvg: number;
+  ratingCount?: number;
+  completedBookings?: number;
   status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
   category: string;
+  categories?: string[];
+  skills?: string[];
+  languages?: string[];
+  bio?: string;
+  createdSource?: 'ADMIN' | 'USER_REGISTERED';
+  aadhaarNumber?: string;
+  kycStatus?: string;
 }
+
 
 export interface DynamicBookingItem extends BaseEntity {
   bookingRef: string;
