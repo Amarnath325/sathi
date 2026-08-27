@@ -92,7 +92,7 @@ import { EmailTemplateModule } from '@/components/admin/EmailTemplateModule';
 import { PageSizeOption, PaginationFooter } from '@/components/common/PaginationBar';
 import { DisputeAuditModal } from '@/components/dispute/DisputeAuditModal';
 import { DisputeThreadDrawer } from '@/components/dispute/DisputeThreadDrawer';
-import { DisputeTicket, Review } from '@/lib/types';
+import { DisputeTicket, Review, UserProfile, CompanionStatus } from '@/lib/types';
 import { ReviewAuditModal } from '@/components/review/ReviewAuditModal';
 import { ReviewCard } from '@/components/review/ReviewCard';
 
@@ -507,6 +507,7 @@ export default function AdminDashboardPage() {
 
   // Create User Modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingCompanionModalData, setEditingCompanionModalData] = useState<UserProfile | null>(null);
   const [createName, setCreateName] = useState('');
   const [createEmail, setCreateEmail] = useState('');
   const [createCity, setCreateCity] = useState('');
@@ -530,6 +531,40 @@ export default function AdminDashboardPage() {
     setNotification(msg);
     setTimeout(() => setNotification(null), 3500);
   };
+
+  // Dynamic + Mock Combined Companion List for Admin Hub
+  const combinedCompanionsList = useMemo(() => {
+    const dynamicMapped: UserProfile[] = companions.map(c => ({
+      id: c.id,
+      name: c.name,
+      email: c.email,
+      phone: '+1 415-555-0192',
+      role: 'VERIFIED_COMPANION',
+      city: c.city || 'New York',
+      country: c.country || 'USA',
+      age: c.age || 25,
+      gender: 'Female',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
+      photos: ['https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80'],
+      categories: [c.category || 'Event Companion'],
+      skills: ['Multilingual', 'Event Hosting'],
+      languages: ['English'],
+      hourlyRate: c.hourlyRate || 50,
+      dailyRate: (c.hourlyRate || 50) * 7,
+      ratingAvg: c.ratingAvg || 5.0,
+      ratingCount: 1,
+      completedBookings: 0,
+      status: (c.status as CompanionStatus) || 'ACTIVE',
+      verificationBadge: true,
+      isAvailableNow: true,
+      bio: 'Verified companion profile registered in Sathi ERP.',
+      createdAt: c.createdAt || new Date().toISOString().split('T')[0]
+    }));
+
+    const dynamicIds = new Set(dynamicMapped.map(d => d.id));
+    const uniqueMocks = MOCK_COMPANIONS.filter(m => !dynamicIds.has(m.id));
+    return [...dynamicMapped, ...uniqueMocks];
+  }, [companions]);
 
   // Filtered Companion Directory based on Trash state & search query
   const activeCompanions = companions.filter((c: DynamicCompanionItem) => !c.isDeleted);
@@ -1013,25 +1048,29 @@ export default function AdminDashboardPage() {
                   >
                     <Globe className="w-4 h-4 text-indigo-400" /> View Public Directory
                   </Link>
-                  <Link
-                    href="/companion/onboarding"
-                    className="px-4 py-2 rounded-xl gradient-bg-primary text-white text-xs font-extrabold hover:opacity-90 transition-all flex items-center gap-1.5 shadow-md shadow-indigo-600/30"
+<<<<<<< HEAD
+                  <button
+                    onClick={() => {
+                      setEditingCompanionModalData(null);
+                      setShowCreateModal(true);
+                    }}
+                    className="px-4 py-2 rounded-xl gradient-bg-primary text-white text-xs font-extrabold hover:opacity-90 transition-all flex items-center gap-1.5 shadow-lg shadow-purple-600/30"
                   >
                     <Plus className="w-4 h-4" /> Register New Companion
-                  </Link>
+                  </button>
                 </div>
               </div>
 
               {/* Sub-Filter Tabs */}
               <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-800">
                 {[
-                  { id: 'all', label: 'All Companions', count: dbCompanions.length },
-                  { id: 'companion-profiles', label: 'Profiles', count: dbCompanions.length },
-                  { id: 'pending-approval', label: 'Pending Approval', count: dbCompanions.filter(c => c.status === 'PENDING_VERIFICATION').length },
-                  { id: 'active-companions', label: 'Active Companions', count: dbCompanions.filter(c => c.status === 'ACTIVE').length },
-                  { id: 'inactive', label: 'Inactive', count: dbCompanions.filter(c => c.status === 'INACTIVE').length },
-                  { id: 'restricted', label: 'Restricted / Suspended', count: dbCompanions.filter(c => c.status === 'SUSPENDED').length },
-                  { id: 'performance', label: 'Top Rated', count: dbCompanions.filter(c => c.ratingAvg >= 4.9).length },
+                  { id: 'all', label: 'All Companions', count: combinedCompanionsList.length },
+                  { id: 'companion-profiles', label: 'Profiles', count: combinedCompanionsList.length },
+                  { id: 'pending-approval', label: 'Pending Approval', count: combinedCompanionsList.filter(c => c.status === 'PENDING_VERIFICATION').length },
+                  { id: 'active-companions', label: 'Active Companions', count: combinedCompanionsList.filter(c => c.status === 'ACTIVE').length },
+                  { id: 'inactive', label: 'Inactive', count: combinedCompanionsList.filter(c => c.status === 'INACTIVE').length },
+                  { id: 'restricted', label: 'Restricted / Suspended', count: combinedCompanionsList.filter(c => c.status === 'SUSPENDED').length },
+                  { id: 'performance', label: 'Top Rated', count: combinedCompanionsList.filter(c => c.ratingAvg >= 4.9).length },
                 ].map((s) => (
                   <button
                     key={s.id}
@@ -1057,7 +1096,7 @@ export default function AdminDashboardPage() {
                   <h4 className="font-bold text-white text-base">Loading live companion profiles from database...</h4>
                 </div>
               ) : (() => {
-                const list = dbCompanions.filter(c => {
+                const list = combinedCompanionsList.filter(c => {
                   if (subFilter === 'pending-approval') return c.status === 'PENDING_VERIFICATION';
                   if (subFilter === 'active-companions') return c.status === 'ACTIVE';
                   if (subFilter === 'inactive') return c.status === 'INACTIVE';
@@ -1076,12 +1115,15 @@ export default function AdminDashboardPage() {
                       <Users className="w-10 h-10 text-slate-600 mx-auto" />
                       <h4 className="font-bold text-white text-base">No companion profiles found in this category</h4>
                       <p className="text-xs text-slate-400">Fill the companion onboarding form to add new dynamic companions to the database.</p>
-                      <Link
-                        href="/companion/onboarding"
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl gradient-bg-primary text-white text-xs font-bold mt-2"
+                      <button
+                        onClick={() => {
+                          setEditingCompanionModalData(null);
+                          setShowCreateModal(true);
+                        }}
+                        className="px-4 py-2 rounded-xl gradient-bg-primary text-white text-xs font-extrabold hover:opacity-90 transition-all flex items-center gap-1.5 mx-auto mt-2 shadow-lg shadow-purple-600/30"
                       >
                         <Plus className="w-4 h-4" /> Go to Companion Onboarding Form
-                      </Link>
+                      </button>
                     </div>
                   );
                 }
@@ -1126,7 +1168,7 @@ export default function AdminDashboardPage() {
                           <div className="grid grid-cols-2 gap-2 p-3 rounded-2xl bg-slate-950/60 border border-slate-800 text-xs">
                             <div>
                               <span className="text-[10px] text-slate-500 block uppercase font-mono">Hourly Rate</span>
-                              <span className="font-mono font-bold text-emerald-400">₹{comp.hourlyRate || 1000}/hr</span>
+                              <span className="font-mono font-bold text-emerald-400">${comp.hourlyRate || 50}/hr</span>
                             </div>
                             <div>
                               <span className="text-[10px] text-slate-500 block uppercase font-mono">Bookings</span>
@@ -1152,6 +1194,13 @@ export default function AdminDashboardPage() {
                               View Profile
                             </Link>
                             <button
+                              onClick={() => setEditingCompanionModalData(comp)}
+                              className="p-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-xs font-bold transition-all"
+                              title="Edit Companion Profile Modal"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
                               onClick={() => handleToggleCompanionStatus(comp.id)}
                               className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
                                 comp.status === 'ACTIVE'
@@ -1159,7 +1208,17 @@ export default function AdminDashboardPage() {
                                   : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
                               }`}
                             >
-                              {comp.status === 'ACTIVE' ? 'Active' : 'Toggle Active'}
+                              {comp.status === 'ACTIVE' ? 'Active' : 'Toggle'}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30'
+                                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
+                              }`}
+                            >
+                              {comp.status === 'ACTIVE' ? 'Active' : 'Toggle'}
                             </button>
                           </div>
                         </div>
@@ -3113,6 +3172,46 @@ export default function AdminDashboardPage() {
           onSuccessNotification={(msg) => triggerNotify(msg)}
         />
       )}
+
+      {/* Companion Form Modal (Create & Edit Full Features) */}
+      <CompanionFormModal
+        isOpen={showCreateModal || !!editingCompanionModalData}
+        initialData={editingCompanionModalData}
+        onClose={() => {
+          setShowCreateModal(false);
+          setEditingCompanionModalData(null);
+        }}
+        onSubmit={(data) => {
+          if (editingCompanionModalData && editingCompanionModalData.id) {
+            updateCompanion(editingCompanionModalData.id, {
+              name: data.name,
+              email: data.email,
+              city: data.city,
+              country: data.country,
+              age: data.age,
+              hourlyRate: data.hourlyRate,
+              status: (data.status as any) || 'ACTIVE',
+              category: data.categories?.[0] || 'Event Companion'
+            });
+            triggerNotify(`Companion profile "${data.name}" updated successfully!`);
+          } else {
+            addCompanion({
+              name: data.name || 'New Companion',
+              email: data.email || 'companion@example.com',
+              city: data.city || 'New York',
+              country: data.country || 'USA',
+              age: data.age || 25,
+              hourlyRate: data.hourlyRate || 75,
+              ratingAvg: 5.0,
+              status: (data.status as any) || 'ACTIVE',
+              category: data.categories?.[0] || 'Event Companion'
+            });
+            triggerNotify(`New companion profile for "${data.name}" created successfully!`);
+          }
+          setShowCreateModal(false);
+          setEditingCompanionModalData(null);
+        }}
+      />
     </div>
   );
 }
