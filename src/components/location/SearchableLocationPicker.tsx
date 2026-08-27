@@ -307,23 +307,23 @@ export function SearchableLocationPicker({
 
           {/* Popover */}
           {openDropdown === 'country' && (
-            <div className="absolute left-0 right-0 top-full mt-1.5 z-[100] rounded-2xl bg-slate-950 border-2 border-purple-500 shadow-2xl p-2.5 space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
-              <div className="relative sticky top-0 bg-slate-950 z-10 pb-2 pt-0.5">
-                <Search className="w-4 h-4 text-purple-400 absolute left-3 top-2.5" />
+            <div className="absolute left-0 right-0 top-full mt-1.5 z-[100] rounded-2xl bg-white border-2 border-purple-500 shadow-2xl p-2.5 space-y-2 max-h-64 overflow-y-auto custom-scrollbar" style={{ backgroundColor: '#ffffff' }}>
+              <div className="relative sticky top-0 bg-white z-10 pb-2 pt-0.5" style={{ backgroundColor: '#ffffff' }}>
+                <Search className="w-4 h-4 text-purple-600 absolute left-3 top-2.5" />
                 <input
                   type="text"
                   autoFocus
                   placeholder="Type to search country..."
                   value={countrySearch}
                   onChange={e => setCountrySearch(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs !text-white placeholder:!text-slate-400 focus:outline-none focus:border-purple-500 font-bold shadow-inner"
-                  style={{ color: '#7622adff', backgroundColor: '#0f172a' }}
+                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs !text-slate-900 placeholder:!text-slate-400 focus:outline-none focus:border-purple-500 font-bold shadow-inner"
+                  style={{ color: '#0f172a', backgroundColor: '#f8fafc' }}
                 />
               </div>
 
               <div className="space-y-1">
                 {filteredCountries.length === 0 ? (
-                  <p className="text-xs !text-slate-400 p-3 text-center font-bold">No matching countries</p>
+                  <p className="text-xs !text-slate-500 p-3 text-center font-bold">No matching countries</p>
                 ) : (
                   filteredCountries.map(c => {
                     const isSelected = selectedCountry?.id === c.id;
@@ -334,12 +334,12 @@ export function SearchableLocationPicker({
                         onClick={() => handleSelectCountry(c)}
                         className={`w-full px-3.5 py-2.5 rounded-xl text-left text-xs flex items-center justify-between transition-all group ${isSelected
                           ? 'bg-purple-600 !text-white font-black shadow-md border border-purple-400'
-                          : 'bg-slate-900 hover:bg-purple-600 !text-white font-extrabold border border-slate-800'
+                          : 'bg-slate-100 hover:bg-purple-600 !text-slate-900 hover:!text-white font-extrabold border border-slate-200'
                           }`}
-                        style={{ color: '#7622adff', backgroundColor: isSelected ? '#9333ea' : '#0f172a' }}
+                        style={{ color: isSelected ? '#ffffff' : '#0f172a', backgroundColor: isSelected ? '#7c3aed' : '#f1f5f9' }}
                       >
-                        <span className="truncate font-extrabold" style={{ color: '#ffffff' }}>{c.name}</span>
-                        <span className="font-mono text-[10px] font-bold text-purple-300">+{c.phonecode}</span>
+                        <span className="truncate font-extrabold" style={{ color: isSelected ? '#ffffff' : '#0f172a' }}>{c.name}</span>
+                        <span className="font-mono text-[10px] font-bold text-purple-600 group-hover:text-purple-100">+{c.phonecode}</span>
                       </button>
                     );
                   })
@@ -375,23 +375,23 @@ export function SearchableLocationPicker({
 
           {/* Popover */}
           {openDropdown === 'state' && (
-            <div className="absolute left-0 right-0 top-full mt-1.5 z-[100] rounded-2xl bg-slate-950 border-2 border-purple-500 shadow-2xl p-2.5 space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
-              <div className="relative sticky top-0 bg-slate-950 z-10 pb-2 pt-0.5">
-                <Search className="w-4 h-4 text-purple-400 absolute left-3 top-2.5" />
+            <div className="absolute left-0 right-0 top-full mt-1.5 z-[100] rounded-2xl bg-white border-2 border-purple-500 shadow-2xl p-2.5 space-y-2 max-h-64 overflow-y-auto custom-scrollbar" style={{ backgroundColor: '#ffffff' }}>
+              <div className="relative sticky top-0 bg-white z-10 pb-2 pt-0.5" style={{ backgroundColor: '#ffffff' }}>
+                <Search className="w-4 h-4 text-purple-600 absolute left-3 top-2.5" />
                 <input
                   type="text"
                   autoFocus
                   placeholder="Type to search state..."
                   value={stateSearch}
                   onChange={e => setStateSearch(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs !text-white placeholder:!text-slate-400 focus:outline-none focus:border-purple-500 font-bold shadow-inner"
-                  style={{ color: '#7622adff', backgroundColor: '#0f172a' }}
+                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs !text-slate-900 placeholder:!text-slate-400 focus:outline-none focus:border-purple-500 font-bold shadow-inner"
+                  style={{ color: '#0f172a', backgroundColor: '#f8fafc' }}
                 />
               </div>
 
               <div className="space-y-1">
                 {filteredStates.length === 0 ? (
-                  <p className="text-xs !text-slate-400 p-3 text-center font-bold">No matching states</p>
+                  <p className="text-xs !text-slate-500 p-3 text-center font-bold">No matching states</p>
                 ) : (
                   filteredStates.map(s => {
                     const isSelected = selectedState?.id === s.id;
@@ -402,11 +402,11 @@ export function SearchableLocationPicker({
                         onClick={() => handleSelectState(s)}
                         className={`w-full px-3.5 py-2.5 rounded-xl text-left text-xs flex items-center justify-between transition-all group ${isSelected
                           ? 'bg-purple-600 !text-white font-black shadow-md border border-purple-400'
-                          : 'bg-slate-900 hover:bg-purple-600 !text-white font-extrabold border border-slate-800'
+                          : 'bg-slate-100 hover:bg-purple-600 !text-slate-900 hover:!text-white font-extrabold border border-slate-200'
                           }`}
-                        style={{ color: '#7622adff', backgroundColor: isSelected ? '#9333ea' : '#0f172a' }}
+                        style={{ color: isSelected ? '#ffffff' : '#0f172a', backgroundColor: isSelected ? '#7c3aed' : '#f1f5f9' }}
                       >
-                        <span className="truncate font-extrabold" style={{ color: '#7622adff' }}>{s.name}</span>
+                        <span className="truncate font-extrabold" style={{ color: isSelected ? '#ffffff' : '#0f172a' }}>{s.name}</span>
                       </button>
                     );
                   })
@@ -442,23 +442,23 @@ export function SearchableLocationPicker({
 
           {/* Popover */}
           {openDropdown === 'city' && (
-            <div className="absolute left-0 right-0 top-full mt-1.5 z-[100] rounded-2xl bg-slate-950 border-2 border-purple-500 shadow-2xl p-2.5 space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
-              <div className="relative sticky top-0 bg-slate-950 z-10 pb-2 pt-0.5">
-                <Search className="w-4 h-4 text-purple-400 absolute left-3 top-2.5" />
+            <div className="absolute left-0 right-0 top-full mt-1.5 z-[100] rounded-2xl bg-white border-2 border-purple-500 shadow-2xl p-2.5 space-y-2 max-h-64 overflow-y-auto custom-scrollbar" style={{ backgroundColor: '#ffffff' }}>
+              <div className="relative sticky top-0 bg-white z-10 pb-2 pt-0.5" style={{ backgroundColor: '#ffffff' }}>
+                <Search className="w-4 h-4 text-purple-600 absolute left-3 top-2.5" />
                 <input
                   type="text"
                   autoFocus
                   placeholder="Type to search city..."
                   value={citySearch}
                   onChange={e => setCitySearch(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs !text-white placeholder:!text-slate-400 focus:outline-none focus:border-purple-500 font-bold shadow-inner"
-                  style={{ color: '#7622adff', backgroundColor: '#0f172a' }}
+                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs !text-slate-900 placeholder:!text-slate-400 focus:outline-none focus:border-purple-500 font-bold shadow-inner"
+                  style={{ color: '#0f172a', backgroundColor: '#f8fafc' }}
                 />
               </div>
 
               <div className="space-y-1">
                 {filteredCities.length === 0 ? (
-                  <p className="text-xs !text-slate-400 p-3 text-center font-bold">No matching cities</p>
+                  <p className="text-xs !text-slate-500 p-3 text-center font-bold">No matching cities</p>
                 ) : (
                   filteredCities.map(c => {
                     const isSelected = selectedCity?.id === c.id;
@@ -469,11 +469,11 @@ export function SearchableLocationPicker({
                         onClick={() => handleSelectCity(c)}
                         className={`w-full px-3.5 py-2.5 rounded-xl text-left text-xs flex items-center justify-between transition-all group ${isSelected
                           ? 'bg-purple-600 !text-white font-black shadow-md border border-purple-400'
-                          : 'bg-slate-900 hover:bg-purple-600 !text-white font-extrabold border border-slate-800'
+                          : 'bg-slate-100 hover:bg-purple-600 !text-slate-900 hover:!text-white font-extrabold border border-slate-200'
                           }`}
-                        style={{ color: '#7622adff', backgroundColor: isSelected ? '#9333ea' : '#0f172a' }}
+                        style={{ color: isSelected ? '#ffffff' : '#0f172a', backgroundColor: isSelected ? '#7c3aed' : '#f1f5f9' }}
                       >
-                        <span className="truncate font-extrabold" style={{ color: '#7622adff' }}>{c.name}</span>
+                        <span className="truncate font-extrabold" style={{ color: isSelected ? '#ffffff' : '#0f172a' }}>{c.name}</span>
                       </button>
                     );
                   })
@@ -510,23 +510,23 @@ export function SearchableLocationPicker({
 
             {/* Popover */}
             {openDropdown === 'pincode' && (
-              <div className="absolute left-0 right-0 top-full mt-1.5 z-[100] rounded-2xl bg-slate-950 border-2 border-emerald-500 shadow-2xl p-2.5 space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
-                <div className="relative sticky top-0 bg-slate-950 z-10 pb-2 pt-0.5">
-                  <Search className="w-4 h-4 text-emerald-400 absolute left-3 top-2.5" />
+              <div className="absolute left-0 right-0 top-full mt-1.5 z-[100] rounded-2xl bg-white border-2 border-emerald-500 shadow-2xl p-2.5 space-y-2 max-h-64 overflow-y-auto custom-scrollbar" style={{ backgroundColor: '#ffffff' }}>
+                <div className="relative sticky top-0 bg-white z-10 pb-2 pt-0.5" style={{ backgroundColor: '#ffffff' }}>
+                  <Search className="w-4 h-4 text-emerald-600 absolute left-3 top-2.5" />
                   <input
                     type="text"
                     autoFocus
                     placeholder="Type pincode or post office..."
                     value={pincodeSearch}
                     onChange={e => setPincodeSearch(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs !text-white placeholder:!text-slate-400 focus:outline-none focus:border-emerald-500 font-bold shadow-inner"
-                    style={{ color: '#7622adff', backgroundColor: '#0f172a' }}
+                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs !text-slate-900 placeholder:!text-slate-400 focus:outline-none focus:border-emerald-500 font-bold shadow-inner"
+                    style={{ color: '#0f172a', backgroundColor: '#f8fafc' }}
                   />
                 </div>
 
                 <div className="space-y-1">
                   {filteredPincodes.length === 0 ? (
-                    <p className="text-xs !text-slate-400 p-3 text-center font-bold">No matching pincodes</p>
+                    <p className="text-xs !text-slate-500 p-3 text-center font-bold">No matching pincodes</p>
                   ) : (
                     filteredPincodes.map((p, idx) => {
                       const isSelected = selectedPincode?.pincode === p.pincode;
@@ -537,12 +537,12 @@ export function SearchableLocationPicker({
                           onClick={() => handleSelectPincode(p)}
                           className={`w-full px-3.5 py-2.5 rounded-xl text-left text-xs flex items-center justify-between transition-all group ${isSelected
                             ? 'bg-emerald-600 !text-white font-black shadow-md border border-emerald-400'
-                            : 'bg-slate-900 hover:bg-emerald-600 !text-white font-extrabold border border-slate-800'
+                            : 'bg-slate-100 hover:bg-emerald-600 !text-slate-900 hover:!text-white font-extrabold border border-slate-200'
                             }`}
-                          style={{ color: '#7622adff', backgroundColor: isSelected ? '#059669' : '#0f172a' }}
+                          style={{ color: isSelected ? '#ffffff' : '#0f172a', backgroundColor: isSelected ? '#059669' : '#f1f5f9' }}
                         >
-                          <span className="truncate font-extrabold" style={{ color: '#7622adff' }}>{p.postOfficeName}</span>
-                          <span className="font-mono text-[10px] font-bold text-emerald-400">{p.pincode}</span>
+                          <span className="truncate font-extrabold" style={{ color: isSelected ? '#ffffff' : '#0f172a' }}>{p.postOfficeName}</span>
+                          <span className="font-mono text-[10px] font-bold text-emerald-600 group-hover:text-emerald-100">{p.pincode}</span>
                         </button>
                       );
                     })
