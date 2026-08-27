@@ -217,7 +217,7 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
     setField('photos', updated);
   };
 
-  const applySchedulePreset = (type: 'weekdays' | 'weekends' | 'clear') => {
+  const applySchedulePreset = (type: 'weekdays' | 'weekends' | 'both' | 'clear') => {
     const hours = Array.from({ length: 12 }, (_, i) => i + 9); // 9am to 8pm
     let newGrid: AvGrid = { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] };
     
@@ -225,6 +225,10 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
       newGrid = { Mon: [...hours], Tue: [...hours], Wed: [...hours], Thu: [...hours], Fri: [...hours], Sat: [], Sun: [] };
     } else if (type === 'weekends') {
       newGrid = { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [...hours], Sun: [...hours] };
+    } else if (type === 'both') {
+      newGrid = { Mon: [...hours], Tue: [...hours], Wed: [...hours], Thu: [...hours], Fri: [...hours], Sat: [...hours], Sun: [...hours] };
+    } else if (type === 'clear') {
+      newGrid = { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] };
     }
     setField('availability', newGrid);
   };
@@ -785,20 +789,34 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                   </div>
 
                   {/* Schedule Presets */}
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <button
                       type="button"
                       onClick={() => applySchedulePreset('weekdays')}
-                      className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 text-[10px] font-bold border border-slate-800"
+                      className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-purple-900/40 text-slate-300 hover:text-purple-300 text-[10px] font-bold border border-slate-800 hover:border-purple-500/30 transition-all"
                     >
                       Weekdays (9am-8pm)
                     </button>
                     <button
                       type="button"
                       onClick={() => applySchedulePreset('weekends')}
-                      className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 text-[10px] font-bold border border-slate-800"
+                      className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-purple-900/40 text-slate-300 hover:text-purple-300 text-[10px] font-bold border border-slate-800 hover:border-purple-500/30 transition-all"
                     >
-                      Weekends
+                      Weekends (9am-8pm)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applySchedulePreset('both')}
+                      className="px-2.5 py-1 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 text-[10px] font-bold border border-purple-500/40 transition-all"
+                    >
+                      Both (All Days)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applySchedulePreset('clear')}
+                      className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-rose-900/30 text-rose-400 text-[10px] font-bold border border-slate-800 hover:border-rose-500/30 transition-all"
+                    >
+                      Clear All
                     </button>
                   </div>
                 </div>
