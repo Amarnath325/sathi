@@ -1280,4 +1280,43 @@ model HubAuditLog {
   @@index([module, entity_id, timestamp])
 }
 
+model LocationCountry {
+  id        Int             @id @default(autoincrement())
+  sortname  String
+  name      String
+  phonecode Int
+  states    LocationState[]
+}
+
+model LocationState {
+  id        Int             @id @default(autoincrement())
+  name      String
+  countryId Int
+  country   LocationCountry @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  cities    LocationCity[]
+
+  @@index([countryId])
+}
+
+model LocationCity {
+  id      Int           @id @default(autoincrement())
+  name    String
+  stateId Int
+  state   LocationState @relation(fields: [stateId], references: [id], onDelete: Cascade)
+
+  @@index([stateId, name])
+}
+
+model LocationPincode {
+  id             String @id @default(uuid())
+  postOfficeName String
+  pincode        Int
+  city           String
+  district       String
+  state          String
+
+  @@index([pincode, city, state])
+}
+
+
 

@@ -95,6 +95,8 @@ import { DisputeThreadDrawer } from '@/components/dispute/DisputeThreadDrawer';
 import { DisputeTicket, Review } from '@/lib/types';
 import { ReviewAuditModal } from '@/components/review/ReviewAuditModal';
 import { ReviewCard } from '@/components/review/ReviewCard';
+import { CascadingLocationSelector } from '@/components/location/CascadingLocationSelector';
+
 
 
 
@@ -1899,7 +1901,11 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
+              {/* Dynamic Cascading Location Selector */}
+              <CascadingLocationSelector />
+
               {/* Sub-Filter Bar & Action Toolbar */}
+
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900 p-4 rounded-3xl border border-slate-800">
                 <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
                   {[
