@@ -68,6 +68,8 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
   const [newPhotoUrl, setNewPhotoUrl] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
 
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
   // Aadhaar & OCR state
   const [aadhaarFront, setAadhaarFront] = useState<string>(
     'https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=80'
@@ -126,6 +128,7 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
     name: '',
     email: '',
     phone: '',
+    dob: '2000-01-01',
     age: 25,
     gender: 'Female',
     city: 'New York',
@@ -157,6 +160,7 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
     if (initialData) {
       setFormData({
         ...initialData,
+        dob: initialData.dob || '1999-05-15',
         photos: initialData.photos && initialData.photos.length > 0 ? initialData.photos : [initialData.avatar || PRESET_AVATARS[0]],
         availability: initialData.availability || DEFAULT_SCHEDULE
       });
@@ -165,6 +169,7 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
         name: '',
         email: '',
         phone: '',
+        dob: '2000-01-01',
         age: 25,
         gender: 'Female',
         city: 'New York',
@@ -194,6 +199,7 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
     }
     setActiveTab('basic');
     setFormError(null);
+    setFieldErrors({});
   }, [initialData, isOpen]);
 
   if (!isOpen) return null;
@@ -201,23 +207,141 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
   const setField = (key: keyof UserProfile, val: any) => {
     setFormData(prev => ({ ...prev, [key]: val }));
     setFormError(null);
+    if (fieldErrors[key as string]) {
+      setFieldErrors(prev => ({ ...prev, [key as string]: '' }));
+    }
+  };
+
+  const handlePhoneChange = (val: string) => {
+    const digitsOnly = val.replace(/\D/g, '').slice(0, 10);
+    setField('phone', digitsOnly);
+  };
+
+  const handleEmailChange = (val: string) => {
+    const trimmed = val.slice(0, 30);
+    setField('email', trimmed);
+  };
+
+  const handleDobChange = (dobValue: string) => {
+    setField('dob', dobValue);
+    if (dobValue) {
+      const birthDate = new Date(dobValue);
+      const today = new Date();
+      let calculatedAge = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        calculatedAge--;
+      }
+      if (!isNaN(calculatedAge) && calculatedAge > 0) {
+        setField('age', Math.max(0, calculatedAge));
+      }
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    // 1. Full Name Validation
+    const nameStr = (formData.name || '').trim();
+    if (!nameStr) {
+      errors.name = 'Full name is required.';
+    } else if (nameStr.length < 2) {
+      errors.name = 'Full name must be at least 2 characters.';
+    }
+
+    // 2. Email Address Validation (Max 30 chars & valid regex)
+    const emailStr = (formData.email || '').trim();
+    if (!emailStr) {
+      errors.email = 'Email address is required.';
+    } else if (emailStr.length > 30) {
+      errors.email = 'Email address length cannot exceed 30 characters.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailStr)) {
+      errors.email = 'Please enter a valid email address (e.g. name@example.com).';
+    }
+
+    // 3. Mobile Number Validation (Exactly 10 numeric digits)
+    const phoneStr = (formData.phone || '').trim();
+    if (!phoneStr) {
+      errors.phone = 'Mobile phone number is required.';
+    } else if (!/^[0-9]{10}$/.test(phoneStr)) {
+      errors.phone = 'Mobile number must be exactly 10 numeric digits.';
+    }
+
+    // 4. Date of Birth (DOB) Validation
+    if (!formData.dob) {
+      errors.dob = 'Date of Birth (DOB) is required.';
+    } else {
+      const birthDate = new Date(formData.dob);
+      const today = new Date();
+      let calculatedAge = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        calculatedAge--;
+      }
+      if (isNaN(calculatedAge) || birthDate > today) {
+        errors.dob = 'Please select a valid past Date of Birth.';
+      } else if (calculatedAge < 18) {
+        errors.dob = `Companion must be at least 18 years old (Current calculated age: ${calculatedAge}).`;
+      }
+    }
+
+    // 5. Location Validation
+    if (!formData.country?.trim() || !formData.city?.trim()) {
+      errors.location = 'Country and City / Hub selection is required.';
+    }
+
+    // 6. Spoken Languages Validation
+    if (!formData.languages || formData.languages.length === 0) {
+      errors.languages = 'Please select at least 1 spoken language.';
+    }
+
+    // Check Tab 1 Errors
+    if (errors.name || errors.email || errors.phone || errors.dob || errors.location || errors.languages) {
+      setActiveTab('basic');
+      setFieldErrors(errors);
+      setFormError(errors.name || errors.email || errors.phone || errors.dob || errors.location || errors.languages);
+      return false;
+    }
+
+    // 7. Pricing & Categories Tab Validation
+    if (!formData.hourlyRate || formData.hourlyRate <= 0) {
+      errors.hourlyRate = 'Hourly rate must be greater than 0.';
+    }
+    if (!formData.categories || formData.categories.length === 0) {
+      errors.categories = 'Please select at least 1 service category.';
+    }
+
+    if (errors.hourlyRate || errors.categories) {
+      setActiveTab('pricing');
+      setFieldErrors(errors);
+      setFormError(errors.hourlyRate || errors.categories);
+      return false;
+    }
+
+    // 8. Bio & Skills Tab Validation
+    if (!formData.bio || formData.bio.trim().length < 10) {
+      errors.bio = 'Bio description is required (minimum 10 characters).';
+    }
+    if (!formData.skills || formData.skills.length === 0) {
+      errors.skills = 'Please add at least 1 skill or specialty tag.';
+    }
+
+    if (errors.bio || errors.skills) {
+      setActiveTab('bio_skills');
+      setFieldErrors(errors);
+      setFormError(errors.bio || errors.skills);
+      return false;
+    }
+
+    setFieldErrors({});
+    setFormError(null);
+    return true;
   };
 
   const handleFormSubmit = (e?: React.FormEvent) => {
     if (e && e.preventDefault) e.preventDefault();
-    if (!formData.name?.trim()) {
-      setActiveTab('basic');
-      setFormError('Companion full name is required.');
-      return;
-    }
-    if (!formData.email?.trim()) {
-      setActiveTab('basic');
-      setFormError('Valid email address is required.');
-      return;
-    }
-    if (!formData.hourlyRate || formData.hourlyRate <= 0) {
-      setActiveTab('pricing');
-      setFormError('Please provide a valid hourly rate.');
+    
+    if (!validateForm()) {
       return;
     }
 
@@ -403,10 +527,14 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
           {/* TAB 1: BASIC INFO */}
           {activeTab === 'basic' && (
             <div className="space-y-6 animate-fade-in">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                
+                {/* Full Name */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                    <User className="w-3.5 h-3.5 text-purple-400" /> Full Name <span className="text-rose-400">*</span>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <User className="w-3.5 h-3.5 text-purple-400" /> Full Name <span className="text-rose-400">*</span>
+                    </span>
                   </label>
                   <input
                     type="text"
@@ -414,37 +542,110 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                     placeholder="e.g. Sophia Chen"
                     value={formData.name || ''}
                     onChange={e => setField('name', e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:border-purple-500 focus:outline-none transition-all"
+                    className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border text-sm text-white focus:outline-none transition-all ${
+                      fieldErrors.name ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
+                    }`}
                   />
+                  {fieldErrors.name && (
+                    <p className="mt-1 text-[11px] font-semibold text-rose-400 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3 shrink-0" /> {fieldErrors.name}
+                    </p>
+                  )}
                 </div>
 
+                {/* Email Address (Max 30 Chars) */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                    <Mail className="w-3.5 h-3.5 text-purple-400" /> Email Address <span className="text-rose-400">*</span>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <Mail className="w-3.5 h-3.5 text-purple-400" /> Email Address <span className="text-rose-400">*</span>
+                    </span>
+                    <span className={`text-[10px] font-mono font-bold ${
+                      (formData.email?.length || 0) >= 30 ? 'text-amber-400 font-black' : 'text-slate-500'
+                    }`}>
+                      {formData.email?.length || 0}/30 Chars
+                    </span>
                   </label>
                   <input
                     type="email"
                     required
+                    maxLength={30}
                     placeholder="sophia@example.com"
                     value={formData.email || ''}
-                    onChange={e => setField('email', e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:border-purple-500 focus:outline-none transition-all"
+                    onChange={e => handleEmailChange(e.target.value)}
+                    className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border text-sm text-white focus:outline-none transition-all ${
+                      fieldErrors.email ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
+                    }`}
                   />
+                  {fieldErrors.email ? (
+                    <p className="mt-1 text-[11px] font-semibold text-rose-400 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3 shrink-0" /> {fieldErrors.email}
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-[10px] text-slate-500">Max 30 characters allowed.</p>
+                  )}
                 </div>
 
+                {/* Mobile Phone (10 Digits Only) */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                    <Phone className="w-3.5 h-3.5 text-purple-400" /> Phone Number
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <Phone className="w-3.5 h-3.5 text-purple-400" /> Mobile Number <span className="text-rose-400">*</span>
+                    </span>
+                    <span className={`text-[10px] font-mono font-bold ${
+                      (formData.phone?.length || 0) === 10 ? 'text-emerald-400 font-extrabold' : 'text-slate-500'
+                    }`}>
+                      {formData.phone?.length || 0}/10 Digits
+                    </span>
                   </label>
                   <input
                     type="text"
-                    placeholder="+1 415-555-0192"
+                    maxLength={10}
+                    placeholder="e.g. 9876543210"
                     value={formData.phone || ''}
-                    onChange={e => setField('phone', e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:border-purple-500 focus:outline-none transition-all"
+                    onChange={e => handlePhoneChange(e.target.value)}
+                    className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border text-sm text-white font-mono focus:outline-none transition-all ${
+                      fieldErrors.phone ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
+                    }`}
                   />
+                  {fieldErrors.phone ? (
+                    <p className="mt-1 text-[11px] font-semibold text-rose-400 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3 shrink-0" /> {fieldErrors.phone}
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-[10px] text-slate-500">Only 10 numeric digits accepted.</p>
+                  )}
                 </div>
 
+                {/* Date of Birth (DOB) Date Picker */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5 text-purple-400" /> Date of Birth (DOB) <span className="text-rose-400">*</span>
+                    </span>
+                    <span className="text-[10px] font-mono font-bold text-purple-300">
+                      Age: {formData.age || 25} Yrs
+                    </span>
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    max={new Date().toISOString().split('T')[0]}
+                    value={formData.dob || ''}
+                    onChange={e => handleDobChange(e.target.value)}
+                    className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border text-sm text-white focus:outline-none transition-all ${
+                      fieldErrors.dob ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
+                    }`}
+                  />
+                  {fieldErrors.dob ? (
+                    <p className="mt-1 text-[11px] font-semibold text-rose-400 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3 shrink-0" /> {fieldErrors.dob}
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-[10px] text-slate-500">Age calculated automatically from DOB.</p>
+                  )}
+                </div>
+
+                {/* Age (Calculated/Manual) */}
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">
                     Age (Years)
@@ -455,10 +656,12 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                     max={80}
                     value={formData.age || 25}
                     onChange={e => setField('age', Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:border-purple-500 focus:outline-none transition-all"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white font-mono font-bold text-purple-300 focus:border-purple-500 focus:outline-none transition-all"
                   />
+                  <p className="mt-1 text-[10px] text-slate-500">Minimum 18 years required.</p>
                 </div>
 
+                {/* Gender Identity */}
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">
                     Gender Identity

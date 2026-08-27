@@ -85,6 +85,7 @@ export interface UserProfile {
   state?: string;
   pincode?: string;
   aadhaarNumber?: string;
+  dob?: string;
 }
 
 
