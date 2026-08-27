@@ -48,7 +48,7 @@ export function CompanionCard({ companion, onSave, isSaved = false, showActions 
               <MapPin className="w-3 h-3 text-indigo-400" /> {companion.city}, {companion.country}
             </p>
             <div className="flex flex-wrap gap-1 mt-1">
-              {companion.categories.slice(0, 2).map((cat, i) => (
+              {(companion.categories || [(companion as any).category || 'Event Companion']).slice(0, 2).map((cat, i) => (
                 <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-600/15 border border-indigo-500/20 text-indigo-300">{cat}</span>
               ))}
             </div>
@@ -159,7 +159,7 @@ export function CompanionCard({ companion, onSave, isSaved = false, showActions 
 
           {/* Categories */}
           <div className="flex flex-wrap gap-1">
-            {companion.categories.slice(0, 3).map((cat, i) => (
+            {(companion.categories || [(companion as any).category || 'Event Companion']).slice(0, 3).map((cat, i) => (
               <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-600/15 border border-indigo-500/20 text-indigo-300 font-medium">
                 {cat}
               </span>
@@ -169,7 +169,7 @@ export function CompanionCard({ companion, onSave, isSaved = false, showActions 
           {/* Languages */}
           <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
             <Globe className="w-3 h-3 text-slate-500" />
-            {companion.languages.join(' · ')}
+            {(companion.languages || ['English']).join(' · ')}
           </div>
 
           {/* Status */}

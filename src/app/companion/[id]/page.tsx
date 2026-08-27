@@ -8,6 +8,7 @@ import {
   MessageSquare, Sparkles, Heart, Share2, Eye, ChevronLeft, Lock, AlertTriangle, Shield, Plus
 } from 'lucide-react';
 import { MOCK_COMPANIONS, MOCK_REVIEWS } from '@/lib/mockData';
+import { useCrudStore } from '@/lib/crudStore';
 import { CompanionStatusBadge } from '@/components/companion/CompanionStatusBadge';
 import { AvailabilityGrid } from '@/components/companion/AvailabilityGrid';
 import { ImageLightboxModal } from '@/components/common/ImageLightboxModal';
@@ -17,8 +18,57 @@ import { useToast } from '@/components/ui/Toast';
 export default function CompanionProfilePage() {
   const params = useParams();
   const { showToast } = useToast();
+  const { companions: storeCompanions } = useCrudStore();
   const companionId = params?.id as string;
-  const companion = MOCK_COMPANIONS.find(c => c.id === companionId) || MOCK_COMPANIONS[0];
+
+  // 1. Search in MOCK_COMPANIONS, then storeCompanions, fallback to MOCK_COMPANIONS[0]
+  const rawCompanion = MOCK_COMPANIONS.find(c => c.id === companionId)
+    || storeCompanions.find(c => c.id === companionId)
+    || MOCK_COMPANIONS[0];
+
+  // 2. Safe normalization of all properties to guarantee non-null arrays and strings
+  const companion = {
+    ...rawCompanion,
+    id: rawCompanion?.id || 'comp-101',
+    name: rawCompanion?.name || 'Verified Companion',
+    email: rawCompanion?.email || 'companion@sathi.com',
+    phone: rawCompanion?.phone || '+1 555-019-2834',
+    age: rawCompanion?.age || 26,
+    gender: rawCompanion?.gender || 'Female',
+    city: rawCompanion?.city || 'San Francisco',
+    country: rawCompanion?.country || 'USA',
+    avatar: rawCompanion?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
+    photos: Array.isArray(rawCompanion?.photos) ? rawCompanion.photos : [],
+    categories: (Array.isArray(rawCompanion?.categories) && rawCompanion.categories.length > 0)
+      ? rawCompanion.categories
+      : [(rawCompanion as any)?.category || 'Event Companion'],
+    skills: (Array.isArray(rawCompanion?.skills) && rawCompanion.skills.length > 0)
+      ? rawCompanion.skills
+      : ['Multilingual', 'Event Companion', 'Sightseeing Guide'],
+    languages: (Array.isArray(rawCompanion?.languages) && rawCompanion.languages.length > 0)
+      ? rawCompanion.languages
+      : ['English', 'Hindi'],
+    hourlyRate: rawCompanion?.hourlyRate || 75,
+    dailyRate: rawCompanion?.dailyRate || 320,
+    weeklyRate: rawCompanion?.weeklyRate || 1800,
+    ratingAvg: rawCompanion?.ratingAvg ?? 4.9,
+    ratingCount: rawCompanion?.ratingCount ?? 12,
+    completedBookings: rawCompanion?.completedBookings ?? 15,
+    verificationBadge: rawCompanion?.verificationBadge ?? true,
+    kycStatus: rawCompanion?.kycStatus || 'APPROVED',
+    bio: rawCompanion?.bio || 'Professional verified companion available for events, city tours, and social engagements.',
+    isAvailableNow: rawCompanion?.isAvailableNow ?? true,
+    responseTimeMin: rawCompanion?.responseTimeMin ?? 10,
+    availability: rawCompanion?.availability || {
+      Mon: [9, 10, 11, 14, 15, 16, 17, 18],
+      Tue: [9, 10, 11, 14, 15, 16, 17, 18],
+      Wed: [9, 10, 11, 12],
+      Thu: [14, 15, 16, 17, 18, 19],
+      Fri: [10, 11, 12, 14, 15, 16],
+      Sat: [10, 11, 12, 13, 14, 15, 16, 17, 18],
+      Sun: []
+    }
+  };
 
   const [activePhoto, setActivePhoto] = useState(companion.avatar);
   const [isSaved, setIsSaved] = useState(false);

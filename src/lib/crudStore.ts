@@ -39,6 +39,10 @@ export interface DynamicCompanionItem extends BaseEntity {
   createdSource?: 'ADMIN' | 'USER_REGISTERED';
   aadhaarNumber?: string;
   kycStatus?: string;
+  verificationBadge?: boolean;
+  isAvailableNow?: boolean;
+  responseTimeMin?: number;
+  availability?: Record<string, number[]>;
 }
 
 

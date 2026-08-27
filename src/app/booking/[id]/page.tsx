@@ -26,6 +26,7 @@ import {
   ChevronLeft
 } from 'lucide-react';
 import { MOCK_COMPANIONS } from '@/lib/mockData';
+import { useCrudStore } from '@/lib/crudStore';
 import { useAdminStore } from '@/lib/adminStore';
 import { PromoCodeItem } from '@/lib/types';
 import { BookingStateMachine, BookingStatusType } from '@/lib/bookingStateMachine';
@@ -36,8 +37,24 @@ export default function BookingPage() {
   const params = useParams();
   const router = useRouter();
   const { showToast } = useToast();
+  const { companions: storeCompanions } = useCrudStore();
   const companionId = params?.id as string;
-  const companion = MOCK_COMPANIONS.find(c => c.id === companionId) || MOCK_COMPANIONS[0];
+
+  const rawCompanion = MOCK_COMPANIONS.find(c => c.id === companionId)
+    || storeCompanions.find(c => c.id === companionId)
+    || MOCK_COMPANIONS[0];
+
+  const companion = {
+    ...rawCompanion,
+    id: rawCompanion?.id || 'comp-101',
+    name: rawCompanion?.name || 'Verified Companion',
+    avatar: rawCompanion?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
+    categories: (Array.isArray(rawCompanion?.categories) && rawCompanion.categories.length > 0)
+      ? rawCompanion.categories
+      : [(rawCompanion as any)?.category || 'Event Companion'],
+    city: rawCompanion?.city || 'San Francisco',
+    hourlyRate: rawCompanion?.hourlyRate || 75
+  };
 
   const { config, promos, addBooking } = useAdminStore();
 

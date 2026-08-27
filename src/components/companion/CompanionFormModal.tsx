@@ -340,7 +340,7 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
 
   const handleFormSubmit = (e?: React.FormEvent) => {
     if (e && e.preventDefault) e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -406,7 +406,7 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
   const applySchedulePreset = (type: 'weekdays' | 'weekends' | 'both' | 'clear') => {
     const hours = Array.from({ length: 12 }, (_, i) => i + 9); // 9am to 8pm
     let newGrid: AvGrid = { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] };
-    
+
     if (type === 'weekdays') {
       newGrid = { Mon: [...hours], Tue: [...hours], Wed: [...hours], Thu: [...hours], Fri: [...hours], Sat: [], Sun: [] };
     } else if (type === 'weekends') {
@@ -465,7 +465,7 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/80 backdrop-blur-md overflow-y-auto font-sans">
       <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[92vh]">
-        
+
         {/* Header */}
         <div className="px-6 py-5 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
@@ -500,11 +500,10 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                  isActive
-                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                }`}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${isActive
+                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  }`}
               >
                 <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                 <span>{tab.label}</span>
@@ -523,12 +522,12 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
 
         {/* Form Body */}
         <form onSubmit={handleFormSubmit} className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
-          
+
           {/* TAB 1: BASIC INFO */}
           {activeTab === 'basic' && (
             <div className="space-y-6 animate-fade-in">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                
+
                 {/* Full Name */}
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
@@ -542,9 +541,8 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                     placeholder="e.g. Sophia Chen"
                     value={formData.name || ''}
                     onChange={e => setField('name', e.target.value)}
-                    className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border text-sm text-white focus:outline-none transition-all ${
-                      fieldErrors.name ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
-                    }`}
+                    className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border text-sm text-white focus:outline-none transition-all ${fieldErrors.name ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
+                      }`}
                   />
                   {fieldErrors.name && (
                     <p className="mt-1 text-[11px] font-semibold text-rose-400 flex items-center gap-1">
@@ -559,9 +557,8 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                     <span className="flex items-center gap-1">
                       <Mail className="w-3.5 h-3.5 text-purple-400" /> Email Address <span className="text-rose-400">*</span>
                     </span>
-                    <span className={`text-[10px] font-mono font-bold ${
-                      (formData.email?.length || 0) >= 30 ? 'text-amber-400 font-black' : 'text-slate-500'
-                    }`}>
+                    <span className={`text-[10px] font-mono font-bold ${(formData.email?.length || 0) >= 30 ? 'text-amber-400 font-black' : 'text-slate-500'
+                      }`}>
                       {formData.email?.length || 0}/30 Chars
                     </span>
                   </label>
@@ -572,9 +569,8 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                     placeholder="sophia@example.com"
                     value={formData.email || ''}
                     onChange={e => handleEmailChange(e.target.value)}
-                    className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border text-sm text-white focus:outline-none transition-all ${
-                      fieldErrors.email ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
-                    }`}
+                    className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border text-sm text-white focus:outline-none transition-all ${fieldErrors.email ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
+                      }`}
                   />
                   {fieldErrors.email ? (
                     <p className="mt-1 text-[11px] font-semibold text-rose-400 flex items-center gap-1">
@@ -591,9 +587,8 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                     <span className="flex items-center gap-1">
                       <Phone className="w-3.5 h-3.5 text-purple-400" /> Mobile Number <span className="text-rose-400">*</span>
                     </span>
-                    <span className={`text-[10px] font-mono font-bold ${
-                      (formData.phone?.length || 0) === 10 ? 'text-emerald-400 font-extrabold' : 'text-slate-500'
-                    }`}>
+                    <span className={`text-[10px] font-mono font-bold ${(formData.phone?.length || 0) === 10 ? 'text-emerald-400 font-extrabold' : 'text-slate-500'
+                      }`}>
                       {formData.phone?.length || 0}/10 Digits
                     </span>
                   </label>
@@ -603,9 +598,8 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                     placeholder="e.g. 9876543210"
                     value={formData.phone || ''}
                     onChange={e => handlePhoneChange(e.target.value)}
-                    className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border text-sm text-white font-mono focus:outline-none transition-all ${
-                      fieldErrors.phone ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
-                    }`}
+                    className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border text-sm text-white font-mono focus:outline-none transition-all ${fieldErrors.phone ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
+                      }`}
                   />
                   {fieldErrors.phone ? (
                     <p className="mt-1 text-[11px] font-semibold text-rose-400 flex items-center gap-1">
@@ -632,9 +626,8 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                     max={new Date().toISOString().split('T')[0]}
                     value={formData.dob || ''}
                     onChange={e => handleDobChange(e.target.value)}
-                    className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border text-sm text-white focus:outline-none transition-all ${
-                      fieldErrors.dob ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
-                    }`}
+                    className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border text-sm text-white focus:outline-none transition-all ${fieldErrors.dob ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
+                      }`}
                   />
                   {fieldErrors.dob ? (
                     <p className="mt-1 text-[11px] font-semibold text-rose-400 flex items-center gap-1">
@@ -657,6 +650,7 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                     value={formData.age || 25}
                     onChange={e => setField('age', Number(e.target.value))}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white font-mono font-bold text-purple-300 focus:border-purple-500 focus:outline-none transition-all"
+                    disabled
                   />
                   <p className="mt-1 text-[10px] text-slate-500">Minimum 18 years required.</p>
                 </div>
@@ -713,11 +707,10 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                         key={lang}
                         type="button"
                         onClick={() => toggleLanguage(lang)}
-                        className={`text-xs px-3 py-1.5 rounded-xl border font-bold transition-all flex items-center gap-1.5 ${
-                          isSelected
-                            ? 'bg-purple-600/30 border-purple-500 text-purple-300'
-                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
-                        }`}
+                        className={`text-xs px-3 py-1.5 rounded-xl border font-bold transition-all flex items-center gap-1.5 ${isSelected
+                          ? 'bg-purple-600/30 border-purple-500 text-purple-300'
+                          : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                          }`}
                       >
                         {isSelected && <Check className="w-3 h-3 text-purple-400" />}
                         {lang}
@@ -845,11 +838,10 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                         key={cat}
                         type="button"
                         onClick={() => toggleCategory(cat)}
-                        className={`text-xs px-3.5 py-2 rounded-xl border font-bold transition-all ${
-                          isSelected
-                            ? 'bg-purple-600 text-white border-purple-500 shadow-md shadow-purple-600/30'
-                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
-                        }`}
+                        className={`text-xs px-3.5 py-2 rounded-xl border font-bold transition-all ${isSelected
+                          ? 'bg-purple-600 text-white border-purple-500 shadow-md shadow-purple-600/30'
+                          : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                          }`}
                       >
                         {cat}
                       </button>
@@ -863,7 +855,7 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
           {/* TAB 3: BIO, SKILLS & BADGES */}
           {activeTab === 'bio_skills' && (
             <div className="space-y-6 animate-fade-in">
-              
+
               {/* Bio */}
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">
@@ -972,9 +964,8 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                           src={url}
                           alt="Preset"
                           onClick={() => setField('avatar', url)}
-                          className={`w-7 h-7 rounded-lg object-cover cursor-pointer border hover:scale-110 transition-all ${
-                            formData.avatar === url ? 'border-purple-500 ring-2 ring-purple-500/50' : 'border-slate-800'
-                          }`}
+                          className={`w-7 h-7 rounded-lg object-cover cursor-pointer border hover:scale-110 transition-all ${formData.avatar === url ? 'border-purple-500 ring-2 ring-purple-500/50' : 'border-slate-800'
+                            }`}
                         />
                       ))}
                     </div>
@@ -1067,11 +1058,10 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                   <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-purple-400" /> KYC Identity Credentials
                   </h3>
-                  <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
-                    formData.kycStatus === 'APPROVED'
-                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                      : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                  }`}>
+                  <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${formData.kycStatus === 'APPROVED'
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                    : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                    }`}>
                     {formData.kycStatus || 'PENDING'}
                   </span>
                 </div>
@@ -1141,7 +1131,7 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
 
                 {/* Aadhaar Upload Cards (Front & Back) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                  
+
                   {/* Front Upload */}
                   <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
                     <div className="flex items-center justify-between">
