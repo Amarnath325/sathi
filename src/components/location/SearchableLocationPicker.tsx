@@ -279,9 +279,9 @@ export function SearchableLocationPicker({
 
   return (
     <div className={`space-y-4 ${className}`} ref={containerRef}>
-      
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        
+
         {/* 1. COUNTRY DROPDOWN */}
         <div className="relative">
           <label className="block text-xs font-extrabold text-purple-600 uppercase tracking-wider mb-1.5 flex items-center justify-between">
@@ -294,11 +294,10 @@ export function SearchableLocationPicker({
           <button
             type="button"
             onClick={() => setOpenDropdown(openDropdown === 'country' ? null : 'country')}
-            className={`w-full px-3.5 py-3 rounded-2xl border text-left flex items-center justify-between gap-2 transition-all ${
-              countryText
-                ? 'bg-white border-2 border-purple-500 shadow-sm'
-                : 'bg-white border border-slate-300'
-            } hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20`}
+            className={`w-full px-3.5 py-3 rounded-2xl border text-left flex items-center justify-between gap-2 transition-all ${countryText
+              ? 'bg-white border-2 border-purple-500 shadow-sm'
+              : 'bg-white border border-slate-300'
+              } hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20`}
           >
             <span className={`truncate text-sm ${countryText ? '!text-slate-900 font-extrabold' : '!text-slate-500 font-medium'}`} style={{ color: countryText ? '#0f172a' : '#64748b' }}>
               {countryText || 'Search Country...'}
@@ -318,7 +317,7 @@ export function SearchableLocationPicker({
                   value={countrySearch}
                   onChange={e => setCountrySearch(e.target.value)}
                   className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs !text-white placeholder:!text-slate-400 focus:outline-none focus:border-purple-500 font-bold shadow-inner"
-                  style={{ color: '#ffffff', backgroundColor: '#0f172a' }}
+                  style={{ color: '#7622adff', backgroundColor: '#0f172a' }}
                 />
               </div>
 
@@ -333,12 +332,11 @@ export function SearchableLocationPicker({
                         key={c.id}
                         type="button"
                         onClick={() => handleSelectCountry(c)}
-                        className={`w-full px-3.5 py-2.5 rounded-xl text-left text-xs flex items-center justify-between transition-all group ${
-                          isSelected
-                            ? 'bg-purple-600 !text-white font-black shadow-md border border-purple-400'
-                            : 'bg-slate-900 hover:bg-purple-600 !text-white font-extrabold border border-slate-800'
-                        }`}
-                        style={{ color: '#ffffff', backgroundColor: isSelected ? '#9333ea' : '#0f172a' }}
+                        className={`w-full px-3.5 py-2.5 rounded-xl text-left text-xs flex items-center justify-between transition-all group ${isSelected
+                          ? 'bg-purple-600 !text-white font-black shadow-md border border-purple-400'
+                          : 'bg-slate-900 hover:bg-purple-600 !text-white font-extrabold border border-slate-800'
+                          }`}
+                        style={{ color: '#7622adff', backgroundColor: isSelected ? '#9333ea' : '#0f172a' }}
                       >
                         <span className="truncate font-extrabold" style={{ color: '#ffffff' }}>{c.name}</span>
                         <span className="font-mono text-[10px] font-bold text-purple-300">+{c.phonecode}</span>
@@ -364,11 +362,10 @@ export function SearchableLocationPicker({
             type="button"
             disabled={!selectedCountry}
             onClick={() => setOpenDropdown(openDropdown === 'state' ? null : 'state')}
-            className={`w-full px-3.5 py-3 rounded-2xl border text-left flex items-center justify-between gap-2 transition-all ${
-              stateText
-                ? 'bg-white border-2 border-purple-500 shadow-sm'
-                : 'bg-white border border-slate-300'
-            } hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed`}
+            className={`w-full px-3.5 py-3 rounded-2xl border text-left flex items-center justify-between gap-2 transition-all ${stateText
+              ? 'bg-white border-2 border-purple-500 shadow-sm'
+              : 'bg-white border border-slate-300'
+              } hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             <span className={`truncate text-sm ${stateText ? '!text-slate-900 font-extrabold' : '!text-slate-500 font-medium'}`} style={{ color: stateText ? '#0f172a' : '#64748b' }}>
               {stateText || (selectedCountry ? 'Search State...' : 'Select Country first')}
@@ -388,7 +385,7 @@ export function SearchableLocationPicker({
                   value={stateSearch}
                   onChange={e => setStateSearch(e.target.value)}
                   className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs !text-white placeholder:!text-slate-400 focus:outline-none focus:border-purple-500 font-bold shadow-inner"
-                  style={{ color: '#ffffff', backgroundColor: '#0f172a' }}
+                  style={{ color: '#7622adff', backgroundColor: '#0f172a' }}
                 />
               </div>
 
@@ -403,14 +400,13 @@ export function SearchableLocationPicker({
                         key={s.id}
                         type="button"
                         onClick={() => handleSelectState(s)}
-                        className={`w-full px-3.5 py-2.5 rounded-xl text-left text-xs flex items-center justify-between transition-all group ${
-                          isSelected
-                            ? 'bg-purple-600 !text-white font-black shadow-md border border-purple-400'
-                            : 'bg-slate-900 hover:bg-purple-600 !text-white font-extrabold border border-slate-800'
-                        }`}
-                        style={{ color: '#ffffff', backgroundColor: isSelected ? '#9333ea' : '#0f172a' }}
+                        className={`w-full px-3.5 py-2.5 rounded-xl text-left text-xs flex items-center justify-between transition-all group ${isSelected
+                          ? 'bg-purple-600 !text-white font-black shadow-md border border-purple-400'
+                          : 'bg-slate-900 hover:bg-purple-600 !text-white font-extrabold border border-slate-800'
+                          }`}
+                        style={{ color: '#7622adff', backgroundColor: isSelected ? '#9333ea' : '#0f172a' }}
                       >
-                        <span className="truncate font-extrabold" style={{ color: '#ffffff' }}>{s.name}</span>
+                        <span className="truncate font-extrabold" style={{ color: '#7622adff' }}>{s.name}</span>
                       </button>
                     );
                   })
@@ -433,11 +429,10 @@ export function SearchableLocationPicker({
             type="button"
             disabled={!selectedState}
             onClick={() => setOpenDropdown(openDropdown === 'city' ? null : 'city')}
-            className={`w-full px-3.5 py-3 rounded-2xl border text-left flex items-center justify-between gap-2 transition-all ${
-              cityText
-                ? 'bg-white border-2 border-purple-500 shadow-sm'
-                : 'bg-white border border-slate-300'
-            } hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed`}
+            className={`w-full px-3.5 py-3 rounded-2xl border text-left flex items-center justify-between gap-2 transition-all ${cityText
+              ? 'bg-white border-2 border-purple-500 shadow-sm'
+              : 'bg-white border border-slate-300'
+              } hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             <span className={`truncate text-sm ${cityText ? '!text-slate-900 font-extrabold' : '!text-slate-500 font-medium'}`} style={{ color: cityText ? '#0f172a' : '#64748b' }}>
               {cityText || (selectedState ? 'Search City...' : 'Select State first')}
@@ -457,7 +452,7 @@ export function SearchableLocationPicker({
                   value={citySearch}
                   onChange={e => setCitySearch(e.target.value)}
                   className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs !text-white placeholder:!text-slate-400 focus:outline-none focus:border-purple-500 font-bold shadow-inner"
-                  style={{ color: '#ffffff', backgroundColor: '#0f172a' }}
+                  style={{ color: '#7622adff', backgroundColor: '#0f172a' }}
                 />
               </div>
 
@@ -472,14 +467,13 @@ export function SearchableLocationPicker({
                         key={c.id}
                         type="button"
                         onClick={() => handleSelectCity(c)}
-                        className={`w-full px-3.5 py-2.5 rounded-xl text-left text-xs flex items-center justify-between transition-all group ${
-                          isSelected
-                            ? 'bg-purple-600 !text-white font-black shadow-md border border-purple-400'
-                            : 'bg-slate-900 hover:bg-purple-600 !text-white font-extrabold border border-slate-800'
-                        }`}
-                        style={{ color: '#ffffff', backgroundColor: isSelected ? '#9333ea' : '#0f172a' }}
+                        className={`w-full px-3.5 py-2.5 rounded-xl text-left text-xs flex items-center justify-between transition-all group ${isSelected
+                          ? 'bg-purple-600 !text-white font-black shadow-md border border-purple-400'
+                          : 'bg-slate-900 hover:bg-purple-600 !text-white font-extrabold border border-slate-800'
+                          }`}
+                        style={{ color: '#7622adff', backgroundColor: isSelected ? '#9333ea' : '#0f172a' }}
                       >
-                        <span className="truncate font-extrabold" style={{ color: '#ffffff' }}>{c.name}</span>
+                        <span className="truncate font-extrabold" style={{ color: '#7622adff' }}>{c.name}</span>
                       </button>
                     );
                   })
@@ -503,11 +497,10 @@ export function SearchableLocationPicker({
               type="button"
               disabled={!selectedCity}
               onClick={() => setOpenDropdown(openDropdown === 'pincode' ? null : 'pincode')}
-              className={`w-full px-3.5 py-3 rounded-2xl border text-left flex items-center justify-between gap-2 transition-all ${
-                pincodeText
-                  ? 'bg-white border-2 border-emerald-500 shadow-sm'
-                  : 'bg-white border border-slate-300'
-              } hover:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed`}
+              className={`w-full px-3.5 py-3 rounded-2xl border text-left flex items-center justify-between gap-2 transition-all ${pincodeText
+                ? 'bg-white border-2 border-emerald-500 shadow-sm'
+                : 'bg-white border border-slate-300'
+                } hover:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               <span className={`truncate text-sm ${pincodeText ? '!text-emerald-700 font-extrabold' : '!text-slate-500 font-medium'}`} style={{ color: pincodeText ? '#047857' : '#64748b' }}>
                 {pincodeText || (selectedCity ? 'Search Area Pincode...' : 'Select City first')}
@@ -527,7 +520,7 @@ export function SearchableLocationPicker({
                     value={pincodeSearch}
                     onChange={e => setPincodeSearch(e.target.value)}
                     className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs !text-white placeholder:!text-slate-400 focus:outline-none focus:border-emerald-500 font-bold shadow-inner"
-                    style={{ color: '#ffffff', backgroundColor: '#0f172a' }}
+                    style={{ color: '#7622adff', backgroundColor: '#0f172a' }}
                   />
                 </div>
 
@@ -542,14 +535,13 @@ export function SearchableLocationPicker({
                           key={idx}
                           type="button"
                           onClick={() => handleSelectPincode(p)}
-                          className={`w-full px-3.5 py-2.5 rounded-xl text-left text-xs flex items-center justify-between transition-all group ${
-                            isSelected
-                              ? 'bg-emerald-600 !text-white font-black shadow-md border border-emerald-400'
-                              : 'bg-slate-900 hover:bg-emerald-600 !text-white font-extrabold border border-slate-800'
-                          }`}
-                          style={{ color: '#ffffff', backgroundColor: isSelected ? '#059669' : '#0f172a' }}
+                          className={`w-full px-3.5 py-2.5 rounded-xl text-left text-xs flex items-center justify-between transition-all group ${isSelected
+                            ? 'bg-emerald-600 !text-white font-black shadow-md border border-emerald-400'
+                            : 'bg-slate-900 hover:bg-emerald-600 !text-white font-extrabold border border-slate-800'
+                            }`}
+                          style={{ color: '#7622adff', backgroundColor: isSelected ? '#059669' : '#0f172a' }}
                         >
-                          <span className="truncate font-extrabold" style={{ color: '#ffffff' }}>{p.postOfficeName}</span>
+                          <span className="truncate font-extrabold" style={{ color: '#7622adff' }}>{p.postOfficeName}</span>
                           <span className="font-mono text-[10px] font-bold text-emerald-400">{p.pincode}</span>
                         </button>
                       );
