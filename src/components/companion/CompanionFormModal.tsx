@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { UserProfile, CompanionStatus, AvailabilityGrid as AvGrid } from '@/lib/types';
 import { ALL_CATEGORIES } from '@/lib/mockData';
 import { AvailabilityGrid } from './AvailabilityGrid';
+import { SearchableLocationPicker, LocationSelection } from '@/components/location/SearchableLocationPicker';
+
 import {
   X,
   Upload,
@@ -378,34 +380,27 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-purple-400" /> City
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="New York"
-                    value={formData.city || ''}
-                    onChange={e => setField('city', e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:border-purple-500 focus:outline-none transition-all"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                    <Globe className="w-3.5 h-3.5 text-purple-400" /> Country
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="USA"
-                    value={formData.country || ''}
-                    onChange={e => setField('country', e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:border-purple-500 focus:outline-none transition-all"
-                  />
-                </div>
               </div>
+
+              {/* DYNAMIC SEARCHABLE LOCATION CASCADE (Country -> State -> City -> Pincode) */}
+              <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800/80 space-y-2">
+                <SearchableLocationPicker
+                  initialCountry={formData.country || ''}
+                  initialState={(formData as any).state || ''}
+                  initialCity={formData.city || ''}
+                  initialPincode={(formData as any).pincode || ''}
+                  onChange={(loc: LocationSelection) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      country: loc.country,
+                      city: loc.city,
+                      state: loc.state,
+                      pincode: loc.pincode
+                    }));
+                  }}
+                />
+              </div>
+
 
               {/* Languages Spoken */}
               <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
