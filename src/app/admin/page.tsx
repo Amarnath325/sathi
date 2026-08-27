@@ -92,7 +92,7 @@ import { EmailTemplateModule } from '@/components/admin/EmailTemplateModule';
 import { PageSizeOption, PaginationFooter } from '@/components/common/PaginationBar';
 import { DisputeAuditModal } from '@/components/dispute/DisputeAuditModal';
 import { DisputeThreadDrawer } from '@/components/dispute/DisputeThreadDrawer';
-import { DisputeTicket, Review, UserProfile, CompanionStatus } from '@/lib/types';
+import { DisputeTicket, Review } from '@/lib/types';
 import { ReviewAuditModal } from '@/components/review/ReviewAuditModal';
 import { ReviewCard } from '@/components/review/ReviewCard';
 
@@ -117,7 +117,7 @@ import { FinancialLedgerModal } from '@/components/payment/FinancialLedgerModal'
 import { PromoCard } from '@/components/promo/PromoCard';
 import { PromoFormModal } from '@/components/promo/PromoFormModal';
 import { PromoDetailsModal } from '@/components/promo/PromoDetailsModal';
-import { ServiceCategory, SubCategoryItem, BookingDetails, BookingStatus, EscrowStatus, LocationItem, FinancialTransaction, PayoutRecord, PaymentGatewayConfig, PromoCodeItem, UserProfile } from '@/lib/types';
+import { ServiceCategory, SubCategoryItem, BookingDetails, BookingStatus, EscrowStatus, LocationItem, FinancialTransaction, PayoutRecord, PaymentGatewayConfig, PromoCodeItem, UserProfile, CompanionStatus } from '@/lib/types';
 
 import Link from 'next/link';
 import ExecutiveDashboardAdminPage from '@/app/admin/executive/page';
@@ -1048,7 +1048,6 @@ export default function AdminDashboardPage() {
                   >
                     <Globe className="w-4 h-4 text-indigo-400" /> View Public Directory
                   </Link>
-<<<<<<< HEAD
                   <button
                     onClick={() => {
                       setEditingCompanionModalData(null);
@@ -1204,16 +1203,6 @@ export default function AdminDashboardPage() {
                               onClick={() => handleToggleCompanionStatus(comp.id)}
                               className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
                                 comp.status === 'ACTIVE'
-                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30'
-                                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
-                              }`}
-                            >
-                              {comp.status === 'ACTIVE' ? 'Active' : 'Toggle'}
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
                                   ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30'
                                   : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
                               }`}
