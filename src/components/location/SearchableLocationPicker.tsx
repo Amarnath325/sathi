@@ -376,7 +376,7 @@ export function SearchableLocationPicker({
           {/* Popover */}
           {openDropdown === 'state' && (
             <div className="absolute left-0 right-0 top-full mt-1.5 z-[100] rounded-2xl bg-white border-2 border-purple-500 shadow-2xl p-2.5 space-y-2 max-h-64 overflow-y-auto custom-scrollbar" style={{ backgroundColor: '#ffffff' }}>
-              <div className="relative sticky top-0 bg-white z-10 pb-2 pt-0.5" style={{ backgroundColor: '#bfc568ff' }}>
+              <div className="relative sticky top-0 bg-white z-10 pb-2 pt-0.5" style={{ backgroundColor: '#ffffff' }}>
                 <Search className="w-4 h-4 text-purple-600 absolute left-3 top-2.5" />
                 <input
                   type="text"
@@ -385,7 +385,7 @@ export function SearchableLocationPicker({
                   value={stateSearch}
                   onChange={e => setStateSearch(e.target.value)}
                   className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs !text-slate-900 placeholder:!text-slate-400 focus:outline-none focus:border-purple-500 font-bold shadow-inner"
-                  style={{ color: '#0f172a', backgroundColor: '#bfc568ff' }}
+                  style={{ color: '#0f172a', backgroundColor: '#f8fafc' }}
                 />
               </div>
 
@@ -404,9 +404,9 @@ export function SearchableLocationPicker({
                           ? 'bg-purple-600 !text-white font-black shadow-md border border-purple-400'
                           : 'bg-slate-100 hover:bg-purple-600 !text-slate-900 hover:!text-white font-extrabold border border-slate-200'
                           }`}
-                        style={{ color: isSelected ? '#bfc568ff' : '#0f172a', backgroundColor: isSelected ? '#7c3aed' : '#f1f5f9' }}
+                        style={{ color: isSelected ? '#ffffff' : '#0f172a', backgroundColor: isSelected ? '#7c3aed' : '#83b32aff' }}
                       >
-                        <span className="truncate font-extrabold" style={{ color: isSelected ? '#bfc568ff' : '#0f172a' }}>{s.name}</span>
+                        <span className="truncate font-extrabold" style={{ color: isSelected ? '#ffffff' : '#0f172a' }}>{s.name}</span>
                       </button>
                     );
                   })
@@ -443,7 +443,7 @@ export function SearchableLocationPicker({
           {/* Popover */}
           {openDropdown === 'city' && (
             <div className="absolute left-0 right-0 top-full mt-1.5 z-[100] rounded-2xl bg-white border-2 border-purple-500 shadow-2xl p-2.5 space-y-2 max-h-64 overflow-y-auto custom-scrollbar" style={{ backgroundColor: '#ffffff' }}>
-              <div className="relative sticky top-0 bg-white z-10 pb-2 pt-0.5" style={{ backgroundColor: '#bfc568ff' }}>
+              <div className="relative sticky top-0 bg-white z-10 pb-2 pt-0.5" style={{ backgroundColor: '#ffffff' }}>
                 <Search className="w-4 h-4 text-purple-600 absolute left-3 top-2.5" />
                 <input
                   type="text"
@@ -452,7 +452,7 @@ export function SearchableLocationPicker({
                   value={citySearch}
                   onChange={e => setCitySearch(e.target.value)}
                   className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs !text-slate-900 placeholder:!text-slate-400 focus:outline-none focus:border-purple-500 font-bold shadow-inner"
-                  style={{ color: '#0f172a', backgroundColor: '#bfc568ff' }}
+                  style={{ color: '#0f172a', backgroundColor: '#f8fafc' }}
                 />
               </div>
 
@@ -471,9 +471,9 @@ export function SearchableLocationPicker({
                           ? 'bg-purple-600 !text-white font-black shadow-md border border-purple-400'
                           : 'bg-slate-100 hover:bg-purple-600 !text-slate-900 hover:!text-white font-extrabold border border-slate-200'
                           }`}
-                        style={{ color: isSelected ? '#bfc568ff' : '#0f172a', backgroundColor: isSelected ? '#7c3aed' : '#f1f5f9' }}
+                        style={{ color: isSelected ? '#ffffff' : '#0f172a', backgroundColor: isSelected ? '#7c3aed' : '#83b32aff' }}
                       >
-                        <span className="truncate font-extrabold" style={{ color: isSelected ? '#bfc568ff' : '#0f172a' }}>{c.name}</span>
+                        <span className="truncate font-extrabold" style={{ color: isSelected ? '#ffffff' : '#0f172a' }}>{c.name}</span>
                       </button>
                     );
                   })
@@ -511,7 +511,7 @@ export function SearchableLocationPicker({
             {/* Popover */}
             {openDropdown === 'pincode' && (
               <div className="absolute left-0 right-0 top-full mt-1.5 z-[100] rounded-2xl bg-white border-2 border-emerald-500 shadow-2xl p-2.5 space-y-2 max-h-64 overflow-y-auto custom-scrollbar" style={{ backgroundColor: '#ffffff' }}>
-                <div className="relative sticky top-0 bg-white z-10 pb-2 pt-0.5" style={{ backgroundColor: '#bfc568ff' }}>
+                <div className="relative sticky top-0 bg-white z-10 pb-2 pt-0.5" style={{ backgroundColor: '#ffffff' }}>
                   <Search className="w-4 h-4 text-emerald-600 absolute left-3 top-2.5" />
                   <input
                     type="text"
@@ -520,7 +520,7 @@ export function SearchableLocationPicker({
                     value={pincodeSearch}
                     onChange={e => setPincodeSearch(e.target.value)}
                     className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs !text-slate-900 placeholder:!text-slate-400 focus:outline-none focus:border-emerald-500 font-bold shadow-inner"
-                    style={{ color: '#0f172a', backgroundColor: '#bfc568ff' }}
+                    style={{ color: '#0f172a', backgroundColor: '#f8fafc' }}
                   />
                 </div>
 
@@ -539,9 +539,9 @@ export function SearchableLocationPicker({
                             ? 'bg-emerald-600 !text-white font-black shadow-md border border-emerald-400'
                             : 'bg-slate-100 hover:bg-emerald-600 !text-slate-900 hover:!text-white font-extrabold border border-slate-200'
                             }`}
-                          style={{ color: isSelected ? '#bfc568ff' : '#0f172a', backgroundColor: isSelected ? '#059669' : '#f1f5f9' }}
+                          style={{ color: isSelected ? '#ffffff' : '#0f172a', backgroundColor: isSelected ? '#059669' : '#83b32aff' }}
                         >
-                          <span className="truncate font-extrabold" style={{ color: isSelected ? '#bfc568ff' : '#0f172a' }}>{p.postOfficeName}</span>
+                          <span className="truncate font-extrabold" style={{ color: isSelected ? '#ffffff' : '#0f172a' }}>{p.postOfficeName}</span>
                           <span className="font-mono text-[10px] font-bold text-emerald-600 group-hover:text-emerald-100">{p.pincode}</span>
                         </button>
                       );
