@@ -404,7 +404,7 @@ export function SearchableLocationPicker({
                           ? 'bg-purple-600 !text-white font-black shadow-md border border-purple-400'
                           : 'bg-slate-100 hover:bg-purple-600 !text-slate-900 hover:!text-white font-extrabold border border-slate-200'
                           }`}
-                        style={{ color: isSelected ? '#ffffff' : '#0f172a', backgroundColor: isSelected ? '#7c3aed' : '#83b32aff' }}
+                        style={{ color: isSelected ? '#ffffff' : '#0f172a', backgroundColor: isSelected ? '#7c3aed' : '#b3d9ff' }}
                       >
                         <span className="truncate font-extrabold" style={{ color: isSelected ? '#ffffff' : '#0f172a' }}>{s.name}</span>
                       </button>
@@ -471,7 +471,7 @@ export function SearchableLocationPicker({
                           ? 'bg-purple-600 !text-white font-black shadow-md border border-purple-400'
                           : 'bg-slate-100 hover:bg-purple-600 !text-slate-900 hover:!text-white font-extrabold border border-slate-200'
                           }`}
-                        style={{ color: isSelected ? '#ffffff' : '#0f172a', backgroundColor: isSelected ? '#7c3aed' : '#83b32aff' }}
+                        style={{ color: isSelected ? '#ffffff' : '#0f172a', backgroundColor: isSelected ? '#7c3aed' : '#b3d9ff' }}
                       >
                         <span className="truncate font-extrabold" style={{ color: isSelected ? '#ffffff' : '#0f172a' }}>{c.name}</span>
                       </button>
@@ -539,7 +539,7 @@ export function SearchableLocationPicker({
                             ? 'bg-emerald-600 !text-white font-black shadow-md border border-emerald-400'
                             : 'bg-slate-100 hover:bg-emerald-600 !text-slate-900 hover:!text-white font-extrabold border border-slate-200'
                             }`}
-                          style={{ color: isSelected ? '#ffffff' : '#0f172a', backgroundColor: isSelected ? '#059669' : '#83b32aff' }}
+                          style={{ color: isSelected ? '#ffffff' : '#0f172a', backgroundColor: isSelected ? '#059669' : '#b3d9ff' }}
                         >
                           <span className="truncate font-extrabold" style={{ color: isSelected ? '#ffffff' : '#0f172a' }}>{p.postOfficeName}</span>
                           <span className="font-mono text-[10px] font-bold text-emerald-600 group-hover:text-emerald-100">{p.pincode}</span>
