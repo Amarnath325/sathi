@@ -3,7 +3,7 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight, Search, SlidersHorizontal, ArrowUpDown } from 'lucide-react';
 
-export type PageSizeOption = 10 | 25 | 50 | 100 | 'All';
+export type PageSizeOption = 10 | 12 | 25 | 50 | 100 | 'All';
 
 export interface SearchAndLimitBarProps {
   searchQuery: string;
@@ -57,6 +57,7 @@ export function SearchAndLimitBar({
             className="bg-transparent text-white font-bold outline-none cursor-pointer text-xs"
           >
             <option value={10} className="bg-slate-900 text-white">10</option>
+            <option value={12} className="bg-slate-900 text-white">12</option>
             <option value={25} className="bg-slate-900 text-white">25</option>
             <option value={50} className="bg-slate-900 text-white">50</option>
             <option value={100} className="bg-slate-900 text-white">100</option>

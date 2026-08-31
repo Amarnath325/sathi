@@ -44,7 +44,9 @@ import {
   CreditCard,
   Archive,
   Layers,
-  Printer
+  Printer,
+  LayoutGrid,
+  List
 } from 'lucide-react';
 import { useCrudStore } from '@/lib/crudStore';
 
@@ -97,9 +99,10 @@ export function UserManagementModule() {
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
   const [notification, setNotification] = useState<string | null>(null);
 
-  // Pagination states (Default 10)
+  // Pagination states (Default 10 for table, 12 for grid)
   const [pageSize, setPageSize] = useState<string>('10');
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [userViewMode, setUserViewMode] = useState<'table' | 'grid'>('table');
 
   // Trash view toggle
   const [viewTrashBin, setViewTrashBin] = useState(false);
@@ -494,7 +497,7 @@ export function UserManagementModule() {
       )}
 
       {/* 🏷️ SUBMODULE NAVIGATION TABS */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {[
           { id: 'all', label: 'All Users', count: totalCount },
           { id: 'customers', label: 'Customers Users', count: customersCount },
@@ -508,8 +511,11 @@ export function UserManagementModule() {
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveSubFilter(tab.id as UserSubFilter)}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 border ${
+              onClick={() => {
+                setActiveSubFilter(tab.id as UserSubFilter);
+                setCurrentPage(1);
+              }}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 border shrink-0 ${
                 isActive
                   ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold border-purple-500 shadow-lg shadow-purple-600/25'
                   : 'bg-slate-900/90 text-slate-400 hover:text-white border-slate-800 hover:border-slate-700'
@@ -543,24 +549,61 @@ export function UserManagementModule() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* View Mode Switcher (Grid vs Table) */}
+            <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setUserViewMode('table');
+                  setPageSize('10');
+                  setCurrentPage(1);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  userViewMode === 'table'
+                    ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Table View (10 items per page)"
+              >
+                <List className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Table (10)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setUserViewMode('grid');
+                  setPageSize('12');
+                  setCurrentPage(1);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  userViewMode === 'grid'
+                    ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Grid View (12 items per page)"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Grid (12)</span>
+              </button>
+            </div>
+
             <button 
               onClick={() => setViewTrashBin(false)}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${!viewTrashBin ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30' : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'}`}
             >
-              Active Directory ({totalCount})
+              Active ({totalCount})
             </button>
             <button 
               onClick={() => setViewTrashBin(true)}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${viewTrashBin ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30' : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'}`}
             >
-              <Archive className="w-3.5 h-3.5" /> Trash Bin ({trashCount})
+              <Archive className="w-3.5 h-3.5" /> Trash ({trashCount})
             </button>
           </div>
         </div>
 
         {/* 🔍 SEARCH BAR & ACTION TOOLBAR BUTTONS */}
-        {/* 🔍 SEARCH BAR & PAGE LIMIT (Limit Select Directly Right of Search) */}
         <div className="flex flex-col lg:flex-row items-center justify-between gap-3 text-xs">
           
           <div className="flex items-center gap-2 w-full lg:w-auto flex-1 max-w-lg">
@@ -588,6 +631,7 @@ export function UserManagementModule() {
                 className="bg-transparent text-white font-bold outline-none cursor-pointer text-xs"
               >
                 <option value="10" className="bg-slate-900 text-white">10</option>
+                <option value="12" className="bg-slate-900 text-white">12</option>
                 <option value="25" className="bg-slate-900 text-white">25</option>
                 <option value="50" className="bg-slate-900 text-white">50</option>
                 <option value="100" className="bg-slate-900 text-white">100</option>
@@ -664,139 +708,249 @@ export function UserManagementModule() {
 
       </div>
 
-      {/* 📋 MASTER DATA TABLE */}
-      <div className="rounded-3xl bg-slate-900 border border-slate-800 overflow-hidden shadow-2xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-slate-800 bg-slate-950 text-[11px] font-mono text-slate-400 uppercase tracking-wider">
-                <th className="py-4 px-5">User</th>
-                <th className="py-4 px-5">Role</th>
-                <th className="py-4 px-5">Location</th>
-                <th className="py-4 px-5">Status</th>
-                <th className="py-4 px-5 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/70 text-xs">
-              {paginatedUsers.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="py-12 text-center text-slate-500 font-medium">
-                    No user records found in {viewTrashBin ? 'Trash Bin' : activeSubFilter.toUpperCase()}.
-                  </td>
+      {/* 📋 MASTER DATA: TABLE OR GRID VIEW */}
+      {userViewMode === 'table' ? (
+        <div className="rounded-3xl bg-slate-900 border border-slate-800 overflow-hidden shadow-2xl">
+          <div className="overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-800 bg-slate-950 text-[11px] font-mono text-slate-400 uppercase tracking-wider">
+                  <th className="py-4 px-5">User</th>
+                  <th className="py-4 px-5">Role</th>
+                  <th className="py-4 px-5">Location</th>
+                  <th className="py-4 px-5">Status</th>
+                  <th className="py-4 px-5 text-right">Actions</th>
                 </tr>
-              ) : (
-                paginatedUsers.map((user) => {
-                  return (
-                    <tr key={user.id} className="hover:bg-slate-800/40 transition-colors">
-                      
-                      <td className="py-4 px-5">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={user.avatar}
-                            alt={user.name}
-                            className="w-10 h-10 rounded-2xl object-cover border border-purple-500/40"
-                          />
-                          <div>
-                            <p className="font-bold text-white text-sm flex items-center gap-1.5">
-                              {user.name}
-                              {user.role === 'VERIFIED_COMPANION' && (
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                              )}
-                            </p>
-                            <p className="text-[10px] text-slate-400 font-mono">{user.email}</p>
+              </thead>
+              <tbody className="divide-y divide-slate-800/70 text-xs">
+                {paginatedUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-12 text-center text-slate-500 font-medium">
+                      No user records found in {viewTrashBin ? 'Trash Bin' : activeSubFilter.toUpperCase()}.
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedUsers.map((user) => {
+                    return (
+                      <tr key={user.id} className="hover:bg-slate-800/40 transition-colors">
+                        
+                        <td className="py-4 px-5">
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={user.avatar}
+                              alt={user.name}
+                              className="w-10 h-10 rounded-2xl object-cover border border-purple-500/40"
+                            />
+                            <div>
+                              <p className="font-bold text-white text-sm flex items-center gap-1.5">
+                                {user.name}
+                                {user.role === 'VERIFIED_COMPANION' && (
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                )}
+                              </p>
+                              <p className="text-[10px] text-slate-400 font-mono">{user.email}</p>
+                            </div>
                           </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      <td className="py-4 px-5">
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold font-mono border ${
-                          user.role === 'ADMIN'
-                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
-                            : user.role === 'VERIFIED_COMPANION'
-                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
-                            : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
-                        }`}>
-                          {user.role === 'VERIFIED_COMPANION' ? 'COMPANION' : user.role}
-                        </span>
-                      </td>
+                        <td className="py-4 px-5">
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold font-mono border ${
+                            user.role === 'ADMIN'
+                              ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                              : user.role === 'VERIFIED_COMPANION'
+                              ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                              : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                          }`}>
+                            {user.role === 'VERIFIED_COMPANION' ? 'COMPANION' : user.role}
+                          </span>
+                        </td>
 
-                      <td className="py-4 px-5 text-slate-300 font-medium">
-                        {user.city}, {user.country}
-                      </td>
+                        <td className="py-4 px-5 text-slate-300 font-medium">
+                          {user.city}, {user.country}
+                        </td>
 
-                      <td className="py-4 px-5">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-extrabold border ${
-                          user.status === 'BANNED'
-                            ? 'bg-red-600 text-white border-red-500'
-                            : user.status === 'SUSPENDED'
-                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                            : user.status === 'RESTRICTED'
-                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                            : user.status === 'PENDING'
-                            ? 'bg-slate-800 text-slate-400 border-slate-700'
-                            : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
-                        }`}>
-                          {user.status === 'ACTIVE' ? 'Active' : user.status}
-                        </span>
-                      </td>
+                        <td className="py-4 px-5">
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-extrabold border ${
+                            user.status === 'BANNED'
+                              ? 'bg-red-600 text-white border-red-500'
+                              : user.status === 'SUSPENDED'
+                              ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                              : user.status === 'RESTRICTED'
+                              ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                              : user.status === 'PENDING'
+                              ? 'bg-slate-800 text-slate-400 border-slate-700'
+                              : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                          }`}>
+                            {user.status === 'ACTIVE' ? 'Active' : user.status}
+                          </span>
+                        </td>
 
-                      <td className="py-4 px-5 text-right space-x-2">
-                        {!viewTrashBin ? (
-                          <>
+                        <td className="py-4 px-5 text-right space-x-2">
+                          {!viewTrashBin ? (
+                            <>
+                              <button
+                                onClick={() => {
+                                  setViewingUser(user);
+                                  setDrawerTab('profile');
+                                }}
+                                className="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 font-bold"
+                              >
+                                View Profile
+                              </button>
+
+                              <button
+                                onClick={() => handleOpenEdit(user)}
+                                className="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-purple-600/20 text-purple-300 hover:text-white border border-slate-800 font-bold"
+                              >
+                                Edit Profile
+                              </button>
+
+                              <button
+                                onClick={() => handleToggleSuspend(user)}
+                                className={`px-3 py-1.5 rounded-xl font-bold border ${
+                                  suspendedIds.includes(user.id) || user.status === 'SUSPENDED'
+                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                    : 'bg-slate-950 text-slate-300 hover:text-white border-slate-800'
+                                }`}
+                              >
+                                {suspendedIds.includes(user.id) || user.status === 'SUSPENDED' ? 'Unsuspend' : 'Suspend'}
+                              </button>
+
+                              <button
+                                onClick={() => handleSoftDelete(user)}
+                                className="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-rose-600/20 text-slate-400 hover:text-rose-300 border border-slate-800 font-bold"
+                                title="Move to Trash"
+                              >
+                                Trash
+                              </button>
+                            </>
+                          ) : (
                             <button
-                              onClick={() => {
-                                setViewingUser(user);
-                                setDrawerTab('profile');
-                              }}
-                              className="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 font-bold"
+                              onClick={() => handleRestoreFromTrash(user)}
+                              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
                             >
-                              View Profile
+                              Restore
                             </button>
+                          )}
+                        </td>
 
-                            <button
-                              onClick={() => handleOpenEdit(user)}
-                              className="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-purple-600/20 text-purple-300 hover:text-white border border-slate-800 font-bold"
-                            >
-                              Edit Profile
-                            </button>
-
-                            <button
-                              onClick={() => handleToggleSuspend(user)}
-                              className={`px-3 py-1.5 rounded-xl font-bold border ${
-                                suspendedIds.includes(user.id) || user.status === 'SUSPENDED'
-                                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                                  : 'bg-slate-950 text-slate-300 hover:text-white border-slate-800'
-                              }`}
-                            >
-                              {suspendedIds.includes(user.id) || user.status === 'SUSPENDED' ? 'Unsuspend' : 'Suspend'}
-                            </button>
-
-                            <button
-                              onClick={() => handleSoftDelete(user)}
-                              className="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-rose-600/20 text-slate-400 hover:text-rose-300 border border-slate-800 font-bold"
-                              title="Move to Trash"
-                            >
-                              Trash
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            onClick={() => handleRestoreFromTrash(user)}
-                            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
-                          >
-                            Restore
-                          </button>
-                        )}
-                      </td>
-
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      ) : (
+        /* GRID VIEW (12 PER PAGE) */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {paginatedUsers.length === 0 ? (
+            <div className="col-span-full py-12 text-center text-slate-500 font-medium rounded-3xl bg-slate-900 border border-slate-800">
+              No user records found in {viewTrashBin ? 'Trash Bin' : activeSubFilter.toUpperCase()}.
+            </div>
+          ) : (
+            paginatedUsers.map((user) => (
+              <div key={user.id} className="p-5 rounded-3xl bg-slate-900 border border-slate-800 hover:border-purple-500/40 transition-all flex flex-col justify-between space-y-4">
+                <div className="flex items-center gap-3.5">
+                  <img
+                    src={user.avatar}
+                    alt={user.name}
+                    className="w-12 h-12 rounded-2xl object-cover border border-purple-500/40 shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-white text-sm flex items-center gap-1.5 truncate">
+                      {user.name}
+                      {user.role === 'VERIFIED_COMPANION' && (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      )}
+                    </p>
+                    <p className="text-[11px] text-slate-400 font-mono truncate">{user.email}</p>
+                    <p className="text-[10px] text-slate-500 font-mono mt-0.5">{user.phone}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs">
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono border ${
+                    user.role === 'ADMIN'
+                      ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                      : user.role === 'VERIFIED_COMPANION'
+                      ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                      : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                  }`}>
+                    {user.role === 'VERIFIED_COMPANION' ? 'COMPANION' : user.role}
+                  </span>
+
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${
+                    user.status === 'BANNED'
+                      ? 'bg-red-600 text-white border-red-500'
+                      : user.status === 'SUSPENDED'
+                      ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                      : user.status === 'RESTRICTED'
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                      : user.status === 'PENDING'
+                      ? 'bg-slate-800 text-slate-400 border-slate-700'
+                      : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                  }`}>
+                    {user.status === 'ACTIVE' ? 'Active' : user.status}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1 text-[11px] text-slate-400">
+                  <MapPin className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                  <span>{user.city}, {user.country}</span>
+                </div>
+
+                <div className="pt-3 border-t border-slate-800 flex items-center justify-end gap-1.5 flex-wrap">
+                  {!viewTrashBin ? (
+                    <>
+                      <button
+                        onClick={() => {
+                          setViewingUser(user);
+                          setDrawerTab('profile');
+                        }}
+                        className="px-2.5 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 text-xs font-bold border border-slate-800"
+                      >
+                        Profile
+                      </button>
+                      <button
+                        onClick={() => handleOpenEdit(user)}
+                        className="px-2.5 py-1.5 rounded-xl bg-slate-950 hover:bg-purple-600/20 text-purple-300 text-xs font-bold border border-slate-800"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleToggleSuspend(user)}
+                        className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border ${
+                          suspendedIds.includes(user.id) || user.status === 'SUSPENDED'
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                            : 'bg-slate-950 text-slate-300 hover:text-white border-slate-800'
+                        }`}
+                      >
+                        {suspendedIds.includes(user.id) || user.status === 'SUSPENDED' ? 'Unsuspend' : 'Suspend'}
+                      </button>
+                      <button
+                        onClick={() => handleSoftDelete(user)}
+                        className="px-2 py-1.5 rounded-xl bg-slate-950 hover:bg-rose-600/20 text-slate-400 hover:text-rose-300 border border-slate-800 text-xs font-bold"
+                        title="Move to Trash"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => handleRestoreFromTrash(user)}
+                      className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold"
+                    >
+                      Restore
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
 
       {/* 🔢 PAGINATION & ROWS PER PAGE CONTROL BAR */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-slate-400">
@@ -814,6 +968,7 @@ export function UserManagementModule() {
               className="bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-white font-bold font-mono outline-none focus:border-purple-500 cursor-pointer"
             >
               <option value="10">10</option>
+              <option value="12">12</option>
               <option value="25">25</option>
               <option value="50">50</option>
               <option value="100">100</option>

@@ -72,7 +72,10 @@ import {
   ChevronDown,
   ExternalLink,
   Sun,
-  Moon
+  Moon,
+  LayoutGrid,
+  List,
+  Table as TableIcon
 } from 'lucide-react';
 import { ServiceCategoryHub } from '@/components/hub/ServiceCategoryHub';
 
@@ -372,9 +375,11 @@ export default function AdminDashboardPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [pageSize, setPageSize] = useState<PageSizeOption>(10);
+  const [pageSize, setPageSize] = useState<PageSizeOption>(12);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [notification, setNotification] = useState<string | null>(null);
+  const [companionViewMode, setCompanionViewMode] = useState<'grid' | 'table'>('grid');
+  const [bookingViewMode, setBookingViewMode] = useState<'grid' | 'table'>('grid');
 
   const filteredCategoriesList = useMemo(() => {
     return categories.filter((cat: ServiceCategory) => {
@@ -1037,7 +1042,7 @@ export default function AdminDashboardPage() {
           {/* ==================================================== */}
           {activeTab === 'companions' && (
             <div className="space-y-6">
-              {/* Header Actions */}
+              {/* Header Actions & View Toggle */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900 border border-slate-800">
                 <div>
                   <h3 className="text-base font-bold text-white flex items-center gap-2">
@@ -1045,7 +1050,45 @@ export default function AdminDashboardPage() {
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">Manage live companion profiles, status toggles, rate caps, and verify KYC credentials.</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  {/* Grid vs Table View Mode Switcher */}
+                  <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCompanionViewMode('grid');
+                        setPageSize(12);
+                        setCurrentPage(1);
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                        companionViewMode === 'grid'
+                          ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                      title="Grid View (12 items per page)"
+                    >
+                      <LayoutGrid className="w-3.5 h-3.5" />
+                      <span className="hidden md:inline">Grid (12)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCompanionViewMode('table');
+                        setPageSize(10);
+                        setCurrentPage(1);
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                        companionViewMode === 'table'
+                          ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                      title="Table View (10 items per page)"
+                    >
+                      <List className="w-3.5 h-3.5" />
+                      <span className="hidden md:inline">Table (10)</span>
+                    </button>
+                  </div>
+
                   <button
                     onClick={loadDbCompanions}
                     className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all"
@@ -1055,10 +1098,11 @@ export default function AdminDashboardPage() {
                   </button>
                   <Link
                     href="/companion"
-                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold transition-all flex items-center gap-1.5"
+                    className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold transition-all flex items-center gap-1.5"
                   >
-                    <Globe className="w-4 h-4 text-indigo-400" /> View Public Directory
+                    <Globe className="w-4 h-4 text-indigo-400" /> <span className="hidden sm:inline">Public Directory</span>
                   </Link>
+<<<<<<< HEAD
                   <button
                     onClick={() => {
                       setEditingCompanionModalData(null);
@@ -1068,11 +1112,19 @@ export default function AdminDashboardPage() {
                   >
                     <Plus className="w-4 h-4" /> Register New Companion
                   </button>
+=======
+                  <Link
+                    href="/companion/onboarding"
+                    className="px-3.5 py-2 rounded-xl gradient-bg-primary text-white text-xs font-extrabold hover:opacity-90 transition-all flex items-center gap-1.5 shadow-md shadow-indigo-600/30"
+                  >
+                    <Plus className="w-4 h-4" /> <span>Register Companion</span>
+                  </Link>
+>>>>>>> d047c54 (feat: add grid and table view toggle, laptop scrollbar fix and dynamic pagination)
                 </div>
               </div>
 
-              {/* Sub-Filter Tabs */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-800">
+              {/* Sub-Filter Tabs without ugly horizontal scrollbars */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-800 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {[
                   { id: 'all', label: 'All Companions', count: combinedCompanionsList.length },
                   { id: 'companion-profiles', label: 'Profiles', count: combinedCompanionsList.length },
@@ -1084,7 +1136,10 @@ export default function AdminDashboardPage() {
                 ].map((s) => (
                   <button
                     key={s.id}
-                    onClick={() => setSubFilter(s.id)}
+                    onClick={() => {
+                      setSubFilter(s.id);
+                      setCurrentPage(1);
+                    }}
                     className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
                       subFilter === s.id
                         ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
@@ -1099,7 +1154,7 @@ export default function AdminDashboardPage() {
                 ))}
               </div>
 
-              {/* Filtered Companion Cards Grid */}
+              {/* Filtered Companion Content: Grid vs Table */}
               {isLoadingCompanions ? (
                 <div className="p-12 rounded-3xl bg-slate-900 border border-slate-800 text-center space-y-3">
                   <RefreshCw className="w-8 h-8 text-indigo-400 animate-spin mx-auto" />
@@ -1138,12 +1193,14 @@ export default function AdminDashboardPage() {
                   );
                 }
 
+                const effectiveLimit = pageSize === 'All' ? list.length : (typeof pageSize === 'number' ? pageSize : (companionViewMode === 'grid' ? 12 : 10));
                 const paginatedList = pageSize === 'All'
                   ? list
-                  : list.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+                  : list.slice((currentPage - 1) * effectiveLimit, currentPage * effectiveLimit);
 
                 return (
                   <div className="space-y-6">
+<<<<<<< HEAD
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {paginatedList.map((comp) => (
                         <div key={comp.id} className="p-6 rounded-3xl bg-slate-900 border border-slate-800 hover:border-purple-500/40 transition-all space-y-4 flex flex-col">
@@ -1201,45 +1258,206 @@ export default function AdminDashboardPage() {
                               <span className="font-bold text-white">{comp.completedBookings || 0} Done</span>
                             </div>
                           </div>
+=======
+                    {/* TABLE VIEW */}
+                    {companionViewMode === 'table' ? (
+                      <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900 shadow-xl scrollbar-none [&::-webkit-scrollbar]:hidden">
+                        <table className="w-full text-left text-xs text-slate-300">
+                          <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] font-mono tracking-wider border-b border-slate-800">
+                            <tr>
+                              <th className="py-3.5 px-4 font-bold">Companion Profile</th>
+                              <th className="py-3.5 px-4 font-bold">Location</th>
+                              <th className="py-3.5 px-4 font-bold">Categories</th>
+                              <th className="py-3.5 px-4 font-bold">Hourly Rate</th>
+                              <th className="py-3.5 px-4 font-bold">Bookings</th>
+                              <th className="py-3.5 px-4 font-bold">Rating</th>
+                              <th className="py-3.5 px-4 font-bold">Status</th>
+                              <th className="py-3.5 px-4 font-bold text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-800/60">
+                            {paginatedList.map((comp) => (
+                              <tr key={comp.id} className="hover:bg-slate-800/40 transition-colors">
+                                {/* Profile */}
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center gap-3">
+                                    <img
+                                      src={comp.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80'}
+                                      alt={comp.name}
+                                      onClick={() => comp.avatar && setLightboxImage(comp.avatar)}
+                                      className="w-10 h-10 rounded-xl object-cover border border-purple-500/30 shrink-0 cursor-pointer hover:opacity-80 transition-opacity shadow-sm"
+                                      title="Click to view image popup"
+                                    />
+                                    <div className="min-w-0">
+                                      <span className="font-extrabold text-white text-xs block truncate">{comp.name}, {comp.age || 25}</span>
+                                      <span className="text-[9px] font-mono font-bold text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20 inline-block mt-0.5">
+                                        CREATED BY ADMIN
+                                      </span>
+                                    </div>
+                                  </div>
+                                </td>
 
-                          {/* Categories */}
-                          <div className="flex flex-wrap gap-1">
-                            {(comp.categories || []).slice(0, 3).map((cat: string, idx: number) => (
-                              <span key={idx} className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 font-medium">
-                                {cat}
-                              </span>
+                                {/* Location */}
+                                <td className="py-3 px-4">
+                                  <span className="flex items-center gap-1 text-slate-300 font-medium text-xs">
+                                    <MapPin className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                                    {comp.city || 'Mumbai'}, {comp.country || 'India'}
+                                  </span>
+                                </td>
+
+                                {/* Categories */}
+                                <td className="py-3 px-4">
+                                  <div className="flex flex-wrap gap-1 max-w-[200px]">
+                                    {(comp.categories || ['Companion']).slice(0, 2).map((cat: string, idx: number) => (
+                                      <span key={idx} className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 font-medium">
+                                        {cat}
+                                      </span>
+                                    ))}
+                                    {(comp.categories || []).length > 2 && (
+                                      <span className="text-[9px] text-slate-500 font-mono">+{comp.categories.length - 2} more</span>
+                                    )}
+                                  </div>
+                                </td>
+>>>>>>> d047c54 (feat: add grid and table view toggle, laptop scrollbar fix and dynamic pagination)
+
+                                {/* Hourly Rate */}
+                                <td className="py-3 px-4 font-mono font-bold text-emerald-400 text-xs">
+                                  ₹{comp.hourlyRate || 1000}/hr
+                                </td>
+
+                                {/* Bookings */}
+                                <td className="py-3 px-4 font-mono text-slate-200 text-xs">
+                                  <span className="font-bold">{comp.completedBookings || 0}</span> <span className="text-slate-500 text-[10px]">Done</span>
+                                </td>
+
+                                {/* Rating */}
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center gap-1 text-amber-400 font-bold text-xs">
+                                    <Star className="w-3.5 h-3.5 fill-amber-400" />
+                                    <span>{comp.ratingAvg || 5.0}</span>
+                                    <span className="text-slate-500 text-[10px] font-normal font-mono">({comp.ratingCount || 0})</span>
+                                  </div>
+                                </td>
+
+                                {/* Status */}
+                                <td className="py-3 px-4">
+                                  {comp.status && <CompanionStatusBadge status={comp.status} size="sm" />}
+                                </td>
+
+                                {/* Actions */}
+                                <td className="py-3 px-4 text-right">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <Link
+                                      href={`/companion/${comp.id}`}
+                                      className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold transition-all"
+                                    >
+                                      View Profile
+                                    </Link>
+                                    <button
+                                      onClick={() => handleToggleCompanionStatus(comp.id)}
+                                      className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
+                                        comp.status === 'ACTIVE'
+                                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30'
+                                          : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
+                                      }`}
+                                    >
+                                      {comp.status === 'ACTIVE' ? 'Active' : 'Toggle Active'}
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
                             ))}
-                          </div>
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      /* GRID CARD VIEW (12 PER PAGE) */
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {paginatedList.map((comp) => (
+                          <div key={comp.id} className="p-6 rounded-3xl bg-slate-900 border border-slate-800 hover:border-purple-500/40 transition-all space-y-4 flex flex-col">
+                            <div className="flex items-center gap-4">
+                              <img
+                                src={comp.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80'}
+                                alt={comp.name}
+                                onClick={() => comp.avatar && setLightboxImage(comp.avatar)}
+                                className="w-14 h-14 rounded-2xl object-cover border-2 border-purple-500/30 shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                                title="Click to view image popup"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-extrabold text-white text-base truncate">{comp.name}, {comp.age || 25}</h4>
+                                </div>
+                                <span className="text-[9px] font-mono font-bold text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20 inline-block mt-0.5">
+                                  CREATED BY ADMIN
+                                </span>
+                                <p className="text-xs text-slate-400 flex items-center gap-1 mt-1">
+                                  <MapPin className="w-3.5 h-3.5 text-purple-400 shrink-0" /> {comp.city || 'Mumbai'}, {comp.country || 'India'}
+                                </p>
+                              </div>
+                            </div>
 
-                          {/* Actions */}
-                          <div className="flex items-center gap-2 pt-2 border-t border-slate-800/80 mt-auto">
-                            <Link
-                              href={`/companion/${comp.id}`}
-                              className="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold text-center transition-all"
-                            >
-                              View Profile
-                            </Link>
-                            <button
-                              onClick={() => setEditingCompanionModalData(comp)}
-                              className="p-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-xs font-bold transition-all"
-                              title="Edit Companion Profile Modal"
-                            >
-                              <Pencil className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => handleToggleCompanionStatus(comp.id)}
-                              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                                comp.status === 'ACTIVE'
-                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30'
-                                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
-                              }`}
-                            >
-                              {comp.status === 'ACTIVE' ? 'Active' : 'Toggle'}
-                            </button>
+                            {/* Status Badge & Rating */}
+                            <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs">
+                              {comp.status && <CompanionStatusBadge status={comp.status} size="md" />}
+                              <div className="flex items-center gap-1 text-amber-400 font-bold">
+                                <Star className="w-3.5 h-3.5 fill-amber-400" /> {comp.ratingAvg || 5.0}
+                                <span className="text-slate-500 text-[10px] font-normal font-mono">({comp.ratingCount || 0})</span>
+                              </div>
+                            </div>
+
+                            {/* Pricing & Bookings */}
+                            <div className="grid grid-cols-2 gap-2 p-3 rounded-2xl bg-slate-950/60 border border-slate-800 text-xs">
+                              <div>
+                                <span className="text-[10px] text-slate-500 block uppercase font-mono">Hourly Rate</span>
+                                <span className="font-mono font-bold text-emerald-400">₹{comp.hourlyRate || 1000}/hr</span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] text-slate-500 block uppercase font-mono">Bookings</span>
+                                <span className="font-bold text-white">{comp.completedBookings || 0} Done</span>
+                              </div>
+                            </div>
+
+                            {/* Categories */}
+                            <div className="flex flex-wrap gap-1">
+                              {(comp.categories || []).slice(0, 3).map((cat: string, idx: number) => (
+                                <span key={idx} className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 font-medium">
+                                  {cat}
+                                </span>
+                              ))}
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-2 pt-2 border-t border-slate-800/80 mt-auto">
+                              <Link
+                                href={`/companion/${comp.id}`}
+                                className="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold text-center transition-all"
+                              >
+                                View Profile
+                              </Link>
+                              {setEditingCompanionModalData && (
+                                <button
+                                  onClick={() => setEditingCompanionModalData(comp)}
+                                  className="p-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-xs font-bold transition-all"
+                                  title="Edit Companion Profile Modal"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleToggleCompanionStatus(comp.id)}
+                                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                                  comp.status === 'ACTIVE'
+                                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30'
+                                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
+                                }`}
+                              >
+                                {comp.status === 'ACTIVE' ? 'Active' : 'Toggle Active'}
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    )}
 
                     <PaginationFooter
                       currentPage={currentPage}
@@ -1317,7 +1535,7 @@ export default function AdminDashboardPage() {
 
               {/* Sub-Filter Tabs & Search Toolbar */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900 p-4 rounded-3xl border border-slate-800">
-                <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
+                <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   {[
                     { id: 'all-bookings', label: 'All Bookings' },
                     { id: 'pending', label: 'Pending' },
@@ -1328,7 +1546,10 @@ export default function AdminDashboardPage() {
                   ].map((tab) => (
                     <button
                       key={tab.id}
-                      onClick={() => setSubFilter(tab.id)}
+                      onClick={() => {
+                        setSubFilter(tab.id);
+                        setCurrentPage(1);
+                      }}
                       className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
                         subFilter === tab.id
                           ? 'gradient-bg-primary text-white font-bold shadow-md shadow-indigo-600/30'
@@ -1340,15 +1561,55 @@ export default function AdminDashboardPage() {
                   ))}
                 </div>
 
-                <button
-                  onClick={() => setIsBookingFormOpen(true)}
-                  className="px-4 py-2 rounded-xl gradient-bg-primary text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 flex items-center gap-1.5 w-full sm:w-auto justify-center transition-all hover:scale-[1.02]"
-                >
-                  <Plus className="w-4 h-4" /> Create Manual Booking
-                </button>
+                <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap w-full sm:w-auto justify-end">
+                  {/* Grid vs Table View Mode Switcher */}
+                  <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBookingViewMode('grid');
+                        setPageSize(12);
+                        setCurrentPage(1);
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                        bookingViewMode === 'grid'
+                          ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                      title="Grid View (12 items per page)"
+                    >
+                      <LayoutGrid className="w-3.5 h-3.5" />
+                      <span className="hidden md:inline">Grid (12)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBookingViewMode('table');
+                        setPageSize(10);
+                        setCurrentPage(1);
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                        bookingViewMode === 'table'
+                          ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                      title="Table View (10 items per page)"
+                    >
+                      <List className="w-3.5 h-3.5" />
+                      <span className="hidden md:inline">Table (10)</span>
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => setIsBookingFormOpen(true)}
+                    className="px-4 py-2 rounded-xl gradient-bg-primary text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 flex items-center gap-1.5 justify-center transition-all hover:scale-[1.02] shrink-0"
+                  >
+                    <Plus className="w-4 h-4" /> Create Manual Booking
+                  </button>
+                </div>
               </div>
 
-              {/* Booking Cards Grid */}
+              {/* Booking Content: Grid vs Table */}
               {(() => {
                 let filtered = [...bookings];
 
@@ -1374,7 +1635,6 @@ export default function AdminDashboardPage() {
                   );
                 }
 
-
                 if (filtered.length === 0) {
                   return (
                     <div className="p-12 text-center rounded-3xl bg-slate-900 border border-slate-800 space-y-3">
@@ -1385,24 +1645,129 @@ export default function AdminDashboardPage() {
                   );
                 }
 
-                return (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {filtered.map((b: BookingDetails) => (
+                const effectiveLimit = pageSize === 'All' ? filtered.length : (typeof pageSize === 'number' ? pageSize : (bookingViewMode === 'grid' ? 12 : 10));
+                const paginatedBookings = pageSize === 'All'
+                  ? filtered
+                  : filtered.slice((currentPage - 1) * effectiveLimit, currentPage * effectiveLimit);
 
-                      <BookingCard
-                        key={b.id}
-                        booking={b}
-                        onViewDetails={(selected) => setViewingBooking(selected)}
-                        onReleaseEscrow={(id) => {
-                          releaseEscrow(id);
-                          triggerNotify(`Escrow funds for Booking #${id} successfully released to companion.`);
-                        }}
-                        onRefund={(id) => {
-                          refundBooking(id);
-                          triggerNotify(`Booking #${id} cancelled and escrow refunded to client.`);
-                        }}
-                      />
-                    ))}
+                return (
+                  <div className="space-y-6">
+                    {bookingViewMode === 'table' ? (
+                      /* TABLE VIEW (10 PER PAGE) */
+                      <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900 shadow-xl scrollbar-none [&::-webkit-scrollbar]:hidden">
+                        <table className="w-full text-left text-xs text-slate-300">
+                          <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] font-mono tracking-wider border-b border-slate-800">
+                            <tr>
+                              <th className="py-3.5 px-4 font-bold">Booking #</th>
+                              <th className="py-3.5 px-4 font-bold">Client User</th>
+                              <th className="py-3.5 px-4 font-bold">Companion</th>
+                              <th className="py-3.5 px-4 font-bold">Category</th>
+                              <th className="py-3.5 px-4 font-bold">Schedule</th>
+                              <th className="py-3.5 px-4 font-bold">Amount & Escrow</th>
+                              <th className="py-3.5 px-4 font-bold">Status</th>
+                              <th className="py-3.5 px-4 font-bold text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-800/60">
+                            {paginatedBookings.map((b: BookingDetails) => (
+                              <tr key={b.id} className="hover:bg-slate-800/40 transition-colors">
+                                <td className="py-3 px-4 font-mono font-bold text-indigo-400">
+                                  {b.bookingNumber}
+                                </td>
+                                <td className="py-3 px-4">
+                                  <span className="font-bold text-white block">{b.userName}</span>
+                                  <span className="text-[10px] text-slate-400 font-mono">Client ID: {b.userId}</span>
+                                </td>
+                                <td className="py-3 px-4 font-bold text-slate-200">
+                                  {b.companionName}
+                                </td>
+                                <td className="py-3 px-4">
+                                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 font-medium">
+                                    {b.category}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4 text-slate-300 text-[11px] font-mono">
+                                  <div>{b.date || (b.createdAt ? b.createdAt.split('T')[0] : 'Scheduled')}</div>
+                                  <div className="text-slate-500 text-[10px]">{b.startTime}{b.endTime ? ` - ${b.endTime}` : ''}</div>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className="font-mono font-bold text-white text-xs">${b.totalAmount}.00</div>
+                                  <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded font-bold ${
+                                    b.escrowStatus === 'HELD'
+                                      ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                      : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                  }`}>
+                                    {b.escrowStatus === 'HELD' ? '🔒 Escrow Held' : '✓ Released'}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                                    b.status === 'COMPLETED'
+                                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                      : b.status === 'IN_PROGRESS'
+                                      ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 animate-pulse'
+                                      : b.status === 'CANCELLED'
+                                      ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                                      : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                  }`}>
+                                    {b.status.replace('_', ' ')}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4 text-right">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <button
+                                      onClick={() => setViewingBooking(b)}
+                                      className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold transition-all"
+                                    >
+                                      Details
+                                    </button>
+                                    {b.escrowStatus === 'HELD' && (
+                                      <button
+                                        onClick={() => {
+                                          releaseEscrow(b.id);
+                                          triggerNotify(`Escrow funds for Booking #${b.id} released.`);
+                                        }}
+                                        className="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30 text-[11px] font-bold transition-all"
+                                      >
+                                        Release
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      /* GRID VIEW (12 PER PAGE) */
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {paginatedBookings.map((b: BookingDetails) => (
+                          <BookingCard
+                            key={b.id}
+                            booking={b}
+                            onViewDetails={(selected) => setViewingBooking(selected)}
+                            onReleaseEscrow={(id) => {
+                              releaseEscrow(id);
+                              triggerNotify(`Escrow funds for Booking #${id} successfully released to companion.`);
+                            }}
+                            onRefund={(id) => {
+                              refundBooking(id);
+                              triggerNotify(`Booking #${id} cancelled and escrow refunded to client.`);
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    <PaginationFooter
+                      currentPage={currentPage}
+                      totalItems={filtered.length}
+                      pageSize={pageSize}
+                      onPageChange={(page) => setCurrentPage(page)}
+                      labelSingular="booking"
+                      labelPlural="bookings"
+                    />
                   </div>
                 );
               })()}
@@ -1465,7 +1830,7 @@ export default function AdminDashboardPage() {
 
               {/* Sub-Filter Tabs & Action Toolbar */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900 p-4 rounded-3xl border border-slate-800">
-                <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
+                <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   {[
                     { id: 'all-transactions', label: 'All Transactions' },
                     { id: 'escrow-held', label: '🔒 Escrow Vault' },
@@ -1647,7 +2012,7 @@ export default function AdminDashboardPage() {
 
               {/* Sub-Filter Tabs & Action Toolbar */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900 p-4 rounded-3xl border border-slate-800">
-                <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
+                <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   {[
                     { id: 'all-promos', label: 'All Coupons' },
                     { id: 'active-live', label: '⚡ Active & Live' },
@@ -1767,7 +2132,7 @@ export default function AdminDashboardPage() {
           {/* ==================================================== */}
           {activeTab === 'communication' && (
             <div className="space-y-6">
-              <div className="flex items-center gap-2 overflow-x-auto pb-2">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {['conversations', 'message-reports', 'flagged-messages', 'blocked-users'].map((s) => (
                   <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
                     {s.replace('-', ' ')}
@@ -1799,7 +2164,7 @@ export default function AdminDashboardPage() {
           {/* ==================================================== */}
           {activeTab === 'safety' && (
             <div className="space-y-6">
-              <div className="flex items-center gap-2 overflow-x-auto pb-2">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {['safety-dashboard', 'user-reports', 'safety-incidents', 'risk-alerts', 'fraud-detection', 'suspicious-accounts', 'emergency-events', 'safety-actions'].map((s) => (
                   <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
                     {s.replace('-', ' ')}
@@ -1829,7 +2194,7 @@ export default function AdminDashboardPage() {
           {/* ==================================================== */}
           {activeTab === 'disputes' && (
             <div className="space-y-6">
-              <div className="flex items-center gap-2 overflow-x-auto pb-2">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {['open-disputes', 'under-review', 'resolved', 'refund-cases', 'evidence'].map((s) => (
                   <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
                     {s.replace('-', ' ')}
@@ -1850,7 +2215,7 @@ export default function AdminDashboardPage() {
           {/* ==================================================== */}
           {activeTab === 'reviews' && (
             <div className="space-y-6">
-              <div className="flex items-center gap-2 overflow-x-auto pb-2">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {['reviews', 'reported-reviews', 'flagged-content', 'moderation-queue'].map((s) => (
                   <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
                     {s.replace('-', ' ')}
@@ -1932,7 +2297,7 @@ export default function AdminDashboardPage() {
               {/* Sub-Filter Bar & Action Toolbar */}
 
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900 p-4 rounded-3xl border border-slate-800">
-                <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
+                <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   {[
                     { id: 'all-cities', label: 'All Cities' },
                     { id: 'active-hubs', label: 'Active Operational' },
