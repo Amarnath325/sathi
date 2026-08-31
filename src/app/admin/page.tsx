@@ -2,65 +2,65 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  BarChart3, 
-  Users, 
+import {
+  BarChart3,
+  Users,
   User,
-  UserCheck, 
-  ShieldCheck, 
+  UserCheck,
+  ShieldCheck,
 
   Calendar,
-  Sliders, 
+  Sliders,
 
-  Clock, 
-  DollarSign, 
-  MessageSquare, 
-  ShieldAlert, 
-  Scale, 
-  Star, 
-  MapPin, 
-  Bell, 
+  Clock,
+  DollarSign,
+  MessageSquare,
+  ShieldAlert,
+  Scale,
+  Star,
+  MapPin,
+  Bell,
   Mail,
-  Tag, 
+  Tag,
   Ticket,
   Gift,
-  TrendingUp, 
-  UserCog, 
-  Lock, 
+  TrendingUp,
+  UserCog,
+  Lock,
 
-  FileText, 
-  Settings, 
-  Activity, 
-  Plus, 
-  Search, 
-  Filter, 
-  Trash2, 
+  FileText,
+  Settings,
+  Activity,
+  Plus,
+  Search,
+  Filter,
+  Trash2,
   Edit2,
   Pencil,
-  RotateCcw, 
-  XCircle, 
-  CheckCircle2, 
-  AlertTriangle, 
-  Menu, 
-  X, 
-  ChevronLeft, 
-  LogOut, 
-  RefreshCw, 
-  Percent, 
-  CreditCard, 
-  Send, 
-  Zap, 
-  Eye, 
-  Server, 
-  Database, 
-  HardDrive, 
-  Wifi, 
-  Radio, 
-  Shield, 
-  Smartphone, 
-  Globe, 
-  UserX, 
-  AlertCircle, 
+  RotateCcw,
+  XCircle,
+  CheckCircle2,
+  AlertTriangle,
+  Menu,
+  X,
+  ChevronLeft,
+  LogOut,
+  RefreshCw,
+  Percent,
+  CreditCard,
+  Send,
+  Zap,
+  Eye,
+  Server,
+  Database,
+  HardDrive,
+  Wifi,
+  Radio,
+  Shield,
+  Smartphone,
+  Globe,
+  UserX,
+  AlertCircle,
   HelpCircle,
   FileSpreadsheet,
   Building2,
@@ -83,7 +83,7 @@ import { ServiceCategoryHub } from '@/components/hub/ServiceCategoryHub';
 import { useTheme } from '@/context/ThemeContext';
 import { useAdminStore } from '@/lib/adminStore';
 import { useCrudStore, DynamicCompanionItem } from '@/lib/crudStore';
-import { MOCK_BOOKINGS, MOCK_KYC_QUEUE, MOCK_PANIC_ALERTS, MOCK_REVIEWS, MOCK_MESSAGES, MOCK_COMPANIONS } from '@/lib/mockData';
+import { MOCK_BOOKINGS, MOCK_KYC_QUEUE, MOCK_PANIC_ALERTS, MOCK_REVIEWS, MOCK_MESSAGES } from '@/lib/mockData';
 import { SosAlertCard } from '@/components/safety/SosAlertCard';
 import { IncidentReportCard } from '@/components/safety/IncidentReportCard';
 import { SosDispatchModal } from '@/components/safety/SosDispatchModal';
@@ -140,27 +140,27 @@ import AdminSystemHealthPage from '@/app/admin/health/page';
 
 
 
-export type ERPModuleTab = 
-  | 'overview' 
+export type ERPModuleTab =
+  | 'overview'
   | 'executive'
-  | 'users' 
-  | 'verification' 
-  | 'companions' 
-  | 'categories' 
-  | 'bookings' 
-  | 'payments' 
-  | 'communication' 
-  | 'safety' 
-  | 'disputes' 
-  | 'reviews' 
-  | 'location' 
-  | 'notifications' 
-  | 'promotions' 
-  | 'analytics' 
-  | 'staff' 
-  | 'security' 
-  | 'audit' 
-  | 'settings' 
+  | 'users'
+  | 'verification'
+  | 'companions'
+  | 'categories'
+  | 'bookings'
+  | 'payments'
+  | 'communication'
+  | 'safety'
+  | 'disputes'
+  | 'reviews'
+  | 'location'
+  | 'notifications'
+  | 'promotions'
+  | 'analytics'
+  | 'staff'
+  | 'security'
+  | 'audit'
+  | 'settings'
   | 'health'
   | 'email-config'
   | 'email-templates';
@@ -179,13 +179,13 @@ interface SidebarGroup {
 export default function AdminDashboardPage() {
   const router = useRouter();
 
-  const { 
-    config, 
-    updateConfig, 
-    promos, 
-    addPromoCode, 
+  const {
+    config,
+    updateConfig,
+    promos,
+    addPromoCode,
     updatePromoCode,
-    togglePromoCode, 
+    togglePromoCode,
     deletePromoCode,
 
     categories,
@@ -266,10 +266,10 @@ export default function AdminDashboardPage() {
   const { theme, toggleTheme } = useTheme();
 
   const validTabs: ERPModuleTab[] = [
-    'overview', 'executive', 'users', 'verification', 'companions', 
-    'categories', 'bookings', 'payments', 'communication', 'safety', 
-    'disputes', 'reviews', 'location', 'notifications', 'promotions', 
-    'analytics', 'staff', 'security', 'audit', 'settings', 'health', 
+    'overview', 'executive', 'users', 'verification', 'companions',
+    'categories', 'bookings', 'payments', 'communication', 'safety',
+    'disputes', 'reviews', 'location', 'notifications', 'promotions',
+    'analytics', 'staff', 'security', 'audit', 'settings', 'health',
     'email-config', 'email-templates'
   ];
 
@@ -553,11 +553,11 @@ export default function AdminDashboardPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: nextStatus }),
         });
-      } catch (e) {}
+      } catch (e) { }
     }
   };
 
-  // Dynamic + Mock Combined Companion List for Admin Hub
+  // 100% Pure Dynamic Companion List for Admin Hub (from Onboarding Store + Live DB)
   const combinedCompanionsList = useMemo(() => {
     const dynamicMapped: UserProfile[] = companions.map(c => ({
       id: c.id,
@@ -593,12 +593,13 @@ export default function AdminDashboardPage() {
     }));
 
     const dynamicIds = new Set(dynamicMapped.map(d => d.id));
-    const uniqueMocks = MOCK_COMPANIONS.filter(m => !dynamicIds.has(m.id)).map(m => ({
-      ...m,
-      status: localStatusOverrides[m.id] || (m.status as CompanionStatus) || 'ACTIVE'
+    const liveDbCompanions = (dbCompanions || []).filter(db => !dynamicIds.has(db.id)).map(db => ({
+      ...db,
+      status: localStatusOverrides[db.id] || db.status || 'ACTIVE'
     }));
-    return [...dynamicMapped, ...uniqueMocks];
-  }, [companions, localStatusOverrides]);
+
+    return [...dynamicMapped, ...liveDbCompanions];
+  }, [companions, dbCompanions, localStatusOverrides]);
 
   // Filtered Companion Directory based on Trash state & search query
   const activeCompanions = companions.filter((c: DynamicCompanionItem) => !c.isDeleted);
@@ -741,14 +742,13 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="h-screen max-h-screen w-full bg-slate-950 text-slate-100 flex overflow-hidden font-sans">
-      
+
       {/* ========================================== */}
       {/* 🟢 ENTERPRISE LEFT SIDEBAR (DESKTOP)       */}
       {/* ========================================== */}
-      <aside 
-        className={`hidden lg:flex ${
-          sidebarCollapsed ? 'w-20' : 'w-72'
-        } h-screen sticky top-0 bg-slate-900/90 border-r border-slate-800/80 backdrop-blur-xl flex-col justify-between transition-all duration-300 relative z-30 shrink-0 select-none`}
+      <aside
+        className={`hidden lg:flex ${sidebarCollapsed ? 'w-20' : 'w-72'
+          } h-screen sticky top-0 bg-slate-900/90 border-r border-slate-800/80 backdrop-blur-xl flex-col justify-between transition-all duration-300 relative z-30 shrink-0 select-none`}
       >
         <div>
           {/* Logo Header */}
@@ -769,7 +769,7 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Collapse Toggle Button */}
-            <button 
+            <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
               className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
             >
@@ -793,11 +793,10 @@ export default function AdminDashboardPage() {
                     <button
                       key={item.id}
                       onClick={() => setActiveTab(item.id)}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all group ${
-                        isActive
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all group ${isActive
                           ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-600/25 font-bold'
                           : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                      }`}
+                        }`}
                       title={sidebarCollapsed ? item.label : undefined}
                     >
                       <div className="flex items-center gap-3 min-w-0">
@@ -866,8 +865,8 @@ export default function AdminDashboardPage() {
                     <p className="text-[10px] font-mono text-purple-400">Enterprise Mobile Menu</p>
                   </div>
                 </div>
-                <button 
-                  onClick={() => setMobileMenuOpen(false)} 
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
                   className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white"
                 >
                   <X className="w-5 h-5" />
@@ -890,9 +889,8 @@ export default function AdminDashboardPage() {
                             setActiveTab(item.id);
                             setMobileMenuOpen(false);
                           }}
-                          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold ${
-                            isActive ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                          }`}
+                          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold ${isActive ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                            }`}
                         >
                           <div className="flex items-center gap-3">
                             <Icon className="w-4 h-4" />
@@ -926,10 +924,10 @@ export default function AdminDashboardPage() {
       {/* 🟦 MAIN ERP DASHBOARD CONTENT AREA        */}
       {/* ========================================== */}
       <main className="flex-1 flex flex-col h-screen overflow-y-auto bg-slate-950 custom-scrollbar">
-        
+
         {/* Top ERP Header Navigation Bar */}
         <header className="h-20 border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md px-4 sm:px-8 flex items-center justify-between shrink-0 sticky top-0 z-30">
-          
+
           {/* Left: Mobile Menu Trigger & Breadcrumb */}
           <div className="flex items-center gap-3">
             <button
@@ -952,7 +950,7 @@ export default function AdminDashboardPage() {
 
           {/* Top Bar Actions & Search */}
           <div className="flex items-center gap-2 sm:gap-3">
-            
+
             {/* Search Bar + Limit Dropdown Right Side */}
             <div className="hidden md:flex items-center gap-2">
               <div className="relative">
@@ -1001,7 +999,7 @@ export default function AdminDashboardPage() {
             </button>
 
             {/* Sync Button */}
-            <button 
+            <button
               onClick={() => triggerNotify('All 20 module parameters re-synced.')}
               className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-300 hover:text-white hover:border-slate-700 transition-all flex items-center gap-2 shadow-sm"
             >
@@ -1078,11 +1076,10 @@ export default function AdminDashboardPage() {
                         setPageSize(12);
                         setCurrentPage(1);
                       }}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                        companionViewMode === 'grid'
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${companionViewMode === 'grid'
                           ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
                           : 'text-slate-400 hover:text-white'
-                      }`}
+                        }`}
                       title="Grid View (12 items per page)"
                     >
                       <LayoutGrid className="w-3.5 h-3.5" />
@@ -1095,11 +1092,10 @@ export default function AdminDashboardPage() {
                         setPageSize(10);
                         setCurrentPage(1);
                       }}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                        companionViewMode === 'table'
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${companionViewMode === 'table'
                           ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
                           : 'text-slate-400 hover:text-white'
-                      }`}
+                        }`}
                       title="Table View (10 items per page)"
                     >
                       <List className="w-3.5 h-3.5" />
@@ -1131,8 +1127,8 @@ export default function AdminDashboardPage() {
                 {[
                   { id: 'all', label: 'All Companions', count: combinedCompanionsList.length },
                   { id: 'companion-profiles', label: 'Profiles', count: combinedCompanionsList.length },
-                  { id: 'pending-approval', label: 'Pending Approval', count: combinedCompanionsList.filter(c => c.status === 'PENDING_VERIFICATION').length },
-                  { id: 'active-companions', label: 'Active Companions', count: combinedCompanionsList.filter(c => c.status === 'ACTIVE').length },
+                  { id: 'pending-approval', label: 'Pending', count: combinedCompanionsList.filter(c => c.status === 'PENDING_VERIFICATION').length },
+                  { id: 'active-companions', label: 'Active', count: combinedCompanionsList.filter(c => c.status === 'ACTIVE').length },
                   { id: 'inactive', label: 'Inactive', count: combinedCompanionsList.filter(c => c.status === 'INACTIVE').length },
                   { id: 'restricted', label: 'Restricted / Suspended', count: combinedCompanionsList.filter(c => c.status === 'SUSPENDED').length },
                   { id: 'performance', label: 'Top Rated', count: combinedCompanionsList.filter(c => c.ratingAvg >= 4.9).length },
@@ -1143,11 +1139,10 @@ export default function AdminDashboardPage() {
                       setSubFilter(s.id);
                       setCurrentPage(1);
                     }}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
-                      subFilter === s.id
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${subFilter === s.id
                         ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
                         : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'
-                    }`}
+                      }`}
                   >
                     <span>{s.label}</span>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${subFilter === s.id ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'}`}>
@@ -1295,11 +1290,10 @@ export default function AdminDashboardPage() {
                                   <button
                                     type="button"
                                     onClick={() => handleToggleCompanionStatus(comp.id)}
-                                    className={`group relative inline-flex items-center h-6 rounded-full px-2.5 transition-all duration-300 focus:outline-none text-[10px] font-bold font-mono gap-1.5 border shadow-sm cursor-pointer ${
-                                      comp.status === 'ACTIVE'
+                                    className={`group relative inline-flex items-center h-6 rounded-full px-2.5 transition-all duration-300 focus:outline-none text-[10px] font-bold font-mono gap-1.5 border shadow-sm cursor-pointer ${comp.status === 'ACTIVE'
                                         ? 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border-emerald-500/40'
                                         : 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border-rose-500/40'
-                                    }`}
+                                      }`}
                                     title={comp.status === 'ACTIVE' ? 'Status: Active (Click to Set Inactive)' : 'Status: Inactive (Click to Set Active)'}
                                   >
                                     <span className={`w-2 h-2 rounded-full transition-all ${comp.status === 'ACTIVE' ? 'bg-emerald-400 shadow-sm shadow-emerald-400 animate-pulse' : 'bg-rose-400 shadow-sm shadow-rose-400'}`} />
@@ -1371,22 +1365,20 @@ export default function AdminDashboardPage() {
                                 <button
                                   type="button"
                                   onClick={() => handleToggleCompanionStatus(comp.id)}
-                                  className={`group relative inline-flex items-center h-7 rounded-full p-1 transition-all duration-300 focus:outline-none cursor-pointer ${
-                                    comp.status === 'ACTIVE'
+                                  className={`group relative inline-flex items-center h-7 rounded-full p-1 transition-all duration-300 focus:outline-none cursor-pointer ${comp.status === 'ACTIVE'
                                       ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 pl-2.5 pr-8'
                                       : 'bg-rose-500/20 border border-rose-500/40 text-rose-300 pl-8 pr-2.5'
-                                  }`}
+                                    }`}
                                   title={comp.status === 'ACTIVE' ? 'Status: Active (Click to Set Inactive)' : 'Status: Inactive (Click to Set Active)'}
                                 >
                                   <span className="text-[10px] font-extrabold select-none font-mono tracking-tight">
                                     {comp.status === 'ACTIVE' ? 'Active' : 'Inactive'}
                                   </span>
                                   <span
-                                    className={`absolute top-1 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300 shadow-md ${
-                                      comp.status === 'ACTIVE'
+                                    className={`absolute top-1 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300 shadow-md ${comp.status === 'ACTIVE'
                                         ? 'right-1 bg-emerald-500 text-white shadow-emerald-500/50'
                                         : 'left-1 bg-rose-600 text-white shadow-rose-600/50'
-                                    }`}
+                                      }`}
                                   >
                                     {comp.status === 'ACTIVE' ? (
                                       <CheckCircle2 className="w-3.5 h-3.5" />
@@ -1534,11 +1526,10 @@ export default function AdminDashboardPage() {
                         setSubFilter(tab.id);
                         setCurrentPage(1);
                       }}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-                        subFilter === tab.id
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${subFilter === tab.id
                           ? 'gradient-bg-primary text-white font-bold shadow-md shadow-indigo-600/30'
                           : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
-                      }`}
+                        }`}
                     >
                       {tab.label}
                     </button>
@@ -1555,11 +1546,10 @@ export default function AdminDashboardPage() {
                         setPageSize(12);
                         setCurrentPage(1);
                       }}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                        bookingViewMode === 'grid'
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${bookingViewMode === 'grid'
                           ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
                           : 'text-slate-400 hover:text-white'
-                      }`}
+                        }`}
                       title="Grid View (12 items per page)"
                     >
                       <LayoutGrid className="w-3.5 h-3.5" />
@@ -1572,11 +1562,10 @@ export default function AdminDashboardPage() {
                         setPageSize(10);
                         setCurrentPage(1);
                       }}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                        bookingViewMode === 'table'
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${bookingViewMode === 'table'
                           ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
                           : 'text-slate-400 hover:text-white'
-                      }`}
+                        }`}
                       title="Table View (10 items per page)"
                     >
                       <List className="w-3.5 h-3.5" />
@@ -1676,24 +1665,22 @@ export default function AdminDashboardPage() {
                                 </td>
                                 <td className="py-3 px-4">
                                   <div className="font-mono font-bold text-white text-xs">${b.totalAmount}.00</div>
-                                  <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded font-bold ${
-                                    b.escrowStatus === 'HELD'
+                                  <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded font-bold ${b.escrowStatus === 'HELD'
                                       ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                                       : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                                  }`}>
+                                    }`}>
                                     {b.escrowStatus === 'HELD' ? '🔒 Escrow Held' : '✓ Released'}
                                   </span>
                                 </td>
                                 <td className="py-3 px-4">
-                                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
-                                    b.status === 'COMPLETED'
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${b.status === 'COMPLETED'
                                       ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                                       : b.status === 'IN_PROGRESS'
-                                      ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 animate-pulse'
-                                      : b.status === 'CANCELLED'
-                                      ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                                      : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                                  }`}>
+                                        ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 animate-pulse'
+                                        : b.status === 'CANCELLED'
+                                          ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                                          : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                    }`}>
                                     {b.status.replace('_', ' ')}
                                   </span>
                                 </td>
@@ -1827,11 +1814,10 @@ export default function AdminDashboardPage() {
                     <button
                       key={filter.id}
                       onClick={() => setSubFilter(filter.id)}
-                      className={`px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${
-                        subFilter === filter.id || (subFilter === 'all' && filter.id === 'all-transactions')
+                      className={`px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${subFilter === filter.id || (subFilter === 'all' && filter.id === 'all-transactions')
                           ? 'gradient-bg-primary text-white shadow-md shadow-indigo-600/30'
                           : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
-                      }`}
+                        }`}
                     >
                       {filter.label}
                     </button>
@@ -1878,9 +1864,8 @@ export default function AdminDashboardPage() {
                                 toggleGateway(gw.id);
                                 triggerNotify(`Gateway ${gw.provider} status toggled!`);
                               }}
-                              className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border transition-all ${
-                                gw.isEnabled ? 'bg-emerald-950/80 text-emerald-300 border-emerald-700/60' : 'bg-slate-950 text-slate-500 border-slate-800'
-                              }`}
+                              className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border transition-all ${gw.isEnabled ? 'bg-emerald-950/80 text-emerald-300 border-emerald-700/60' : 'bg-slate-950 text-slate-500 border-slate-800'
+                                }`}
                             >
                               {gw.isEnabled ? 'ONLINE' : 'DISABLED'}
                             </button>
@@ -2007,11 +1992,10 @@ export default function AdminDashboardPage() {
                     <button
                       key={filter.id}
                       onClick={() => setSubFilter(filter.id)}
-                      className={`px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${
-                        subFilter === filter.id || (subFilter === 'all' && filter.id === 'all-promos')
+                      className={`px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${subFilter === filter.id || (subFilter === 'all' && filter.id === 'all-promos')
                           ? 'gradient-bg-primary text-white shadow-md shadow-purple-600/30'
                           : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
-                      }`}
+                        }`}
                     >
                       {filter.label}
                     </button>
@@ -2294,11 +2278,10 @@ export default function AdminDashboardPage() {
                     <button
                       key={filter.id}
                       onClick={() => setSubFilter(filter.id)}
-                      className={`px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${
-                        subFilter === filter.id || (subFilter === 'all' && filter.id === 'all-cities')
+                      className={`px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${subFilter === filter.id || (subFilter === 'all' && filter.id === 'all-cities')
                           ? 'gradient-bg-primary text-white shadow-md shadow-indigo-600/30'
                           : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
-                      }`}
+                        }`}
                     >
                       {filter.label}
                     </button>
@@ -2447,11 +2430,10 @@ export default function AdminDashboardPage() {
                     <button
                       key={filter.id}
                       onClick={() => setSubFilter(filter.id)}
-                      className={`px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${
-                        subFilter === filter.id || (subFilter === 'all' && filter.id === 'all-alerts')
+                      className={`px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${subFilter === filter.id || (subFilter === 'all' && filter.id === 'all-alerts')
                           ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30 font-extrabold'
                           : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
-                      }`}
+                        }`}
                     >
                       {filter.label}
                     </button>
@@ -2680,11 +2662,10 @@ export default function AdminDashboardPage() {
                   <button
                     key={s}
                     onClick={() => { setSubFilter(s); setCurrentPage(1); }}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold capitalize transition-all shrink-0 ${
-                      subFilter === s || (subFilter === 'all' && s === 'all')
+                    className={`px-4 py-2 rounded-xl text-xs font-bold capitalize transition-all shrink-0 ${subFilter === s || (subFilter === 'all' && s === 'all')
                         ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/25'
                         : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-slate-200'
-                    }`}
+                      }`}
                   >
                     {s}
                   </button>
@@ -2693,7 +2674,7 @@ export default function AdminDashboardPage() {
 
               {/* Toolbar & Data Table */}
               <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-4">
-                
+
                 {/* Search & Limit Selector Header */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
                   <div className="flex items-center gap-2 w-full sm:w-auto flex-1 max-w-md">
@@ -2803,13 +2784,12 @@ export default function AdminDashboardPage() {
                                 </td>
                                 <td className="py-3.5 px-4 font-mono font-bold text-emerald-400">${d.disputedAmount}</td>
                                 <td className="py-3.5 px-4">
-                                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${
-                                    d.status.startsWith('RESOLVED')
+                                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${d.status.startsWith('RESOLVED')
                                       ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                                       : d.status === 'UNDER_ARBITRATION'
-                                      ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                                      : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                                  }`}>
+                                        ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                                        : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                                    }`}>
                                     {d.status.replace('_', ' ')}
                                   </span>
                                 </td>
@@ -2918,11 +2898,10 @@ export default function AdminDashboardPage() {
                   <button
                     key={s}
                     onClick={() => { setSubFilter(s); setCurrentPage(1); }}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold capitalize transition-all shrink-0 ${
-                      subFilter === s || (subFilter === 'all' && s === 'all')
+                    className={`px-4 py-2 rounded-xl text-xs font-bold capitalize transition-all shrink-0 ${subFilter === s || (subFilter === 'all' && s === 'all')
                         ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/25'
                         : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-slate-200'
-                    }`}
+                      }`}
                   >
                     {s}
                   </button>
@@ -2931,7 +2910,7 @@ export default function AdminDashboardPage() {
 
               {/* Toolbar & Grid View */}
               <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-4">
-                
+
                 {/* Search & Page Limit Header */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
                   <div className="flex items-center gap-2 w-full sm:w-auto flex-1 max-w-md">
@@ -3619,7 +3598,7 @@ export default function AdminDashboardPage() {
       {viewingCompanionProfile && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full p-6 sm:p-7 space-y-6 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar">
-            
+
             {/* Modal Header */}
             <div className="flex items-start justify-between border-b border-slate-800 pb-4">
               <div className="flex items-center gap-4">
@@ -3688,11 +3667,10 @@ export default function AdminDashboardPage() {
                 <button
                   type="button"
                   onClick={() => handleToggleCompanionStatus(viewingCompanionProfile.id)}
-                  className={`mt-0.5 px-2.5 py-1 rounded-full text-[10px] font-bold font-mono border transition-all cursor-pointer ${
-                    viewingCompanionProfile.status === 'ACTIVE'
+                  className={`mt-0.5 px-2.5 py-1 rounded-full text-[10px] font-bold font-mono border transition-all cursor-pointer ${viewingCompanionProfile.status === 'ACTIVE'
                       ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
                       : 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30'
-                  }`}
+                    }`}
                 >
                   {viewingCompanionProfile.status === 'ACTIVE' ? '✓ Active' : '✕ Inactive'}
                 </button>
