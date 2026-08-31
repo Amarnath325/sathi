@@ -1298,11 +1298,11 @@ export default function AdminDashboardPage() {
                                     className={`group relative inline-flex items-center h-6 rounded-full px-2.5 transition-all duration-300 focus:outline-none text-[10px] font-bold font-mono gap-1.5 border shadow-sm cursor-pointer ${
                                       comp.status === 'ACTIVE'
                                         ? 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border-emerald-500/40'
-                                        : 'bg-slate-800/80 hover:bg-slate-700/80 text-slate-400 border-slate-700/60'
+                                        : 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border-rose-500/40'
                                     }`}
                                     title={comp.status === 'ACTIVE' ? 'Status: Active (Click to Set Inactive)' : 'Status: Inactive (Click to Set Active)'}
                                   >
-                                    <span className={`w-2 h-2 rounded-full transition-all ${comp.status === 'ACTIVE' ? 'bg-emerald-400 shadow-sm shadow-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
+                                    <span className={`w-2 h-2 rounded-full transition-all ${comp.status === 'ACTIVE' ? 'bg-emerald-400 shadow-sm shadow-emerald-400 animate-pulse' : 'bg-rose-400 shadow-sm shadow-rose-400'}`} />
                                     <span>{comp.status === 'ACTIVE' ? 'Active' : 'Inactive'}</span>
                                   </button>
                                 </td>
@@ -1374,7 +1374,7 @@ export default function AdminDashboardPage() {
                                   className={`group relative inline-flex items-center h-7 rounded-full p-1 transition-all duration-300 focus:outline-none cursor-pointer ${
                                     comp.status === 'ACTIVE'
                                       ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 pl-2.5 pr-8'
-                                      : 'bg-slate-800/90 border border-slate-700/80 text-slate-400 pl-8 pr-2.5'
+                                      : 'bg-rose-500/20 border border-rose-500/40 text-rose-300 pl-8 pr-2.5'
                                   }`}
                                   title={comp.status === 'ACTIVE' ? 'Status: Active (Click to Set Inactive)' : 'Status: Inactive (Click to Set Active)'}
                                 >
@@ -1385,13 +1385,13 @@ export default function AdminDashboardPage() {
                                     className={`absolute top-1 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300 shadow-md ${
                                       comp.status === 'ACTIVE'
                                         ? 'right-1 bg-emerald-500 text-white shadow-emerald-500/50'
-                                        : 'left-1 bg-slate-600 text-slate-300 shadow-slate-900/50'
+                                        : 'left-1 bg-rose-600 text-white shadow-rose-600/50'
                                     }`}
                                   >
                                     {comp.status === 'ACTIVE' ? (
                                       <CheckCircle2 className="w-3.5 h-3.5" />
                                     ) : (
-                                      <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                                      <X className="w-3.5 h-3.5" />
                                     )}
                                   </span>
                                 </button>
@@ -3691,10 +3691,10 @@ export default function AdminDashboardPage() {
                   className={`mt-0.5 px-2.5 py-1 rounded-full text-[10px] font-bold font-mono border transition-all cursor-pointer ${
                     viewingCompanionProfile.status === 'ACTIVE'
                       ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
-                      : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-white'
+                      : 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30'
                   }`}
                 >
-                  {viewingCompanionProfile.status === 'ACTIVE' ? '✓ Active' : 'Inactive'}
+                  {viewingCompanionProfile.status === 'ACTIVE' ? '✓ Active' : '✕ Inactive'}
                 </button>
               </div>
             </div>

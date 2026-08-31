@@ -19,10 +19,10 @@ const config: Record<CompanionStatus, { label: string; color: string; bg: string
   },
   INACTIVE: {
     label: 'Inactive',
-    color: 'text-slate-400',
-    bg: 'bg-slate-800/60',
-    border: 'border-slate-700/50',
-    icon: <XCircle className="w-3 h-3" />,
+    color: 'text-rose-400',
+    bg: 'bg-rose-500/10',
+    border: 'border-rose-500/30',
+    icon: <XCircle className="w-3 h-3 text-rose-400" />,
   },
   SUSPENDED: {
     label: 'Suspended',
