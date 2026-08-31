@@ -1096,12 +1096,6 @@ export default function AdminDashboardPage() {
                   >
                     <RefreshCw className={`w-4 h-4 text-indigo-400 ${isLoadingCompanions ? 'animate-spin' : ''}`} />
                   </button>
-                  <Link
-                    href="/companion"
-                    className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold transition-all flex items-center gap-1.5"
-                  >
-                    <Globe className="w-4 h-4 text-indigo-400" /> <span className="hidden sm:inline">Public Directory</span>
-                  </Link>
                   <button
                     onClick={() => {
                       setEditingCompanionModalData(null);
@@ -1111,12 +1105,6 @@ export default function AdminDashboardPage() {
                   >
                     <Plus className="w-4 h-4" /> Register New Companion
                   </button>
-                  <Link
-                    href="/companion/onboarding"
-                    className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold transition-all flex items-center gap-1.5"
-                  >
-                    <Plus className="w-4 h-4 text-purple-400" /> <span className="hidden sm:inline">Onboarding Flow</span>
-                  </Link>
                 </div>
               </div>
 
