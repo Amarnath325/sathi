@@ -356,19 +356,7 @@ export default function AdminDashboardPage() {
     loadDbCompanions();
   }, []);
 
-  const handleToggleCompanionStatus = async (id: string) => {
-    const comp = dbCompanions.find(c => c.id === id);
-    if (!comp) return;
-    const newStatus = comp.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-    setDbCompanions(prev => prev.map(c => c.id === id ? { ...c, status: newStatus as any } : c));
-    try {
-      await fetch(`/api/companions/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
-    } catch (e) {}
-  };
+
 
   const [subFilter, setSubFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -517,6 +505,9 @@ export default function AdminDashboardPage() {
   // Create User Modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingCompanionModalData, setEditingCompanionModalData] = useState<UserProfile | null>(null);
+  const [viewingCompanionProfile, setViewingCompanionProfile] = useState<UserProfile | null>(null);
+  const [localStatusOverrides, setLocalStatusOverrides] = useState<Record<string, 'ACTIVE' | 'INACTIVE'>>({});
+
   const [createName, setCreateName] = useState('');
   const [createEmail, setCreateEmail] = useState('');
   const [createCity, setCreateCity] = useState('');
@@ -539,6 +530,31 @@ export default function AdminDashboardPage() {
   const triggerNotify = (msg: string) => {
     setNotification(msg);
     setTimeout(() => setNotification(null), 3500);
+  };
+
+  const handleToggleCompanionStatus = async (id: string) => {
+    const isDynamic = companions.some(c => c.id === id);
+    if (isDynamic) {
+      toggleCompanionActive(id);
+    }
+    const currentComp = combinedCompanionsList.find(c => c.id === id);
+    const currentStatus = localStatusOverrides[id] || currentComp?.status || 'ACTIVE';
+    const nextStatus: 'ACTIVE' | 'INACTIVE' = currentStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    setLocalStatusOverrides(prev => ({ ...prev, [id]: nextStatus }));
+    triggerNotify(`Companion ${currentComp?.name || id} status switched to ${nextStatus}!`);
+
+    // Async sync with database API
+    const compInDb = dbCompanions.find(c => c.id === id);
+    if (compInDb) {
+      setDbCompanions(prev => prev.map(c => c.id === id ? { ...c, status: nextStatus as any } : c));
+      try {
+        await fetch(`/api/companions/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: nextStatus }),
+        });
+      } catch (e) {}
+    }
   };
 
   // Dynamic + Mock Combined Companion List for Admin Hub
@@ -566,7 +582,7 @@ export default function AdminDashboardPage() {
       ratingAvg: c.ratingAvg || 5.0,
       ratingCount: c.ratingCount || 1,
       completedBookings: c.completedBookings || 0,
-      status: (c.status as CompanionStatus) || 'ACTIVE',
+      status: localStatusOverrides[c.id] || (c.status as CompanionStatus) || (c.isActive ? 'ACTIVE' : 'INACTIVE'),
       verificationBadge: true,
       isAvailableNow: true,
       bio: c.bio || 'Verified companion profile registered in Sathi ERP.',
@@ -576,11 +592,13 @@ export default function AdminDashboardPage() {
       createdAt: c.createdAt || new Date().toISOString().split('T')[0]
     }));
 
-
     const dynamicIds = new Set(dynamicMapped.map(d => d.id));
-    const uniqueMocks = MOCK_COMPANIONS.filter(m => !dynamicIds.has(m.id));
+    const uniqueMocks = MOCK_COMPANIONS.filter(m => !dynamicIds.has(m.id)).map(m => ({
+      ...m,
+      status: localStatusOverrides[m.id] || (m.status as CompanionStatus) || 'ACTIVE'
+    }));
     return [...dynamicMapped, ...uniqueMocks];
-  }, [companions]);
+  }, [companions, localStatusOverrides]);
 
   // Filtered Companion Directory based on Trash state & search query
   const activeCompanions = companions.filter((c: DynamicCompanionItem) => !c.isDeleted);
@@ -1274,27 +1292,40 @@ export default function AdminDashboardPage() {
 
                                 {/* Status */}
                                 <td className="py-3 px-4">
-                                  {comp.status && <CompanionStatusBadge status={comp.status} size="sm" />}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleCompanionStatus(comp.id)}
+                                    className={`group relative inline-flex items-center h-6 rounded-full px-2.5 transition-all duration-300 focus:outline-none text-[10px] font-bold font-mono gap-1.5 border shadow-sm cursor-pointer ${
+                                      comp.status === 'ACTIVE'
+                                        ? 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border-emerald-500/40'
+                                        : 'bg-slate-800/80 hover:bg-slate-700/80 text-slate-400 border-slate-700/60'
+                                    }`}
+                                    title={comp.status === 'ACTIVE' ? 'Status: Active (Click to Set Inactive)' : 'Status: Inactive (Click to Set Active)'}
+                                  >
+                                    <span className={`w-2 h-2 rounded-full transition-all ${comp.status === 'ACTIVE' ? 'bg-emerald-400 shadow-sm shadow-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
+                                    <span>{comp.status === 'ACTIVE' ? 'Active' : 'Inactive'}</span>
+                                  </button>
                                 </td>
 
                                 {/* Actions */}
                                 <td className="py-3 px-4 text-right">
                                   <div className="flex items-center justify-end gap-1.5">
-                                    <Link
-                                      href={`/companion/${comp.id}`}
-                                      className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold transition-all"
-                                    >
-                                      View Profile
-                                    </Link>
                                     <button
-                                      onClick={() => handleToggleCompanionStatus(comp.id)}
-                                      className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
-                                        comp.status === 'ACTIVE'
-                                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30'
-                                          : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
-                                      }`}
+                                      type="button"
+                                      onClick={() => setViewingCompanionProfile(comp)}
+                                      className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold transition-all flex items-center gap-1 shadow-sm"
+                                      title="View Companion Profile"
                                     >
-                                      {comp.status === 'ACTIVE' ? 'Active' : 'Toggle Active'}
+                                      <Eye className="w-3.5 h-3.5 text-purple-400" />
+                                      <span>View Profile</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditingCompanionModalData(comp)}
+                                      className="p-1.5 rounded-lg bg-purple-100 hover:bg-purple-200 dark:bg-purple-950/60 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-500/40 text-[11px] font-bold transition-all shadow-sm flex items-center justify-center"
+                                      title="Edit Companion Profile"
+                                    >
+                                      <Pencil className="w-3.5 h-3.5" />
                                     </button>
                                   </div>
                                 </td>
@@ -1307,84 +1338,104 @@ export default function AdminDashboardPage() {
                       /* GRID CARD VIEW (12 PER PAGE) */
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {paginatedList.map((comp) => (
-                          <div key={comp.id} className="p-6 rounded-3xl bg-slate-900 border border-slate-800 hover:border-purple-500/40 transition-all space-y-4 flex flex-col">
-                            <div className="flex items-center gap-4">
-                              <img
-                                src={comp.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80'}
-                                alt={comp.name}
-                                onClick={() => comp.avatar && setLightboxImage(comp.avatar)}
-                                className="w-14 h-14 rounded-2xl object-cover border-2 border-purple-500/30 shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-                                title="Click to view image popup"
-                              />
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2">
-                                  <h4 className="font-extrabold text-white text-base truncate">{comp.name}, {comp.age || 25}</h4>
+                          <div key={comp.id} className="p-6 rounded-3xl bg-slate-900 border border-slate-800 hover:border-purple-500/40 transition-all space-y-4 flex flex-col justify-between">
+                            <div className="space-y-4">
+                              <div className="flex items-center gap-4">
+                                <img
+                                  src={comp.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80'}
+                                  alt={comp.name}
+                                  onClick={() => comp.avatar && setLightboxImage(comp.avatar)}
+                                  className="w-14 h-14 rounded-2xl object-cover border-2 border-purple-500/30 shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                                  title="Click to view image popup"
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="font-extrabold text-white text-base truncate">{comp.name}, {comp.age || 25}</h4>
+                                  </div>
+                                  <span className="text-[9px] font-mono font-bold text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20 inline-block mt-0.5">
+                                    CREATED BY ADMIN
+                                  </span>
+                                  <p className="text-xs text-slate-400 flex items-center gap-1 mt-1">
+                                    <MapPin className="w-3.5 h-3.5 text-purple-400 shrink-0" /> {comp.city || 'Mumbai'}, {comp.country || 'India'}
+                                  </p>
                                 </div>
-                                <span className="text-[9px] font-mono font-bold text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20 inline-block mt-0.5">
-                                  CREATED BY ADMIN
-                                </span>
-                                <p className="text-xs text-slate-400 flex items-center gap-1 mt-1">
-                                  <MapPin className="w-3.5 h-3.5 text-purple-400 shrink-0" /> {comp.city || 'Mumbai'}, {comp.country || 'India'}
-                                </p>
                               </div>
-                            </div>
 
-                            {/* Status Badge & Rating */}
-                            <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs">
-                              {comp.status && <CompanionStatusBadge status={comp.status} size="md" />}
-                              <div className="flex items-center gap-1 text-amber-400 font-bold">
-                                <Star className="w-3.5 h-3.5 fill-amber-400" /> {comp.ratingAvg || 5.0}
-                                <span className="text-slate-500 text-[10px] font-normal font-mono">({comp.ratingCount || 0})</span>
-                              </div>
-                            </div>
+                              {/* Status Badge & Interactive Active / Inactive Switch Toggle */}
+                              <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs">
+                                <div className="flex items-center gap-1 text-amber-400 font-bold">
+                                  <Star className="w-3.5 h-3.5 fill-amber-400" /> {comp.ratingAvg || 5.0}
+                                  <span className="text-slate-500 text-[10px] font-normal font-mono">({comp.ratingCount || 0})</span>
+                                </div>
 
-                            {/* Pricing & Bookings */}
-                            <div className="grid grid-cols-2 gap-2 p-3 rounded-2xl bg-slate-950/60 border border-slate-800 text-xs">
-                              <div>
-                                <span className="text-[10px] text-slate-500 block uppercase font-mono">Hourly Rate</span>
-                                <span className="font-mono font-bold text-emerald-400">₹{comp.hourlyRate || 1000}/hr</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleCompanionStatus(comp.id)}
+                                  className={`group relative inline-flex items-center h-7 rounded-full p-1 transition-all duration-300 focus:outline-none cursor-pointer ${
+                                    comp.status === 'ACTIVE'
+                                      ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 pl-2.5 pr-8'
+                                      : 'bg-slate-800/90 border border-slate-700/80 text-slate-400 pl-8 pr-2.5'
+                                  }`}
+                                  title={comp.status === 'ACTIVE' ? 'Status: Active (Click to Set Inactive)' : 'Status: Inactive (Click to Set Active)'}
+                                >
+                                  <span className="text-[10px] font-extrabold select-none font-mono tracking-tight">
+                                    {comp.status === 'ACTIVE' ? 'Active' : 'Inactive'}
+                                  </span>
+                                  <span
+                                    className={`absolute top-1 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300 shadow-md ${
+                                      comp.status === 'ACTIVE'
+                                        ? 'right-1 bg-emerald-500 text-white shadow-emerald-500/50'
+                                        : 'left-1 bg-slate-600 text-slate-300 shadow-slate-900/50'
+                                    }`}
+                                  >
+                                    {comp.status === 'ACTIVE' ? (
+                                      <CheckCircle2 className="w-3.5 h-3.5" />
+                                    ) : (
+                                      <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                                    )}
+                                  </span>
+                                </button>
                               </div>
-                              <div>
-                                <span className="text-[10px] text-slate-500 block uppercase font-mono">Bookings</span>
-                                <span className="font-bold text-white">{comp.completedBookings || 0} Done</span>
-                              </div>
-                            </div>
 
-                            {/* Categories */}
-                            <div className="flex flex-wrap gap-1">
-                              {(comp.categories || []).slice(0, 3).map((cat: string, idx: number) => (
-                                <span key={idx} className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 font-medium">
-                                  {cat}
-                                </span>
-                              ))}
+                              {/* Pricing & Bookings */}
+                              <div className="grid grid-cols-2 gap-2 p-3 rounded-2xl bg-slate-950/60 border border-slate-800 text-xs">
+                                <div>
+                                  <span className="text-[10px] text-slate-500 block uppercase font-mono">Hourly Rate</span>
+                                  <span className="font-mono font-bold text-emerald-400">₹{comp.hourlyRate || 1000}/hr</span>
+                                </div>
+                                <div>
+                                  <span className="text-[10px] text-slate-500 block uppercase font-mono">Bookings</span>
+                                  <span className="font-bold text-white">{comp.completedBookings || 0} Done</span>
+                                </div>
+                              </div>
+
+                              {/* Categories */}
+                              <div className="flex flex-wrap gap-1">
+                                {(comp.categories || []).slice(0, 3).map((cat: string, idx: number) => (
+                                  <span key={idx} className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 font-medium">
+                                    {cat}
+                                  </span>
+                                ))}
+                              </div>
                             </div>
 
                             {/* Actions */}
-                            <div className="flex items-center gap-2 pt-2 border-t border-slate-800/80 mt-auto">
-                              <Link
-                                href={`/companion/${comp.id}`}
-                                className="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold text-center transition-all"
-                              >
-                                View Profile
-                              </Link>
-                              {setEditingCompanionModalData && (
-                                <button
-                                  onClick={() => setEditingCompanionModalData(comp)}
-                                  className="p-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-xs font-bold transition-all"
-                                  title="Edit Companion Profile Modal"
-                                >
-                                  <Pencil className="w-3.5 h-3.5" />
-                                </button>
-                              )}
+                            <div className="flex items-center gap-2 pt-3 border-t border-slate-800/80 mt-auto">
                               <button
-                                onClick={() => handleToggleCompanionStatus(comp.id)}
-                                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                                  comp.status === 'ACTIVE'
-                                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30'
-                                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
-                                }`}
+                                type="button"
+                                onClick={() => setViewingCompanionProfile(comp)}
+                                className="flex-1 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold text-center transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
                               >
-                                {comp.status === 'ACTIVE' ? 'Active' : 'Toggle Active'}
+                                <Eye className="w-3.5 h-3.5 text-purple-400" />
+                                <span>View Profile</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditingCompanionModalData(comp)}
+                                className="p-2 rounded-xl bg-purple-100 hover:bg-purple-200 dark:bg-purple-950/60 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-500/40 text-xs font-bold transition-all shadow-sm flex items-center justify-center shrink-0 cursor-pointer"
+                                title="Edit Companion Profile"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
                               </button>
                             </div>
                           </div>
@@ -3563,10 +3614,185 @@ export default function AdminDashboardPage() {
         }}
 
       />
+
+      {/* 👤 COMPANION PROFILE VIEW DETAILS MODAL */}
+      {viewingCompanionProfile && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full p-6 sm:p-7 space-y-6 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar">
+            
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-4">
+                <img
+                  src={viewingCompanionProfile.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80'}
+                  alt={viewingCompanionProfile.name}
+                  onClick={() => viewingCompanionProfile.avatar && setLightboxImage(viewingCompanionProfile.avatar)}
+                  className="w-16 h-16 rounded-2xl object-cover border-2 border-purple-500/40 shadow-lg cursor-pointer hover:opacity-80 transition-opacity shrink-0"
+                  title="Click to zoom image"
+                />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-lg sm:text-xl font-extrabold text-white">
+                      {viewingCompanionProfile.name}, {viewingCompanionProfile.age || 25}
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                      {viewingCompanionProfile.gender || 'Female'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    {viewingCompanionProfile.createdSource === 'ADMIN' ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                        <ShieldCheck className="w-3 h-3 text-purple-400" /> CREATED BY ADMIN
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                        <User className="w-3 h-3 text-emerald-400" /> SELF REGISTERED
+                      </span>
+                    )}
+
+                    <span className="text-xs text-slate-400 flex items-center gap-1 font-medium">
+                      <MapPin className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                      {viewingCompanionProfile.city || 'Mumbai'}, {viewingCompanionProfile.country || 'India'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setViewingCompanionProfile(null)}
+                className="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition-all shrink-0 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Quick Metrics Bar */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 text-center">
+                <span className="text-[10px] text-slate-500 uppercase font-mono block">Hourly Rate</span>
+                <span className="text-base font-extrabold text-emerald-400 font-mono">₹{viewingCompanionProfile.hourlyRate || 1000}/hr</span>
+              </div>
+              <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 text-center">
+                <span className="text-[10px] text-slate-500 uppercase font-mono block">Bookings</span>
+                <span className="text-base font-extrabold text-white font-mono">{viewingCompanionProfile.completedBookings || 0} Done</span>
+              </div>
+              <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 text-center">
+                <span className="text-[10px] text-slate-500 uppercase font-mono block">Rating</span>
+                <span className="text-base font-extrabold text-amber-400 flex items-center justify-center gap-1">
+                  <Star className="w-4 h-4 fill-amber-400" /> {viewingCompanionProfile.ratingAvg || 5.0}
+                </span>
+              </div>
+              <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 text-center">
+                <span className="text-[10px] text-slate-500 uppercase font-mono block">Status</span>
+                <button
+                  type="button"
+                  onClick={() => handleToggleCompanionStatus(viewingCompanionProfile.id)}
+                  className={`mt-0.5 px-2.5 py-1 rounded-full text-[10px] font-bold font-mono border transition-all cursor-pointer ${
+                    viewingCompanionProfile.status === 'ACTIVE'
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
+                      : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-white'
+                  }`}
+                >
+                  {viewingCompanionProfile.status === 'ACTIVE' ? '✓ Active' : 'Inactive'}
+                </button>
+              </div>
+            </div>
+
+            {/* Bio */}
+            {viewingCompanionProfile.bio && (
+              <div className="space-y-1.5">
+                <h4 className="text-xs font-bold text-slate-400 uppercase font-mono">About / Bio</h4>
+                <p className="text-xs text-slate-300 bg-slate-950 p-3.5 rounded-2xl border border-slate-800/80 leading-relaxed">
+                  {viewingCompanionProfile.bio}
+                </p>
+              </div>
+            )}
+
+            {/* Categories & Languages */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-slate-400 uppercase font-mono">Categories</h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {(viewingCompanionProfile.categories || ['Event Companion']).map((cat: string, idx: number) => (
+                    <span key={idx} className="px-2.5 py-1 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-medium">
+                      {cat}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-slate-400 uppercase font-mono">Languages</h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {(viewingCompanionProfile.languages || ['English', 'Hindi']).map((lang: string, idx: number) => (
+                    <span key={idx} className="px-2.5 py-1 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-medium">
+                      {lang}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Photo Gallery Thumbnails */}
+            {viewingCompanionProfile.photos && viewingCompanionProfile.photos.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-slate-400 uppercase font-mono">Photo Gallery ({viewingCompanionProfile.photos.length})</h4>
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
+                  {viewingCompanionProfile.photos.map((photo: string, idx: number) => (
+                    <img
+                      key={idx}
+                      src={photo}
+                      alt={`Photo ${idx + 1}`}
+                      onClick={() => setLightboxImage(photo)}
+                      className="w-16 h-16 rounded-xl object-cover border border-slate-800 hover:border-purple-500/50 cursor-pointer transition-all shrink-0 hover:scale-105"
+                      title="Click to preview full size"
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Footer Buttons */}
+            <div className="flex items-center justify-between gap-3 pt-4 border-t border-slate-800 flex-wrap">
+              <Link
+                href={`/companion/${viewingCompanionProfile.id}`}
+                target="_blank"
+                className="px-4 py-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 text-indigo-400 hover:text-white border border-slate-800 text-xs font-bold transition-all flex items-center gap-1.5"
+              >
+                <span>Open Public Page</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </Link>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const compToEdit = viewingCompanionProfile;
+                    setViewingCompanionProfile(null);
+                    setEditingCompanionModalData(compToEdit);
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-lg shadow-purple-600/30 cursor-pointer"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  <span>Edit Profile</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewingCompanionProfile(null)}
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold transition-all cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
 
 
 
