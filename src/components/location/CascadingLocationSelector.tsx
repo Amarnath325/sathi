@@ -231,11 +231,12 @@ export function CascadingLocationSelector({ onLocationSelect, className = '' }: 
                 if (found) handleSelectCountry(found);
               }}
               disabled={loadingCountries}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white font-bold focus:border-purple-500 focus:outline-none transition-all disabled:opacity-50"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs !text-black font-bold focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all disabled:opacity-50 shadow-sm"
+              style={{ backgroundColor: '#ffffff', color: '#000000' }}
             >
-              <option value="">-- Select Country --</option>
+              <option value="" style={{ backgroundColor: '#ffffff', color: '#000000' }}>-- Select Country --</option>
               {filteredCountries.map(c => (
-                <option key={c.id} value={c.id}>
+                <option key={c.id} value={c.id} style={{ backgroundColor: '#ffffff', color: '#000000' }}>
                   {c.name} ({c.sortname})
                 </option>
               ))}
@@ -265,11 +266,12 @@ export function CascadingLocationSelector({ onLocationSelect, className = '' }: 
                 if (found) handleSelectState(found);
               }}
               disabled={!selectedCountry || loadingStates}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white font-bold focus:border-purple-500 focus:outline-none transition-all disabled:opacity-50"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs !text-black font-bold focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all disabled:opacity-50 shadow-sm"
+              style={{ backgroundColor: '#ffffff', color: '#000000' }}
             >
-              <option value="">-- Select State ({states.length}) --</option>
+              <option value="" style={{ backgroundColor: '#ffffff', color: '#000000' }}>-- Select State ({states.length}) --</option>
               {filteredStates.map(s => (
-                <option key={s.id} value={s.id}>
+                <option key={s.id} value={s.id} style={{ backgroundColor: '#ffffff', color: '#000000' }}>
                   {s.name}
                 </option>
               ))}
@@ -301,11 +303,12 @@ export function CascadingLocationSelector({ onLocationSelect, className = '' }: 
                 if (found) handleSelectCity(found);
               }}
               disabled={!selectedState || loadingCities}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white font-bold focus:border-purple-500 focus:outline-none transition-all disabled:opacity-50"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs !text-black font-bold focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all disabled:opacity-50 shadow-sm"
+              style={{ backgroundColor: '#ffffff', color: '#000000' }}
             >
-              <option value="">-- Select City ({cities.length}) --</option>
+              <option value="" style={{ backgroundColor: '#ffffff', color: '#000000' }}>-- Select City ({cities.length}) --</option>
               {filteredCities.map(c => (
-                <option key={c.id} value={c.id}>
+                <option key={c.id} value={c.id} style={{ backgroundColor: '#ffffff', color: '#000000' }}>
                   {c.name}
                 </option>
               ))}
@@ -338,11 +341,12 @@ export function CascadingLocationSelector({ onLocationSelect, className = '' }: 
                 if (found) handleSelectPincode(found);
               }}
               disabled={!selectedCity || loadingPincodes}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white font-bold focus:border-purple-500 focus:outline-none transition-all disabled:opacity-50"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs !text-black font-bold focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all disabled:opacity-50 shadow-sm"
+              style={{ backgroundColor: '#ffffff', color: '#000000' }}
             >
-              <option value="">-- Select Area Pincode ({pincodes.length}) --</option>
+              <option value="" style={{ backgroundColor: '#ffffff', color: '#000000' }}>-- Select Area Pincode ({pincodes.length}) --</option>
               {filteredPincodes.map((p, idx) => (
-                <option key={idx} value={`${p.pincode}-${p.postOfficeName}`}>
+                <option key={idx} value={`${p.pincode}-${p.postOfficeName}`} style={{ backgroundColor: '#ffffff', color: '#000000' }}>
                   {p.pincode} - {p.postOfficeName} ({p.district})
                 </option>
               ))}

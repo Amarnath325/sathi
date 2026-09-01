@@ -298,8 +298,9 @@ export function SearchableLocationPicker({
               ? 'bg-white border-2 border-purple-500 shadow-sm'
               : 'bg-white border border-slate-300'
               } hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20`}
+            style={{ backgroundColor: '#ffffff', color: '#000000' }}
           >
-            <span className={`truncate text-sm ${countryText ? '!text-slate-900 font-extrabold' : '!text-slate-500 font-medium'}`} style={{ color: countryText ? '#0f172a' : '#64748b' }}>
+            <span className="truncate text-sm !text-black font-extrabold" style={{ color: '#000000' }}>
               {countryText || 'Search Country...'}
             </span>
             <ChevronDown className={`w-4 h-4 text-purple-600 shrink-0 transition-transform ${openDropdown === 'country' ? 'rotate-180' : ''}`} />
@@ -316,8 +317,8 @@ export function SearchableLocationPicker({
                   placeholder="Type to search country..."
                   value={countrySearch}
                   onChange={e => setCountrySearch(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs !text-slate-900 placeholder:!text-slate-400 focus:outline-none focus:border-purple-500 font-bold shadow-inner"
-                  style={{ color: '#0f172a', backgroundColor: '#f8fafc' }}
+                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-white border border-slate-300 text-xs !text-black placeholder:!text-slate-400 focus:outline-none focus:border-purple-500 font-bold shadow-inner"
+                  style={{ color: '#000000', backgroundColor: '#ffffff' }}
                 />
               </div>
 
@@ -334,12 +335,12 @@ export function SearchableLocationPicker({
                         onClick={() => handleSelectCountry(c)}
                         className={`w-full px-3.5 py-2.5 rounded-xl text-left text-xs flex items-center justify-between transition-all group ${isSelected
                           ? 'bg-purple-600 !text-white font-black shadow-md border border-purple-400'
-                          : 'bg-slate-100 hover:bg-purple-600 !text-slate-900 hover:!text-white font-extrabold border border-slate-200'
+                          : 'bg-white hover:bg-purple-100 !text-black font-extrabold border border-slate-200'
                           }`}
-                        style={{ color: isSelected ? '#ffffff' : '#0f172a', backgroundColor: isSelected ? '#7c3aed' : '#f1f5f9' }}
+                        style={{ color: isSelected ? '#ffffff' : '#000000', backgroundColor: isSelected ? '#7c3aed' : '#ffffff' }}
                       >
-                        <span className="truncate font-extrabold" style={{ color: isSelected ? '#ffffff' : '#0f172a' }}>{c.name}</span>
-                        <span className="font-mono text-[10px] font-bold text-purple-600 group-hover:text-purple-100">+{c.phonecode}</span>
+                        <span className="truncate font-extrabold" style={{ color: isSelected ? '#ffffff' : '#000000' }}>{c.name}</span>
+                        <span className="font-mono text-[10px] font-bold text-purple-600 group-hover:text-purple-700">+{c.phonecode}</span>
                       </button>
                     );
                   })
@@ -366,8 +367,9 @@ export function SearchableLocationPicker({
               ? 'bg-white border-2 border-purple-500 shadow-sm'
               : 'bg-white border border-slate-300'
               } hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed`}
+            style={{ backgroundColor: '#ffffff', color: '#000000' }}
           >
-            <span className={`truncate text-sm ${stateText ? '!text-slate-900 font-extrabold' : '!text-slate-500 font-medium'}`} style={{ color: stateText ? '#0f172a' : '#64748b' }}>
+            <span className="truncate text-sm !text-black font-extrabold" style={{ color: '#000000' }}>
               {stateText || (selectedCountry ? 'Search State...' : 'Select Country first')}
             </span>
             <ChevronDown className={`w-4 h-4 text-purple-600 shrink-0 transition-transform ${openDropdown === 'state' ? 'rotate-180' : ''}`} />
@@ -384,8 +386,8 @@ export function SearchableLocationPicker({
                   placeholder="Type to search state..."
                   value={stateSearch}
                   onChange={e => setStateSearch(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs !text-slate-900 placeholder:!text-slate-400 focus:outline-none focus:border-purple-500 font-bold shadow-inner"
-                  style={{ color: '#0f172a', backgroundColor: '#f8fafc' }}
+                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-white border border-slate-300 text-xs !text-black placeholder:!text-slate-400 focus:outline-none focus:border-purple-500 font-bold shadow-inner"
+                  style={{ color: '#000000', backgroundColor: '#ffffff' }}
                 />
               </div>
 
@@ -402,11 +404,11 @@ export function SearchableLocationPicker({
                         onClick={() => handleSelectState(s)}
                         className={`w-full px-3.5 py-2.5 rounded-xl text-left text-xs flex items-center justify-between transition-all group ${isSelected
                           ? 'bg-purple-600 !text-white font-black shadow-md border border-purple-400'
-                          : 'bg-slate-100 hover:bg-purple-600 !text-slate-900 hover:!text-white font-extrabold border border-slate-200'
+                          : 'bg-white hover:bg-purple-100 !text-black font-extrabold border border-slate-200'
                           }`}
-                        style={{ color: isSelected ? '#ffffff' : '#0f172a', backgroundColor: isSelected ? '#7c3aed' : '#b3d9ff' }}
+                        style={{ color: isSelected ? '#ffffff' : '#000000', backgroundColor: isSelected ? '#7c3aed' : '#ffffff' }}
                       >
-                        <span className="truncate font-extrabold" style={{ color: isSelected ? '#ffffff' : '#0f172a' }}>{s.name}</span>
+                        <span className="truncate font-extrabold" style={{ color: isSelected ? '#ffffff' : '#000000' }}>{s.name}</span>
                       </button>
                     );
                   })
@@ -433,8 +435,9 @@ export function SearchableLocationPicker({
               ? 'bg-white border-2 border-purple-500 shadow-sm'
               : 'bg-white border border-slate-300'
               } hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed`}
+            style={{ backgroundColor: '#ffffff', color: '#000000' }}
           >
-            <span className={`truncate text-sm ${cityText ? '!text-slate-900 font-extrabold' : '!text-slate-500 font-medium'}`} style={{ color: cityText ? '#0f172a' : '#64748b' }}>
+            <span className="truncate text-sm !text-black font-extrabold" style={{ color: '#000000' }}>
               {cityText || (selectedState ? 'Search City...' : 'Select State first')}
             </span>
             <ChevronDown className={`w-4 h-4 text-purple-600 shrink-0 transition-transform ${openDropdown === 'city' ? 'rotate-180' : ''}`} />
@@ -451,8 +454,8 @@ export function SearchableLocationPicker({
                   placeholder="Type to search city..."
                   value={citySearch}
                   onChange={e => setCitySearch(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs !text-slate-900 placeholder:!text-slate-400 focus:outline-none focus:border-purple-500 font-bold shadow-inner"
-                  style={{ color: '#0f172a', backgroundColor: '#f8fafc' }}
+                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-white border border-slate-300 text-xs !text-black placeholder:!text-slate-400 focus:outline-none focus:border-purple-500 font-bold shadow-inner"
+                  style={{ color: '#000000', backgroundColor: '#ffffff' }}
                 />
               </div>
 
@@ -469,11 +472,11 @@ export function SearchableLocationPicker({
                         onClick={() => handleSelectCity(c)}
                         className={`w-full px-3.5 py-2.5 rounded-xl text-left text-xs flex items-center justify-between transition-all group ${isSelected
                           ? 'bg-purple-600 !text-white font-black shadow-md border border-purple-400'
-                          : 'bg-slate-100 hover:bg-purple-600 !text-slate-900 hover:!text-white font-extrabold border border-slate-200'
+                          : 'bg-white hover:bg-purple-100 !text-black font-extrabold border border-slate-200'
                           }`}
-                        style={{ color: isSelected ? '#ffffff' : '#0f172a', backgroundColor: isSelected ? '#7c3aed' : '#b3d9ff' }}
+                        style={{ color: isSelected ? '#ffffff' : '#000000', backgroundColor: isSelected ? '#7c3aed' : '#ffffff' }}
                       >
-                        <span className="truncate font-extrabold" style={{ color: isSelected ? '#ffffff' : '#0f172a' }}>{c.name}</span>
+                        <span className="truncate font-extrabold" style={{ color: isSelected ? '#ffffff' : '#000000' }}>{c.name}</span>
                       </button>
                     );
                   })
@@ -501,8 +504,9 @@ export function SearchableLocationPicker({
                 ? 'bg-white border-2 border-emerald-500 shadow-sm'
                 : 'bg-white border border-slate-300'
                 } hover:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed`}
+              style={{ backgroundColor: '#ffffff', color: '#000000' }}
             >
-              <span className={`truncate text-sm ${pincodeText ? '!text-emerald-700 font-extrabold' : '!text-slate-500 font-medium'}`} style={{ color: pincodeText ? '#047857' : '#64748b' }}>
+              <span className="truncate text-sm !text-black font-extrabold" style={{ color: '#000000' }}>
                 {pincodeText || (selectedCity ? 'Search Area Pincode...' : 'Select City first')}
               </span>
               <ChevronDown className={`w-4 h-4 text-emerald-600 shrink-0 transition-transform ${openDropdown === 'pincode' ? 'rotate-180' : ''}`} />
@@ -519,8 +523,8 @@ export function SearchableLocationPicker({
                     placeholder="Type pincode or post office..."
                     value={pincodeSearch}
                     onChange={e => setPincodeSearch(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs !text-slate-900 placeholder:!text-slate-400 focus:outline-none focus:border-emerald-500 font-bold shadow-inner"
-                    style={{ color: '#0f172a', backgroundColor: '#f8fafc' }}
+                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-white border border-slate-300 text-xs !text-black placeholder:!text-slate-400 focus:outline-none focus:border-emerald-500 font-bold shadow-inner"
+                    style={{ color: '#000000', backgroundColor: '#ffffff' }}
                   />
                 </div>
 
@@ -537,12 +541,12 @@ export function SearchableLocationPicker({
                           onClick={() => handleSelectPincode(p)}
                           className={`w-full px-3.5 py-2.5 rounded-xl text-left text-xs flex items-center justify-between transition-all group ${isSelected
                             ? 'bg-emerald-600 !text-white font-black shadow-md border border-emerald-400'
-                            : 'bg-slate-100 hover:bg-emerald-600 !text-slate-900 hover:!text-white font-extrabold border border-slate-200'
+                            : 'bg-white hover:bg-emerald-100 !text-black font-extrabold border border-slate-200'
                             }`}
-                          style={{ color: isSelected ? '#ffffff' : '#0f172a', backgroundColor: isSelected ? '#059669' : '#b3d9ff' }}
+                          style={{ color: isSelected ? '#ffffff' : '#000000', backgroundColor: isSelected ? '#059669' : '#ffffff' }}
                         >
-                          <span className="truncate font-extrabold" style={{ color: isSelected ? '#ffffff' : '#0f172a' }}>{p.postOfficeName}</span>
-                          <span className="font-mono text-[10px] font-bold text-emerald-600 group-hover:text-emerald-100">{p.pincode}</span>
+                          <span className="truncate font-extrabold" style={{ color: isSelected ? '#ffffff' : '#000000' }}>{p.postOfficeName}</span>
+                          <span className="font-mono text-[10px] font-bold text-emerald-600 group-hover:text-emerald-700">{p.pincode}</span>
                         </button>
                       );
                     })
