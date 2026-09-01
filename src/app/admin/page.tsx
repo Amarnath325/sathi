@@ -747,23 +747,23 @@ export default function AdminDashboardPage() {
       {/* 🟢 ENTERPRISE LEFT SIDEBAR (DESKTOP)       */}
       {/* ========================================== */}
       <aside
-        className={`hidden lg:flex ${sidebarCollapsed ? 'w-16' : 'w-60'
-          } h-screen sticky top-0 bg-slate-900/90 border-r border-slate-800/80 backdrop-blur-xl flex-col justify-between transition-all duration-300 relative z-30 shrink-0 select-none`}
+        className={`hidden lg:flex ${sidebarCollapsed ? 'w-14' : 'w-52'
+          } h-screen sticky top-0 bg-slate-900/90 border-r border-slate-800/80 backdrop-blur-xl flex-col justify-between transition-all duration-300 relative z-30 shrink-0 select-none text-xs`}
       >
         <div>
           {/* Logo Header */}
-          <div className="h-14 px-4 border-b border-slate-800/80 flex items-center justify-between">
-            <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center shadow-md shadow-purple-500/25 shrink-0">
-                <ShieldCheck className="w-4.5 h-4.5 text-white" />
+          <div className="h-11 px-3 border-b border-slate-800/80 flex items-center justify-between">
+            <div className="flex items-center gap-2 overflow-hidden">
+              <div className="w-6 h-6 rounded-md bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center shadow-sm shrink-0">
+                <ShieldCheck className="w-3.5 h-3.5 text-white" />
               </div>
               {!sidebarCollapsed && (
                 <div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-extrabold text-white tracking-tight">Sathi</span>
-                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">ERP v3.0</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs font-extrabold text-white tracking-tight">Sathi</span>
+                    <span className="text-[8.5px] font-bold px-1 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">ERP v3.0</span>
                   </div>
-                  <p className="text-[9px] font-mono text-slate-400 uppercase tracking-wider">Enterprise Admin Hub</p>
+                  <p className="text-[8px] font-mono text-slate-400 uppercase tracking-wider">Enterprise Hub</p>
                 </div>
               )}
             </div>
@@ -771,18 +771,18 @@ export default function AdminDashboardPage() {
             {/* Collapse Toggle Button */}
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="w-6 h-6 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+              className="w-5 h-5 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
             >
-              <ChevronLeft className={`w-3.5 h-3.5 transition-transform ${sidebarCollapsed ? 'rotate-180' : ''}`} />
+              <ChevronLeft className={`w-3 h-3 transition-transform ${sidebarCollapsed ? 'rotate-180' : ''}`} />
             </button>
           </div>
 
           {/* Module Navigation List */}
-          <div className="p-2.5 space-y-4 overflow-y-auto max-h-[calc(100vh-110px)] custom-scrollbar">
+          <div className="p-2 space-y-2.5 overflow-y-auto max-h-[calc(100vh-90px)] custom-scrollbar">
             {sidebarGroups.map((group, idx) => (
-              <div key={idx} className="space-y-1">
+              <div key={idx} className="space-y-0.5">
                 {!sidebarCollapsed && (
-                  <h3 className="px-2 text-[9px] font-bold text-slate-500 uppercase tracking-widest font-mono">
+                  <h3 className="px-2 text-[8px] font-bold text-slate-500 uppercase tracking-widest font-mono">
                     {group.groupTitle}
                   </h3>
                 )}
@@ -793,19 +793,19 @@ export default function AdminDashboardPage() {
                     <button
                       key={item.id}
                       onClick={() => setActiveTab(item.id)}
-                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all group ${isActive
-                          ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-600/25 font-bold'
+                      className={`w-full flex items-center justify-between px-2 py-1 rounded-md text-[11px] font-medium transition-all group ${isActive
+                          ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm font-bold'
                           : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
                         }`}
                       title={sidebarCollapsed ? item.label : undefined}
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-purple-400'}`} />
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Icon className={`w-3 h-3 shrink-0 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-purple-400'}`} />
                         {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
                       </div>
 
                       {!sidebarCollapsed && item.badge && (
-                        <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded-full border ${item.badgeColor || 'bg-slate-800 text-slate-300'}`}>
+                        <span className={`text-[8px] font-mono px-1 py-0.2 rounded-full border ${item.badgeColor || 'bg-slate-800 text-slate-300'}`}>
                           {item.badge}
                         </span>
                       )}
@@ -818,18 +818,18 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Admin Footer User Session */}
-        <div className="p-2.5 border-t border-slate-800/80 bg-slate-950/40">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5 overflow-hidden">
+        <div className="p-2 border-t border-slate-800/80 bg-slate-950/40">
+          <div className="flex items-center justify-between gap-1.5">
+            <div className="flex items-center gap-2 overflow-hidden">
               <img
                 src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
                 alt="Admin Avatar"
-                className="w-7 h-7 rounded-lg object-cover border border-purple-500/50 shrink-0"
+                className="w-6 h-6 rounded-md object-cover border border-purple-500/50 shrink-0"
               />
               {!sidebarCollapsed && (
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-white truncate leading-tight">{adminUser?.fullName || 'Super Admin'}</p>
-                  <p className="text-[9px] text-slate-400 truncate leading-tight">{adminUser?.email || 'admin@sathi.com'}</p>
+                  <p className="text-[11px] font-bold text-white truncate leading-tight">{adminUser?.fullName || 'Super Admin'}</p>
+                  <p className="text-[8.5px] text-slate-400 truncate leading-tight">{adminUser?.email || 'admin@sathi.com'}</p>
                 </div>
               )}
             </div>
@@ -838,9 +838,9 @@ export default function AdminDashboardPage() {
               <button
                 onClick={handleLogout}
                 title="Logout Admin Session"
-                className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-300 border border-slate-700/50 hover:border-rose-500/30 transition-all shrink-0"
+                className="p-1 rounded bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-300 border border-slate-700/50 hover:border-rose-500/30 transition-all shrink-0"
               >
-                <LogOut className="w-3.5 h-3.5" />
+                <LogOut className="w-3 h-3" />
               </button>
             )}
           </div>
@@ -926,54 +926,54 @@ export default function AdminDashboardPage() {
       <main className="flex-1 flex flex-col h-screen overflow-y-auto bg-slate-950 custom-scrollbar">
 
         {/* Top ERP Header Navigation Bar */}
-        <header className="h-14 border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between shrink-0 sticky top-0 z-30">
+        <header className="h-11 border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md px-3 sm:px-4 flex items-center justify-between shrink-0 sticky top-0 z-30">
 
           {/* Left: Mobile Menu Trigger & Breadcrumb */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white"
+              className="lg:hidden p-1 rounded-md bg-slate-900 border border-slate-800 text-slate-300 hover:text-white"
             >
-              <Menu className="w-4 h-4" />
+              <Menu className="w-3.5 h-3.5" />
             </button>
 
-            <div className="flex items-center gap-1.5 text-xs font-mono text-slate-400">
+            <div className="flex items-center gap-1 text-[11px] font-mono text-slate-400">
               <span className="hidden sm:inline">ERP Command</span>
               <span className="hidden sm:inline">/</span>
               <span className="text-purple-400 font-bold uppercase tracking-wider">{activeTab}</span>
             </div>
-            <span className="hidden sm:flex px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-bold items-center gap-1">
+            <span className="hidden sm:flex px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[8.5px] font-bold items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
               Live Sync Active
             </span>
           </div>
 
           {/* Top Bar Actions & Search */}
-          <div className="flex items-center gap-2 sm:gap-2.5">
+          <div className="flex items-center gap-1.5 sm:gap-2">
 
             {/* Search Bar + Limit Dropdown Right Side */}
-            <div className="hidden md:flex items-center gap-2">
+            <div className="hidden md:flex items-center gap-1.5">
               <div className="relative">
-                <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <Search className="w-3 h-3 text-slate-500 absolute left-2 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   placeholder="Search across all modules..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-40 lg:w-56 bg-slate-950/80 border border-slate-800 focus:border-purple-500 rounded-lg py-1 pl-8 pr-3 text-xs text-white placeholder-slate-500 outline-none transition-all h-8"
+                  className="w-36 lg:w-48 bg-slate-950/80 border border-slate-800 focus:border-purple-500 rounded-md py-0.5 pl-7 pr-2.5 text-[11px] text-white placeholder-slate-500 outline-none transition-all h-7"
                 />
               </div>
 
               {/* Items limit dropdown right side of search */}
-              <div className="flex items-center gap-1 bg-slate-950/80 border border-slate-800 rounded-lg px-2 py-1 text-xs h-8">
-                <span className="text-[10px] text-slate-400 font-bold hidden lg:inline">Show:</span>
+              <div className="flex items-center gap-1 bg-slate-950/80 border border-slate-800 rounded-md px-1.5 py-0.5 text-[10px] h-7">
+                <span className="text-[9.5px] text-slate-400 font-bold hidden lg:inline">Show:</span>
                 <select
                   value={pageSize}
                   onChange={(e) => {
                     const val = e.target.value;
                     setPageSize(val === 'All' ? 'All' : Number(val) as PageSizeOption);
                   }}
-                  className="bg-transparent text-white font-bold outline-none cursor-pointer text-xs"
+                  className="bg-transparent text-white font-bold outline-none cursor-pointer text-[10px]"
                 >
                   <option value={10} className="bg-slate-900 text-white">10</option>
                   <option value={25} className="bg-slate-900 text-white">25</option>
@@ -988,31 +988,31 @@ export default function AdminDashboardPage() {
             {/* Theme Toggle Button */}
             <button
               onClick={toggleTheme}
-              className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-amber-400 hover:border-purple-500/40 hover:scale-105 transition-all shadow-sm h-8 w-8 flex items-center justify-center"
+              className="p-1 rounded-md bg-slate-900 border border-slate-800 text-amber-400 hover:border-purple-500/40 hover:scale-105 transition-all shadow-sm h-7 w-7 flex items-center justify-center"
               title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             >
               {theme === 'dark' ? (
-                <Sun className="w-3.5 h-3.5 text-amber-400" />
+                <Sun className="w-3 h-3 text-amber-400" />
               ) : (
-                <Moon className="w-3.5 h-3.5 text-indigo-400" />
+                <Moon className="w-3 h-3 text-indigo-400" />
               )}
             </button>
 
             {/* Sync Button */}
             <button
               onClick={() => triggerNotify('All 20 module parameters re-synced.')}
-              className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-300 hover:text-white hover:border-slate-700 transition-all flex items-center gap-1.5 shadow-sm h-8"
+              className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-[10.5px] font-semibold text-slate-300 hover:text-white hover:border-slate-700 transition-all flex items-center gap-1 shadow-sm h-7"
             >
-              <RefreshCw className="w-3 h-3 text-purple-400" />
+              <RefreshCw className="w-2.5 h-2.5 text-purple-400" />
               <span className="hidden sm:inline">Sync State</span>
             </button>
 
             {/* Logout Button */}
             <button
               onClick={handleLogout}
-              className="px-2.5 py-1 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 hover:bg-rose-600 hover:text-white text-xs font-semibold transition-all flex items-center gap-1.5 h-8"
+              className="px-2 py-0.5 rounded-md bg-rose-500/10 border border-rose-500/30 text-rose-300 hover:bg-rose-600 hover:text-white text-[10.5px] font-semibold transition-all flex items-center gap-1 h-7"
             >
-              <LogOut className="w-3 h-3" />
+              <LogOut className="w-2.5 h-2.5" />
               <span className="hidden sm:inline">Logout</span>
             </button>
           </div>
@@ -1021,14 +1021,14 @@ export default function AdminDashboardPage() {
 
         {/* Dynamic Notification Banner */}
         {notification && (
-          <div className="mx-4 sm:mx-6 mt-3 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-2 animate-fade-in shadow-md">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <div className="mx-3 sm:mx-4 mt-2 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-2 animate-fade-in shadow-sm">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
             <span>{notification}</span>
           </div>
         )}
 
         {/* ERP Main Content Workspace */}
-        <div className="flex-1 p-3.5 sm:p-5 space-y-4">
+        <div className="flex-1 p-2.5 sm:p-3.5 space-y-3">
 
           {/* ==================================================== */}
           {/* MODULE 1: 📊 DASHBOARD & ANALYTICS                    */}
@@ -1057,18 +1057,18 @@ export default function AdminDashboardPage() {
           {/* MODULE 4: 🤝 COMPANION MANAGEMENT                    */}
           {/* ==================================================== */}
           {activeTab === 'companions' && (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {/* Header Actions & View Toggle */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-slate-900 border border-slate-800">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-lg bg-slate-900 border border-slate-800">
                 <div>
-                  <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-indigo-400" /> Companion Management Hub
+                  <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" /> Companion Management Hub
                   </h3>
-                  <p className="text-[11px] text-slate-400 mt-0.5">Manage live companion profiles, status toggles, rate caps, and verify KYC credentials.</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Manage live companion profiles, status toggles, rate caps, and verify KYC credentials.</p>
                 </div>
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   {/* Grid vs Table View Mode Switcher */}
-                  <div className="flex items-center bg-slate-950 p-0.5 rounded-lg border border-slate-800 shrink-0">
+                  <div className="flex items-center bg-slate-950 p-0.5 rounded-md border border-slate-800 shrink-0">
                     <button
                       type="button"
                       onClick={() => {
@@ -1076,13 +1076,13 @@ export default function AdminDashboardPage() {
                         setPageSize(12);
                         setCurrentPage(1);
                       }}
-                      className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1 ${companionViewMode === 'grid'
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all flex items-center gap-1 ${companionViewMode === 'grid'
                           ? 'bg-purple-600 text-white shadow-sm shadow-purple-600/30'
                           : 'text-slate-400 hover:text-white'
                         }`}
                       title="Grid View (12 items per page)"
                     >
-                      <LayoutGrid className="w-3 h-3" />
+                      <LayoutGrid className="w-2.5 h-2.5" />
                       <span className="hidden md:inline">Grid (12)</span>
                     </button>
                     <button
@@ -1092,38 +1092,38 @@ export default function AdminDashboardPage() {
                         setPageSize(10);
                         setCurrentPage(1);
                       }}
-                      className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1 ${companionViewMode === 'table'
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all flex items-center gap-1 ${companionViewMode === 'table'
                           ? 'bg-purple-600 text-white shadow-sm shadow-purple-600/30'
                           : 'text-slate-400 hover:text-white'
                         }`}
                       title="Table View (10 items per page)"
                     >
-                      <List className="w-3 h-3" />
+                      <List className="w-2.5 h-2.5" />
                       <span className="hidden md:inline">Table (10)</span>
                     </button>
                   </div>
 
                   <button
                     onClick={loadDbCompanions}
-                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all"
+                    className="p-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all"
                     title="Refresh Companions List"
                   >
-                    <RefreshCw className={`w-3.5 h-3.5 text-indigo-400 ${isLoadingCompanions ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`w-3 h-3 text-indigo-400 ${isLoadingCompanions ? 'animate-spin' : ''}`} />
                   </button>
                   <button
                     onClick={() => {
                       setEditingCompanionModalData(null);
                       setShowCreateModal(true);
                     }}
-                    className="px-3 py-1.5 rounded-lg gradient-bg-primary text-white text-xs font-bold hover:opacity-90 transition-all flex items-center gap-1 shadow-md shadow-purple-600/30"
+                    className="px-2.5 py-1 rounded-md gradient-bg-primary text-white text-[11px] font-bold hover:opacity-90 transition-all flex items-center gap-1 shadow-sm"
                   >
-                    <Plus className="w-3.5 h-3.5" /> Register New Companion
+                    <Plus className="w-3 h-3" /> Register New Companion
                   </button>
                 </div>
               </div>
 
               {/* Sub-Filter Tabs without ugly horizontal scrollbars */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 border-b border-slate-800 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              <div className="flex items-center gap-1 overflow-x-auto pb-1 border-b border-slate-800 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {[
                   { id: 'all', label: 'All Companions', count: combinedCompanionsList.length },
                   { id: 'companion-profiles', label: 'Profiles', count: combinedCompanionsList.length },
@@ -1139,13 +1139,13 @@ export default function AdminDashboardPage() {
                       setSubFilter(s.id);
                       setCurrentPage(1);
                     }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 shrink-0 ${subFilter === s.id
-                        ? 'bg-purple-600 text-white shadow-sm shadow-purple-600/30'
+                    className={`px-2.5 py-1 rounded-md text-[10.5px] font-medium transition-all flex items-center gap-1 shrink-0 ${subFilter === s.id
+                        ? 'bg-purple-600 text-white shadow-sm font-bold'
                         : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'
                       }`}
                   >
                     <span>{s.label}</span>
-                    <span className={`text-[9px] px-1.5 py-0.2 rounded-full ${subFilter === s.id ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'}`}>
+                    <span className={`text-[8px] px-1 py-0 rounded-full ${subFilter === s.id ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'}`}>
                       {s.count}
                     </span>
                   </button>
@@ -1154,9 +1154,9 @@ export default function AdminDashboardPage() {
 
               {/* Filtered Companion Content: Grid vs Table */}
               {isLoadingCompanions ? (
-                <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center space-y-2">
-                  <RefreshCw className="w-6 h-6 text-indigo-400 animate-spin mx-auto" />
-                  <h4 className="font-bold text-white text-sm">Loading live companion profiles from database...</h4>
+                <div className="p-6 rounded-xl bg-slate-900 border border-slate-800 text-center space-y-1.5">
+                  <RefreshCw className="w-5 h-5 text-indigo-400 animate-spin mx-auto" />
+                  <h4 className="font-bold text-white text-xs">Loading live companion profiles from database...</h4>
                 </div>
               ) : (() => {
                 const list = combinedCompanionsList.filter(c => {
@@ -1174,18 +1174,18 @@ export default function AdminDashboardPage() {
 
                 if (list.length === 0) {
                   return (
-                    <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center space-y-2">
-                      <Users className="w-8 h-8 text-slate-600 mx-auto" />
-                      <h4 className="font-bold text-white text-sm">No companion profiles found in this category</h4>
-                      <p className="text-xs text-slate-400">Fill the companion onboarding form to add new dynamic companions to the database.</p>
+                    <div className="p-6 rounded-xl bg-slate-900 border border-slate-800 text-center space-y-1.5">
+                      <Users className="w-6 h-6 text-slate-600 mx-auto" />
+                      <h4 className="font-bold text-white text-xs">No companion profiles found in this category</h4>
+                      <p className="text-[11px] text-slate-400">Fill the companion onboarding form to add new dynamic companions to the database.</p>
                       <button
                         onClick={() => {
                           setEditingCompanionModalData(null);
                           setShowCreateModal(true);
                         }}
-                        className="px-3 py-1.5 rounded-lg gradient-bg-primary text-white text-xs font-bold hover:opacity-90 transition-all flex items-center gap-1.5 mx-auto mt-2 shadow-md shadow-purple-600/30"
+                        className="px-2.5 py-1 rounded-md gradient-bg-primary text-white text-[11px] font-bold hover:opacity-90 transition-all flex items-center gap-1 mx-auto mt-1.5 shadow-sm"
                       >
-                        <Plus className="w-3.5 h-3.5" /> Go to Companion Onboarding Form
+                        <Plus className="w-3 h-3" /> Go to Companion Onboarding Form
                       </button>
                     </div>
                   );
@@ -1197,46 +1197,46 @@ export default function AdminDashboardPage() {
                   : list.slice((currentPage - 1) * effectiveLimit, currentPage * effectiveLimit);
 
                 return (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {/* TABLE VIEW */}
                     {companionViewMode === 'table' ? (
-                      <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900 shadow-sm scrollbar-none [&::-webkit-scrollbar]:hidden">
-                        <table className="w-full text-left text-xs text-slate-300">
-                          <thead className="bg-slate-950 text-slate-400 uppercase text-[9px] font-mono tracking-wider border-b border-slate-800">
+                      <div className="overflow-x-auto rounded-lg border border-slate-800 bg-slate-900 shadow-sm scrollbar-none [&::-webkit-scrollbar]:hidden">
+                        <table className="w-full text-left text-[11px] text-slate-300">
+                          <thead className="bg-slate-950 text-slate-400 uppercase text-[8.5px] font-mono tracking-wider border-b border-slate-800">
                             <tr>
-                              <th className="py-2.5 px-3 font-bold">Companion Profile</th>
-                              <th className="py-2.5 px-3 font-bold">Location</th>
-                              <th className="py-2.5 px-3 font-bold">Categories</th>
-                              <th className="py-2.5 px-3 font-bold">Hourly Rate</th>
-                              <th className="py-2.5 px-3 font-bold">Bookings</th>
-                              <th className="py-2.5 px-3 font-bold">Rating</th>
-                              <th className="py-2.5 px-3 font-bold">Status</th>
-                              <th className="py-2.5 px-3 font-bold text-right">Actions</th>
+                              <th className="py-2 px-2.5 font-bold">Companion Profile</th>
+                              <th className="py-2 px-2.5 font-bold">Location</th>
+                              <th className="py-2 px-2.5 font-bold">Categories</th>
+                              <th className="py-2 px-2.5 font-bold">Hourly Rate</th>
+                              <th className="py-2 px-2.5 font-bold">Bookings</th>
+                              <th className="py-2 px-2.5 font-bold">Rating</th>
+                              <th className="py-2 px-2.5 font-bold">Status</th>
+                              <th className="py-2 px-2.5 font-bold text-right">Actions</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-800/60">
                             {paginatedList.map((comp) => (
                               <tr key={comp.id} className="hover:bg-slate-800/40 transition-colors">
                                 {/* Profile */}
-                                <td className="py-2.5 px-3">
-                                  <div className="flex items-center gap-2.5">
+                                <td className="py-2 px-2.5">
+                                  <div className="flex items-center gap-2">
                                     <img
                                       src={comp.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80'}
                                       alt={comp.name}
                                       onClick={() => comp.avatar && setLightboxImage(comp.avatar)}
-                                      className="w-8 h-8 rounded-lg object-cover border border-purple-500/30 shrink-0 cursor-pointer hover:opacity-80 transition-opacity shadow-sm"
+                                      className="w-7 h-7 rounded-md object-cover border border-purple-500/30 shrink-0 cursor-pointer hover:opacity-80 transition-opacity shadow-sm"
                                       title="Click to view image popup"
                                     />
                                     <div className="min-w-0">
-                                      <span className="font-bold text-white text-xs block truncate">{comp.name}, {comp.age || 25}</span>
+                                      <span className="font-bold text-white text-xs block truncate leading-tight">{comp.name}, {comp.age || 25}</span>
                                       <div className="mt-0.5">
                                         {comp.createdSource === 'ADMIN' ? (
-                                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[8.5px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40">
-                                            <ShieldCheck className="w-2.5 h-2.5 text-purple-400" /> CREATED BY ADMIN
+                                          <span className="inline-flex items-center gap-0.5 px-1 py-0 rounded text-[7.5px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                                            <ShieldCheck className="w-2 h-2 text-purple-400" /> ADMIN
                                           </span>
                                         ) : (
-                                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[8.5px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                                            <User className="w-2.5 h-2.5 text-emerald-400" /> SELF REGISTERED
+                                          <span className="inline-flex items-center gap-0.5 px-1 py-0 rounded text-[7.5px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                                            <User className="w-2 h-2 text-emerald-400" /> SELF
                                           </span>
                                         )}
                                       </div>
@@ -1245,52 +1245,52 @@ export default function AdminDashboardPage() {
                                 </td>
 
                                 {/* Location */}
-                                <td className="py-2.5 px-3">
-                                  <span className="flex items-center gap-1 text-slate-300 font-medium text-xs">
-                                    <MapPin className="w-3 h-3 text-purple-400 shrink-0" />
+                                <td className="py-2 px-2.5">
+                                  <span className="flex items-center gap-1 text-slate-300 font-medium text-[10.5px]">
+                                    <MapPin className="w-2.5 h-2.5 text-purple-400 shrink-0" />
                                     {comp.city || 'Mumbai'}, {comp.country || 'India'}
                                   </span>
                                 </td>
 
                                 {/* Categories */}
-                                <td className="py-2.5 px-3">
-                                  <div className="flex flex-wrap gap-1 max-w-[200px]">
+                                <td className="py-2 px-2.5">
+                                  <div className="flex flex-wrap gap-0.5 max-w-[180px]">
                                     {(comp.categories || ['Companion']).slice(0, 2).map((cat: string, idx: number) => (
-                                      <span key={idx} className="text-[9px] px-1.5 py-0.2 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 font-medium">
+                                      <span key={idx} className="text-[8px] px-1.5 py-0.2 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 font-medium">
                                         {cat}
                                       </span>
                                     ))}
                                     {(comp.categories || []).length > 2 && (
-                                      <span className="text-[8.5px] text-slate-500 font-mono">+{comp.categories.length - 2} more</span>
+                                      <span className="text-[7.5px] text-slate-500 font-mono">+{comp.categories.length - 2}</span>
                                     )}
                                   </div>
                                 </td>
 
                                 {/* Hourly Rate */}
-                                <td className="py-2.5 px-3 font-mono font-bold text-emerald-400 text-xs">
+                                <td className="py-2 px-2.5 font-mono font-bold text-emerald-400 text-xs">
                                   ₹{comp.hourlyRate || 1000}/hr
                                 </td>
 
                                 {/* Bookings */}
-                                <td className="py-2.5 px-3 font-mono text-slate-200 text-xs">
-                                  <span className="font-bold">{comp.completedBookings || 0}</span> <span className="text-slate-500 text-[9px]">Done</span>
+                                <td className="py-2 px-2.5 font-mono text-slate-200 text-xs">
+                                  <span className="font-bold">{comp.completedBookings || 0}</span> <span className="text-slate-500 text-[8.5px]">Done</span>
                                 </td>
 
                                 {/* Rating */}
-                                <td className="py-2.5 px-3">
-                                  <div className="flex items-center gap-1 text-amber-400 font-bold text-xs">
-                                    <Star className="w-3 h-3 fill-amber-400" />
+                                <td className="py-2 px-2.5">
+                                  <div className="flex items-center gap-0.5 text-amber-400 font-bold text-xs">
+                                    <Star className="w-2.5 h-2.5 fill-amber-400" />
                                     <span>{comp.ratingAvg || 5.0}</span>
-                                    <span className="text-slate-500 text-[9px] font-normal font-mono">({comp.ratingCount || 0})</span>
+                                    <span className="text-slate-500 text-[8.5px] font-normal font-mono">({comp.ratingCount || 0})</span>
                                   </div>
                                 </td>
 
                                 {/* Status */}
-                                <td className="py-2.5 px-3">
+                                <td className="py-2 px-2.5">
                                   <button
                                     type="button"
                                     onClick={() => handleToggleCompanionStatus(comp.id)}
-                                    className={`group relative inline-flex items-center h-5.5 rounded-full px-2 transition-all duration-300 focus:outline-none text-[9px] font-bold font-mono gap-1 border shadow-sm cursor-pointer ${comp.status === 'ACTIVE'
+                                    className={`group relative inline-flex items-center h-5 rounded-full px-1.5 transition-all duration-300 focus:outline-none text-[8.5px] font-bold font-mono gap-1 border shadow-sm cursor-pointer ${comp.status === 'ACTIVE'
                                         ? 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border-emerald-500/40'
                                         : 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border-rose-500/40'
                                       }`}
@@ -1302,24 +1302,24 @@ export default function AdminDashboardPage() {
                                 </td>
 
                                 {/* Actions */}
-                                <td className="py-2.5 px-3 text-right">
+                                <td className="py-2 px-2.5 text-right">
                                   <div className="flex items-center justify-end gap-1">
                                     <button
                                       type="button"
                                       onClick={() => setViewingCompanionProfile(comp)}
-                                      className="px-2 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold transition-all flex items-center gap-1 shadow-sm"
+                                      className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold transition-all flex items-center gap-1 shadow-sm"
                                       title="View Companion Profile"
                                     >
-                                      <Eye className="w-3 h-3 text-purple-400" />
-                                      <span>View Profile</span>
+                                      <Eye className="w-2.5 h-2.5 text-purple-400" />
+                                      <span>View</span>
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => setEditingCompanionModalData(comp)}
-                                      className="p-1 rounded-md bg-purple-100 hover:bg-purple-200 dark:bg-purple-950/60 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-500/40 text-[11px] font-bold transition-all shadow-sm flex items-center justify-center"
+                                      className="p-1 rounded bg-purple-100 hover:bg-purple-200 dark:bg-purple-950/60 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-500/40 text-[10px] font-bold transition-all shadow-sm flex items-center justify-center"
                                       title="Edit Companion Profile"
                                     >
-                                      <Pencil className="w-3 h-3" />
+                                      <Pencil className="w-2.5 h-2.5" />
                                     </button>
                                   </div>
                                 </td>
@@ -1329,82 +1329,82 @@ export default function AdminDashboardPage() {
                         </table>
                       </div>
                     ) : (
-                      /* GRID CARD VIEW (12 PER PAGE) */
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                      /* GRID CARD VIEW (4 COLUMNS ON XL SCREENS) */
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5">
                         {paginatedList.map((comp) => (
-                          <div key={comp.id} className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-purple-500/40 transition-all space-y-3 flex flex-col justify-between shadow-sm">
-                            <div className="space-y-3">
-                              <div className="flex items-center gap-3">
+                          <div key={comp.id} className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-purple-500/40 transition-all space-y-2 flex flex-col justify-between shadow-sm">
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
                                 <img
                                   src={comp.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80'}
                                   alt={comp.name}
                                   onClick={() => comp.avatar && setLightboxImage(comp.avatar)}
-                                  className="w-11 h-11 rounded-xl object-cover border border-purple-500/30 shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                                  className="w-9 h-9 rounded-lg object-cover border border-purple-500/30 shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
                                   title="Click to view image popup"
                                 />
                                 <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-1.5">
-                                    <h4 className="font-bold text-white text-sm truncate">{comp.name}, {comp.age || 25}</h4>
+                                  <div className="flex items-center gap-1">
+                                    <h4 className="font-bold text-white text-xs truncate leading-tight">{comp.name}, {comp.age || 25}</h4>
                                   </div>
-                                  <span className="text-[8.5px] font-mono font-bold text-purple-400 bg-purple-500/10 px-1 py-0.2 rounded border border-purple-500/20 inline-block mt-0.5">
+                                  <span className="text-[7.5px] font-mono font-bold text-purple-400 bg-purple-500/10 px-1 py-0 rounded border border-purple-500/20 inline-block mt-0.5">
                                     CREATED BY ADMIN
                                   </span>
-                                  <p className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
-                                    <MapPin className="w-3 h-3 text-purple-400 shrink-0" /> {comp.city || 'Mumbai'}, {comp.country || 'India'}
+                                  <p className="text-[10px] text-slate-400 flex items-center gap-0.5 mt-0.5 leading-none truncate">
+                                    <MapPin className="w-2.5 h-2.5 text-purple-400 shrink-0" /> {comp.city || 'Mumbai'}, {comp.country || 'India'}
                                   </p>
                                 </div>
                               </div>
 
                               {/* Status Badge & Interactive Active / Inactive Switch Toggle */}
-                              <div className="flex items-center justify-between pt-1.5 border-t border-slate-800/80 text-xs">
-                                <div className="flex items-center gap-1 text-amber-400 font-bold text-[11px]">
-                                  <Star className="w-3 h-3 fill-amber-400" /> {comp.ratingAvg || 5.0}
-                                  <span className="text-slate-500 text-[9px] font-normal font-mono">({comp.ratingCount || 0})</span>
+                              <div className="flex items-center justify-between pt-1 border-t border-slate-800/80 text-[10px]">
+                                <div className="flex items-center gap-0.5 text-amber-400 font-bold">
+                                  <Star className="w-2.5 h-2.5 fill-amber-400" /> {comp.ratingAvg || 5.0}
+                                  <span className="text-slate-500 text-[8.5px] font-normal font-mono">({comp.ratingCount || 0})</span>
                                 </div>
 
                                 <button
                                   type="button"
                                   onClick={() => handleToggleCompanionStatus(comp.id)}
-                                  className={`group relative inline-flex items-center h-6 rounded-full p-0.5 transition-all duration-300 focus:outline-none cursor-pointer ${comp.status === 'ACTIVE'
-                                      ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 pl-2 pr-6'
-                                      : 'bg-rose-500/20 border border-rose-500/40 text-rose-300 pl-6 pr-2'
+                                  className={`group relative inline-flex items-center h-5 rounded-full p-0.5 transition-all duration-300 focus:outline-none cursor-pointer ${comp.status === 'ACTIVE'
+                                      ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 pl-1.5 pr-5'
+                                      : 'bg-rose-500/20 border border-rose-500/40 text-rose-300 pl-5 pr-1.5'
                                     }`}
                                   title={comp.status === 'ACTIVE' ? 'Status: Active (Click to Set Inactive)' : 'Status: Inactive (Click to Set Active)'}
                                 >
-                                  <span className="text-[9px] font-extrabold select-none font-mono tracking-tight">
+                                  <span className="text-[8px] font-extrabold select-none font-mono tracking-tight">
                                     {comp.status === 'ACTIVE' ? 'Active' : 'Inactive'}
                                   </span>
                                   <span
-                                    className={`absolute top-0.5 w-4.5 h-4.5 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm ${comp.status === 'ACTIVE'
+                                    className={`absolute top-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm ${comp.status === 'ACTIVE'
                                         ? 'right-0.5 bg-emerald-500 text-white shadow-emerald-500/50'
                                         : 'left-0.5 bg-rose-600 text-white shadow-rose-600/50'
                                       }`}
                                   >
                                     {comp.status === 'ACTIVE' ? (
-                                      <CheckCircle2 className="w-3 h-3" />
+                                      <CheckCircle2 className="w-2.5 h-2.5" />
                                     ) : (
-                                      <X className="w-3 h-3" />
+                                      <X className="w-2.5 h-2.5" />
                                     )}
                                   </span>
                                 </button>
                               </div>
 
                               {/* Pricing & Bookings */}
-                              <div className="grid grid-cols-2 gap-2 p-2 rounded-xl bg-slate-950/60 border border-slate-800 text-[11px]">
+                              <div className="grid grid-cols-2 gap-1 p-1.5 rounded-lg bg-slate-950/60 border border-slate-800 text-[10px]">
                                 <div>
-                                  <span className="text-[9px] text-slate-500 block uppercase font-mono">Hourly Rate</span>
-                                  <span className="font-mono font-bold text-emerald-400 text-xs">₹{comp.hourlyRate || 1000}/hr</span>
+                                  <span className="text-[8px] text-slate-500 block uppercase font-mono">Hourly Rate</span>
+                                  <span className="font-mono font-bold text-emerald-400 text-[11px]">₹{comp.hourlyRate || 1000}/hr</span>
                                 </div>
                                 <div>
-                                  <span className="text-[9px] text-slate-500 block uppercase font-mono">Bookings</span>
-                                  <span className="font-bold text-white text-xs">{comp.completedBookings || 0} Done</span>
+                                  <span className="text-[8px] text-slate-500 block uppercase font-mono">Bookings</span>
+                                  <span className="font-bold text-white text-[11px]">{comp.completedBookings || 0} Done</span>
                                 </div>
                               </div>
 
                               {/* Categories */}
-                              <div className="flex flex-wrap gap-1">
-                                {(comp.categories || []).slice(0, 3).map((cat: string, idx: number) => (
-                                  <span key={idx} className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 font-medium">
+                              <div className="flex flex-wrap gap-0.5">
+                                {(comp.categories || []).slice(0, 2).map((cat: string, idx: number) => (
+                                  <span key={idx} className="text-[8px] px-1.5 py-0.2 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 font-medium">
                                     {cat}
                                   </span>
                                 ))}
@@ -1412,22 +1412,22 @@ export default function AdminDashboardPage() {
                             </div>
 
                             {/* Actions */}
-                            <div className="flex items-center gap-1.5 pt-2.5 border-t border-slate-800/80 mt-auto">
+                            <div className="flex items-center gap-1 pt-2 border-t border-slate-800/80 mt-auto">
                               <button
                                 type="button"
                                 onClick={() => setViewingCompanionProfile(comp)}
-                                className="flex-1 py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold text-center transition-all flex items-center justify-center gap-1 shadow-sm cursor-pointer"
+                                className="flex-1 py-1 px-2 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10.5px] font-bold text-center transition-all flex items-center justify-center gap-1 shadow-sm cursor-pointer"
                               >
-                                <Eye className="w-3.5 h-3.5 text-purple-400" />
+                                <Eye className="w-3 h-3 text-purple-400" />
                                 <span>View Profile</span>
                               </button>
                               <button
                                 type="button"
                                 onClick={() => setEditingCompanionModalData(comp)}
-                                className="p-1.5 rounded-lg bg-purple-100 hover:bg-purple-200 dark:bg-purple-950/60 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-500/40 text-xs font-bold transition-all shadow-sm flex items-center justify-center cursor-pointer"
+                                className="p-1 rounded-md bg-purple-100 hover:bg-purple-200 dark:bg-purple-950/60 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-500/40 text-[10.5px] font-bold transition-all shadow-sm flex items-center justify-center cursor-pointer"
                                 title="Edit Companion Profile"
                               >
-                                <Pencil className="w-3.5 h-3.5" />
+                                <Pencil className="w-3 h-3" />
                               </button>
                             </div>
                           </div>
