@@ -463,35 +463,35 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto font-sans">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[88vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-3 bg-slate-950/80 backdrop-blur-md overflow-y-auto font-sans">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[94vh]">
 
         {/* Header */}
-        <div className="px-4 py-3 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between shrink-0">
+        <div className="px-4 py-2.5 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center shadow-sm shrink-0">
+            <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center shadow-sm shrink-0">
               <User className="w-3.5 h-3.5 text-white" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white flex items-center gap-1.5">
+              <h2 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 leading-tight">
                 {initialData ? 'Edit Companion Profile' : 'Register New Companion'}
-                <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                <span className="text-[8.5px] font-mono font-bold px-1.5 py-0.2 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
                   Admin Portal
                 </span>
               </h2>
-              <p className="text-[10px] text-slate-400">Complete companion profile setup with KYC, rates, and schedule slots.</p>
+              <p className="text-[9.5px] text-slate-400 leading-tight">Setup companion profile with location, rates, KYC & availability.</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+            className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
           >
-            <X className="w-4 h-4" />
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-1 p-1.5 bg-slate-950/40 border-b border-slate-800 overflow-x-auto shrink-0 custom-scrollbar">
+        <div className="flex items-center gap-1 px-3 py-1 bg-slate-950/40 border-b border-slate-800 overflow-x-auto shrink-0 custom-scrollbar">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -500,7 +500,7 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10.5px] font-bold whitespace-nowrap transition-all ${isActive
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold whitespace-nowrap transition-all cursor-pointer ${isActive
                   ? 'bg-purple-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
                   }`}
@@ -514,25 +514,26 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
 
         {/* Form Alert Error */}
         {formError && (
-          <div className="mx-4 mt-2 p-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[11px] font-semibold flex items-center gap-1.5">
-            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+          <div className="mx-3 mt-1.5 p-1.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[10.5px] font-semibold flex items-center gap-1.5 shrink-0">
+            <AlertCircle className="w-3 h-3 shrink-0" />
             <span>{formError}</span>
           </div>
         )}
 
         {/* Form Body */}
-        <form onSubmit={handleFormSubmit} className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+        <form onSubmit={handleFormSubmit} className="flex-1 overflow-y-auto p-3 sm:p-3.5 space-y-2.5 custom-scrollbar">
 
           {/* TAB 1: BASIC INFO */}
           {activeTab === 'basic' && (
-            <div className="space-y-4 animate-fade-in">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+            <div className="space-y-2.5 animate-fade-in">
+              {/* Row 1: 4 Inputs */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
 
                 {/* Full Name */}
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-between">
+                  <label className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 flex items-center justify-between">
                     <span className="flex items-center gap-1">
-                      <User className="w-3 h-3 text-purple-400" /> Full Name <span className="text-rose-400">*</span>
+                      <User className="w-2.5 h-2.5 text-purple-400" /> Full Name <span className="text-rose-400">*</span>
                     </span>
                   </label>
                   <input
@@ -541,23 +542,18 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                     placeholder="e.g. Sophia Chen"
                     value={formData.name || ''}
                     onChange={e => setField('name', e.target.value)}
-                    className={`w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border text-xs text-white focus:outline-none transition-all h-8.5 ${fieldErrors.name ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
+                    className={`w-full px-2 py-1 rounded-md bg-slate-950 border text-xs text-white focus:outline-none transition-all h-7.5 ${fieldErrors.name ? 'border-rose-500 ring-1 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
                       }`}
                   />
-                  {fieldErrors.name && (
-                    <p className="mt-0.5 text-[10px] font-semibold text-rose-400 flex items-center gap-1">
-                      <AlertCircle className="w-2.5 h-2.5 shrink-0" /> {fieldErrors.name}
-                    </p>
-                  )}
                 </div>
 
                 {/* Email Address (Max 30 Chars) */}
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-between">
+                  <label className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 flex items-center justify-between">
                     <span className="flex items-center gap-1">
-                      <Mail className="w-3 h-3 text-purple-400" /> Email Address <span className="text-rose-400">*</span>
+                      <Mail className="w-2.5 h-2.5 text-purple-400" /> Email <span className="text-rose-400">*</span>
                     </span>
-                    <span className={`text-[9px] font-mono font-bold ${(formData.email?.length || 0) >= 30 ? 'text-amber-400 font-black' : 'text-slate-500'
+                    <span className={`text-[8.5px] font-mono ${(formData.email?.length || 0) >= 30 ? 'text-amber-400 font-bold' : 'text-slate-500'
                       }`}>
                       {formData.email?.length || 0}/30
                     </span>
@@ -569,27 +565,20 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                     placeholder="sophia@example.com"
                     value={formData.email || ''}
                     onChange={e => handleEmailChange(e.target.value)}
-                    className={`w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border text-xs text-white focus:outline-none transition-all h-8.5 ${fieldErrors.email ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
+                    className={`w-full px-2 py-1 rounded-md bg-slate-950 border text-xs text-white focus:outline-none transition-all h-7.5 ${fieldErrors.email ? 'border-rose-500 ring-1 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
                       }`}
                   />
-                  {fieldErrors.email ? (
-                    <p className="mt-0.5 text-[10px] font-semibold text-rose-400 flex items-center gap-1">
-                      <AlertCircle className="w-2.5 h-2.5 shrink-0" /> {fieldErrors.email}
-                    </p>
-                  ) : (
-                    <p className="mt-0.5 text-[9px] text-slate-500">Max 30 characters allowed.</p>
-                  )}
                 </div>
 
                 {/* Mobile Phone (10 Digits Only) */}
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-between">
+                  <label className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 flex items-center justify-between">
                     <span className="flex items-center gap-1">
-                      <Phone className="w-3 h-3 text-purple-400" /> Mobile Number <span className="text-rose-400">*</span>
+                      <Phone className="w-2.5 h-2.5 text-purple-400" /> Mobile <span className="text-rose-400">*</span>
                     </span>
-                    <span className={`text-[9px] font-mono font-bold ${(formData.phone?.length || 0) === 10 ? 'text-emerald-400 font-extrabold' : 'text-slate-500'
+                    <span className={`text-[8.5px] font-mono ${(formData.phone?.length || 0) === 10 ? 'text-emerald-400 font-bold' : 'text-slate-500'
                       }`}>
-                      {formData.phone?.length || 0}/10 Digits
+                      {formData.phone?.length || 0}/10
                     </span>
                   </label>
                   <input
@@ -598,26 +587,19 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                     placeholder="e.g. 9876543210"
                     value={formData.phone || ''}
                     onChange={e => handlePhoneChange(e.target.value)}
-                    className={`w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border text-xs text-white font-mono focus:outline-none transition-all h-8.5 ${fieldErrors.phone ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
+                    className={`w-full px-2 py-1 rounded-md bg-slate-950 border text-xs text-white font-mono focus:outline-none transition-all h-7.5 ${fieldErrors.phone ? 'border-rose-500 ring-1 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
                       }`}
                   />
-                  {fieldErrors.phone ? (
-                    <p className="mt-0.5 text-[10px] font-semibold text-rose-400 flex items-center gap-1">
-                      <AlertCircle className="w-2.5 h-2.5 shrink-0" /> {fieldErrors.phone}
-                    </p>
-                  ) : (
-                    <p className="mt-0.5 text-[9px] text-slate-500">Only 10 numeric digits accepted.</p>
-                  )}
                 </div>
 
                 {/* Date of Birth (DOB) Date Picker */}
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-between">
+                  <label className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 flex items-center justify-between">
                     <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3 text-purple-400" /> Date of Birth <span className="text-rose-400">*</span>
+                      <Calendar className="w-2.5 h-2.5 text-purple-400" /> DOB <span className="text-rose-400">*</span>
                     </span>
-                    <span className="text-[9px] font-mono font-bold text-purple-300">
-                      Age: {formData.age || 25} Yrs
+                    <span className="text-[8.5px] font-mono font-bold text-purple-300">
+                      Age: {formData.age || 25}y
                     </span>
                   </label>
                   <input
@@ -626,21 +608,18 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                     max={new Date().toISOString().split('T')[0]}
                     value={formData.dob || ''}
                     onChange={e => handleDobChange(e.target.value)}
-                    className={`w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border text-xs text-white focus:outline-none transition-all h-8.5 ${fieldErrors.dob ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
+                    className={`w-full px-2 py-1 rounded-md bg-slate-950 border text-xs text-white focus:outline-none transition-all h-7.5 ${fieldErrors.dob ? 'border-rose-500 ring-1 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
                       }`}
                   />
-                  {fieldErrors.dob ? (
-                    <p className="mt-0.5 text-[10px] font-semibold text-rose-400 flex items-center gap-1">
-                      <AlertCircle className="w-2.5 h-2.5 shrink-0" /> {fieldErrors.dob}
-                    </p>
-                  ) : (
-                    <p className="mt-0.5 text-[9px] text-slate-500">Age calculated automatically from DOB.</p>
-                  )}
                 </div>
 
+              </div>
+
+              {/* Row 2: Age, Gender, Spoken Languages */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                 {/* Age (Calculated/Manual) */}
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                  <label className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
                     Age (Years)
                   </label>
                   <input
@@ -649,21 +628,20 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                     max={80}
                     value={formData.age || 25}
                     onChange={e => setField('age', Number(e.target.value))}
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white font-mono font-bold text-purple-300 focus:border-purple-500 focus:outline-none transition-all h-8.5"
+                    className="w-full px-2 py-1 rounded-md bg-slate-950 border border-slate-800 text-xs text-white font-mono font-bold text-purple-300 focus:border-purple-500 focus:outline-none transition-all h-7.5"
                     disabled
                   />
-                  <p className="mt-0.5 text-[9px] text-slate-500">Minimum 18 years required.</p>
                 </div>
 
                 {/* Gender Identity */}
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                  <label className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
                     Gender Identity
                   </label>
                   <select
                     value={formData.gender || 'Female'}
                     onChange={e => setField('gender', e.target.value)}
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white focus:border-purple-500 focus:outline-none transition-all h-8.5"
+                    className="w-full px-2 py-1 rounded-md bg-slate-950 border border-slate-800 text-xs text-white focus:border-purple-500 focus:outline-none transition-all h-7.5"
                   >
                     <option value="Female">Female</option>
                     <option value="Male">Male</option>
@@ -672,10 +650,52 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                   </select>
                 </div>
 
+                {/* Spoken Languages Quick Selector & Custom Add */}
+                <div className="lg:col-span-2">
+                  <label className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
+                    Spoken Languages
+                  </label>
+                  <div className="flex flex-wrap items-center gap-1">
+                    {PRESET_LANGUAGES.slice(0, 5).map(lang => {
+                      const isSelected = (formData.languages || []).includes(lang);
+                      return (
+                        <button
+                          key={lang}
+                          type="button"
+                          onClick={() => toggleLanguage(lang)}
+                          className={`text-[9.5px] px-1.5 py-0.5 rounded border font-bold transition-all flex items-center gap-0.5 cursor-pointer ${isSelected
+                            ? 'bg-purple-600/30 border-purple-500 text-purple-300'
+                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                            }`}
+                        >
+                          {isSelected && <Check className="w-2 h-2 text-purple-400" />}
+                          {lang}
+                        </button>
+                      );
+                    })}
+                    <div className="flex items-center gap-1 flex-1 min-w-[120px]">
+                      <input
+                        type="text"
+                        placeholder="Add lang..."
+                        value={newLang}
+                        onChange={e => setNewLang(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustomLanguage())}
+                        className="w-full px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-[10px] text-white outline-none h-6"
+                      />
+                      <button
+                        type="button"
+                        onClick={addCustomLanguage}
+                        className="px-2 py-0.5 rounded bg-purple-600 text-white text-[9.5px] font-bold hover:bg-purple-500 h-6 shrink-0"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {/* DYNAMIC SEARCHABLE LOCATION CASCADE (Country -> State -> City -> Pincode) */}
-              <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800/80 space-y-1.5">
+              {/* Row 3: 4-Column Location Cascade (Country -> State -> City -> Pincode) */}
+              <div className="p-2 rounded-xl bg-slate-950/80 border border-slate-800/80">
                 <SearchableLocationPicker
                   initialCountry={formData.country || ''}
                   initialState={(formData as any).state || ''}
@@ -692,60 +712,17 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                   }}
                 />
               </div>
-
-
-              {/* Languages Spoken */}
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  Languages Spoken
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {PRESET_LANGUAGES.map(lang => {
-                    const isSelected = (formData.languages || []).includes(lang);
-                    return (
-                      <button
-                        key={lang}
-                        type="button"
-                        onClick={() => toggleLanguage(lang)}
-                        className={`text-[10.5px] px-2.5 py-1 rounded-lg border font-bold transition-all flex items-center gap-1 ${isSelected
-                          ? 'bg-purple-600/30 border-purple-500 text-purple-300'
-                          : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
-                          }`}
-                      >
-                        {isSelected && <Check className="w-2.5 h-2.5 text-purple-400" />}
-                        {lang}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="flex gap-1.5 pt-1">
-                  <input
-                    type="text"
-                    placeholder="Add custom language..."
-                    value={newLang}
-                    onChange={e => setNewLang(e.target.value)}
-                    className="flex-1 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white outline-none h-8"
-                  />
-                  <button
-                    type="button"
-                    onClick={addCustomLanguage}
-                    className="px-3 py-1 rounded-lg bg-purple-600 text-white text-xs font-bold hover:bg-purple-500 h-8"
-                  >
-                    Add
-                  </button>
-                </div>
-              </div>
             </div>
           )}
 
           {/* TAB 2: PRICING & CATEGORIES */}
           {activeTab === 'pricing' && (
-            <div className="space-y-4 animate-fade-in">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div className="space-y-2.5 animate-fade-in">
+              {/* Top Row: 6 Compact Pricing & Stat Fields */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                    Hourly Rate ($ / ₹) <span className="text-rose-400">*</span>
+                  <label className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
+                    Hourly Rate <span className="text-rose-400">*</span>
                   </label>
                   <input
                     type="number"
@@ -753,37 +730,37 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                     max={1000}
                     value={formData.hourlyRate || 50}
                     onChange={e => setField('hourlyRate', Number(e.target.value))}
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white font-mono font-bold text-emerald-400 focus:border-purple-500 focus:outline-none transition-all h-8.5"
+                    className="w-full px-2 py-1 rounded-md bg-slate-950 border border-slate-800 text-xs text-white font-mono font-bold text-emerald-400 focus:border-purple-500 focus:outline-none transition-all h-7.5"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                    Daily Rate ($ / ₹)
+                  <label className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
+                    Daily Rate
                   </label>
                   <input
                     type="number"
                     value={formData.dailyRate || (Number(formData.hourlyRate || 50) * 7)}
                     onChange={e => setField('dailyRate', Number(e.target.value))}
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white font-mono font-bold text-emerald-400 focus:border-purple-500 focus:outline-none transition-all h-8.5"
+                    className="w-full px-2 py-1 rounded-md bg-slate-950 border border-slate-800 text-xs text-white font-mono font-bold text-emerald-400 focus:border-purple-500 focus:outline-none transition-all h-7.5"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                    Weekly Rate ($ / ₹)
+                  <label className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
+                    Weekly Rate
                   </label>
                   <input
                     type="number"
                     value={formData.weeklyRate || (Number(formData.hourlyRate || 50) * 40)}
                     onChange={e => setField('weeklyRate', Number(e.target.value))}
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white font-mono font-bold text-emerald-400 focus:border-purple-500 focus:outline-none transition-all h-8.5"
+                    className="w-full px-2 py-1 rounded-md bg-slate-950 border border-slate-800 text-xs text-white font-mono font-bold text-emerald-400 focus:border-purple-500 focus:outline-none transition-all h-7.5"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                    Experience (Years)
+                  <label className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
+                    Experience (Yrs)
                   </label>
                   <input
                     type="number"
@@ -791,34 +768,34 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                     max={30}
                     value={formData.experienceYears || 3}
                     onChange={e => setField('experienceYears', Number(e.target.value))}
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white focus:border-purple-500 focus:outline-none transition-all h-8.5"
+                    className="w-full px-2 py-1 rounded-md bg-slate-950 border border-slate-800 text-xs text-white focus:border-purple-500 focus:outline-none transition-all h-7.5"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                  <label className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
                     Education Level
                   </label>
                   <input
                     type="text"
-                    placeholder="B.S. Computer Science"
+                    placeholder="Bachelor Degree"
                     value={formData.education || ''}
                     onChange={e => setField('education', e.target.value)}
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white focus:border-purple-500 focus:outline-none transition-all h-8.5"
+                    className="w-full px-2 py-1 rounded-md bg-slate-950 border border-slate-800 text-xs text-white focus:border-purple-500 focus:outline-none transition-all h-7.5"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                  <label className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
                     Account Status
                   </label>
                   <select
                     value={formData.status || 'ACTIVE'}
                     onChange={e => setField('status', e.target.value as CompanionStatus)}
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white font-bold focus:border-purple-500 focus:outline-none transition-all h-8.5"
+                    className="w-full px-2 py-1 rounded-md bg-slate-950 border border-slate-800 text-xs text-white font-bold focus:border-purple-500 focus:outline-none transition-all h-7.5"
                   >
                     <option value="ACTIVE" className="text-emerald-400">ACTIVE</option>
-                    <option value="PENDING_VERIFICATION" className="text-amber-400">PENDING VERIFICATION</option>
+                    <option value="PENDING_VERIFICATION" className="text-amber-400">PENDING</option>
                     <option value="INACTIVE" className="text-slate-400">INACTIVE</option>
                     <option value="SUSPENDED" className="text-rose-400">SUSPENDED</option>
                   </select>
@@ -826,11 +803,11 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
               </div>
 
               {/* Service Categories Multi-select */}
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5">
+                <label className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider">
                   Service Categories
                 </label>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1">
                   {ALL_CATEGORIES.map(cat => {
                     const isSelected = (formData.categories || []).includes(cat);
                     return (
@@ -838,7 +815,7 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                         key={cat}
                         type="button"
                         onClick={() => toggleCategory(cat)}
-                        className={`text-[10px] px-2.5 py-1.5 rounded-lg border font-bold transition-all ${isSelected
+                        className={`text-[9.5px] px-2 py-1 rounded-md border font-bold transition-all cursor-pointer ${isSelected
                           ? 'bg-purple-600 text-white border-purple-500 shadow-sm'
                           : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
                           }`}
@@ -854,91 +831,77 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
 
           {/* TAB 3: BIO, SKILLS & BADGES */}
           {activeTab === 'bio_skills' && (
-            <div className="space-y-4 animate-fade-in">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 animate-fade-in">
 
-              {/* Bio */}
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                  Bio / Profile Tagline
-                </label>
-                <textarea
-                  rows={2.5}
-                  value={formData.bio || ''}
-                  onChange={e => setField('bio', e.target.value)}
-                  placeholder="Describe companion background, hobbies, etiquette, conversational skills..."
-                  className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white focus:border-purple-500 focus:outline-none transition-all custom-scrollbar"
-                />
-              </div>
-
-              {/* Skills Tag Input */}
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  Skills & Expertise Tags
-                </label>
-
-                <div className="flex flex-wrap gap-1.5">
-                  {(formData.skills || []).map(skill => (
-                    <span
-                      key={skill}
-                      className="text-[10px] px-2 py-0.5 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-300 font-bold flex items-center gap-1"
-                    >
-                      {skill}
-                      <button
-                        type="button"
-                        onClick={() => removeSkill(skill)}
-                        className="hover:text-rose-400"
-                      >
-                        <X className="w-2.5 h-2.5" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-
-                <div className="flex gap-1.5 pt-0.5">
-                  <input
-                    type="text"
-                    placeholder="Add skill (e.g. Fine Dining, CPR)..."
-                    value={newSkill}
-                    onChange={e => setNewSkill(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSkill())}
-                    className="flex-1 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white outline-none focus:border-purple-500 h-8"
+              {/* Left Column: Bio & Badges */}
+              <div className="space-y-2">
+                <div>
+                  <label className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
+                    Bio / Profile Tagline
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={formData.bio || ''}
+                    onChange={e => setField('bio', e.target.value)}
+                    placeholder="Describe companion background, hobbies, etiquette, conversational skills..."
+                    className="w-full px-2 py-1.5 rounded-md bg-slate-950 border border-slate-800 text-xs text-white focus:border-purple-500 focus:outline-none transition-all custom-scrollbar"
                   />
-                  <button
-                    type="button"
-                    onClick={addSkill}
-                    className="px-3 py-1 rounded-lg bg-purple-600 text-white text-xs font-bold hover:bg-purple-500 flex items-center gap-1 h-8"
-                  >
-                    <Plus className="w-3 h-3" /> Add
-                  </button>
+                </div>
+
+                {/* Skills Tag Input */}
+                <div className="p-2 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5">
+                  <label className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider">
+                    Skills & Specialties
+                  </label>
+
+                  <div className="flex flex-wrap gap-1">
+                    {(formData.skills || []).map(skill => (
+                      <span
+                        key={skill}
+                        className="text-[9px] px-1.5 py-0.5 rounded-md bg-purple-500/10 border border-purple-500/30 text-purple-300 font-bold flex items-center gap-1"
+                      >
+                        {skill}
+                        <button
+                          type="button"
+                          onClick={() => removeSkill(skill)}
+                          className="hover:text-rose-400"
+                        >
+                          <X className="w-2 h-2" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-1 pt-0.5">
+                    <input
+                      type="text"
+                      placeholder="Add skill (e.g. CPR Certified)..."
+                      value={newSkill}
+                      onChange={e => setNewSkill(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSkill())}
+                      className="flex-1 px-2 py-1 rounded-md bg-slate-900 border border-slate-800 text-[10px] text-white outline-none focus:border-purple-500 h-6.5"
+                    />
+                    <button
+                      type="button"
+                      onClick={addSkill}
+                      className="px-2.5 py-1 rounded-md bg-purple-600 text-white text-[9.5px] font-bold hover:bg-purple-500 flex items-center gap-1 h-6.5"
+                    >
+                      <Plus className="w-2.5 h-2.5" /> Add
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Avatar Selector & File Upload */}
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-[10px] font-extrabold text-purple-400 uppercase tracking-wider flex items-center gap-1">
-                    <Camera className="w-3 h-3 text-purple-400" /> Profile Avatar Image
-                  </label>
-                  <label className="cursor-pointer px-2.5 py-1 rounded-lg bg-purple-600/30 text-purple-300 border border-purple-500/40 text-[10px] font-bold hover:bg-purple-600/50 transition-all flex items-center gap-1 shadow-sm">
-                    <Upload className="w-3 h-3" /> Upload Avatar
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleAvatarFileUpload}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-
-                <div className="flex flex-col sm:flex-row items-center gap-3">
-                  <div className="relative group shrink-0">
-                    <img
-                      src={formData.avatar || PRESET_AVATARS[0]}
-                      alt="Avatar Preview"
-                      className="w-14 h-14 rounded-xl object-cover border-2 border-purple-500 shadow-md"
-                    />
-                    <label className="absolute inset-0 bg-slate-950/60 rounded-xl opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center cursor-pointer transition-opacity text-[9px] text-white font-bold gap-0.5">
-                      <Camera className="w-3.5 h-3.5 text-purple-400" /> Change
+              {/* Right Column: Avatar, Gallery & Badges */}
+              <div className="space-y-2">
+                {/* Avatar Selector */}
+                <div className="p-2 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[9.5px] font-extrabold text-purple-400 uppercase tracking-wider flex items-center gap-1">
+                      <Camera className="w-2.5 h-2.5 text-purple-400" /> Avatar Image
+                    </label>
+                    <label className="cursor-pointer px-2 py-0.5 rounded-md bg-purple-600/30 text-purple-300 border border-purple-500/40 text-[9px] font-bold hover:bg-purple-600/50 transition-all flex items-center gap-1 shadow-sm">
+                      <Upload className="w-2.5 h-2.5" /> Upload File
                       <input
                         type="file"
                         accept="image/*"
@@ -948,254 +911,186 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                     </label>
                   </div>
 
-                  <div className="flex-1 w-full space-y-1.5">
-                    <input
-                      type="text"
-                      placeholder="Paste Image URL or click Upload button..."
-                      value={formData.avatar || ''}
-                      onChange={e => setField('avatar', e.target.value)}
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white outline-none focus:border-purple-500 font-medium h-8"
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={formData.avatar || PRESET_AVATARS[0]}
+                      alt="Avatar Preview"
+                      className="w-10 h-10 rounded-lg object-cover border border-purple-500 shadow-sm shrink-0"
                     />
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-[9px] text-slate-500 font-bold uppercase">Presets:</span>
-                      {PRESET_AVATARS.map((url, idx) => (
-                        <img
-                          key={idx}
-                          src={url}
-                          alt="Preset"
-                          onClick={() => setField('avatar', url)}
-                          className={`w-6 h-6 rounded-md object-cover cursor-pointer border hover:scale-105 transition-all ${formData.avatar === url ? 'border-purple-500 ring-1 ring-purple-500/50' : 'border-slate-800'
-                            }`}
-                        />
-                      ))}
+                    <div className="flex-1 space-y-1">
+                      <input
+                        type="text"
+                        placeholder="Paste Image URL..."
+                        value={formData.avatar || ''}
+                        onChange={e => setField('avatar', e.target.value)}
+                        className="w-full px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-[10px] text-white outline-none focus:border-purple-500 h-6"
+                      />
+                      <div className="flex flex-wrap items-center gap-1">
+                        {PRESET_AVATARS.map((url, idx) => (
+                          <img
+                            key={idx}
+                            src={url}
+                            alt="Preset"
+                            onClick={() => setField('avatar', url)}
+                            className={`w-5 h-5 rounded object-cover cursor-pointer border hover:scale-105 transition-all ${formData.avatar === url ? 'border-purple-500 ring-1 ring-purple-500/50' : 'border-slate-800'
+                              }`}
+                          />
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Additional Gallery Photos Upload */}
-                <div className="pt-2 border-t border-slate-900 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                      <FileText className="w-3 h-3 text-purple-400" /> Gallery ({(formData.photos || []).length} Photos)
-                    </span>
-                    <label className="cursor-pointer px-2 py-0.5 rounded-md bg-slate-900 text-slate-300 border border-slate-800 text-[10px] font-bold hover:border-purple-500 transition-all flex items-center gap-1">
-                      <Plus className="w-2.5 h-2.5 text-purple-400" /> Add Photos
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleGalleryFileUpload}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-
-                  <div className="flex flex-wrap gap-1.5">
-                    {(formData.photos || []).map((photoUrl, idx) => (
-                      <div key={idx} className="relative group w-11 h-11 rounded-lg overflow-hidden border border-slate-800">
-                        <img src={photoUrl} alt="Gallery" className="w-full h-full object-cover" />
-                        <button
-                          type="button"
-                          onClick={() => removePhoto(idx)}
-                          className="absolute top-0.5 right-0.5 p-0.5 rounded bg-rose-600/80 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="w-2.5 h-2.5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-              </div>
-
-
-              {/* Verification Badges Toggles */}
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  Verification & Status Badges
-                </label>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-900 border border-slate-800 cursor-pointer hover:border-purple-500/40 transition-all">
+                {/* Verification Badges Toggles */}
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="flex items-center gap-1.5 p-1.5 rounded-lg bg-slate-950 border border-slate-800 cursor-pointer hover:border-purple-500/40 transition-all">
                     <input
                       type="checkbox"
                       checked={!!formData.verificationBadge}
                       onChange={e => setField('verificationBadge', e.target.checked)}
-                      className="w-3.5 h-3.5 rounded text-purple-600 bg-slate-950 border-slate-800 focus:ring-purple-500"
+                      className="w-3 h-3 rounded text-purple-600 bg-slate-950 border-slate-800"
                     />
-                    <div className="text-xs">
-                      <span className="font-bold text-white flex items-center gap-1 text-[11px]">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Verified Badge
+                    <div className="text-[10px]">
+                      <span className="font-bold text-white flex items-center gap-0.5">
+                        <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" /> Verified Badge
                       </span>
-                      <p className="text-[9px] text-slate-400">Display checkmark on profile</p>
                     </div>
                   </label>
 
-                  <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-900 border border-slate-800 cursor-pointer hover:border-purple-500/40 transition-all">
+                  <label className="flex items-center gap-1.5 p-1.5 rounded-lg bg-slate-950 border border-slate-800 cursor-pointer hover:border-purple-500/40 transition-all">
                     <input
                       type="checkbox"
                       checked={!!formData.isAvailableNow}
                       onChange={e => setField('isAvailableNow', e.target.checked)}
-                      className="w-3.5 h-3.5 rounded text-purple-600 bg-slate-950 border-slate-800 focus:ring-purple-500"
+                      className="w-3 h-3 rounded text-purple-600 bg-slate-950 border-slate-800"
                     />
-                    <div className="text-xs">
-                      <span className="font-bold text-white flex items-center gap-1 text-[11px]">
-                        <Sparkles className="w-3 h-3 text-emerald-400" /> Available Now
+                    <div className="text-[10px]">
+                      <span className="font-bold text-white flex items-center gap-0.5">
+                        <Sparkles className="w-2.5 h-2.5 text-emerald-400" /> Available Now
                       </span>
-                      <p className="text-[9px] text-slate-400">Instant booking status</p>
                     </div>
                   </label>
                 </div>
               </div>
+
             </div>
           )}
 
           {/* TAB 4: KYC VERIFICATION */}
           {activeTab === 'kyc' && (
-            <div className="space-y-4 animate-fade-in">
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5 text-purple-400" /> KYC Identity Credentials
-                  </h3>
-                  <span className={`text-[9px] font-bold px-2 py-0.2 rounded-full border ${formData.kycStatus === 'APPROVED'
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                    : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                    }`}>
-                    {formData.kycStatus || 'PENDING'}
-                  </span>
+            <div className="space-y-2.5 animate-fade-in">
+              {/* Top Row: Document Type, Status, Read-Only Aadhaar */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div>
+                  <label className="block text-[9.5px] font-bold text-slate-400 uppercase mb-0.5">Document Type</label>
+                  <select
+                    value={formData.kycStatus === 'APPROVED' ? 'Aadhaar Card' : 'Government ID'}
+                    onChange={e => setField('kycStatus', e.target.value)}
+                    className="w-full px-2 py-1 rounded-md bg-slate-950 border border-slate-800 text-xs text-white focus:border-purple-500 focus:outline-none h-7.5"
+                  >
+                    <option value="APPROVED">Aadhaar Card (Dual Side)</option>
+                    <option value="APPROVED">Passport Scan</option>
+                    <option value="APPROVED">Driving License</option>
+                    <option value="PENDING">Voter ID</option>
+                  </select>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Document Type</label>
-                    <select
-                      value={formData.kycStatus === 'APPROVED' ? 'Aadhaar Card' : 'Government ID'}
-                      onChange={e => setField('kycStatus', e.target.value)}
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white focus:border-purple-500 focus:outline-none h-8.5"
-                    >
-                      <option value="APPROVED">Aadhaar Card (Dual Side)</option>
-                      <option value="APPROVED">Passport Scan</option>
-                      <option value="APPROVED">Driving License</option>
-                      <option value="PENDING">Voter ID</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">KYC Approval Status</label>
-                    <select
-                      value={formData.kycStatus || 'APPROVED'}
-                      onChange={e => setField('kycStatus', e.target.value)}
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white focus:border-purple-500 focus:outline-none h-8.5"
-                    >
-                      <option value="APPROVED" className="text-emerald-400">APPROVED</option>
-                      <option value="PENDING" className="text-amber-400">PENDING MANUAL REVIEW</option>
-                      <option value="REJECTED" className="text-rose-400">REJECTED</option>
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-[9.5px] font-bold text-slate-400 uppercase mb-0.5">KYC Approval Status</label>
+                  <select
+                    value={formData.kycStatus || 'APPROVED'}
+                    onChange={e => setField('kycStatus', e.target.value)}
+                    className="w-full px-2 py-1 rounded-md bg-slate-950 border border-slate-800 text-xs text-white focus:border-purple-500 focus:outline-none h-7.5"
+                  >
+                    <option value="APPROVED" className="text-emerald-400">APPROVED</option>
+                    <option value="PENDING" className="text-amber-400">PENDING</option>
+                    <option value="REJECTED" className="text-rose-400">REJECTED</option>
+                  </select>
                 </div>
 
-                {/* DYNAMIC READ-ONLY AADHAAR CARD NUMBER INPUT FIELD */}
-                <div className="p-3 rounded-lg bg-slate-900/90 border border-purple-500/30 space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-extrabold text-purple-300 uppercase tracking-wider flex items-center gap-1">
-                      <Lock className="w-3 h-3 text-purple-400" /> Aadhaar Number (OCR Extracted)
+                {/* Read-Only Aadhaar Number */}
+                <div>
+                  <div className="flex items-center justify-between mb-0.5">
+                    <label className="text-[9.5px] font-bold text-purple-300 uppercase flex items-center gap-1">
+                      <Lock className="w-2.5 h-2.5 text-purple-400" /> Aadhaar (OCR Extracted)
                     </label>
-                    {isOcrScanning ? (
-                      <span className="text-[9px] font-mono font-bold text-amber-300 animate-pulse flex items-center gap-1">
-                        <RefreshCw className="w-2.5 h-2.5 animate-spin" /> Scanning Image...
-                      </span>
-                    ) : (
-                      <span className="text-[9px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/30 flex items-center gap-1">
-                        <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" /> OCR Match {ocrConfidence}%
-                      </span>
+                    <span className="text-[8px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-1 py-0 rounded border border-emerald-500/30">
+                      Match {ocrConfidence}%
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    readOnly
+                    value={isOcrScanning ? 'Scanning...' : aadhaarNumber}
+                    className="w-full px-2 py-1 rounded-md bg-slate-950 border border-purple-500/40 text-xs text-emerald-400 font-mono font-bold tracking-wider cursor-not-allowed outline-none select-none h-7.5"
+                  />
+                </div>
+              </div>
+
+              {/* Bottom Row: Aadhaar Upload Front & Back Side-by-Side */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {/* Front Upload */}
+                <div className="p-2 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9.5px] text-slate-300 font-extrabold uppercase flex items-center gap-1">
+                      <FileText className="w-2.5 h-2.5 text-purple-400" /> Aadhaar Front
+                    </span>
+                    <label className="cursor-pointer px-2 py-0.5 rounded bg-purple-600/30 text-purple-300 border border-purple-500/40 text-[8.5px] font-bold hover:bg-purple-600/50 transition-all flex items-center gap-1">
+                      <Upload className="w-2 h-2" /> Upload Front
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={e => handleAadhaarUpload(e, 'front')}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="relative group overflow-hidden rounded-md border border-slate-800 bg-slate-950">
+                    <img
+                      src={aadhaarFront}
+                      alt="Aadhaar Front"
+                      className="w-full h-24 object-cover"
+                    />
+                    {isOcrScanning && (
+                      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center gap-1">
+                        <RefreshCw className="w-3 h-3 text-purple-400 animate-spin" />
+                        <span className="text-[9px] font-mono font-bold text-purple-300">Scanning Front...</span>
+                      </div>
                     )}
                   </div>
-
-                  {/* Strictly Read-Only Input Field */}
-                  <div className="relative">
-                    <input
-                      type="text"
-                      readOnly
-                      value={isOcrScanning ? 'Scanning Aadhaar document...' : aadhaarNumber}
-                      className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-purple-500/40 text-xs text-emerald-400 font-mono font-black tracking-wider cursor-not-allowed outline-none select-none shadow-inner h-8.5"
-                    />
-                    <Lock className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 top-2.5" />
-                  </div>
-
-                  <p className="text-[10px] text-slate-400 font-medium flex items-center gap-1 pt-0.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping shrink-0" />
-                    <strong className="text-slate-300">Read-Only Field:</strong> Number image scan se extract hota hai.
-                  </p>
                 </div>
 
-                {/* Aadhaar Upload Cards (Front & Back) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-
-                  {/* Front Upload */}
-                  <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-slate-300 font-extrabold uppercase tracking-wider flex items-center gap-1">
-                        <FileText className="w-3 h-3 text-purple-400" /> Aadhaar Front
-                      </span>
-                      <label className="cursor-pointer px-2 py-0.5 rounded bg-purple-600/30 text-purple-300 border border-purple-500/40 text-[9px] font-bold hover:bg-purple-600/50 transition-all flex items-center gap-1">
-                        <Upload className="w-2.5 h-2.5" /> Upload
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={e => handleAadhaarUpload(e, 'front')}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-
-                    <div className="relative group overflow-hidden rounded-lg border border-slate-800 bg-slate-950">
-                      <img
-                        src={aadhaarFront}
-                        alt="Aadhaar Front"
-                        className="w-full h-24 object-cover group-hover:scale-105 transition-transform duration-300"
+                {/* Back Upload */}
+                <div className="p-2 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9.5px] text-slate-300 font-extrabold uppercase flex items-center gap-1">
+                      <FileText className="w-2.5 h-2.5 text-purple-400" /> Aadhaar Back
+                    </span>
+                    <label className="cursor-pointer px-2 py-0.5 rounded bg-purple-600/30 text-purple-300 border border-purple-500/40 text-[8.5px] font-bold hover:bg-purple-600/50 transition-all flex items-center gap-1">
+                      <Upload className="w-2 h-2" /> Upload Back
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={e => handleAadhaarUpload(e, 'back')}
+                        className="hidden"
                       />
-                      {isOcrScanning && (
-                        <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-2 text-center gap-1">
-                          <RefreshCw className="w-4 h-4 text-purple-400 animate-spin" />
-                          <span className="text-[10px] font-mono font-bold text-purple-300">Scanning Front...</span>
-                        </div>
-                      )}
-                    </div>
+                    </label>
                   </div>
 
-                  {/* Back Upload */}
-                  <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-slate-300 font-extrabold uppercase tracking-wider flex items-center gap-1">
-                        <FileText className="w-3 h-3 text-purple-400" /> Aadhaar Back
-                      </span>
-                      <label className="cursor-pointer px-2 py-0.5 rounded bg-purple-600/30 text-purple-300 border border-purple-500/40 text-[9px] font-bold hover:bg-purple-600/50 transition-all flex items-center gap-1">
-                        <Upload className="w-2.5 h-2.5" /> Upload
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={e => handleAadhaarUpload(e, 'back')}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-
-                    <div className="relative group overflow-hidden rounded-lg border border-slate-800 bg-slate-950">
-                      <img
-                        src={aadhaarBack}
-                        alt="Aadhaar Back"
-                        className="w-full h-24 object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      {isOcrScanning && (
-                        <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-2 text-center gap-1">
-                          <RefreshCw className="w-4 h-4 text-purple-400 animate-spin" />
-                          <span className="text-[10px] font-mono font-bold text-purple-300">Scanning Back...</span>
-                        </div>
-                      )}
-                    </div>
+                  <div className="relative group overflow-hidden rounded-md border border-slate-800 bg-slate-950">
+                    <img
+                      src={aadhaarBack}
+                      alt="Aadhaar Back"
+                      className="w-full h-24 object-cover"
+                    />
+                    {isOcrScanning && (
+                      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center gap-1">
+                        <RefreshCw className="w-3 h-3 text-purple-400 animate-spin" />
+                        <span className="text-[9px] font-mono font-bold text-purple-300">Scanning Back...</span>
+                      </div>
+                    )}
                   </div>
-
                 </div>
               </div>
             </div>
@@ -1204,14 +1099,13 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
 
           {/* TAB 5: AVAILABILITY SCHEDULE */}
           {activeTab === 'schedule' && (
-            <div className="space-y-4 animate-fade-in">
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="space-y-2 animate-fade-in">
+              <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                   <div>
-                    <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    <h3 className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider">
                       Weekly Availability Slots Grid
                     </h3>
-                    <p className="text-[9px] text-slate-500 mt-0.5">Toggle hours when companion accepts live booking requests.</p>
                   </div>
 
                   {/* Schedule Presets */}
@@ -1219,28 +1113,28 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                     <button
                       type="button"
                       onClick={() => applySchedulePreset('weekdays')}
-                      className="px-2 py-0.5 rounded bg-slate-900 hover:bg-purple-900/40 text-slate-300 hover:text-purple-300 text-[9px] font-bold border border-slate-800 hover:border-purple-500/30 transition-all"
+                      className="px-2 py-0.5 rounded bg-slate-900 hover:bg-purple-900/40 text-slate-300 hover:text-purple-300 text-[8.5px] font-bold border border-slate-800 hover:border-purple-500/30 transition-all"
                     >
-                      Weekdays
+                      Weekdays (9am-8pm)
                     </button>
                     <button
                       type="button"
                       onClick={() => applySchedulePreset('weekends')}
-                      className="px-2 py-0.5 rounded bg-slate-900 hover:bg-purple-900/40 text-slate-300 hover:text-purple-300 text-[9px] font-bold border border-slate-800 hover:border-purple-500/30 transition-all"
+                      className="px-2 py-0.5 rounded bg-slate-900 hover:bg-purple-900/40 text-slate-300 hover:text-purple-300 text-[8.5px] font-bold border border-slate-800 hover:border-purple-500/30 transition-all"
                     >
-                      Weekends
+                      Weekends (9am-8pm)
                     </button>
                     <button
                       type="button"
                       onClick={() => applySchedulePreset('both')}
-                      className="px-2 py-0.5 rounded bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 text-[9px] font-bold border border-purple-500/40 transition-all"
+                      className="px-2 py-0.5 rounded bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 text-[8.5px] font-bold border border-purple-500/40 transition-all"
                     >
                       All Days
                     </button>
                     <button
                       type="button"
                       onClick={() => applySchedulePreset('clear')}
-                      className="px-2 py-0.5 rounded bg-slate-900 hover:bg-rose-900/30 text-rose-400 text-[9px] font-bold border border-slate-800 hover:border-rose-500/30 transition-all"
+                      className="px-2 py-0.5 rounded bg-slate-900 hover:bg-rose-900/30 text-rose-400 text-[8.5px] font-bold border border-slate-800 hover:border-rose-500/30 transition-all"
                     >
                       Clear
                     </button>
@@ -1259,16 +1153,16 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
         </form>
 
         {/* Footer Actions */}
-        <div className="px-4 py-2.5 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between shrink-0">
+        <div className="px-4 py-2 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold border border-slate-800 transition-all"
+            className="px-3 py-1 rounded-md bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold border border-slate-800 transition-all cursor-pointer"
           >
             Cancel
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {activeTab !== 'basic' && (
               <button
                 type="button"
@@ -1276,7 +1170,7 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                   const idx = tabs.findIndex(t => t.id === activeTab);
                   if (idx > 0) setActiveTab(tabs[idx - 1].id);
                 }}
-                className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-bold border border-slate-800"
+                className="px-3 py-1 rounded-md bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-bold border border-slate-800 cursor-pointer"
               >
                 Back
               </button>
@@ -1289,7 +1183,7 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                   const idx = tabs.findIndex(t => t.id === activeTab);
                   if (idx < tabs.length - 1) setActiveTab(tabs[idx + 1].id);
                 }}
-                className="px-4 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-extrabold shadow-sm transition-all"
+                className="px-3.5 py-1 rounded-md bg-purple-600 hover:bg-purple-500 text-white text-xs font-extrabold shadow-sm transition-all cursor-pointer"
               >
                 Next Step →
               </button>
@@ -1297,9 +1191,9 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
               <button
                 type="button"
                 onClick={handleFormSubmit}
-                className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-extrabold shadow-sm transition-all flex items-center gap-1.5"
+                className="px-3.5 py-1 rounded-md bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-extrabold shadow-sm transition-all flex items-center gap-1 cursor-pointer"
               >
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" /> Save Profile
+                <CheckCircle2 className="w-3 h-3 text-emerald-300" /> Save Profile
               </button>
             )}
           </div>

@@ -3596,78 +3596,75 @@ export default function AdminDashboardPage() {
 
       {/* 👤 COMPANION PROFILE VIEW DETAILS MODAL */}
       {viewingCompanionProfile && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-fade-in font-sans">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-4 sm:p-5 space-y-3.5 shadow-2xl overflow-y-auto max-h-[86vh] custom-scrollbar">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-3 animate-fade-in font-sans">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-3 sm:p-4 space-y-2.5 shadow-2xl overflow-y-auto max-h-[92vh] custom-scrollbar">
 
-            {/* Modal Header */}
-            <div className="flex items-start justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-3">
+            {/* Modal Header & Avatar */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <div className="flex items-center gap-2.5 min-w-0">
                 <img
                   src={viewingCompanionProfile.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80'}
                   alt={viewingCompanionProfile.name}
                   onClick={() => viewingCompanionProfile.avatar && setLightboxImage(viewingCompanionProfile.avatar)}
-                  className="w-12 h-12 rounded-xl object-cover border-2 border-purple-500/40 shadow-md cursor-pointer hover:opacity-80 transition-opacity shrink-0"
+                  className="w-10 h-10 rounded-lg object-cover border border-purple-500/40 shadow-sm cursor-pointer hover:opacity-80 transition-opacity shrink-0"
                   title="Click to zoom image"
                 />
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <h3 className="text-sm sm:text-base font-extrabold text-white">
+                    <h3 className="text-xs sm:text-sm font-extrabold text-white truncate">
                       {viewingCompanionProfile.name}, {viewingCompanionProfile.age || 25}
                     </h3>
-                    <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold font-mono bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                    <span className="px-1.5 py-0.2 rounded-full text-[8.5px] font-bold font-mono bg-purple-500/20 text-purple-300 border border-purple-500/30">
                       {viewingCompanionProfile.gender || 'Female'}
                     </span>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                     {viewingCompanionProfile.createdSource === 'ADMIN' ? (
-                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[8.5px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40">
-                        <ShieldCheck className="w-2.5 h-2.5 text-purple-400" /> CREATED BY ADMIN
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[8px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                        <ShieldCheck className="w-2 h-2 text-purple-400" /> ADMIN
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[8.5px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                        <User className="w-2.5 h-2.5 text-emerald-400" /> SELF REGISTERED
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[8px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                        <User className="w-2 h-2 text-emerald-400" /> SELF
                       </span>
                     )}
-
-                    <span className="text-[10.5px] text-slate-400 flex items-center gap-0.5 font-medium">
-                      <MapPin className="w-2.5 h-2.5 text-purple-400 shrink-0" />
-                      {viewingCompanionProfile.city || 'Mumbai'}, {viewingCompanionProfile.country || 'India'}
-                    </span>
                   </div>
+
+                  <span className="text-[10px] text-slate-400 flex items-center gap-0.5 font-medium mt-0.5">
+                    <MapPin className="w-2.5 h-2.5 text-purple-400 shrink-0" />
+                    {viewingCompanionProfile.city || 'Mumbai'}, {viewingCompanionProfile.country || 'India'}
+                  </span>
                 </div>
               </div>
 
               <button
                 onClick={() => setViewingCompanionProfile(null)}
-                className="p-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition-all shrink-0 cursor-pointer"
+                className="p-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition-all shrink-0 cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            {/* Quick Metrics Bar */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <div className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-center">
-                <span className="text-[9px] text-slate-500 uppercase font-mono block">Hourly Rate</span>
-                <span className="text-xs sm:text-sm font-extrabold text-emerald-400 font-mono">₹{viewingCompanionProfile.hourlyRate || 1000}/hr</span>
+            {/* Quick Metrics Bar: 4 columns */}
+            <div className="grid grid-cols-4 gap-1.5">
+              <div className="p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-center">
+                <span className="text-[8px] text-slate-500 uppercase font-mono block">Hourly</span>
+                <span className="text-[11px] sm:text-xs font-extrabold text-emerald-400 font-mono">₹{viewingCompanionProfile.hourlyRate || 1000}/hr</span>
               </div>
-              <div className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-center">
-                <span className="text-[9px] text-slate-500 uppercase font-mono block">Bookings</span>
-                <span className="text-xs sm:text-sm font-extrabold text-white font-mono">{viewingCompanionProfile.completedBookings || 0} Done</span>
+              <div className="p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-center">
+                <span className="text-[8px] text-slate-500 uppercase font-mono block">Bookings</span>
+                <span className="text-[11px] sm:text-xs font-extrabold text-white font-mono">{viewingCompanionProfile.completedBookings || 0} Done</span>
               </div>
-              <div className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-center">
-                <span className="text-[9px] text-slate-500 uppercase font-mono block">Rating</span>
-                <span className="text-xs sm:text-sm font-extrabold text-amber-400 flex items-center justify-center gap-0.5">
-                  <Star className="w-3 h-3 fill-amber-400" /> {viewingCompanionProfile.ratingAvg || 5.0}
+              <div className="p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-center">
+                <span className="text-[8px] text-slate-500 uppercase font-mono block">Rating</span>
+                <span className="text-[11px] sm:text-xs font-extrabold text-amber-400 flex items-center justify-center gap-0.5">
+                  <Star className="w-2.5 h-2.5 fill-amber-400" /> {viewingCompanionProfile.ratingAvg || 5.0}
                 </span>
               </div>
-              <div className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-center">
-                <span className="text-[9px] text-slate-500 uppercase font-mono block">Status</span>
+              <div className="p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-center flex flex-col justify-center items-center">
+                <span className="text-[8px] text-slate-500 uppercase font-mono block">Status</span>
                 <button
                   type="button"
                   onClick={() => handleToggleCompanionStatus(viewingCompanionProfile.id)}
-                  className={`mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold font-mono border transition-all cursor-pointer ${viewingCompanionProfile.status === 'ACTIVE'
+                  className={`mt-0.5 px-1.5 py-0.2 rounded-full text-[8.5px] font-bold font-mono border transition-all cursor-pointer ${viewingCompanionProfile.status === 'ACTIVE'
                       ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
                       : 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30'
                     }`}
@@ -3677,72 +3674,76 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            {/* Bio */}
-            {viewingCompanionProfile.bio && (
-              <div className="space-y-1">
-                <h4 className="text-[10px] font-bold text-slate-400 uppercase font-mono">About / Bio</h4>
-                <p className="text-[11px] text-slate-300 bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 leading-relaxed">
-                  {viewingCompanionProfile.bio}
-                </p>
-              </div>
-            )}
-
-            {/* Categories & Languages */}
+            {/* Middle 2-Column Section */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <div className="space-y-1">
-                <h4 className="text-[10px] font-bold text-slate-400 uppercase font-mono">Categories</h4>
-                <div className="flex flex-wrap gap-1">
-                  {(viewingCompanionProfile.categories || ['Event Companion']).map((cat: string, idx: number) => (
-                    <span key={idx} className="px-2 py-0.5 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-300 text-[10px] font-medium">
-                      {cat}
-                    </span>
-                  ))}
+              {/* Left Column: Bio & Categories */}
+              <div className="space-y-2">
+                {viewingCompanionProfile.bio && (
+                  <div className="space-y-0.5">
+                    <h4 className="text-[9.5px] font-bold text-slate-400 uppercase font-mono">About / Bio</h4>
+                    <p className="text-[10.5px] text-slate-300 bg-slate-950 p-2 rounded-lg border border-slate-800/80 leading-relaxed max-h-20 overflow-y-auto custom-scrollbar">
+                      {viewingCompanionProfile.bio}
+                    </p>
+                  </div>
+                )}
+
+                <div className="space-y-0.5">
+                  <h4 className="text-[9.5px] font-bold text-slate-400 uppercase font-mono">Categories</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {(viewingCompanionProfile.categories || ['Event Companion']).map((cat: string, idx: number) => (
+                      <span key={idx} className="px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/20 text-purple-300 text-[9.5px] font-medium">
+                        {cat}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <h4 className="text-[10px] font-bold text-slate-400 uppercase font-mono">Languages</h4>
-                <div className="flex flex-wrap gap-1">
-                  {(viewingCompanionProfile.languages || ['English', 'Hindi']).map((lang: string, idx: number) => (
-                    <span key={idx} className="px-2 py-0.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-[10px] font-medium">
-                      {lang}
-                    </span>
-                  ))}
+              {/* Right Column: Languages & Photo Gallery */}
+              <div className="space-y-2">
+                <div className="space-y-0.5">
+                  <h4 className="text-[9.5px] font-bold text-slate-400 uppercase font-mono">Languages</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {(viewingCompanionProfile.languages || ['English', 'Hindi']).map((lang: string, idx: number) => (
+                      <span key={idx} className="px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-[9.5px] font-medium">
+                        {lang}
+                      </span>
+                    ))}
+                  </div>
                 </div>
+
+                {viewingCompanionProfile.photos && viewingCompanionProfile.photos.length > 0 && (
+                  <div className="space-y-0.5">
+                    <h4 className="text-[9.5px] font-bold text-slate-400 uppercase font-mono">Photo Gallery ({viewingCompanionProfile.photos.length})</h4>
+                    <div className="flex items-center gap-1 overflow-x-auto pb-0.5 custom-scrollbar">
+                      {viewingCompanionProfile.photos.map((photo: string, idx: number) => (
+                        <img
+                          key={idx}
+                          src={photo}
+                          alt={`Photo ${idx + 1}`}
+                          onClick={() => setLightboxImage(photo)}
+                          className="w-9 h-9 rounded-md object-cover border border-slate-800 hover:border-purple-500/50 cursor-pointer transition-all shrink-0 hover:scale-105"
+                          title="Click to preview full size"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Photo Gallery Thumbnails */}
-            {viewingCompanionProfile.photos && viewingCompanionProfile.photos.length > 0 && (
-              <div className="space-y-1">
-                <h4 className="text-[10px] font-bold text-slate-400 uppercase font-mono">Photo Gallery ({viewingCompanionProfile.photos.length})</h4>
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
-                  {viewingCompanionProfile.photos.map((photo: string, idx: number) => (
-                    <img
-                      key={idx}
-                      src={photo}
-                      alt={`Photo ${idx + 1}`}
-                      onClick={() => setLightboxImage(photo)}
-                      className="w-11 h-11 rounded-lg object-cover border border-slate-800 hover:border-purple-500/50 cursor-pointer transition-all shrink-0 hover:scale-105"
-                      title="Click to preview full size"
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Footer Buttons */}
-            <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-800 flex-wrap">
+            <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-slate-800 flex-wrap">
               <Link
                 href={`/companion/${viewingCompanionProfile.id}`}
                 target="_blank"
-                className="px-3 py-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 text-indigo-400 hover:text-white border border-slate-800 text-xs font-bold transition-all flex items-center gap-1"
+                className="px-2.5 py-1 rounded-md bg-slate-950 hover:bg-slate-800 text-indigo-400 hover:text-white border border-slate-800 text-[10.5px] font-bold transition-all flex items-center gap-1"
               >
                 <span>Open Public Page</span>
-                <ExternalLink className="w-3 h-3" />
+                <ExternalLink className="w-2.5 h-2.5" />
               </Link>
 
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={() => {
@@ -3750,15 +3751,15 @@ export default function AdminDashboardPage() {
                     setViewingCompanionProfile(null);
                     setEditingCompanionModalData(compToEdit);
                   }}
-                  className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-all flex items-center gap-1 shadow-sm cursor-pointer"
+                  className="px-2.5 py-1 rounded-md bg-purple-600 hover:bg-purple-500 text-white text-[10.5px] font-bold transition-all flex items-center gap-1 shadow-sm cursor-pointer"
                 >
-                  <Pencil className="w-3 h-3" />
+                  <Pencil className="w-2.5 h-2.5" />
                   <span>Edit Profile</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setViewingCompanionProfile(null)}
-                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold transition-all cursor-pointer"
+                  className="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[10.5px] font-bold transition-all cursor-pointer"
                 >
                   Close
                 </button>
