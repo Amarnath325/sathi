@@ -497,15 +497,15 @@ export function UserManagementModule() {
       )}
 
       {/* 🏷️ SUBMODULE NAVIGATION TABS */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {[
           { id: 'all', label: 'All Users', count: totalCount },
-          { id: 'customers', label: 'Customers Users', count: customersCount },
-          { id: 'companions', label: 'Companions Users', count: companionsCount },
-          { id: 'pending', label: 'Pending Users', count: pendingCount },
-          { id: 'restricted', label: 'Restricted Users', count: restrictedCount },
-          { id: 'suspended', label: 'Suspended Users', count: suspendedCount },
-          { id: 'banned', label: 'Banned Users', count: bannedCount },
+          { id: 'customers', label: 'Customers', count: customersCount },
+          { id: 'companions', label: 'Companions', count: companionsCount },
+          { id: 'pending', label: 'Pending', count: pendingCount },
+          { id: 'restricted', label: 'Restricted', count: restrictedCount },
+          { id: 'suspended', label: 'Suspended', count: suspendedCount },
+          { id: 'banned', label: 'Banned', count: bannedCount },
         ].map((tab) => {
           const isActive = activeSubFilter === tab.id;
           return (
@@ -515,14 +515,14 @@ export function UserManagementModule() {
                 setActiveSubFilter(tab.id as UserSubFilter);
                 setCurrentPage(1);
               }}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 border shrink-0 ${
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all flex items-center gap-1.5 border shrink-0 cursor-pointer ${
                 isActive
-                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold border-purple-500 shadow-lg shadow-purple-600/25'
+                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold border-purple-500 shadow-sm shadow-purple-600/25'
                   : 'bg-slate-900/90 text-slate-400 hover:text-white border-slate-800 hover:border-slate-700'
               }`}
             >
               <span>{tab.label}</span>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold ${isActive ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'}`}>
+              <span className={`text-[9px] px-1 py-0.2 rounded-full font-mono font-bold ${isActive ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'}`}>
                 {tab.count}
               </span>
             </button>
@@ -530,28 +530,28 @@ export function UserManagementModule() {
         })}
       </div>
 
-      {/* 🎛️ MASTER CONTROL MANAGEMENT PANEL TOOLBAR (Matches Screenshot EXACTLY!) */}
-      <div className="glass-panel p-5 rounded-3xl border border-slate-800 space-y-4">
+      {/* 🎛️ MASTER CONTROL MANAGEMENT PANEL TOOLBAR */}
+      <div className="glass-panel p-2.5 sm:p-3 rounded-xl border border-slate-800 space-y-2">
         
         {/* Panel Title & Active Directory vs Trash Bin Mode Toggle */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-600/20 text-purple-400 border border-purple-500/30 flex items-center justify-center font-bold">
-              <Layers className="w-5 h-5" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-lg bg-purple-600/20 text-purple-400 border border-purple-500/30 flex items-center justify-center font-bold shrink-0">
+              <Layers className="w-3.5 h-3.5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                User Directory Master Control Management Panel
+              <h3 className="text-xs font-bold text-white flex items-center gap-1.5 leading-tight">
+                User Directory Master Control
               </h3>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[9.5px] text-slate-400 leading-tight">
                 {viewTrashBin ? `Trash Bin (${trashCount} soft deleted)` : `Active Directory (${displayedUsers.length} records)`}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap">
             {/* View Mode Switcher (Grid vs Table) */}
-            <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
+            <div className="flex items-center bg-slate-950 p-0.5 rounded-lg border border-slate-800 shrink-0">
               <button
                 type="button"
                 onClick={() => {
@@ -559,14 +559,14 @@ export function UserManagementModule() {
                   setPageSize('10');
                   setCurrentPage(1);
                 }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                className={`px-2 py-1 rounded-md text-[10.5px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
                   userViewMode === 'table'
-                    ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                    ? 'bg-purple-600 text-white shadow-sm'
                     : 'text-slate-400 hover:text-white'
                 }`}
                 title="Table View (10 items per page)"
               >
-                <List className="w-3.5 h-3.5" />
+                <List className="w-3 h-3" />
                 <span className="hidden md:inline">Table (10)</span>
               </button>
               <button
@@ -576,59 +576,59 @@ export function UserManagementModule() {
                   setPageSize('12');
                   setCurrentPage(1);
                 }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                className={`px-2 py-1 rounded-md text-[10.5px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
                   userViewMode === 'grid'
-                    ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                    ? 'bg-purple-600 text-white shadow-sm'
                     : 'text-slate-400 hover:text-white'
                 }`}
                 title="Grid View (12 items per page)"
               >
-                <LayoutGrid className="w-3.5 h-3.5" />
+                <LayoutGrid className="w-3 h-3" />
                 <span className="hidden md:inline">Grid (12)</span>
               </button>
             </div>
 
             <button 
               onClick={() => setViewTrashBin(false)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${!viewTrashBin ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30' : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'}`}
+              className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${!viewTrashBin ? 'bg-purple-600 text-white shadow-sm' : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'}`}
             >
               Active ({totalCount})
             </button>
             <button 
               onClick={() => setViewTrashBin(true)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${viewTrashBin ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30' : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'}`}
+              className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold transition-all flex items-center gap-1 cursor-pointer ${viewTrashBin ? 'bg-rose-600 text-white shadow-sm' : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'}`}
             >
-              <Archive className="w-3.5 h-3.5" /> Trash ({trashCount})
+              <Archive className="w-3 h-3" /> Trash ({trashCount})
             </button>
           </div>
         </div>
 
         {/* 🔍 SEARCH BAR & ACTION TOOLBAR BUTTONS */}
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-3 text-xs">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-2 text-xs">
           
-          <div className="flex items-center gap-2 w-full lg:w-auto flex-1 max-w-lg">
+          <div className="flex items-center gap-1.5 w-full lg:w-auto flex-1 max-w-md">
             {/* 🔍 Search Input Box */}
             <div className="relative flex-1">
-              <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Search by name, email, phone, city..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 pl-9 pr-4 text-xs text-white placeholder-slate-500 outline-none focus:border-purple-500 transition-all"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg h-7.5 py-1 pl-8 pr-3 text-[11.5px] text-white placeholder-slate-500 outline-none focus:border-purple-500 transition-all"
               />
             </div>
 
             {/* Page Size / Limit Dropdown (RIGHT SIDE OF SEARCH) */}
-            <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 shrink-0 text-xs">
-              <span className="text-[11px] text-slate-400 font-bold hidden sm:inline">Show:</span>
+            <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg px-2 h-7.5 shrink-0 text-[10.5px]">
+              <span className="text-[10px] text-slate-400 font-bold hidden sm:inline">Show:</span>
               <select
                 value={pageSize}
                 onChange={(e) => {
                   setPageSize(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="bg-transparent text-white font-bold outline-none cursor-pointer text-xs"
+                className="bg-transparent text-white font-bold outline-none cursor-pointer text-[10.5px]"
               >
                 <option value="10" className="bg-slate-900 text-white">10</option>
                 <option value="12" className="bg-slate-900 text-white">12</option>
@@ -641,20 +641,20 @@ export function UserManagementModule() {
           </div>
 
           {/* Action Toolbar Buttons */}
-          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-end">
+          <div className="flex flex-wrap items-center gap-1.5 w-full lg:w-auto justify-end">
 
             {!viewTrashBin && (
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-600/25 flex items-center gap-1.5 shrink-0"
+                className="h-7 px-2.5 py-1 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-[11px] shadow-sm flex items-center gap-1 shrink-0 cursor-pointer"
               >
-                <Plus className="w-3.5 h-3.5" /> Create New
+                <Plus className="w-3 h-3" /> Create New
               </button>
             )}
 
             {/* Import Data */}
-            <label className="px-3 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 text-xs font-bold border border-slate-800 cursor-pointer flex items-center gap-1.5 shrink-0">
-              <Upload className="w-3.5 h-3.5 text-indigo-400" />
+            <label className="h-7 px-2.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-300 text-[11px] font-bold border border-slate-800 cursor-pointer flex items-center gap-1 shrink-0">
+              <Upload className="w-3 h-3 text-indigo-400" />
               <span>Import Data</span>
               <input type="file" accept=".csv, .xlsx" onChange={handleFileUpload} className="hidden" />
             </label>
@@ -662,45 +662,36 @@ export function UserManagementModule() {
             {/* Export Sheet */}
             <button
               onClick={handleExportCSV}
-              className="px-3 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-emerald-400 border border-slate-800 text-xs font-bold flex items-center gap-1.5 shrink-0"
+              className="h-7 px-2.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-emerald-400 border border-slate-800 text-[11px] font-bold flex items-center gap-1 shrink-0 cursor-pointer"
             >
-              <Download className="w-3.5 h-3.5" /> Export Sheet
+              <Download className="w-3 h-3" /> Export Sheet
             </button>
 
             {/* Export Excel */}
             <button
               onClick={handleExportXLSX}
-              className="px-3 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-indigo-400 border border-slate-800 text-xs font-bold flex items-center gap-1.5 shrink-0"
+              className="h-7 px-2.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-indigo-400 border border-slate-800 text-[11px] font-bold flex items-center gap-1 shrink-0 cursor-pointer"
             >
-              <FileSpreadsheet className="w-3.5 h-3.5" /> Export Excel
+              <FileSpreadsheet className="w-3 h-3" /> Export Excel
             </button>
 
             {/* Export PDF (Opens PDF Printable Preview Modal) */}
             <button
               onClick={() => setShowPdfModal(true)}
-              className="px-3 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-rose-400 border border-slate-800 text-xs font-bold flex items-center gap-1.5 shrink-0"
+              className="h-7 px-2.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-rose-400 border border-slate-800 text-[11px] font-bold flex items-center gap-1 shrink-0 cursor-pointer"
             >
-              <FileText className="w-3.5 h-3.5" /> Export PDF
+              <FileText className="w-3 h-3" /> Export PDF
             </button>
 
-            <div className="h-4 w-px bg-slate-800 mx-1 hidden sm:block" />
+            <div className="h-3 w-px bg-slate-800 mx-0.5 hidden sm:block" />
 
             {/* Sample Sheet */}
             <button
               onClick={() => handleDownloadSample('csv')}
-              className="px-2.5 py-2 rounded-xl bg-slate-950 text-slate-400 hover:text-white border border-slate-800 text-[11px] font-mono shrink-0"
+              className="h-7 px-2 py-1 rounded-lg bg-slate-950 text-slate-400 hover:text-white border border-slate-800 text-[10px] font-mono shrink-0 cursor-pointer"
               title="Download Sample Template"
             >
-              Sample Template
-            </button>
-
-            {/* Sample Excel */}
-            <button
-              onClick={() => handleDownloadSample('xlsx')}
-              className="px-2.5 py-2 rounded-xl bg-slate-950 text-slate-400 hover:text-white border border-slate-800 text-[11px] font-mono shrink-0"
-              title="Download Sample Excel Template"
-            >
-              Sample Excel
+              Template
             </button>
           </div>
 
@@ -710,22 +701,22 @@ export function UserManagementModule() {
 
       {/* 📋 MASTER DATA: TABLE OR GRID VIEW */}
       {userViewMode === 'table' ? (
-        <div className="rounded-3xl bg-slate-900 border border-slate-800 overflow-hidden shadow-2xl">
+        <div className="rounded-xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg">
           <div className="overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse text-[11.5px] text-slate-300">
               <thead>
-                <tr className="border-b border-slate-800 bg-slate-950 text-[11px] font-mono text-slate-400 uppercase tracking-wider">
-                  <th className="py-4 px-5">User</th>
-                  <th className="py-4 px-5">Role</th>
-                  <th className="py-4 px-5">Location</th>
-                  <th className="py-4 px-5">Status</th>
-                  <th className="py-4 px-5 text-right">Actions</th>
+                <tr className="border-b border-slate-800 bg-slate-950 text-[9.5px] font-mono text-slate-400 uppercase tracking-wider">
+                  <th className="py-2.5 px-3">User</th>
+                  <th className="py-2.5 px-3">Role</th>
+                  <th className="py-2.5 px-3">Location</th>
+                  <th className="py-2.5 px-3">Status</th>
+                  <th className="py-2.5 px-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/70 text-xs">
+              <tbody className="divide-y divide-slate-800/70 text-[11px]">
                 {paginatedUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-12 text-center text-slate-500 font-medium">
+                    <td colSpan={5} className="py-8 text-center text-slate-500 font-medium text-xs">
                       No user records found in {viewTrashBin ? 'Trash Bin' : activeSubFilter.toUpperCase()}.
                     </td>
                   </tr>
@@ -734,27 +725,27 @@ export function UserManagementModule() {
                     return (
                       <tr key={user.id} className="hover:bg-slate-800/40 transition-colors">
                         
-                        <td className="py-4 px-5">
-                          <div className="flex items-center gap-3">
+                        <td className="py-2 px-3">
+                          <div className="flex items-center gap-2">
                             <img
                               src={user.avatar}
                               alt={user.name}
-                              className="w-10 h-10 rounded-2xl object-cover border border-purple-500/40"
+                              className="w-7 h-7 rounded-lg object-cover border border-purple-500/40 shrink-0"
                             />
                             <div>
-                              <p className="font-bold text-white text-sm flex items-center gap-1.5">
+                              <p className="font-bold text-white text-[11.5px] flex items-center gap-1">
                                 {user.name}
                                 {user.role === 'VERIFIED_COMPANION' && (
-                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                  <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" />
                                 )}
                               </p>
-                              <p className="text-[10px] text-slate-400 font-mono">{user.email}</p>
+                              <p className="text-[9px] text-slate-400 font-mono">{user.email}</p>
                             </div>
                           </div>
                         </td>
 
-                        <td className="py-4 px-5">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold font-mono border ${
+                        <td className="py-2 px-3">
+                          <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold font-mono border ${
                             user.role === 'ADMIN'
                               ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
                               : user.role === 'VERIFIED_COMPANION'
@@ -765,12 +756,12 @@ export function UserManagementModule() {
                           </span>
                         </td>
 
-                        <td className="py-4 px-5 text-slate-300 font-medium">
+                        <td className="py-2 px-3 text-slate-300 font-medium">
                           {user.city}, {user.country}
                         </td>
 
-                        <td className="py-4 px-5">
-                          <span className={`px-3 py-1 rounded-full text-[10px] font-extrabold border ${
+                        <td className="py-2 px-3">
+                          <span className={`px-2 py-0.2 rounded-full text-[9px] font-extrabold border ${
                             user.status === 'BANNED'
                               ? 'bg-red-600 text-white border-red-500'
                               : user.status === 'SUSPENDED'
@@ -785,7 +776,7 @@ export function UserManagementModule() {
                           </span>
                         </td>
 
-                        <td className="py-4 px-5 text-right space-x-2">
+                        <td className="py-2 px-3 text-right space-x-1">
                           {!viewTrashBin ? (
                             <>
                               <button
@@ -793,21 +784,21 @@ export function UserManagementModule() {
                                   setViewingUser(user);
                                   setDrawerTab('profile');
                                 }}
-                                className="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 font-bold"
+                                className="h-6 px-2 py-0.5 rounded-md bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 font-bold text-[10px] cursor-pointer"
                               >
-                                View Profile
+                                View
                               </button>
 
                               <button
                                 onClick={() => handleOpenEdit(user)}
-                                className="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-purple-600/20 text-purple-300 hover:text-white border border-slate-800 font-bold"
+                                className="h-6 px-2 py-0.5 rounded-md bg-slate-950 hover:bg-purple-600/20 text-purple-300 hover:text-white border border-slate-800 font-bold text-[10px] cursor-pointer"
                               >
-                                Edit Profile
+                                Edit
                               </button>
 
                               <button
                                 onClick={() => handleToggleSuspend(user)}
-                                className={`px-3 py-1.5 rounded-xl font-bold border ${
+                                className={`h-6 px-2 py-0.5 rounded-md font-bold text-[10px] border cursor-pointer ${
                                   suspendedIds.includes(user.id) || user.status === 'SUSPENDED'
                                     ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                                     : 'bg-slate-950 text-slate-300 hover:text-white border-slate-800'
@@ -818,7 +809,7 @@ export function UserManagementModule() {
 
                               <button
                                 onClick={() => handleSoftDelete(user)}
-                                className="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-rose-600/20 text-slate-400 hover:text-rose-300 border border-slate-800 font-bold"
+                                className="h-6 px-2 py-0.5 rounded-md bg-slate-950 hover:bg-rose-600/20 text-slate-400 hover:text-rose-300 border border-slate-800 font-bold text-[10px] cursor-pointer"
                                 title="Move to Trash"
                               >
                                 Trash
@@ -827,7 +818,7 @@ export function UserManagementModule() {
                           ) : (
                             <button
                               onClick={() => handleRestoreFromTrash(user)}
-                              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
+                              className="h-6 px-2.5 py-0.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] cursor-pointer"
                             >
                               Restore
                             </button>
@@ -844,34 +835,34 @@ export function UserManagementModule() {
         </div>
       ) : (
         /* GRID VIEW (12 PER PAGE) */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5">
           {paginatedUsers.length === 0 ? (
-            <div className="col-span-full py-12 text-center text-slate-500 font-medium rounded-3xl bg-slate-900 border border-slate-800">
+            <div className="col-span-full py-8 text-center text-slate-500 font-medium rounded-xl bg-slate-900 border border-slate-800 text-xs">
               No user records found in {viewTrashBin ? 'Trash Bin' : activeSubFilter.toUpperCase()}.
             </div>
           ) : (
             paginatedUsers.map((user) => (
-              <div key={user.id} className="p-5 rounded-3xl bg-slate-900 border border-slate-800 hover:border-purple-500/40 transition-all flex flex-col justify-between space-y-4">
-                <div className="flex items-center gap-3.5">
+              <div key={user.id} className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-purple-500/40 transition-all flex flex-col justify-between space-y-2">
+                <div className="flex items-center gap-2.5">
                   <img
                     src={user.avatar}
                     alt={user.name}
-                    className="w-12 h-12 rounded-2xl object-cover border border-purple-500/40 shrink-0"
+                    className="w-8 h-8 rounded-lg object-cover border border-purple-500/40 shrink-0"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="font-bold text-white text-sm flex items-center gap-1.5 truncate">
+                    <p className="font-bold text-white text-[11.5px] flex items-center gap-1 truncate">
                       {user.name}
                       {user.role === 'VERIFIED_COMPANION' && (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
                       )}
                     </p>
-                    <p className="text-[11px] text-slate-400 font-mono truncate">{user.email}</p>
-                    <p className="text-[10px] text-slate-500 font-mono mt-0.5">{user.phone}</p>
+                    <p className="text-[9px] text-slate-400 font-mono truncate">{user.email}</p>
+                    <p className="text-[8.5px] text-slate-500 font-mono">{user.phone}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs">
-                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono border ${
+                <div className="flex items-center justify-between pt-1 border-t border-slate-800/80 text-[9.5px]">
+                  <span className={`px-1.5 py-0.2 rounded-full font-bold font-mono border ${
                     user.role === 'ADMIN'
                       ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
                       : user.role === 'VERIFIED_COMPANION'
@@ -881,7 +872,7 @@ export function UserManagementModule() {
                     {user.role === 'VERIFIED_COMPANION' ? 'COMPANION' : user.role}
                   </span>
 
-                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${
+                  <span className={`px-1.5 py-0.2 rounded-full font-extrabold border ${
                     user.status === 'BANNED'
                       ? 'bg-red-600 text-white border-red-500'
                       : user.status === 'SUSPENDED'
@@ -896,55 +887,27 @@ export function UserManagementModule() {
                   </span>
                 </div>
 
-                <div className="flex items-center gap-1 text-[11px] text-slate-400">
-                  <MapPin className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-                  <span>{user.city}, {user.country}</span>
+                <div className="flex items-center gap-1 text-[9.5px] text-slate-400">
+                  <MapPin className="w-3 h-3 text-purple-400 shrink-0" />
+                  <span className="truncate">{user.city}, {user.country}</span>
                 </div>
 
-                <div className="pt-3 border-t border-slate-800 flex items-center justify-end gap-1.5 flex-wrap">
-                  {!viewTrashBin ? (
-                    <>
-                      <button
-                        onClick={() => {
-                          setViewingUser(user);
-                          setDrawerTab('profile');
-                        }}
-                        className="px-2.5 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 text-xs font-bold border border-slate-800"
-                      >
-                        Profile
-                      </button>
-                      <button
-                        onClick={() => handleOpenEdit(user)}
-                        className="px-2.5 py-1.5 rounded-xl bg-slate-950 hover:bg-purple-600/20 text-purple-300 text-xs font-bold border border-slate-800"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleToggleSuspend(user)}
-                        className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border ${
-                          suspendedIds.includes(user.id) || user.status === 'SUSPENDED'
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                            : 'bg-slate-950 text-slate-300 hover:text-white border-slate-800'
-                        }`}
-                      >
-                        {suspendedIds.includes(user.id) || user.status === 'SUSPENDED' ? 'Unsuspend' : 'Suspend'}
-                      </button>
-                      <button
-                        onClick={() => handleSoftDelete(user)}
-                        className="px-2 py-1.5 rounded-xl bg-slate-950 hover:bg-rose-600/20 text-slate-400 hover:text-rose-300 border border-slate-800 text-xs font-bold"
-                        title="Move to Trash"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => handleRestoreFromTrash(user)}
-                      className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold"
-                    >
-                      Restore
-                    </button>
-                  )}
+                <div className="flex items-center gap-1 pt-1 border-t border-slate-800/80">
+                  <button
+                    onClick={() => {
+                      setViewingUser(user);
+                      setDrawerTab('profile');
+                    }}
+                    className="flex-1 py-0.5 rounded-md bg-slate-950 hover:bg-slate-800 text-slate-300 text-[9.5px] font-bold border border-slate-800 cursor-pointer"
+                  >
+                    View
+                  </button>
+                  <button
+                    onClick={() => handleOpenEdit(user)}
+                    className="flex-1 py-0.5 rounded-md bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 text-[9.5px] font-bold border border-purple-500/30 cursor-pointer"
+                  >
+                    Edit
+                  </button>
                 </div>
               </div>
             ))
@@ -953,11 +916,11 @@ export function UserManagementModule() {
       )}
 
       {/* 🔢 PAGINATION & ROWS PER PAGE CONTROL BAR */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-slate-400">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-2 p-2 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-slate-400">
         
         {/* Page Size Dropdown Selector */}
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
+          <div className="flex items-center gap-1.5">
             <span className="font-semibold text-slate-400">Rows per page:</span>
             <select
               value={pageSize}
@@ -965,7 +928,7 @@ export function UserManagementModule() {
                 setPageSize(e.target.value);
                 setCurrentPage(1);
               }}
-              className="bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-white font-bold font-mono outline-none focus:border-purple-500 cursor-pointer"
+              className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-0.5 text-white font-bold font-mono outline-none focus:border-purple-500 cursor-pointer text-xs"
             >
               <option value="10">10</option>
               <option value="12">12</option>

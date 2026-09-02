@@ -1461,64 +1461,62 @@ export default function AdminDashboardPage() {
           {/* MODULE 6: 📅 BOOKING & ESCROW MANAGEMENT              */}
           {/* ==================================================== */}
           {activeTab === 'bookings' && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Header Metrics */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span>Total Bookings Ticket Volume</span>
-                    <Calendar className="w-4 h-4 text-indigo-400" />
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                  <div className="flex items-center justify-between text-[10px] text-slate-400">
+                    <span>Total Bookings</span>
+                    <Calendar className="w-3.5 h-3.5 text-indigo-400" />
                   </div>
-                  <div className="text-2xl font-black text-white font-mono">{bookings.length}</div>
-                  <p className="text-[10px] text-slate-500">Across all platform categories</p>
+                  <div className="text-base font-extrabold text-white font-mono">{bookings.length}</div>
+                  <p className="text-[9px] text-slate-500">Across all categories</p>
                 </div>
 
-                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span>Bank Escrow Vault Held</span>
-                    <Lock className="w-4 h-4 text-amber-400" />
+                <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                  <div className="flex items-center justify-between text-[10px] text-slate-400">
+                    <span>Escrow Vault Held</span>
+                    <Lock className="w-3.5 h-3.5 text-amber-400" />
                   </div>
-                  <div className="text-2xl font-black text-amber-400 font-mono">
+                  <div className="text-base font-extrabold text-amber-400 font-mono">
                     ${bookings.filter((b: BookingDetails) => b.escrowStatus === 'HELD').reduce((acc: number, b: BookingDetails) => acc + b.totalAmount, 0).toLocaleString()}.00
                   </div>
-
-                  <p className="text-[10px] text-amber-400/80 font-bold">Secured in Partner Bank Escrow</p>
+                  <p className="text-[9px] text-amber-400/80 font-bold">Secured in Partner Bank</p>
                 </div>
 
-                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-400">
+                <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                  <div className="flex items-center justify-between text-[10px] text-slate-400">
                     <span>Active Live Meetups</span>
-                    <Clock className="w-4 h-4 text-emerald-400 animate-pulse" />
+                    <Clock className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
                   </div>
-                  <div className="text-2xl font-black text-emerald-400 font-mono">
+                  <div className="text-base font-extrabold text-emerald-400 font-mono">
                     {bookings.filter((b: BookingDetails) => b.status === 'IN_PROGRESS').length}
                   </div>
-                  <p className="text-[10px] text-emerald-400/80 font-bold">GPS Live Location Monitoring Active</p>
+                  <p className="text-[9px] text-emerald-400/80 font-bold">GPS Live Tracking Active</p>
                 </div>
 
-                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span>Platform Service Revenue</span>
-                    <DollarSign className="w-4 h-4 text-indigo-400" />
+                <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                  <div className="flex items-center justify-between text-[10px] text-slate-400">
+                    <span>Platform Commission</span>
+                    <DollarSign className="w-3.5 h-3.5 text-indigo-400" />
                   </div>
-                  <div className="text-2xl font-black text-indigo-400 font-mono">
+                  <div className="text-base font-extrabold text-indigo-400 font-mono">
                     ${bookings.reduce((acc: number, b: BookingDetails) => acc + (b.platformFee || 0), 0).toLocaleString()}.00
                   </div>
-
-                  <p className="text-[10px] text-slate-500">From 10% platform commission fee</p>
+                  <p className="text-[9px] text-slate-500">From 10% platform fee</p>
                 </div>
               </div>
 
               {/* Sub-Filter Tabs & Search Toolbar */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900 p-4 rounded-3xl border border-slate-800">
-                <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   {[
                     { id: 'all-bookings', label: 'All Bookings' },
                     { id: 'pending', label: 'Pending' },
                     { id: 'escrow-locked', label: 'Escrow Locked' },
                     { id: 'in-progress', label: 'Active Live' },
                     { id: 'completed', label: 'Completed' },
-                    { id: 'cancelled', label: 'Cancelled & Refunded' }
+                    { id: 'cancelled', label: 'Cancelled' }
                   ].map((tab) => (
                     <button
                       key={tab.id}
@@ -1526,8 +1524,8 @@ export default function AdminDashboardPage() {
                         setSubFilter(tab.id);
                         setCurrentPage(1);
                       }}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${subFilter === tab.id
-                          ? 'gradient-bg-primary text-white font-bold shadow-md shadow-indigo-600/30'
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all cursor-pointer ${subFilter === tab.id
+                          ? 'gradient-bg-primary text-white shadow-sm'
                           : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
                         }`}
                     >
@@ -1536,9 +1534,9 @@ export default function AdminDashboardPage() {
                   ))}
                 </div>
 
-                <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap w-full sm:w-auto justify-end">
+                <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap w-full sm:w-auto justify-end">
                   {/* Grid vs Table View Mode Switcher */}
-                  <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
+                  <div className="flex items-center bg-slate-950 p-0.5 rounded-lg border border-slate-800 shrink-0">
                     <button
                       type="button"
                       onClick={() => {
@@ -1546,13 +1544,13 @@ export default function AdminDashboardPage() {
                         setPageSize(12);
                         setCurrentPage(1);
                       }}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${bookingViewMode === 'grid'
-                          ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                      className={`px-2 py-1 rounded-md text-[10.5px] font-bold transition-all flex items-center gap-1 cursor-pointer ${bookingViewMode === 'grid'
+                          ? 'bg-purple-600 text-white shadow-sm'
                           : 'text-slate-400 hover:text-white'
                         }`}
                       title="Grid View (12 items per page)"
                     >
-                      <LayoutGrid className="w-3.5 h-3.5" />
+                      <LayoutGrid className="w-3 h-3" />
                       <span className="hidden md:inline">Grid (12)</span>
                     </button>
                     <button
@@ -1562,22 +1560,22 @@ export default function AdminDashboardPage() {
                         setPageSize(10);
                         setCurrentPage(1);
                       }}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${bookingViewMode === 'table'
-                          ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                      className={`px-2 py-1 rounded-md text-[10.5px] font-bold transition-all flex items-center gap-1 cursor-pointer ${bookingViewMode === 'table'
+                          ? 'bg-purple-600 text-white shadow-sm'
                           : 'text-slate-400 hover:text-white'
                         }`}
                       title="Table View (10 items per page)"
                     >
-                      <List className="w-3.5 h-3.5" />
+                      <List className="w-3 h-3" />
                       <span className="hidden md:inline">Table (10)</span>
                     </button>
                   </div>
 
                   <button
                     onClick={() => setIsBookingFormOpen(true)}
-                    className="px-4 py-2 rounded-xl gradient-bg-primary text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 flex items-center gap-1.5 justify-center transition-all hover:scale-[1.02] shrink-0"
+                    className="h-7 px-2.5 py-1 rounded-lg gradient-bg-primary text-white font-bold text-[11px] shadow-sm flex items-center gap-1 justify-center transition-all shrink-0 cursor-pointer"
                   >
-                    <Plus className="w-4 h-4" /> Create Manual Booking
+                    <Plus className="w-3 h-3" /> Create Booking
                   </button>
                 </div>
               </div>
@@ -1624,56 +1622,56 @@ export default function AdminDashboardPage() {
                   : filtered.slice((currentPage - 1) * effectiveLimit, currentPage * effectiveLimit);
 
                 return (
-                  <div className="space-y-6">
+                  <div className="space-y-4">
                     {bookingViewMode === 'table' ? (
                       /* TABLE VIEW (10 PER PAGE) */
-                      <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900 shadow-xl scrollbar-none [&::-webkit-scrollbar]:hidden">
-                        <table className="w-full text-left text-xs text-slate-300">
-                          <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] font-mono tracking-wider border-b border-slate-800">
+                      <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900 shadow-md scrollbar-none [&::-webkit-scrollbar]:hidden">
+                        <table className="w-full text-left text-[11.5px] text-slate-300">
+                          <thead className="bg-slate-950 text-slate-400 uppercase text-[9.5px] font-mono tracking-wider border-b border-slate-800">
                             <tr>
-                              <th className="py-3.5 px-4 font-bold">Booking #</th>
-                              <th className="py-3.5 px-4 font-bold">Client User</th>
-                              <th className="py-3.5 px-4 font-bold">Companion</th>
-                              <th className="py-3.5 px-4 font-bold">Category</th>
-                              <th className="py-3.5 px-4 font-bold">Schedule</th>
-                              <th className="py-3.5 px-4 font-bold">Amount & Escrow</th>
-                              <th className="py-3.5 px-4 font-bold">Status</th>
-                              <th className="py-3.5 px-4 font-bold text-right">Actions</th>
+                              <th className="py-2.5 px-3 font-bold">Booking #</th>
+                              <th className="py-2.5 px-3 font-bold">Client User</th>
+                              <th className="py-2.5 px-3 font-bold">Companion</th>
+                              <th className="py-2.5 px-3 font-bold">Category</th>
+                              <th className="py-2.5 px-3 font-bold">Schedule</th>
+                              <th className="py-2.5 px-3 font-bold">Amount & Escrow</th>
+                              <th className="py-2.5 px-3 font-bold">Status</th>
+                              <th className="py-2.5 px-3 font-bold text-right">Actions</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-800/60">
                             {paginatedBookings.map((b: BookingDetails) => (
                               <tr key={b.id} className="hover:bg-slate-800/40 transition-colors">
-                                <td className="py-3 px-4 font-mono font-bold text-indigo-400">
+                                <td className="py-2 px-3 font-mono font-bold text-indigo-400">
                                   {b.bookingNumber}
                                 </td>
-                                <td className="py-3 px-4">
-                                  <span className="font-bold text-white block">{b.userName}</span>
-                                  <span className="text-[10px] text-slate-400 font-mono">Client ID: {b.userId}</span>
+                                <td className="py-2 px-3">
+                                  <span className="font-bold text-white block truncate">{b.userName}</span>
+                                  <span className="text-[9px] text-slate-400 font-mono block truncate">ID: {b.userId}</span>
                                 </td>
-                                <td className="py-3 px-4 font-bold text-slate-200">
+                                <td className="py-2 px-3 font-bold text-slate-200">
                                   {b.companionName}
                                 </td>
-                                <td className="py-3 px-4">
-                                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 font-medium">
+                                <td className="py-2 px-3">
+                                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 font-medium">
                                     {b.category}
                                   </span>
                                 </td>
-                                <td className="py-3 px-4 text-slate-300 text-[11px] font-mono">
+                                <td className="py-2 px-3 text-slate-300 text-[10.5px] font-mono">
                                   <div>{b.date || (b.createdAt ? b.createdAt.split('T')[0] : 'Scheduled')}</div>
-                                  <div className="text-slate-500 text-[10px]">{b.startTime}{b.endTime ? ` - ${b.endTime}` : ''}</div>
+                                  <div className="text-slate-500 text-[9.5px]">{b.startTime}{b.endTime ? ` - ${b.endTime}` : ''}</div>
                                 </td>
-                                <td className="py-3 px-4">
-                                  <div className="font-mono font-bold text-white text-xs">${b.totalAmount}.00</div>
-                                  <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded font-bold ${b.escrowStatus === 'HELD'
+                                <td className="py-2 px-3">
+                                  <div className="font-mono font-bold text-white text-[11px]">${b.totalAmount}.00</div>
+                                  <span className={`text-[8.5px] font-mono px-1 py-0.2 rounded font-bold ${b.escrowStatus === 'HELD'
                                       ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                                       : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                                     }`}>
                                     {b.escrowStatus === 'HELD' ? '🔒 Escrow Held' : '✓ Released'}
                                   </span>
                                 </td>
-                                <td className="py-3 px-4">
-                                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${b.status === 'COMPLETED'
+                                <td className="py-2 px-3">
+                                  <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold uppercase ${b.status === 'COMPLETED'
                                       ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                                       : b.status === 'IN_PROGRESS'
                                         ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 animate-pulse'
@@ -1684,11 +1682,11 @@ export default function AdminDashboardPage() {
                                     {b.status.replace('_', ' ')}
                                   </span>
                                 </td>
-                                <td className="py-3 px-4 text-right">
-                                  <div className="flex items-center justify-end gap-1.5">
+                                <td className="py-2 px-3 text-right">
+                                  <div className="flex items-center justify-end gap-1">
                                     <button
                                       onClick={() => setViewingBooking(b)}
-                                      className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold transition-all"
+                                      className="h-6 px-2 py-0.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold transition-all cursor-pointer"
                                     >
                                       Details
                                     </button>
@@ -1698,7 +1696,7 @@ export default function AdminDashboardPage() {
                                           releaseEscrow(b.id);
                                           triggerNotify(`Escrow funds for Booking #${b.id} released.`);
                                         }}
-                                        className="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30 text-[11px] font-bold transition-all"
+                                        className="h-6 px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30 text-[10px] font-bold transition-all cursor-pointer"
                                       >
                                         Release
                                       </button>
@@ -1750,58 +1748,57 @@ export default function AdminDashboardPage() {
           {/* MODULE 7: 💰 PAYMENTS & FINANCE                       */}
           {/* ==================================================== */}
           {activeTab === 'payments' && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Top Metrics Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span>Total Financial Volume</span>
-                    <DollarSign className="w-4 h-4 text-indigo-400" />
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                  <div className="flex items-center justify-between text-[10px] text-slate-400">
+                    <span>Financial Volume</span>
+                    <DollarSign className="w-3.5 h-3.5 text-indigo-400" />
                   </div>
-                  <div className="text-2xl font-black text-white font-mono">
+                  <div className="text-base font-extrabold text-white font-mono">
                     ${transactions.reduce((acc: number, t: FinancialTransaction) => acc + t.amount, 0).toLocaleString()}.00
                   </div>
-                  <p className="text-[10px] text-slate-500">Gross ledger throughput</p>
+                  <p className="text-[9px] text-slate-500">Gross ledger throughput</p>
                 </div>
 
-                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span>Escrow Vault Holding Reserve</span>
-                    <Lock className="w-4 h-4 text-amber-400" />
+                <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                  <div className="flex items-center justify-between text-[10px] text-slate-400">
+                    <span>Escrow Vault Reserve</span>
+                    <Lock className="w-3.5 h-3.5 text-amber-400" />
                   </div>
-                  <div className="text-2xl font-black text-amber-400 font-mono">
+                  <div className="text-base font-extrabold text-amber-400 font-mono">
                     ${transactions.filter((t: FinancialTransaction) => t.status === 'HELD_IN_ESCROW').reduce((acc: number, t: FinancialTransaction) => acc + t.amount, 0).toLocaleString()}.00
                   </div>
-                  <p className="text-[10px] text-amber-400/80 font-bold">Secured in Partner Bank Vault</p>
+                  <p className="text-[9px] text-amber-400/80 font-bold">Secured in Partner Bank</p>
                 </div>
 
-                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span>Companion Payouts Dispatched</span>
-                    <ArrowUpRight className="w-4 h-4 text-emerald-400" />
+                <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                  <div className="flex items-center justify-between text-[10px] text-slate-400">
+                    <span>Payouts Dispatched</span>
+                    <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" />
                   </div>
-                  <div className="text-2xl font-black text-emerald-400 font-mono">
+                  <div className="text-base font-extrabold text-emerald-400 font-mono">
                     ${payouts.filter((p: PayoutRecord) => p.status === 'PAID').reduce((acc: number, p: PayoutRecord) => acc + p.amount, 0).toLocaleString()}.00
                   </div>
-                  <p className="text-[10px] text-emerald-400/80 font-bold">{payouts.length} Direct Bank Wires Executed</p>
+                  <p className="text-[9px] text-emerald-400/80 font-bold">{payouts.length} Bank Wires Executed</p>
                 </div>
 
-                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span>Platform Commission Net Revenue</span>
-                    <CreditCard className="w-4 h-4 text-indigo-400" />
+                <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                  <div className="flex items-center justify-between text-[10px] text-slate-400">
+                    <span>Net Commission</span>
+                    <CreditCard className="w-3.5 h-3.5 text-indigo-400" />
                   </div>
-                  <div className="text-2xl font-black text-indigo-400 font-mono">
+                  <div className="text-base font-extrabold text-indigo-400 font-mono">
                     ${transactions.reduce((acc: number, t: FinancialTransaction) => acc + t.platformFee, 0).toLocaleString()}.00
                   </div>
-
-                  <p className="text-[10px] text-slate-500">From 10% platform fee policy</p>
+                  <p className="text-[9px] text-slate-500">From 10% platform fee</p>
                 </div>
               </div>
 
               {/* Sub-Filter Tabs & Action Toolbar */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900 p-4 rounded-3xl border border-slate-800">
-                <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   {[
                     { id: 'all-transactions', label: 'All Transactions' },
                     { id: 'escrow-held', label: '🔒 Escrow Vault' },
@@ -1809,13 +1806,13 @@ export default function AdminDashboardPage() {
                     { id: 'refunds', label: '↩ Customer Refunds' },
                     { id: 'platform-fees', label: '💰 Platform Revenue' },
                     { id: 'wallet-topups', label: '💳 Wallet Top-ups' },
-                    { id: 'gateways', label: '⚡ Payment Gateways' }
+                    { id: 'gateways', label: '⚡ Gateways' }
                   ].map((filter) => (
                     <button
                       key={filter.id}
                       onClick={() => setSubFilter(filter.id)}
-                      className={`px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${subFilter === filter.id || (subFilter === 'all' && filter.id === 'all-transactions')
-                          ? 'gradient-bg-primary text-white shadow-md shadow-indigo-600/30'
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all cursor-pointer ${subFilter === filter.id || (subFilter === 'all' && filter.id === 'all-transactions')
+                          ? 'gradient-bg-primary text-white shadow-sm'
                           : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
                         }`}
                     >
@@ -1824,23 +1821,23 @@ export default function AdminDashboardPage() {
                   ))}
                 </div>
 
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                  <div className="relative flex-1 sm:w-64">
-                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end">
+                  <div className="relative flex-1 sm:w-52">
+                    <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
-                      placeholder="Search ref, client or host..."
+                      placeholder="Search ref, client..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                      className="w-full pl-8 pr-3 h-7.5 rounded-lg bg-slate-950 border border-slate-800 text-[11.5px] text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                     />
                   </div>
 
                   <button
                     onClick={() => setIsPayoutModalOpen(true)}
-                    className="px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold flex items-center gap-1.5 shadow-lg shadow-emerald-600/30 shrink-0"
+                    className="h-7 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold flex items-center gap-1 shadow-sm shrink-0 cursor-pointer"
                   >
-                    <Plus className="w-4 h-4" /> Dispatch Payout
+                    <Plus className="w-3 h-3" /> Payout
                   </button>
                 </div>
               </div>
@@ -1930,70 +1927,70 @@ export default function AdminDashboardPage() {
           {/* MODULE: 🎟 PROMOTIONS & COUPONS                       */}
           {/* ==================================================== */}
           {activeTab === 'promotions' && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Top Metrics KPI Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span>Total Active Campaigns</span>
-                    <Ticket className="w-4 h-4 text-purple-400" />
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                  <div className="flex items-center justify-between text-[10px] text-slate-400">
+                    <span>Active Campaigns</span>
+                    <Ticket className="w-3.5 h-3.5 text-purple-400" />
                   </div>
-                  <div className="text-2xl font-black text-white font-mono">
+                  <div className="text-base font-extrabold text-white font-mono">
                     {promos.filter((p: PromoCodeItem) => p.isActive).length} / {promos.length}
                   </div>
-                  <p className="text-[10px] text-slate-500">Live promo campaigns</p>
+                  <p className="text-[9px] text-slate-500">Live campaigns</p>
                 </div>
 
-                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span>Total Coupon Redemptions</span>
-                    <Users className="w-4 h-4 text-emerald-400" />
+                <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                  <div className="flex items-center justify-between text-[10px] text-slate-400">
+                    <span>Coupon Redemptions</span>
+                    <Users className="w-3.5 h-3.5 text-emerald-400" />
                   </div>
-                  <div className="text-2xl font-black text-emerald-400 font-mono">
+                  <div className="text-base font-extrabold text-emerald-400 font-mono">
                     {promos.reduce((acc: number, p: PromoCodeItem) => acc + p.usageCount, 0).toLocaleString()}
                   </div>
-                  <p className="text-[10px] text-emerald-400/80 font-bold">Successful client uses</p>
+                  <p className="text-[9px] text-emerald-400/80 font-bold">Client redemptions</p>
                 </div>
 
-                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span>Client Savings Granted</span>
-                    <Gift className="w-4 h-4 text-indigo-400" />
+                <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                  <div className="flex items-center justify-between text-[10px] text-slate-400">
+                    <span>Savings Granted</span>
+                    <Gift className="w-3.5 h-3.5 text-indigo-400" />
                   </div>
-                  <div className="text-2xl font-black text-indigo-400 font-mono">
+                  <div className="text-base font-extrabold text-indigo-400 font-mono">
                     ${promos.reduce((acc: number, p: PromoCodeItem) => acc + (p.usageCount * (p.discountValue || p.discountPercent || p.flatDiscount || 15)), 0).toLocaleString()}.00
                   </div>
-                  <p className="text-[10px] text-slate-500">Total customer discount value</p>
+                  <p className="text-[9px] text-slate-500">Total customer discount</p>
                 </div>
 
-                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span>Driven Booking Volume</span>
-                    <TrendingUp className="w-4 h-4 text-amber-400" />
+                <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                  <div className="flex items-center justify-between text-[10px] text-slate-400">
+                    <span>Driven Volume</span>
+                    <TrendingUp className="w-3.5 h-3.5 text-amber-400" />
                   </div>
-                  <div className="text-2xl font-black text-amber-400 font-mono">
+                  <div className="text-base font-extrabold text-amber-400 font-mono">
                     ${(promos.reduce((acc: number, p: PromoCodeItem) => acc + p.usageCount, 0) * 280).toLocaleString()}.00
                   </div>
-                  <p className="text-[10px] text-amber-400/80 font-bold">Attributed gross booking revenue</p>
+                  <p className="text-[9px] text-amber-400/80 font-bold">Attributed gross revenue</p>
                 </div>
 
               </div>
 
               {/* Sub-Filter Tabs & Action Toolbar */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900 p-4 rounded-3xl border border-slate-800">
-                <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   {[
                     { id: 'all-promos', label: 'All Coupons' },
-                    { id: 'active-live', label: '⚡ Active & Live' },
-                    { id: 'percentage-off', label: '% Percentage Discount' },
+                    { id: 'active-live', label: '⚡ Active' },
+                    { id: 'percentage-off', label: '% Percentage' },
                     { id: 'flat-discount', label: '$ Flat Savings' },
-                    { id: 'expired-promos', label: '⏳ Expired & Paused' }
+                    { id: 'expired-promos', label: '⏳ Expired' }
                   ].map((filter) => (
                     <button
                       key={filter.id}
                       onClick={() => setSubFilter(filter.id)}
-                      className={`px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${subFilter === filter.id || (subFilter === 'all' && filter.id === 'all-promos')
-                          ? 'gradient-bg-primary text-white shadow-md shadow-purple-600/30'
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all cursor-pointer ${subFilter === filter.id || (subFilter === 'all' && filter.id === 'all-promos')
+                          ? 'gradient-bg-primary text-white shadow-sm'
                           : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
                         }`}
                     >
@@ -2002,15 +1999,15 @@ export default function AdminDashboardPage() {
                   ))}
                 </div>
 
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                  <div className="relative flex-1 sm:w-64">
-                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end">
+                  <div className="relative flex-1 sm:w-52">
+                    <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
-                      placeholder="Search code, title or terms..."
+                      placeholder="Search code, title..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
+                      className="w-full pl-8 pr-3 h-7.5 rounded-lg bg-slate-950 border border-slate-800 text-[11.5px] text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
                     />
                   </div>
 
@@ -2019,9 +2016,9 @@ export default function AdminDashboardPage() {
                       setEditingPromo(null);
                       setIsPromoFormOpen(true);
                     }}
-                    className="px-4 py-2 rounded-2xl gradient-bg-primary text-white text-xs font-extrabold flex items-center gap-1.5 shadow-lg shadow-purple-600/30 shrink-0 hover:scale-[1.02] transition-transform"
+                    className="h-7 px-2.5 py-1 rounded-lg gradient-bg-primary text-white text-[11px] font-bold flex items-center gap-1 shadow-sm shrink-0 cursor-pointer"
                   >
-                    <Plus className="w-4 h-4" /> Create Promo Code
+                    <Plus className="w-3 h-3" /> Create Coupon
                   </button>
                 </div>
               </div>
@@ -2100,26 +2097,26 @@ export default function AdminDashboardPage() {
           {/* ==================================================== */}
           {activeTab === 'communication' && (
             <div className="space-y-6">
-              <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {['conversations', 'message-reports', 'flagged-messages', 'blocked-users'].map((s) => (
-                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
+                  <button key={s} onClick={() => setSubFilter(s)} className={`px-2.5 py-1 rounded-lg text-[11px] font-bold capitalize cursor-pointer ${subFilter === s ? 'bg-purple-600 text-white font-bold shadow-sm' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'}`}>
                     {s.replace('-', ' ')}
                   </button>
                 ))}
               </div>
 
-              <div className="rounded-3xl bg-slate-900 border border-slate-800 p-6 space-y-4">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4 text-purple-400" /> Monitored Live Encrypted Chat Streams
+              <div className="rounded-xl bg-slate-900 border border-slate-800 p-3 space-y-2">
+                <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <MessageSquare className="w-3.5 h-3.5 text-purple-400" /> Monitored Live Encrypted Chat Streams
                 </h3>
-                <div className="space-y-3">
+                <div className="space-y-1.5">
                   {MOCK_MESSAGES.map(m => (
-                    <div key={m.id} className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex justify-between items-center text-xs">
+                    <div key={m.id} className="p-2 rounded-lg bg-slate-950 border border-slate-800 flex justify-between items-center text-[11px]">
                       <div>
                         <p className="font-bold text-white">{m.senderName}: <span className="font-normal text-slate-300">{m.content}</span></p>
-                        <p className="text-[10px] text-slate-500 mt-1">Timestamp: {m.timestamp} • End-to-End Encrypted</p>
+                        <p className="text-[9px] text-slate-500 mt-0.5">Timestamp: {m.timestamp} • End-to-End Encrypted</p>
                       </div>
-                      <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[10px]">VERIFIED</span>
+                      <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[9px]">VERIFIED</span>
                     </div>
                   ))}
                 </div>
@@ -2131,26 +2128,26 @@ export default function AdminDashboardPage() {
           {/* MODULE 9: 🛡️ TRUST & SAFETY                         */}
           {/* ==================================================== */}
           {activeTab === 'safety' && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="space-y-4">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {['safety-dashboard', 'user-reports', 'safety-incidents', 'risk-alerts', 'fraud-detection', 'suspicious-accounts', 'emergency-events', 'safety-actions'].map((s) => (
-                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
+                  <button key={s} onClick={() => setSubFilter(s)} className={`px-2.5 py-1 rounded-lg text-[11px] font-bold capitalize cursor-pointer ${subFilter === s ? 'bg-purple-600 text-white font-bold shadow-sm' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'}`}>
                     {s.replace('-', ' ')}
                   </button>
                 ))}
               </div>
 
-              <div className="p-6 rounded-3xl bg-rose-500/10 border border-rose-500/30 space-y-4">
-                <h3 className="text-base font-bold text-rose-300 flex items-center gap-2">
-                  <ShieldAlert className="w-5 h-5 text-rose-400" /> Active SOS Emergency Event Feed
+              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 space-y-2">
+                <h3 className="text-xs font-bold text-rose-300 flex items-center gap-1.5">
+                  <ShieldAlert className="w-3.5 h-3.5 text-rose-400" /> Active SOS Emergency Event Feed
                 </h3>
                 {MOCK_PANIC_ALERTS.map(a => (
-                  <div key={a.id} className="p-4 rounded-2xl bg-slate-950 border border-rose-500/30 flex items-center justify-between">
+                  <div key={a.id} className="p-2.5 rounded-lg bg-slate-950 border border-rose-500/30 flex items-center justify-between">
                     <div>
-                      <p className="font-bold text-white text-sm">Panic Alert: {a.userName}</p>
-                      <p className="text-xs text-rose-300">{a.address}</p>
+                      <p className="font-bold text-white text-xs">Panic Alert: {a.userName}</p>
+                      <p className="text-[10px] text-rose-300">{a.address}</p>
                     </div>
-                    <button onClick={() => triggerNotify(`SOS Dispatch Sent for Alert #${a.id}!`)} className="px-4 py-2 rounded-xl bg-rose-600 text-white font-bold text-xs shadow-lg shadow-rose-600/30">Dispatch Emergency Team</button>
+                    <button onClick={() => triggerNotify(`SOS Dispatch Sent for Alert #${a.id}!`)} className="h-6 px-2.5 py-0.5 rounded-md bg-rose-600 text-white font-bold text-[10px] shadow-sm cursor-pointer">Dispatch Team</button>
                   </div>
                 ))}
               </div>
@@ -2161,19 +2158,19 @@ export default function AdminDashboardPage() {
           {/* MODULE 10: ⚖️ DISPUTES & RESOLUTION                  */}
           {/* ==================================================== */}
           {activeTab === 'disputes' && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="space-y-4">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {['open-disputes', 'under-review', 'resolved', 'refund-cases', 'evidence'].map((s) => (
-                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
+                  <button key={s} onClick={() => setSubFilter(s)} className={`px-2.5 py-1 rounded-lg text-[11px] font-bold capitalize cursor-pointer ${subFilter === s ? 'bg-purple-600 text-white font-bold shadow-sm' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'}`}>
                     {s.replace('-', ' ')}
                   </button>
                 ))}
               </div>
 
-              <div className="p-8 rounded-3xl bg-slate-900 border border-slate-800 text-center space-y-3">
-                <Scale className="w-10 h-10 text-purple-400 mx-auto" />
-                <h3 className="text-base font-bold text-white">Dispute Desk (0 Active Disputes)</h3>
-                <p className="text-xs text-slate-400">All escrow transactions are currently smooth and dispute-free.</p>
+              <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-center space-y-1.5">
+                <Scale className="w-6 h-6 text-purple-400 mx-auto" />
+                <h3 className="text-xs font-bold text-white">Dispute Desk (0 Active Disputes)</h3>
+                <p className="text-[10.5px] text-slate-400">All escrow transactions are currently smooth and dispute-free.</p>
               </div>
             </div>
           )}
@@ -2182,26 +2179,26 @@ export default function AdminDashboardPage() {
           {/* MODULE 11: ⭐ REVIEWS & MODERATION                   */}
           {/* ==================================================== */}
           {activeTab === 'reviews' && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="space-y-4">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {['reviews', 'reported-reviews', 'flagged-content', 'moderation-queue'].map((s) => (
-                  <button key={s} onClick={() => setSubFilter(s)} className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold capitalize ${subFilter === s ? 'bg-purple-600 text-white font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
+                  <button key={s} onClick={() => setSubFilter(s)} className={`px-2.5 py-1 rounded-lg text-[11px] font-bold capitalize cursor-pointer ${subFilter === s ? 'bg-purple-600 text-white font-bold shadow-sm' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'}`}>
                     {s.replace('-', ' ')}
                   </button>
                 ))}
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {MOCK_REVIEWS.map(r => (
-                  <div key={r.id} className="p-5 rounded-3xl bg-slate-900 border border-slate-800 flex justify-between items-center text-xs">
+                  <div key={r.id} className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex justify-between items-center text-[11px]">
                     <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-white">{r.authorName}</span>
-                        <span className="text-amber-400 font-bold">★ {r.rating}/5</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-white text-[11.5px]">{r.authorName}</span>
+                        <span className="text-amber-400 font-bold text-[10.5px]">★ {r.rating}/5</span>
                       </div>
-                      <p className="text-slate-300 mt-1">"{r.comment}"</p>
+                      <p className="text-slate-300 mt-0.5">"{r.comment}"</p>
                     </div>
-                    <button onClick={() => triggerNotify(`Review #${r.id} moderated.`)} className="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white">Approve Review</button>
+                    <button onClick={() => triggerNotify(`Review #${r.id} moderated.`)} className="h-6 px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 hover:text-white text-[10px] font-bold cursor-pointer">Approve</button>
                   </div>
                 ))}
               </div>
@@ -2215,47 +2212,46 @@ export default function AdminDashboardPage() {
             <div className="space-y-6">
               {/* Top Metrics Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span>Operational City Hubs</span>
-                    <Globe className="w-4 h-4 text-indigo-400" />
+                <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                  <div className="flex items-center justify-between text-[10px] text-slate-400">
+                    <span>Operational Hubs</span>
+                    <Globe className="w-3.5 h-3.5 text-indigo-400" />
                   </div>
-                  <div className="text-2xl font-black text-white font-mono">{locations.length}</div>
-                  <p className="text-[10px] text-slate-500">Global & regional coverage hubs</p>
+                  <div className="text-base font-extrabold text-white font-mono">{locations.length}</div>
+                  <p className="text-[9px] text-slate-500">Coverage hubs</p>
                 </div>
 
-                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span>Active Field Operations</span>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                  <div className="flex items-center justify-between text-[10px] text-slate-400">
+                    <span>Active Operations</span>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                   </div>
-                  <div className="text-2xl font-black text-emerald-400 font-mono">
+                  <div className="text-base font-extrabold text-emerald-400 font-mono">
                     {locations.filter((l: LocationItem) => l.isActive).length} Hubs
                   </div>
-                  <p className="text-[10px] text-emerald-400/80 font-bold">100% Monitored via GPS Geofencing</p>
+                  <p className="text-[9px] text-emerald-400/80 font-bold">100% Geofenced</p>
                 </div>
 
-                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span>Geofenced Safe Zones</span>
-                    <ShieldCheck className="w-4 h-4 text-indigo-400" />
+                <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                  <div className="flex items-center justify-between text-[10px] text-slate-400">
+                    <span>Safe Zones</span>
+                    <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
                   </div>
-                  <div className="text-2xl font-black text-indigo-400 font-mono">
+                  <div className="text-base font-extrabold text-indigo-400 font-mono">
                     {locations.reduce((acc: number, l: LocationItem) => acc + (l.geofencedZones?.length || 0), 0)}
                   </div>
-                  <p className="text-[10px] text-slate-500">High-security meeting perimeters</p>
+                  <p className="text-[9px] text-slate-500">Meeting perimeters</p>
                 </div>
 
-                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span>High Surge Multipliers</span>
-                    <Zap className="w-4 h-4 text-amber-400" />
+                <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                  <div className="flex items-center justify-between text-[10px] text-slate-400">
+                    <span>Surge Pricing</span>
+                    <Zap className="w-3.5 h-3.5 text-amber-400" />
                   </div>
-                  <div className="text-2xl font-black text-amber-400 font-mono">
+                  <div className="text-base font-extrabold text-amber-400 font-mono">
                     {locations.filter((l: LocationItem) => l.surgePricingMultiplier > 1.0).length} Cities
                   </div>
-
-                  <p className="text-[10px] text-amber-400/80 font-bold">Peak demand surge activated</p>
+                  <p className="text-[9px] text-amber-400/80 font-bold">Peak surge active</p>
                 </div>
               </div>
 
@@ -2264,22 +2260,22 @@ export default function AdminDashboardPage() {
 
               {/* Sub-Filter Bar & Action Toolbar */}
 
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900 p-4 rounded-3xl border border-slate-800">
-                <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   {[
                     { id: 'all-cities', label: 'All Cities' },
-                    { id: 'active-hubs', label: 'Active Operational' },
-                    { id: 'high-surge', label: '⚡ Surge Pricing' },
-                    { id: 'tier-1', label: 'Tier 1 Metros' },
+                    { id: 'active-hubs', label: 'Active Hubs' },
+                    { id: 'high-surge', label: '⚡ Surge' },
+                    { id: 'tier-1', label: 'Tier 1' },
                     { id: 'risk-low', label: 'Low Risk' },
                     { id: 'risk-medium', label: 'Medium Risk' },
-                    { id: 'risk-high', label: 'High Risk Alert' }
+                    { id: 'risk-high', label: 'High Risk' }
                   ].map((filter) => (
                     <button
                       key={filter.id}
                       onClick={() => setSubFilter(filter.id)}
-                      className={`px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${subFilter === filter.id || (subFilter === 'all' && filter.id === 'all-cities')
-                          ? 'gradient-bg-primary text-white shadow-md shadow-indigo-600/30'
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all cursor-pointer ${subFilter === filter.id || (subFilter === 'all' && filter.id === 'all-cities')
+                          ? 'gradient-bg-primary text-white shadow-sm'
                           : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
                         }`}
                     >
@@ -2288,15 +2284,15 @@ export default function AdminDashboardPage() {
                   ))}
                 </div>
 
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                  <div className="relative flex-1 sm:w-64">
-                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end">
+                  <div className="relative flex-1 sm:w-52">
+                    <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
-                      placeholder="Search city, country or state..."
+                      placeholder="Search city, state..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                      className="w-full pl-8 pr-3 h-7.5 rounded-lg bg-slate-950 border border-slate-800 text-[11.5px] text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                     />
                   </div>
 
@@ -2305,9 +2301,9 @@ export default function AdminDashboardPage() {
                       setEditingLocation(null);
                       setIsLocationFormOpen(true);
                     }}
-                    className="px-4 py-2 rounded-2xl gradient-bg-primary text-white text-xs font-extrabold flex items-center gap-1.5 shadow-lg shadow-indigo-600/30 hover:opacity-90 shrink-0"
+                    className="h-7 px-2.5 py-1 rounded-lg gradient-bg-primary text-white text-[11px] font-bold flex items-center gap-1 shadow-sm hover:opacity-90 shrink-0 cursor-pointer"
                   >
-                    <Plus className="w-4 h-4" /> Add Operational City
+                    <Plus className="w-3 h-3" /> Add City
                   </button>
                 </div>
               </div>
@@ -2369,69 +2365,69 @@ export default function AdminDashboardPage() {
           {/* MODULE: 🛡️ TRUST & SAFETY MANAGEMENT               */}
           {/* ==================================================== */}
           {activeTab === 'safety' && (
-            <div className="space-y-6 animate-fadeIn">
+            <div className="space-y-4 animate-fadeIn">
               {/* Top 4 KPI Metrics Header */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="p-5 rounded-3xl bg-slate-900 border border-rose-500/40 space-y-2 shadow-lg shadow-rose-500/5">
-                  <div className="flex items-center justify-between text-xs text-rose-400 font-bold">
-                    <span>Active Live SOS Panic Alerts</span>
-                    <ShieldAlert className="w-5 h-5 text-rose-500 animate-pulse" />
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                <div className="p-2.5 rounded-xl bg-slate-900 border border-rose-500/40 space-y-0.5 shadow-sm">
+                  <div className="flex items-center justify-between text-[10px] text-rose-400 font-bold">
+                    <span>Live SOS Panic</span>
+                    <ShieldAlert className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
                   </div>
-                  <div className="text-3xl font-black text-white font-mono flex items-center gap-2">
+                  <div className="text-base font-extrabold text-white font-mono flex items-center gap-1.5">
                     {sosAlerts.filter((a: SosAlertItem) => a.status === 'ACTIVE_DISPATCH' || a.status === 'RESPONDER_EN_ROUTE' || a.status === 'POLICE_NOTIFIED').length}
-                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping inline-block" />
+                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping inline-block" />
                   </div>
-                  <p className="text-[10px] text-slate-400">Live GPS tracking & audio stream</p>
+                  <p className="text-[9px] text-slate-400">Live GPS tracking</p>
                 </div>
 
-                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-400 font-bold">
-                    <span>Resolved Safe Alerts</span>
-                    <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold">
+                    <span>Resolved Safe</span>
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                   </div>
-                  <div className="text-3xl font-black text-emerald-400 font-mono">
+                  <div className="text-base font-extrabold text-emerald-400 font-mono">
                     {sosAlerts.filter((a: SosAlertItem) => a.status === 'RESOLVED_SAFE').length}
                   </div>
-                  <p className="text-[10px] text-emerald-400/80 font-bold">Verified zero casualties</p>
+                  <p className="text-[9px] text-emerald-400/80 font-bold">Zero casualties</p>
                 </div>
 
-                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-400 font-bold">
-                    <span>Pending Safety Tickets</span>
-                    <AlertTriangle className="w-5 h-5 text-amber-400" />
+                <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold">
+                    <span>Pending Safety</span>
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
                   </div>
-                  <div className="text-3xl font-black text-amber-400 font-mono">
+                  <div className="text-base font-extrabold text-amber-400 font-mono">
                     {incidentReports.filter((i: IncidentReport) => i.status === 'PENDING_AUDIT' || i.status === 'INVESTIGATING').length}
                   </div>
-                  <p className="text-[10px] text-amber-400/80 font-bold">Under active investigation</p>
+                  <p className="text-[9px] text-amber-400/80 font-bold">Under investigation</p>
                 </div>
 
-                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-400 font-bold">
-                    <span>Blacklisted Offenders</span>
-                    <UserX className="w-5 h-5 text-purple-400" />
+                <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold">
+                    <span>Blacklisted</span>
+                    <UserX className="w-3.5 h-3.5 text-purple-400" />
                   </div>
-                  <div className="text-3xl font-black text-purple-400 font-mono">
+                  <div className="text-base font-extrabold text-purple-400 font-mono">
                     {suspendedUserIds.length + incidentReports.filter((i: IncidentReport) => i.disciplinaryAction === 'PERMANENT_BAN').length}
                   </div>
-                  <p className="text-[10px] text-purple-300 font-bold">Network ban enforced</p>
+                  <p className="text-[9px] text-purple-300 font-bold">Network ban active</p>
                 </div>
               </div>
 
               {/* Toolbar & Filter Bar */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900 p-4 rounded-3xl border border-slate-800">
-                <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   {[
-                    { id: 'all-alerts', label: '🚨 Live SOS Feeds' },
-                    { id: 'open-incidents', label: '⚠️ Safety Incident Tickets' },
+                    { id: 'all-alerts', label: '🚨 SOS Feeds' },
+                    { id: 'open-incidents', label: '⚠️ Incident Tickets' },
                     { id: 'resolved-safe', label: '🛡️ Verified Safe' },
-                    { id: 'banned-offenders', label: '⛔ Banned & Suspended' }
+                    { id: 'banned-offenders', label: '⛔ Banned' }
                   ].map((filter) => (
                     <button
                       key={filter.id}
                       onClick={() => setSubFilter(filter.id)}
-                      className={`px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${subFilter === filter.id || (subFilter === 'all' && filter.id === 'all-alerts')
-                          ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30 font-extrabold'
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all cursor-pointer ${subFilter === filter.id || (subFilter === 'all' && filter.id === 'all-alerts')
+                          ? 'bg-rose-600 text-white shadow-sm font-extrabold'
                           : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
                         }`}
                     >
@@ -2440,15 +2436,15 @@ export default function AdminDashboardPage() {
                   ))}
                 </div>
 
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                  <div className="relative flex-1 sm:w-64">
-                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end">
+                  <div className="relative flex-1 sm:w-52">
+                    <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
-                      placeholder="Search alerts, reference or user..."
+                      placeholder="Search alerts, user..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 transition-all"
+                      className="w-full pl-8 pr-3 h-7.5 rounded-lg bg-slate-950 border border-slate-800 text-[11.5px] text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 transition-all"
                     />
                   </div>
 
