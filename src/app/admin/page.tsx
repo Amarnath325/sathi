@@ -1053,10 +1053,24 @@ export default function AdminDashboardPage() {
               )}
             </button>
 
+            {/* Push All to Neon DB Button in Global Header */}
+            <button
+              onClick={handlePushAllToDb}
+              disabled={isSyncingToDb}
+              className="px-2.5 py-0.5 rounded-md bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-[10.5px] font-bold transition-all flex items-center gap-1.5 shadow-md disabled:opacity-50 cursor-pointer h-7"
+              title="Push all companions and local data to Neon PostgreSQL Database"
+            >
+              <Database className={`w-3 h-3 text-indigo-200 ${isSyncingToDb ? 'animate-spin' : ''}`} />
+              <span>{isSyncingToDb ? 'Syncing...' : `DB Sync (${companions.length})`}</span>
+            </button>
+
             {/* Sync Button */}
             <button
-              onClick={() => triggerNotify('All 20 module parameters re-synced.')}
-              className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-[10.5px] font-semibold text-slate-300 hover:text-white hover:border-slate-700 transition-all flex items-center gap-1 shadow-sm h-7"
+              onClick={() => {
+                handlePushAllToDb();
+                triggerNotify('All 20 module parameters re-synced with Neon DB.');
+              }}
+              className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-[10.5px] font-semibold text-slate-300 hover:text-white hover:border-slate-700 transition-all flex items-center gap-1 shadow-sm h-7 cursor-pointer"
             >
               <RefreshCw className="w-2.5 h-2.5 text-purple-400" />
               <span className="hidden sm:inline">Sync State</span>
@@ -1065,7 +1079,7 @@ export default function AdminDashboardPage() {
             {/* Logout Button */}
             <button
               onClick={handleLogout}
-              className="px-2 py-0.5 rounded-md bg-rose-500/10 border border-rose-500/30 text-rose-300 hover:bg-rose-600 hover:text-white text-[10.5px] font-semibold transition-all flex items-center gap-1 h-7"
+              className="px-2 py-0.5 rounded-md bg-rose-500/10 border border-rose-500/30 text-rose-300 hover:bg-rose-600 hover:text-white text-[10.5px] font-semibold transition-all flex items-center gap-1 h-7 cursor-pointer"
             >
               <LogOut className="w-2.5 h-2.5" />
               <span className="hidden sm:inline">Logout</span>
@@ -1161,11 +1175,11 @@ export default function AdminDashboardPage() {
                   <button
                     onClick={handlePushAllToDb}
                     disabled={isSyncingToDb}
-                    className="px-2.5 py-1 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold transition-all flex items-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
-                    title="Push and Save All Companions to PostgreSQL Database"
+                    className="px-3 py-1 rounded-md bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-[11px] font-extrabold transition-all flex items-center gap-1.5 shadow-md shadow-emerald-600/30 border border-emerald-400/40 disabled:opacity-50 cursor-pointer"
+                    title="Push and Save All Companions to Neon PostgreSQL Database"
                   >
-                    <Database className={`w-3.5 h-3.5 text-indigo-200 ${isSyncingToDb ? 'animate-spin' : ''}`} />
-                    <span>{isSyncingToDb ? 'Syncing to DB...' : `Push All (${companions.length}) to DB`}</span>
+                    <Database className={`w-3.5 h-3.5 text-white ${isSyncingToDb ? 'animate-spin' : ''}`} />
+                    <span>{isSyncingToDb ? 'Syncing to Neon DB...' : `⚡ Push All (${companions.length}) to Neon DB`}</span>
                   </button>
 
                   <button
