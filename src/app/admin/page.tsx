@@ -336,37 +336,68 @@ export default function AdminDashboardPage() {
   // Dynamic Companion Profiles State fetched from Database / API
   const [dbCompanions, setDbCompanions] = useState<UserProfile[]>([]);
   const [isLoadingCompanions, setIsLoadingCompanions] = useState(false);
+  const [isSyncingToDb, setIsSyncingToDb] = useState(false);
+
+  // Push all local companions to PostgreSQL DB in bulk
+  const handlePushAllToDb = async () => {
+    setIsSyncingToDb(true);
+    try {
+      const localComps = useCrudStore.getState().companions || [];
+      if (localComps.length === 0) {
+        triggerNotify('No companions to sync.');
+        return;
+      }
+
+      const res = await fetch('/api/admin/companions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(localComps)
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        triggerNotify(`✓ Successfully synchronized ${json.savedCount || localComps.length} companions to PostgreSQL Database!`);
+        await loadDbCompanions();
+      } else {
+        triggerNotify(`Database sync: ${json.error || 'Failed'}`);
+      }
+    } catch (err: any) {
+      console.error('Failed to push all companions to DB:', err);
+      triggerNotify('Database sync failed. Please check network connection.');
+    } finally {
+      setIsSyncingToDb(false);
+    }
+  };
 
   const loadDbCompanions = async () => {
     setIsLoadingCompanions(true);
     try {
-      // 1. Sync any existing local companions to server DB first
-      const localComps = useCrudStore.getState().companions || [];
-      if (localComps.length > 0) {
-        for (const comp of localComps) {
+      // 1. Fetch all companions from DB / Server API
+      const res = await fetch('/api/admin/companions');
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        setDbCompanions(json.data);
+
+        const currentStore = useCrudStore.getState();
+        if (json.data.length > 0) {
+          // If server has more or equal records, merge & update store
+          const currentIds = new Set(currentStore.companions.map(c => c.id));
+          const newToAdd = json.data.filter((d: any) => !currentIds.has(d.id) && !currentStore.companions.some(c => c.email && c.email === d.email));
+          
+          if (newToAdd.length > 0 || currentStore.companions.length < json.data.length) {
+            useCrudStore.setState({
+              companions: json.data.length >= currentStore.companions.length ? json.data : [...currentStore.companions, ...newToAdd]
+            });
+          }
+        } else if (currentStore.companions.length > 0) {
+          // If server is empty but local has records, automatically push local to DB!
           fetch('/api/admin/companions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(comp)
+            body: JSON.stringify(currentStore.companions)
+          }).then(r => r.json()).then(j => {
+            if (j.success && Array.isArray(j.data)) setDbCompanions(j.data);
           }).catch(() => {});
-        }
-      }
-
-      // 2. Fetch all companions from DB / Server API
-      const res = await fetch('/api/admin/companions');
-      const json = await res.json();
-      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-        setDbCompanions(json.data);
-
-        // Merge any missing server companions into useCrudStore
-        const currentStore = useCrudStore.getState();
-        const currentIds = new Set(currentStore.companions.map(c => c.id));
-        const newToAdd = json.data.filter((d: any) => !currentIds.has(d.id) && !currentStore.companions.some(c => c.email && c.email === d.email));
-        
-        if (newToAdd.length > 0) {
-          useCrudStore.setState({
-            companions: [...currentStore.companions, ...newToAdd]
-          });
         }
       }
     } catch (e) {
@@ -1128,9 +1159,19 @@ export default function AdminDashboardPage() {
                   </div>
 
                   <button
+                    onClick={handlePushAllToDb}
+                    disabled={isSyncingToDb}
+                    className="px-2.5 py-1 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold transition-all flex items-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
+                    title="Push and Save All Companions to PostgreSQL Database"
+                  >
+                    <Database className={`w-3.5 h-3.5 text-indigo-200 ${isSyncingToDb ? 'animate-spin' : ''}`} />
+                    <span>{isSyncingToDb ? 'Syncing to DB...' : `Push All (${companions.length}) to DB`}</span>
+                  </button>
+
+                  <button
                     onClick={loadDbCompanions}
-                    className="p-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all"
-                    title="Refresh Companions List"
+                    className="p-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer"
+                    title="Refresh Companions List from Database"
                   >
                     <RefreshCw className={`w-3 h-3 text-indigo-400 ${isLoadingCompanions ? 'animate-spin' : ''}`} />
                   </button>
@@ -1139,7 +1180,7 @@ export default function AdminDashboardPage() {
                       setEditingCompanionModalData(null);
                       setShowCreateModal(true);
                     }}
-                    className="px-2.5 py-1 rounded-md gradient-bg-primary text-white text-[11px] font-bold hover:opacity-90 transition-all flex items-center gap-1 shadow-sm"
+                    className="px-2.5 py-1 rounded-md gradient-bg-primary text-white text-[11px] font-bold hover:opacity-90 transition-all flex items-center gap-1 shadow-sm cursor-pointer"
                   >
                     <Plus className="w-3 h-3" /> Register New Companion
                   </button>

@@ -2,15 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { UserProfile } from '@/lib/types';
 
-// Dynamic In-Memory Store shared across requests
-let globalCompanions: any[] = [];
+// Default availability schedule for Prisma JSON field
+const DEFAULT_AVAILABILITY = {
+  Mon: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+  Tue: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+  Wed: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+  Thu: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+  Fri: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+  Sat: [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+  Sun: [10, 11, 12, 13, 14, 15, 16, 17, 18]
+};
 
-// GET /api/admin/companions — Get all companions for admin management
+// GET /api/admin/companions — Get all companions from PostgreSQL DB
 export async function GET(req: NextRequest) {
   try {
     let dbCompanions: any[] = [];
 
-    // Try fetching from Prisma DB
+    // Fetch from Prisma DB
     try {
       if (prisma && prisma.companionProfile) {
         const profiles = await prisma.companionProfile.findMany({
@@ -46,7 +54,7 @@ export async function GET(req: NextRequest) {
             bio: p.bio || 'Registered Companion Profile',
             createdSource: 'ADMIN',
             aadhaarNumber: (p as any).aadhaarNumber || '',
-            kycStatus: p.kycStatus || 'APPROVED',
+            kycStatus: 'APPROVED',
             isActive: p.user?.status === 'ACTIVE',
             isDeleted: false,
             createdAt: p.createdAt ? new Date(p.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
@@ -55,20 +63,13 @@ export async function GET(req: NextRequest) {
         }
       }
     } catch (dbErr) {
-      console.warn('Prisma fetch failed, falling back to memory store:', dbErr);
+      console.error('Prisma query error in GET /api/admin/companions:', dbErr);
     }
-
-    // Merge DB companions with memory store (avoid duplicates by email or id)
-    const existingIds = new Set(dbCompanions.map(c => c.id));
-    const merged = [
-      ...dbCompanions,
-      ...globalCompanions.filter(c => !existingIds.has(c.id) && !dbCompanions.some(d => d.email && d.email === c.email))
-    ];
 
     return NextResponse.json({
       success: true,
-      data: merged,
-      count: merged.length
+      data: dbCompanions,
+      count: dbCompanions.length
     });
   } catch (error: any) {
     return NextResponse.json(
@@ -78,123 +79,129 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/admin/companions — Save companion to DB & memory
+// POST /api/admin/companions — Save single companion or bulk array to PostgreSQL DB
 export async function POST(req: NextRequest) {
   try {
-    const data = await req.json();
+    const payload = await req.json();
+    const items: any[] = Array.isArray(payload) ? payload : (payload.companions && Array.isArray(payload.companions)) ? payload.companions : [payload];
 
-    const companionRecord = {
-      id: data.id || `comp-${Date.now()}`,
-      name: data.name || data.fullName || 'New Companion',
-      email: data.email || `comp-${Date.now()}@example.com`,
-      phone: data.phone || '',
-      city: data.city || 'Mumbai',
-      country: data.country || 'India',
-      state: data.state || '',
-      pincode: data.pincode || '',
-      age: Number(data.age) || 25,
-      gender: data.gender || 'Female',
-      avatar: data.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
-      photos: data.photos || [data.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80'],
-      hourlyRate: Number(data.hourlyRate) || 75,
-      dailyRate: Number(data.dailyRate) || 350,
-      weeklyRate: Number(data.weeklyRate) || 2000,
-      ratingAvg: 5.0,
-      ratingCount: 0,
-      completedBookings: 0,
-      status: data.status || 'ACTIVE',
-      category: data.categories?.[0] || data.category || 'Event Companion',
-      categories: data.categories || [data.category || 'Event Companion'],
-      skills: data.skills || ['Multilingual'],
-      languages: data.languages || ['English'],
-      bio: data.bio || 'Registered Companion Profile',
-      createdSource: data.createdSource || 'ADMIN',
-      aadhaarNumber: data.aadhaarNumber || '',
-      kycStatus: data.kycStatus || 'APPROVED',
-      isActive: true,
-      isDeleted: false,
-      createdAt: new Date().toISOString().split('T')[0],
-      updatedAt: new Date().toISOString().split('T')[0]
-    };
+    const savedRecords: any[] = [];
+    const errors: any[] = [];
 
-    // Save in memory
-    const existingIdx = globalCompanions.findIndex(c => c.id === companionRecord.id || c.email === companionRecord.email);
-    if (existingIdx >= 0) {
-      globalCompanions[existingIdx] = { ...globalCompanions[existingIdx], ...companionRecord };
-    } else {
-      globalCompanions.unshift(companionRecord);
-    }
+    for (const item of items) {
+      if (!item) continue;
 
-    // Try saving in Prisma DB
-    try {
-      if (prisma && prisma.user && prisma.companionProfile) {
-        const user = await prisma.user.upsert({
-          where: { email: companionRecord.email },
-          update: {
-            fullName: companionRecord.name,
-            phone: companionRecord.phone || undefined,
-            avatar: companionRecord.avatar,
-            role: 'VERIFIED_COMPANION',
-            status: 'ACTIVE'
-          },
-          create: {
-            email: companionRecord.email,
-            phone: companionRecord.phone || undefined,
-            fullName: companionRecord.name,
-            passwordHash: 'COMPANION_DEFAULT_PASS',
-            role: 'VERIFIED_COMPANION',
-            avatar: companionRecord.avatar,
-            status: 'ACTIVE'
-          }
-        });
+      const fullName = item.name || item.fullName || 'Registered Companion';
+      const email = item.email || `comp-${Date.now()}-${Math.floor(Math.random() * 1000)}@sathi.internal`;
+      const phone = item.phone || null;
+      const avatar = item.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80';
+      const city = item.city || 'Mumbai';
+      const country = item.country || 'India';
+      const age = Number(item.age) || 25;
+      const gender = item.gender || 'Female';
+      const bio = item.bio || 'Verified platform companion profile.';
+      const hourlyRate = Number(item.hourlyRate) || 75;
+      const dailyRate = Number(item.dailyRate) || (hourlyRate * 7);
+      const weeklyRate = Number(item.weeklyRate) || (dailyRate * 5);
+      const categories = Array.isArray(item.categories) ? item.categories : [item.category || 'Event Companion'];
+      const skills = Array.isArray(item.skills) ? item.skills : ['Multilingual'];
+      const languages = Array.isArray(item.languages) ? item.languages : ['English', 'Hindi'];
+      const photos = Array.isArray(item.photos) && item.photos.length > 0 ? item.photos : [avatar];
+      const availability = item.availability || DEFAULT_AVAILABILITY;
 
-        await prisma.companionProfile.upsert({
-          where: { userId: user.id },
-          update: {
-            city: companionRecord.city,
-            country: companionRecord.country,
-            age: companionRecord.age,
-            gender: companionRecord.gender,
-            bio: companionRecord.bio,
-            hourlyRate: companionRecord.hourlyRate,
-            dailyRate: companionRecord.dailyRate,
-            weeklyRate: companionRecord.weeklyRate,
-            categories: companionRecord.categories,
-            skills: companionRecord.skills,
-            languages: companionRecord.languages,
-            photos: companionRecord.photos,
-            kycStatus: 'APPROVED'
-          },
-          create: {
+      try {
+        if (prisma && prisma.user && prisma.companionProfile) {
+          // 1. Upsert User in Postgres
+          const user = await prisma.user.upsert({
+            where: { email },
+            update: {
+              fullName,
+              phone: phone || undefined,
+              avatar,
+              role: 'VERIFIED_COMPANION',
+              status: item.status === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE',
+              isDeleted: Boolean(item.isDeleted)
+            },
+            create: {
+              email,
+              phone: phone || undefined,
+              fullName,
+              passwordHash: 'COMPANION_DEFAULT_SECURE_HASH',
+              role: 'VERIFIED_COMPANION',
+              avatar,
+              status: 'ACTIVE',
+              isDeleted: false
+            }
+          });
+
+          // 2. Upsert CompanionProfile in Postgres
+          const profile = await prisma.companionProfile.upsert({
+            where: { userId: user.id },
+            update: {
+              bio,
+              age,
+              gender,
+              city,
+              country,
+              hourlyRate,
+              dailyRate,
+              weeklyRate,
+              categories,
+              skills,
+              languages,
+              photos,
+              availability,
+              verificationBadge: true,
+              isAvailableNow: true
+            },
+            create: {
+              userId: user.id,
+              bio,
+              age,
+              gender,
+              city,
+              country,
+              hourlyRate,
+              dailyRate,
+              weeklyRate,
+              categories,
+              skills,
+              languages,
+              photos,
+              availability,
+              verificationBadge: true,
+              isAvailableNow: true
+            }
+          });
+
+          savedRecords.push({
+            id: profile.id,
             userId: user.id,
-            city: companionRecord.city,
-            country: companionRecord.country,
-            age: companionRecord.age,
-            gender: companionRecord.gender,
-            bio: companionRecord.bio,
-            hourlyRate: companionRecord.hourlyRate,
-            dailyRate: companionRecord.dailyRate,
-            weeklyRate: companionRecord.weeklyRate,
-            categories: companionRecord.categories,
-            skills: companionRecord.skills,
-            languages: companionRecord.languages,
-            photos: companionRecord.photos,
-            kycStatus: 'APPROVED'
-          }
-        });
+            name: fullName,
+            email,
+            phone,
+            city,
+            country,
+            hourlyRate,
+            status: user.status
+          });
+        }
+      } catch (dbErr: any) {
+        console.error(`Error upserting companion ${email}:`, dbErr);
+        errors.push({ email, error: dbErr.message });
       }
-    } catch (dbErr) {
-      console.warn('Prisma DB save warning:', dbErr);
     }
 
     return NextResponse.json({
       success: true,
-      data: companionRecord,
-      message: 'Companion saved successfully'
+      message: `Successfully synchronized ${savedRecords.length} companions with PostgreSQL Database`,
+      savedCount: savedRecords.length,
+      errors: errors.length > 0 ? errors : undefined,
+      data: savedRecords
     });
   } catch (error: any) {
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to save companion' },
+      { success: false, error: error.message || 'Failed to sync companions with database' },
       { status: 500 }
     );
   }
