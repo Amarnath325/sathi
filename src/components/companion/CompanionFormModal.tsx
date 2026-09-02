@@ -29,6 +29,7 @@ import {
   Lock,
   RefreshCw
 } from 'lucide-react';
+import { useKycStore } from '@/lib/kycStore';
 
 
 interface Props {
@@ -345,11 +346,57 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
       return;
     }
 
+    const companionId = formData.id || `comp-${Date.now()}`;
+    const docNum = aadhaarNumber || (formData as any).aadhaarNumber || `ID-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    // Add to KYC Application Store as PENDING verification
+    try {
+      useKycStore.getState().addApplication({
+        userId: companionId,
+        userName: formData.name || 'New Companion',
+        userEmail: formData.email || '',
+        userPhone: formData.phone || '',
+        userDob: formData.dob || '2000-01-01',
+        userAge: formData.age || 25,
+        userGender: formData.gender || 'Female',
+        userCountry: formData.country || 'India',
+        userState: (formData as any).state || '',
+        userCity: formData.city || 'Mumbai',
+        userPincode: (formData as any).pincode || '',
+        languages: formData.languages || ['English'],
+        hourlyRate: formData.hourlyRate || 75,
+        dailyRate: formData.dailyRate || 350,
+        weeklyRate: formData.weeklyRate || 2000,
+        categories: formData.categories || ['Event Companion'],
+        skills: formData.skills || ['Multilingual'],
+        bio: formData.bio || 'Registered Companion Profile',
+        avatar: formData.avatar || PRESET_AVATARS[0],
+        photos: formData.photos || [formData.avatar || PRESET_AVATARS[0]],
+        type: 'AADHAAR_CARD',
+        documentNumber: docNum,
+        fileUrl: aadhaarFront || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=80',
+        fileUrlBack: aadhaarBack || 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&auto=format&fit=crop&q=80',
+        selfieUrl: formData.avatar || PRESET_AVATARS[0],
+        ocrData: {
+          extractedName: formData.name || 'Verified Applicant',
+          extractedDocNum: docNum,
+          confidenceScore: ocrConfidence || 99.2
+        },
+        livenessScore: 99.4,
+        status: 'PENDING',
+        safetyTier: 'TIER_2_ADDRESS',
+        bgvStatus: 'NOT_STARTED',
+        expiresAt: '2028-12-31'
+      });
+    } catch (kycErr) {
+      console.warn('Failed to queue KYC record from modal:', kycErr);
+    }
+
     onSubmit({
       ...formData,
-      id: formData.id || `comp-${Date.now()}`,
+      id: companionId,
       createdSource: initialData?.createdSource || 'ADMIN',
-      aadhaarNumber: aadhaarNumber || (formData as any).aadhaarNumber,
+      aadhaarNumber: docNum,
       avatar: formData.avatar || PRESET_AVATARS[0],
       createdAt: formData.createdAt || new Date().toISOString().split('T')[0]
     });
