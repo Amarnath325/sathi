@@ -510,35 +510,35 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-3 bg-slate-950/80 backdrop-blur-md overflow-y-auto font-sans">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[94vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto font-sans">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col my-auto min-h-[560px] sm:min-h-[620px] max-h-[92vh]">
 
         {/* Header */}
-        <div className="px-4 py-2.5 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center shadow-sm shrink-0">
-              <User className="w-3.5 h-3.5 text-white" />
+        <div className="px-5 py-3 border-b border-slate-800 bg-slate-950/70 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center shadow-md shadow-purple-600/30 shrink-0">
+              <User className="w-4 h-4 text-white" />
             </div>
             <div>
-              <h2 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 leading-tight">
+              <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2 leading-tight">
                 {initialData ? 'Edit Companion Profile' : 'Register New Companion'}
-                <span className="text-[8.5px] font-mono font-bold px-1.5 py-0.2 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
                   Admin Portal
                 </span>
               </h2>
-              <p className="text-[9.5px] text-slate-400 leading-tight">Setup companion profile with location, rates, KYC & availability.</p>
+              <p className="text-[10.5px] text-slate-400 leading-tight mt-0.5">Setup companion profile with location, rates, KYC verification & availability.</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
           >
-            <X className="w-3.5 h-3.5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-1 px-3 py-1 bg-slate-950/40 border-b border-slate-800 overflow-x-auto shrink-0 custom-scrollbar">
+        <div className="flex items-center gap-1.5 px-4 py-2 bg-slate-950/50 border-b border-slate-800 overflow-x-auto shrink-0 custom-scrollbar">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -547,12 +547,12 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold whitespace-nowrap transition-all cursor-pointer ${isActive
-                  ? 'bg-purple-600 text-white shadow-sm'
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all cursor-pointer ${isActive
+                  ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
                   }`}
               >
-                <Icon className={`w-3 h-3 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                 <span>{tab.label}</span>
               </button>
             );
@@ -561,46 +561,46 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
 
         {/* Form Alert Error */}
         {formError && (
-          <div className="mx-3 mt-1.5 p-1.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[10.5px] font-semibold flex items-center gap-1.5 shrink-0">
-            <AlertCircle className="w-3 h-3 shrink-0" />
+          <div className="mx-4 mt-2 p-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-semibold flex items-center gap-2 shrink-0">
+            <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{formError}</span>
           </div>
         )}
 
         {/* Form Body */}
-        <form onSubmit={handleFormSubmit} className="flex-1 overflow-y-auto p-3 sm:p-3.5 space-y-2.5 custom-scrollbar">
+        <form onSubmit={handleFormSubmit} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 pb-36 custom-scrollbar">
 
           {/* TAB 1: BASIC INFO */}
           {activeTab === 'basic' && (
-            <div className="space-y-2.5 animate-fade-in">
+            <div className="space-y-4 animate-fade-in min-h-[420px]">
               {/* Row 1: 4 Inputs */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
 
                 {/* Full Name */}
                 <div>
-                  <label className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 flex items-center justify-between">
+                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1 flex items-center justify-between">
                     <span className="flex items-center gap-1">
-                      <User className="w-2.5 h-2.5 text-purple-400" /> Full Name <span className="text-rose-400">*</span>
+                      <User className="w-3 h-3 text-purple-400" /> Full Name <span className="text-rose-400">*</span>
                     </span>
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Sophia Chen"
+                    placeholder="e.g. Parth Nishad"
                     value={formData.name || ''}
                     onChange={e => setField('name', e.target.value)}
-                    className={`w-full px-2 py-1 rounded-md bg-slate-950 border text-xs text-white focus:outline-none transition-all h-7.5 ${fieldErrors.name ? 'border-rose-500 ring-1 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
+                    className={`w-full px-3 py-1.5 rounded-lg bg-slate-950 border text-xs text-white focus:outline-none transition-all h-8.5 ${fieldErrors.name ? 'border-rose-500 ring-1 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
                       }`}
                   />
                 </div>
 
                 {/* Email Address (Max 30 Chars) */}
                 <div>
-                  <label className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 flex items-center justify-between">
+                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1 flex items-center justify-between">
                     <span className="flex items-center gap-1">
-                      <Mail className="w-2.5 h-2.5 text-purple-400" /> Email <span className="text-rose-400">*</span>
+                      <Mail className="w-3 h-3 text-purple-400" /> Email <span className="text-rose-400">*</span>
                     </span>
-                    <span className={`text-[8.5px] font-mono ${(formData.email?.length || 0) >= 30 ? 'text-amber-400 font-bold' : 'text-slate-500'
+                    <span className={`text-[9px] font-mono ${(formData.email?.length || 0) >= 30 ? 'text-amber-400 font-bold' : 'text-slate-500'
                       }`}>
                       {formData.email?.length || 0}/30
                     </span>
@@ -609,21 +609,21 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                     type="email"
                     required
                     maxLength={30}
-                    placeholder="sophia@example.com"
+                    placeholder="parth@example.com"
                     value={formData.email || ''}
                     onChange={e => handleEmailChange(e.target.value)}
-                    className={`w-full px-2 py-1 rounded-md bg-slate-950 border text-xs text-white focus:outline-none transition-all h-7.5 ${fieldErrors.email ? 'border-rose-500 ring-1 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
+                    className={`w-full px-3 py-1.5 rounded-lg bg-slate-950 border text-xs text-white focus:outline-none transition-all h-8.5 ${fieldErrors.email ? 'border-rose-500 ring-1 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
                       }`}
                   />
                 </div>
 
                 {/* Mobile Phone (10 Digits Only) */}
                 <div>
-                  <label className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 flex items-center justify-between">
+                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1 flex items-center justify-between">
                     <span className="flex items-center gap-1">
-                      <Phone className="w-2.5 h-2.5 text-purple-400" /> Mobile <span className="text-rose-400">*</span>
+                      <Phone className="w-3 h-3 text-purple-400" /> Mobile <span className="text-rose-400">*</span>
                     </span>
-                    <span className={`text-[8.5px] font-mono ${(formData.phone?.length || 0) === 10 ? 'text-emerald-400 font-bold' : 'text-slate-500'
+                    <span className={`text-[9px] font-mono ${(formData.phone?.length || 0) === 10 ? 'text-emerald-400 font-bold' : 'text-slate-500'
                       }`}>
                       {formData.phone?.length || 0}/10
                     </span>
@@ -634,19 +634,19 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                     placeholder="e.g. 9876543210"
                     value={formData.phone || ''}
                     onChange={e => handlePhoneChange(e.target.value)}
-                    className={`w-full px-2 py-1 rounded-md bg-slate-950 border text-xs text-white font-mono focus:outline-none transition-all h-7.5 ${fieldErrors.phone ? 'border-rose-500 ring-1 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
+                    className={`w-full px-3 py-1.5 rounded-lg bg-slate-950 border text-xs text-white font-mono focus:outline-none transition-all h-8.5 ${fieldErrors.phone ? 'border-rose-500 ring-1 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
                       }`}
                   />
                 </div>
 
                 {/* Date of Birth (DOB) Date Picker */}
                 <div>
-                  <label className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 flex items-center justify-between">
+                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1 flex items-center justify-between">
                     <span className="flex items-center gap-1">
-                      <Calendar className="w-2.5 h-2.5 text-purple-400" /> DOB <span className="text-rose-400">*</span>
+                      <Calendar className="w-3 h-3 text-purple-400" /> DOB <span className="text-rose-400">*</span>
                     </span>
-                    <span className="text-[8.5px] font-mono font-bold text-purple-300">
-                      Age: {formData.age || 25}y
+                    <span className="text-[9.5px] font-mono font-bold text-purple-300">
+                      Age: {formData.age || 22}y
                     </span>
                   </label>
                   <input
@@ -655,7 +655,7 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                     max={new Date().toISOString().split('T')[0]}
                     value={formData.dob || ''}
                     onChange={e => handleDobChange(e.target.value)}
-                    className={`w-full px-2 py-1 rounded-md bg-slate-950 border text-xs text-white focus:outline-none transition-all h-7.5 ${fieldErrors.dob ? 'border-rose-500 ring-1 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
+                    className={`w-full px-3 py-1.5 rounded-lg bg-slate-950 border text-xs text-white focus:outline-none transition-all h-8.5 ${fieldErrors.dob ? 'border-rose-500 ring-1 ring-rose-500/20' : 'border-slate-800 focus:border-purple-500'
                       }`}
                   />
                 </div>
@@ -663,32 +663,32 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
               </div>
 
               {/* Row 2: Age, Gender, Spoken Languages */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {/* Age (Calculated/Manual) */}
                 <div>
-                  <label className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
+                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
                     Age (Years)
                   </label>
                   <input
                     type="number"
                     min={18}
                     max={80}
-                    value={formData.age || 25}
+                    value={formData.age || 22}
                     onChange={e => setField('age', Number(e.target.value))}
-                    className="w-full px-2 py-1 rounded-md bg-slate-950 border border-slate-800 text-xs text-white font-mono font-bold text-purple-300 focus:border-purple-500 focus:outline-none transition-all h-7.5"
+                    className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white font-mono font-bold text-purple-300 focus:border-purple-500 focus:outline-none transition-all h-8.5"
                     disabled
                   />
                 </div>
 
                 {/* Gender Identity */}
                 <div>
-                  <label className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
+                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
                     Gender Identity
                   </label>
                   <select
-                    value={formData.gender || 'Female'}
+                    value={formData.gender || 'Male'}
                     onChange={e => setField('gender', e.target.value)}
-                    className="w-full px-2 py-1 rounded-md bg-slate-950 border border-slate-800 text-xs text-white focus:border-purple-500 focus:outline-none transition-all h-7.5"
+                    className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white focus:border-purple-500 focus:outline-none transition-all h-8.5 cursor-pointer font-medium"
                   >
                     <option value="Female">Female</option>
                     <option value="Male">Male</option>
@@ -699,10 +699,10 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
 
                 {/* Spoken Languages Quick Selector & Custom Add */}
                 <div className="lg:col-span-2">
-                  <label className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
+                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
                     Spoken Languages
                   </label>
-                  <div className="flex flex-wrap items-center gap-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     {PRESET_LANGUAGES.slice(0, 5).map(lang => {
                       const isSelected = (formData.languages || []).includes(lang);
                       return (
@@ -710,29 +710,29 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
                           key={lang}
                           type="button"
                           onClick={() => toggleLanguage(lang)}
-                          className={`text-[9.5px] px-1.5 py-0.5 rounded border font-bold transition-all flex items-center gap-0.5 cursor-pointer ${isSelected
-                            ? 'bg-purple-600/30 border-purple-500 text-purple-300'
-                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                          className={`text-[10px] px-2 py-1 rounded-md border font-bold transition-all flex items-center gap-1 cursor-pointer ${isSelected
+                            ? 'bg-purple-600/30 border-purple-500 text-purple-300 shadow-sm'
+                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
                             }`}
                         >
-                          {isSelected && <Check className="w-2 h-2 text-purple-400" />}
+                          {isSelected && <Check className="w-2.5 h-2.5 text-purple-400" />}
                           {lang}
                         </button>
                       );
                     })}
-                    <div className="flex items-center gap-1 flex-1 min-w-[120px]">
+                    <div className="flex items-center gap-1 flex-1 min-w-[130px]">
                       <input
                         type="text"
                         placeholder="Add lang..."
                         value={newLang}
                         onChange={e => setNewLang(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustomLanguage())}
-                        className="w-full px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-[10px] text-white outline-none h-6"
+                        className="w-full px-2 py-1 rounded-lg bg-slate-950 border border-slate-800 text-[10.5px] text-white outline-none h-7"
                       />
                       <button
                         type="button"
                         onClick={addCustomLanguage}
-                        className="px-2 py-0.5 rounded bg-purple-600 text-white text-[9.5px] font-bold hover:bg-purple-500 h-6 shrink-0"
+                        className="px-2.5 py-1 rounded-lg bg-purple-600 text-white text-[10px] font-bold hover:bg-purple-500 h-7 shrink-0 cursor-pointer"
                       >
                         Add
                       </button>
@@ -742,7 +742,7 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
               </div>
 
               {/* Row 3: 4-Column Location Cascade (Country -> State -> City -> Pincode) */}
-              <div className="p-2 rounded-xl bg-slate-950/80 border border-slate-800/80">
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 relative z-30 pb-4">
                 <SearchableLocationPicker
                   initialCountry={formData.country || ''}
                   initialState={(formData as any).state || ''}

@@ -284,17 +284,17 @@ export function SearchableLocationPicker({
 
         {/* 1. COUNTRY DROPDOWN */}
         <div className="relative">
-          <label className="block text-[10px] font-extrabold text-purple-600 uppercase tracking-wider mb-1 flex items-center justify-between">
+          <label className="block text-[11px] font-bold text-purple-400 uppercase tracking-wider mb-1 flex items-center justify-between">
             <span className="flex items-center gap-1">
-              <Globe className="w-3 h-3 text-purple-600" /> Country <span className="text-rose-500">*</span>
+              <Globe className="w-3.5 h-3.5 text-purple-400" /> Country <span className="text-rose-400">*</span>
             </span>
-            {loadingCountries && <RefreshCw className="w-2.5 h-2.5 text-purple-600 animate-spin" />}
+            {loadingCountries && <RefreshCw className="w-3 h-3 text-purple-400 animate-spin" />}
           </label>
 
           <button
             type="button"
             onClick={() => setOpenDropdown(openDropdown === 'country' ? null : 'country')}
-            className={`w-full px-2.5 py-1.5 rounded-lg border text-left flex items-center justify-between gap-1.5 transition-all h-8.5 ${countryText
+            className={`w-full px-3 py-1.5 rounded-lg border text-left flex items-center justify-between gap-1.5 transition-all h-9 ${countryText
               ? 'bg-white border-2 border-purple-500 shadow-sm'
               : 'bg-white border border-slate-300'
               } hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20`}
@@ -303,14 +303,14 @@ export function SearchableLocationPicker({
             <span className="truncate text-xs !text-black font-extrabold" style={{ color: '#000000' }}>
               {countryText || 'Search Country...'}
             </span>
-            <ChevronDown className={`w-3.5 h-3.5 text-purple-600 shrink-0 transition-transform ${openDropdown === 'country' ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-4 h-4 text-purple-600 shrink-0 transition-transform ${openDropdown === 'country' ? 'rotate-180' : ''}`} />
           </button>
 
           {/* Popover */}
           {openDropdown === 'country' && (
-            <div className="absolute left-0 right-0 top-full mt-1 z-[100] rounded-xl bg-white border-2 border-purple-500 shadow-2xl p-2 space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar" style={{ backgroundColor: '#ffffff' }}>
+            <div className="absolute left-0 right-0 top-full mt-1.5 z-[150] rounded-xl bg-white border-2 border-purple-500 shadow-2xl p-2 space-y-1.5 max-h-56 overflow-y-auto custom-scrollbar" style={{ backgroundColor: '#ffffff' }}>
               <div className="relative sticky top-0 bg-white z-10 pb-1.5 pt-0.5" style={{ backgroundColor: '#ffffff' }}>
-                <Search className="w-3.5 h-3.5 text-purple-600 absolute left-2.5 top-2" />
+                <Search className="w-3.5 h-3.5 text-purple-600 absolute left-2.5 top-2.5" />
                 <input
                   type="text"
                   autoFocus
@@ -352,18 +352,18 @@ export function SearchableLocationPicker({
 
         {/* 2. STATE DROPDOWN */}
         <div className="relative">
-          <label className="block text-[10px] font-extrabold text-purple-600 uppercase tracking-wider mb-1 flex items-center justify-between">
+          <label className="block text-[11px] font-bold text-purple-400 uppercase tracking-wider mb-1 flex items-center justify-between">
             <span className="flex items-center gap-1">
-              <Building2 className="w-3 h-3 text-purple-600" /> State / Province
+              <Building2 className="w-3.5 h-3.5 text-purple-400" /> State / Province
             </span>
-            {loadingStates && <RefreshCw className="w-2.5 h-2.5 text-purple-600 animate-spin" />}
+            {loadingStates && <RefreshCw className="w-3 h-3 text-purple-400 animate-spin" />}
           </label>
 
           <button
             type="button"
             disabled={!selectedCountry}
             onClick={() => setOpenDropdown(openDropdown === 'state' ? null : 'state')}
-            className={`w-full px-2.5 py-1.5 rounded-lg border text-left flex items-center justify-between gap-1.5 transition-all h-8.5 ${stateText
+            className={`w-full px-3 py-1.5 rounded-lg border text-left flex items-center justify-between gap-1.5 transition-all h-9 ${stateText
               ? 'bg-white border-2 border-purple-500 shadow-sm'
               : 'bg-white border border-slate-300'
               } hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed`}
@@ -372,14 +372,14 @@ export function SearchableLocationPicker({
             <span className="truncate text-xs !text-black font-extrabold" style={{ color: '#000000' }}>
               {stateText || (selectedCountry ? 'Search State...' : 'Select Country first')}
             </span>
-            <ChevronDown className={`w-3.5 h-3.5 text-purple-600 shrink-0 transition-transform ${openDropdown === 'state' ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-4 h-4 text-purple-600 shrink-0 transition-transform ${openDropdown === 'state' ? 'rotate-180' : ''}`} />
           </button>
 
           {/* Popover */}
           {openDropdown === 'state' && (
-            <div className="absolute left-0 right-0 top-full mt-1 z-[100] rounded-xl bg-white border-2 border-purple-500 shadow-2xl p-2 space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar" style={{ backgroundColor: '#ffffff' }}>
+            <div className="absolute left-0 right-0 top-full mt-1.5 z-[150] rounded-xl bg-white border-2 border-purple-500 shadow-2xl p-2 space-y-1.5 max-h-56 overflow-y-auto custom-scrollbar" style={{ backgroundColor: '#ffffff' }}>
               <div className="relative sticky top-0 bg-white z-10 pb-1.5 pt-0.5" style={{ backgroundColor: '#ffffff' }}>
-                <Search className="w-3.5 h-3.5 text-purple-600 absolute left-2.5 top-2" />
+                <Search className="w-3.5 h-3.5 text-purple-600 absolute left-2.5 top-2.5" />
                 <input
                   type="text"
                   autoFocus
@@ -420,18 +420,18 @@ export function SearchableLocationPicker({
 
         {/* 3. CITY DROPDOWN */}
         <div className="relative">
-          <label className="block text-[10px] font-extrabold text-purple-600 uppercase tracking-wider mb-1 flex items-center justify-between">
+          <label className="block text-[11px] font-bold text-purple-400 uppercase tracking-wider mb-1 flex items-center justify-between">
             <span className="flex items-center gap-1">
-              <MapPin className="w-3 h-3 text-purple-600" /> City / Hub <span className="text-rose-500">*</span>
+              <MapPin className="w-3.5 h-3.5 text-purple-400" /> City / Hub <span className="text-rose-400">*</span>
             </span>
-            {loadingCities && <RefreshCw className="w-2.5 h-2.5 text-purple-600 animate-spin" />}
+            {loadingCities && <RefreshCw className="w-3 h-3 text-purple-400 animate-spin" />}
           </label>
 
           <button
             type="button"
             disabled={!selectedState}
             onClick={() => setOpenDropdown(openDropdown === 'city' ? null : 'city')}
-            className={`w-full px-2.5 py-1.5 rounded-lg border text-left flex items-center justify-between gap-1.5 transition-all h-8.5 ${cityText
+            className={`w-full px-3 py-1.5 rounded-lg border text-left flex items-center justify-between gap-1.5 transition-all h-9 ${cityText
               ? 'bg-white border-2 border-purple-500 shadow-sm'
               : 'bg-white border border-slate-300'
               } hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed`}
@@ -440,14 +440,14 @@ export function SearchableLocationPicker({
             <span className="truncate text-xs !text-black font-extrabold" style={{ color: '#000000' }}>
               {cityText || (selectedState ? 'Search City...' : 'Select State first')}
             </span>
-            <ChevronDown className={`w-3.5 h-3.5 text-purple-600 shrink-0 transition-transform ${openDropdown === 'city' ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-4 h-4 text-purple-600 shrink-0 transition-transform ${openDropdown === 'city' ? 'rotate-180' : ''}`} />
           </button>
 
           {/* Popover */}
           {openDropdown === 'city' && (
-            <div className="absolute left-0 right-0 top-full mt-1 z-[100] rounded-xl bg-white border-2 border-purple-500 shadow-2xl p-2 space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar" style={{ backgroundColor: '#ffffff' }}>
+            <div className="absolute left-0 right-0 top-full mt-1.5 z-[150] rounded-xl bg-white border-2 border-purple-500 shadow-2xl p-2 space-y-1.5 max-h-56 overflow-y-auto custom-scrollbar" style={{ backgroundColor: '#ffffff' }}>
               <div className="relative sticky top-0 bg-white z-10 pb-1.5 pt-0.5" style={{ backgroundColor: '#ffffff' }}>
-                <Search className="w-3.5 h-3.5 text-purple-600 absolute left-2.5 top-2" />
+                <Search className="w-3.5 h-3.5 text-purple-600 absolute left-2.5 top-2.5" />
                 <input
                   type="text"
                   autoFocus
@@ -489,18 +489,18 @@ export function SearchableLocationPicker({
         {/* 4. PINCODE / AREA DROPDOWN */}
         {showPincode && (
           <div className="relative">
-            <label className="block text-[10px] font-extrabold text-emerald-600 uppercase tracking-wider mb-1 flex items-center justify-between">
+            <label className="block text-[11px] font-bold text-emerald-400 uppercase tracking-wider mb-1 flex items-center justify-between">
               <span className="flex items-center gap-1">
-                <Mail className="w-3 h-3 text-emerald-600" /> Area Pincode
+                <Mail className="w-3.5 h-3.5 text-emerald-400" /> Area Pincode
               </span>
-              {loadingPincodes && <RefreshCw className="w-2.5 h-2.5 text-emerald-600 animate-spin" />}
+              {loadingPincodes && <RefreshCw className="w-3 h-3 text-emerald-400 animate-spin" />}
             </label>
 
             <button
               type="button"
               disabled={!selectedCity}
               onClick={() => setOpenDropdown(openDropdown === 'pincode' ? null : 'pincode')}
-              className={`w-full px-2.5 py-1.5 rounded-lg border text-left flex items-center justify-between gap-1.5 transition-all h-8.5 ${pincodeText
+              className={`w-full px-3 py-1.5 rounded-lg border text-left flex items-center justify-between gap-1.5 transition-all h-9 ${pincodeText
                 ? 'bg-white border-2 border-emerald-500 shadow-sm'
                 : 'bg-white border border-slate-300'
                 } hover:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed`}
@@ -509,14 +509,14 @@ export function SearchableLocationPicker({
               <span className="truncate text-xs !text-black font-extrabold" style={{ color: '#000000' }}>
                 {pincodeText || (selectedCity ? 'Search Pincode...' : 'Select City first')}
               </span>
-              <ChevronDown className={`w-3.5 h-3.5 text-emerald-600 shrink-0 transition-transform ${openDropdown === 'pincode' ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-4 h-4 text-emerald-600 shrink-0 transition-transform ${openDropdown === 'pincode' ? 'rotate-180' : ''}`} />
             </button>
 
             {/* Popover */}
             {openDropdown === 'pincode' && (
-              <div className="absolute left-0 right-0 top-full mt-1 z-[100] rounded-xl bg-white border-2 border-emerald-500 shadow-2xl p-2 space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar" style={{ backgroundColor: '#ffffff' }}>
+              <div className="absolute left-0 right-0 top-full mt-1.5 z-[150] rounded-xl bg-white border-2 border-emerald-500 shadow-2xl p-2 space-y-1.5 max-h-56 overflow-y-auto custom-scrollbar" style={{ backgroundColor: '#ffffff' }}>
                 <div className="relative sticky top-0 bg-white z-10 pb-1.5 pt-0.5" style={{ backgroundColor: '#ffffff' }}>
-                  <Search className="w-3.5 h-3.5 text-emerald-600 absolute left-2.5 top-2" />
+                  <Search className="w-3.5 h-3.5 text-emerald-600 absolute left-2.5 top-2.5" />
                   <input
                     type="text"
                     autoFocus
