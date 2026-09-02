@@ -340,10 +340,34 @@ export default function AdminDashboardPage() {
   const loadDbCompanions = async () => {
     setIsLoadingCompanions(true);
     try {
-      const res = await fetch('/api/companions?limit=100');
+      // 1. Sync any existing local companions to server DB first
+      const localComps = useCrudStore.getState().companions || [];
+      if (localComps.length > 0) {
+        for (const comp of localComps) {
+          fetch('/api/admin/companions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(comp)
+          }).catch(() => {});
+        }
+      }
+
+      // 2. Fetch all companions from DB / Server API
+      const res = await fetch('/api/admin/companions');
       const json = await res.json();
-      if (json.success && Array.isArray(json.data)) {
+      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
         setDbCompanions(json.data);
+
+        // Merge any missing server companions into useCrudStore
+        const currentStore = useCrudStore.getState();
+        const currentIds = new Set(currentStore.companions.map(c => c.id));
+        const newToAdd = json.data.filter((d: any) => !currentIds.has(d.id) && !currentStore.companions.some(c => c.email && c.email === d.email));
+        
+        if (newToAdd.length > 0) {
+          useCrudStore.setState({
+            companions: [...currentStore.companions, ...newToAdd]
+          });
+        }
       }
     } catch (e) {
       console.warn('Failed to sync companions from DB:', e);
