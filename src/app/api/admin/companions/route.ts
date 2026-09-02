@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { UserProfile } from '@/lib/types';
 
+export const dynamic = 'force-dynamic';
+
 // Default availability schedule for Prisma JSON field
 const DEFAULT_AVAILABILITY = {
   Mon: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
