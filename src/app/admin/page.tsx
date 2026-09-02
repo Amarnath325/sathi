@@ -3554,8 +3554,9 @@ export default function AdminDashboardPage() {
             });
             triggerNotify(`Companion profile "${data.name}" updated successfully!`);
           } else {
-            addCompanion({
+            const newCompPayload = {
               name: data.name || 'New Companion',
+              fullName: data.name || 'New Companion',
               email: data.email || 'companion@example.com',
               phone: data.phone || '+1 415-555-0192',
               city: data.city || 'New York',
@@ -3581,8 +3582,22 @@ export default function AdminDashboardPage() {
               createdSource: 'ADMIN',
               aadhaarNumber: (data as any).aadhaarNumber || '',
               kycStatus: data.kycStatus || 'APPROVED'
-            });
-            triggerNotify(`New companion profile for "${data.name}" created successfully by Admin!`);
+            };
+
+            addCompanion(newCompPayload);
+
+            // Persist to Backend DB via /api/companions
+            try {
+              fetch('/api/companions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newCompPayload)
+              }).catch(err => console.warn('API sync warning:', err));
+            } catch (apiErr) {
+              console.warn('Failed to call /api/companions:', apiErr);
+            }
+
+            triggerNotify(`New companion profile for "${data.name}" created successfully!`);
           }
           setShowCreateModal(false);
           setEditingCompanionModalData(null);
