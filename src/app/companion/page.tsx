@@ -96,9 +96,19 @@ export default function CompanionDirectoryPage() {
     setSavedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
-  const handleSaveCompanion = (data: Partial<UserProfile>) => {
+  const handleSaveCompanion = async (data: Partial<UserProfile>) => {
     if (editingCompanion) {
-      setCompanions(prev => prev.map(c => c.id === editingCompanion.id ? { ...c, ...data } as UserProfile : c));
+      const updated = { ...editingCompanion, ...data };
+      setCompanions(prev => prev.map(c => c.id === editingCompanion.id ? updated as UserProfile : c));
+      try {
+        await fetch('/api/admin/companions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updated)
+        });
+      } catch (err) {
+        console.warn('Failed to persist companion update:', err);
+      }
     } else {
       const newComp: UserProfile = {
         ...data,
@@ -116,6 +126,15 @@ export default function CompanionDirectoryPage() {
         status: 'ACTIVE',
       } as UserProfile;
       setCompanions(prev => [newComp, ...prev]);
+      try {
+        await fetch('/api/admin/companions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newComp)
+        });
+      } catch (err) {
+        console.warn('Failed to persist new companion:', err);
+      }
     }
   };
 

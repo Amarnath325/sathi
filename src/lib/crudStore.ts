@@ -124,41 +124,82 @@ export const useCrudStore = create<CrudStoreState>()(
       selectedIds: [],
 
       // Companion Single Actions
-      addCompanion: (item: Omit<DynamicCompanionItem, 'id' | 'createdAt' | 'updatedAt' | 'isActive' | 'isDeleted'>) =>
-        set((state: CrudStoreState) => ({
-          companions: [
-            ...state.companions,
-            {
-              ...item,
-              id: 'usr-' + Date.now(),
-              createdAt: new Date().toISOString().split('T')[0],
-              updatedAt: new Date().toISOString().split('T')[0],
-              isActive: true,
-              isDeleted: false
-            }
-          ]
-        })),
+      addCompanion: (item: Omit<DynamicCompanionItem, 'id' | 'createdAt' | 'updatedAt' | 'isActive' | 'isDeleted'>) => {
+        const newItem: DynamicCompanionItem = {
+          ...item,
+          id: 'usr-' + Date.now(),
+          createdAt: new Date().toISOString().split('T')[0],
+          updatedAt: new Date().toISOString().split('T')[0],
+          isActive: true,
+          isDeleted: false
+        };
 
-      updateCompanion: (id: string, updates: Partial<DynamicCompanionItem>) =>
+        // Asynchronously persist to Neon PostgreSQL Database
+        try {
+          if (typeof window !== 'undefined') {
+            fetch('/api/admin/companions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(newItem)
+            }).catch(err => console.warn('Background Neon DB sync warning:', err));
+          }
+        } catch (e) {
+          console.warn('DB Sync trigger failed:', e);
+        }
+
         set((state: CrudStoreState) => ({
-          companions: state.companions.map((c: DynamicCompanionItem) =>
+          companions: [...state.companions, newItem]
+        }));
+      },
+
+      updateCompanion: (id: string, updates: Partial<DynamicCompanionItem>) => {
+        set((state: CrudStoreState) => {
+          const updatedCompanions = state.companions.map((c: DynamicCompanionItem) =>
             c.id === id ? { ...c, ...updates, updatedAt: new Date().toISOString().split('T')[0] } : c
-          )
-        })),
+          );
+          const updatedItem = updatedCompanions.find((c: DynamicCompanionItem) => c.id === id);
+          if (updatedItem && typeof window !== 'undefined') {
+            fetch('/api/admin/companions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(updatedItem)
+            }).catch(err => console.warn('Background Neon DB update sync warning:', err));
+          }
+          return { companions: updatedCompanions };
+        });
+      },
 
       toggleCompanionActive: (id: string) =>
-        set((state: CrudStoreState) => ({
-          companions: state.companions.map((c: DynamicCompanionItem) =>
-            c.id === id ? { ...c, isActive: !c.isActive, status: !c.isActive ? 'ACTIVE' : 'INACTIVE' } : c
-          )
-        })),
+        set((state: CrudStoreState) => {
+          const updated = state.companions.map((c: DynamicCompanionItem) =>
+            c.id === id ? { ...c, isActive: !c.isActive, status: (!c.isActive ? 'ACTIVE' : 'INACTIVE') as any } : c
+          );
+          const item = updated.find((c: DynamicCompanionItem) => c.id === id);
+          if (item && typeof window !== 'undefined') {
+            fetch('/api/admin/companions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(item)
+            }).catch(err => console.warn('Background Neon DB status sync warning:', err));
+          }
+          return { companions: updated };
+        }),
 
       softDeleteCompanion: (id: string) =>
-        set((state: CrudStoreState) => ({
-          companions: state.companions.map((c: DynamicCompanionItem) =>
+        set((state: CrudStoreState) => {
+          const updated = state.companions.map((c: DynamicCompanionItem) =>
             c.id === id ? { ...c, isDeleted: true, deletedAt: new Date().toISOString() } : c
-          )
-        })),
+          );
+          const item = updated.find((c: DynamicCompanionItem) => c.id === id);
+          if (item && typeof window !== 'undefined') {
+            fetch('/api/admin/companions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(item)
+            }).catch(err => console.warn('Background Neon DB delete sync warning:', err));
+          }
+          return { companions: updated };
+        }),
 
       restoreCompanion: (id: string) =>
         set((state: CrudStoreState) => ({
