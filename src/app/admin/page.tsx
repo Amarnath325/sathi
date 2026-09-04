@@ -3658,7 +3658,7 @@ export default function AdminDashboardPage() {
               skills: data.skills || ['Multilingual'],
               languages: data.languages || ['English'],
               bio: data.bio || 'Registered Companion Profile',
-              createdSource: 'ADMIN',
+              createdSource: 'ADMIN' as const,
               aadhaarNumber: (data as any).aadhaarNumber || '',
               kycStatus: data.kycStatus || 'APPROVED'
             };

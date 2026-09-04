@@ -83,7 +83,7 @@ export const useKycStore = create<KycStoreState>()(
         const newRecord: KycApplicationRecord = {
           ...item,
           id,
-          submittedAt: item.submittedAt || now,
+          submittedAt: (item as any).submittedAt || now,
           createdAt: now,
           status: item.status || 'PENDING',
           rejectionReason: item.rejectionReason || null,

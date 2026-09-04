@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
         });
 
         if (profiles && profiles.length > 0) {
-          dbCompanions = profiles.map(p => ({
+          dbCompanions = profiles.map((p: any) => ({
             id: p.id || p.userId,
             name: p.user?.fullName || p.displayName || 'Companion',
             email: p.user?.email || '',
