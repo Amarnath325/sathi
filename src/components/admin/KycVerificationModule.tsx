@@ -33,7 +33,8 @@ import {
   Check,
   User,
   History,
-  MessageSquare
+  MessageSquare,
+  Trash2
 } from 'lucide-react';
 import { useKycStore, KycApplicationRecord, KycStatus, SafetyTier, PoliceBgvStatus } from '@/lib/kycStore';
 import { useCrudStore } from '@/lib/crudStore';
@@ -67,7 +68,8 @@ function formatDateTime(isoString?: string | null): string {
 }
 
 export function KycVerificationModule() {
-  const [activeSubFilter, setActiveSubFilter] = useState<KycSubFilter>('verification-dashboard');
+  // Default to 'pending' (Inspect Queue) as requested
+  const [activeSubFilter, setActiveSubFilter] = useState<KycSubFilter>('pending');
   const [searchQuery, setSearchQuery] = useState('');
   const [notification, setNotification] = useState<string | null>(null);
 
@@ -83,7 +85,8 @@ export function KycVerificationModule() {
     rejectApplication, 
     toggleBgvStatus, 
     sendRenewalReminder,
-    addApplication
+    addApplication,
+    clearAll
   } = useKycStore();
 
   const { companions } = useCrudStore();
@@ -114,53 +117,6 @@ export function KycVerificationModule() {
   useEffect(() => {
     setCurrentPage(1);
   }, [activeSubFilter, searchQuery, pageSize]);
-
-  // Seed / Sync from existing companions if store is empty
-  useEffect(() => {
-    if (applications.length === 0 && companions && companions.length > 0) {
-      companions.forEach((comp) => {
-        addApplication({
-          userId: comp.id,
-          userName: comp.name,
-          userEmail: comp.email,
-          userPhone: comp.phone || '+91 98765 43210',
-          userAge: comp.age || 25,
-          userGender: comp.gender || 'Female',
-          userCountry: comp.country || 'India',
-          userState: comp.state || '',
-          userCity: comp.city || 'Mumbai',
-          userPincode: comp.pincode || '',
-          languages: comp.languages || ['English', 'Hindi'],
-          hourlyRate: comp.hourlyRate || 75,
-          dailyRate: comp.dailyRate || 350,
-          weeklyRate: comp.weeklyRate || 2000,
-          categories: comp.categories || [comp.category || 'Event Companion'],
-          skills: comp.skills || ['Multilingual'],
-          bio: comp.bio || 'Verified Companion Profile',
-          avatar: comp.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
-          photos: comp.photos || [comp.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80'],
-          type: 'AADHAAR_CARD',
-          documentNumber: comp.aadhaarNumber || `ID-${Math.floor(100000 + Math.random() * 900000)}`,
-          fileUrl: comp.photos?.[0] || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=80',
-          fileUrlBack: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&auto=format&fit=crop&q=80',
-          selfieUrl: comp.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
-          ocrData: {
-            extractedName: comp.name,
-            extractedDocNum: comp.aadhaarNumber || 'UID-VERIFIED',
-            confidenceScore: 99.2
-          },
-          livenessScore: 99.5,
-          status: comp.kycStatus === 'APPROVED' ? 'APPROVED' : comp.kycStatus === 'REJECTED' ? 'REJECTED' : 'PENDING',
-          safetyTier: comp.kycStatus === 'APPROVED' ? 'TIER_3_POLICE_ELITE' : 'TIER_2_ADDRESS',
-          bgvStatus: comp.kycStatus === 'APPROVED' ? 'POLICE_VERIFIED' : 'PENDING_POLICE',
-          reviewedAt: comp.kycStatus === 'APPROVED' ? new Date().toISOString() : null,
-          reviewedBy: comp.kycStatus === 'APPROVED' ? 'Super Admin' : null,
-          reviewRemarks: comp.kycStatus === 'APPROVED' ? 'Initial verified platform companion record.' : null,
-          expiresAt: '2028-12-31'
-        });
-      });
-    }
-  }, [applications.length, companions, addApplication]);
 
   // Filter documents based on active subtab & search
   const filteredDocs = applications.filter((doc) => {
@@ -488,6 +444,21 @@ export function KycVerificationModule() {
             >
               <FileText className="w-3 h-3" /> PDF
             </button>
+
+            {applications.length > 0 && (
+              <button
+                onClick={() => {
+                  if (window.confirm('Are you sure you want to clear all KYC applications from the queue?')) {
+                    clearAll();
+                    triggerToast('Cleared all KYC applications queue!');
+                  }
+                }}
+                className="h-7 px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[11px] font-bold flex items-center gap-1 shrink-0 cursor-pointer"
+                title="Clear all test / mock applications"
+              >
+                <Trash2 className="w-3 h-3 text-rose-400" /> Clear Queue
+              </button>
+            )}
           </div>
 
         </div>

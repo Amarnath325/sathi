@@ -278,7 +278,7 @@ export const useKycStore = create<KycStoreState>()(
       clearAll: () => set({ applications: [] })
     }),
     {
-      name: 'sathi_kyc_applications_v2'
+      name: 'sathi_kyc_live_applications_v4'
     }
   )
 );

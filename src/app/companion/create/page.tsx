@@ -10,6 +10,8 @@ import {
   ArrowLeft, CheckCircle2, User, DollarSign, Calendar, Sparkles, ShieldCheck, Upload
 } from 'lucide-react';
 
+import { useKycStore } from '@/lib/kycStore';
+
 const STEPS = ['Basic Information', 'Services & Bio', 'Pricing & Rates', 'Availability Matrix', 'Review & Submit'];
 
 export default function CreateCompanionPage() {
@@ -55,7 +57,37 @@ export default function CreateCompanionPage() {
   };
 
   const handleFinish = async () => {
+    const companionId = `comp-${Date.now()}`;
+    const docNum = `ID-${Math.floor(100000 + Math.random() * 900000)}`;
+
     try {
+      useKycStore.getState().addApplication({
+        userId: companionId,
+        userName: formData.name || 'New Companion',
+        userEmail: formData.email || '',
+        userPhone: formData.phone || '',
+        userAge: Number(formData.age) || 25,
+        userGender: formData.gender || 'Female',
+        userCountry: formData.country || 'India',
+        userCity: formData.city || 'Mumbai',
+        languages: formData.languages || ['English'],
+        hourlyRate: Number(formData.hourlyRate) || 75,
+        dailyRate: Number(formData.dailyRate) || 350,
+        weeklyRate: Number(formData.weeklyRate) || 2000,
+        categories: formData.categories || ['Event Companion'],
+        skills: formData.skills || ['Multilingual'],
+        bio: formData.bio || 'Registered Companion Profile',
+        avatar: formData.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
+        photos: formData.photos || [],
+        type: 'AADHAAR_CARD',
+        documentNumber: docNum,
+        fileUrl: formData.avatar || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=80',
+        selfieUrl: formData.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
+        status: 'PENDING',
+        safetyTier: 'TIER_1_ID',
+        bgvStatus: 'NOT_STARTED',
+        expiresAt: '2028-12-31'
+      });
       await fetch('/api/companions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
