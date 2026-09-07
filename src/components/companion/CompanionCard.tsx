@@ -99,9 +99,13 @@ export function CompanionCard({ companion, onSave, isSaved = false, showActions 
 
           {/* Top badges */}
           <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 pointer-events-none">
-            {companion.verificationBadge && (
+            {companion.kycStatus === 'APPROVED' || companion.verificationBadge ? (
               <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-950/80 backdrop-blur-md border border-indigo-500/40 text-indigo-300 text-[10px] font-bold">
-                <ShieldCheck className="w-3 h-3" /> Verified
+                <ShieldCheck className="w-3 h-3" /> Verified ✓
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-950/80 backdrop-blur-md border border-amber-500/50 text-amber-300 text-[10px] font-bold">
+                <Clock className="w-3 h-3 text-amber-400" /> KYC Pending
               </span>
             )}
             {companion.isAvailableNow && (

@@ -180,6 +180,57 @@ export default function BookingPage() {
 
   const allSafetyAgreed = agreeLawful && agreeGuidelines && agreePlatformComm && agreeCancellation && agreeSafety;
 
+  // Strict KYC Service Gate: Companion must be KYC Approved and active
+  const isServiceEligible = (rawCompanion?.kycStatus === 'APPROVED' || (rawCompanion as any)?.status === 'ACTIVE') && rawCompanion?.kycStatus !== 'REJECTED' && rawCompanion?.kycStatus !== 'PENDING';
+
+  if (!isServiceEligible) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-16 text-center space-y-6 animate-fade-in">
+        <div className="glass-panel p-8 sm:p-10 rounded-3xl border border-amber-500/40 bg-slate-950 space-y-6 shadow-2xl">
+          <div className="w-16 h-16 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center mx-auto shadow-lg">
+            <Lock className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-mono font-bold border border-amber-500/40 inline-flex items-center gap-1.5">
+              <AlertTriangle className="w-3.5 h-3.5" /> 🔒 SERVICE ACCESS LOCKED
+            </span>
+            <h2 className="text-2xl font-black text-white">KYC Verification Required</h2>
+            <p className="text-xs text-slate-300 leading-relaxed max-w-md mx-auto">
+              This companion profile (<strong className="text-white">{companion.name}</strong>) is currently awaiting KYC documentation approval in the Compliance Verification Queue. Bookings cannot be confirmed until verification is completed by the Super Admin.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-slate-400 font-mono text-left space-y-2 max-w-md mx-auto">
+            <div className="flex justify-between">
+              <span>Companion:</span> <strong className="text-white">{companion.name}</strong>
+            </div>
+            <div className="flex justify-between">
+              <span>KYC Compliance Status:</span> <span className="text-amber-400 font-bold">{rawCompanion?.kycStatus || 'PENDING_INSPECTION'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Booking Service Access:</span> <span className="text-rose-400 font-bold">LOCKED ✕</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <Link
+              href={`/companion/${companion.id}`}
+              className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 font-bold text-xs hover:bg-slate-800 transition-all"
+            >
+              ← Back to Companion Profile
+            </Link>
+            <Link
+              href="/admin"
+              className="w-full sm:w-auto px-6 py-3 rounded-2xl gradient-bg-primary text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 transition-all"
+            >
+              Approve in Admin KYC Center →
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       

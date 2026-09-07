@@ -91,6 +91,9 @@ export default function CompanionProfilePage() {
     'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&auto=format&fit=crop&q=80'
   ];
 
+  // Strict KYC Service Gate
+  const isKycApproved = (rawCompanion?.kycStatus === 'APPROVED' || (rawCompanion as any)?.status === 'ACTIVE') && rawCompanion?.kycStatus !== 'REJECTED' && rawCompanion?.kycStatus !== 'PENDING';
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       
@@ -112,6 +115,29 @@ export default function CompanionProfilePage() {
           </button>
         </div>
       </div>
+
+      {/* KYC Compliance Lock Warning Banner */}
+      {!isKycApproved && (
+        <div className="p-4 sm:p-5 rounded-3xl bg-amber-950/30 border border-amber-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs animate-fade-in shadow-xl">
+          <div className="flex items-center gap-3 text-amber-300">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0 border border-amber-500/30">
+              <Lock className="w-4 h-4 text-amber-400" />
+            </div>
+            <div>
+              <span className="font-bold text-sm text-white block">🔒 Service Restricted: KYC Verification Required</span>
+              <span className="text-[11px] text-amber-400/90 leading-relaxed">
+                This companion profile is awaiting document and biometric review in the Compliance Queue. Service booking will be activated upon Super Admin approval.
+              </span>
+            </div>
+          </div>
+          <Link
+            href="/admin"
+            className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-amber-500/40 text-amber-300 font-bold text-xs whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0"
+          >
+            Inspect in Admin KYC Portal →
+          </Link>
+        </div>
+      )}
 
       {/* Main Profile Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -135,12 +161,15 @@ export default function CompanionProfilePage() {
                 <span className="px-3 py-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-emerald-500/40 text-emerald-400 text-xs font-bold flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> PHONE VERIFIED ✓
                 </span>
-                <span className="px-3 py-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-indigo-500/40 text-indigo-300 text-xs font-bold flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" /> IDENTITY VERIFIED ✓
-                </span>
-                <span className="px-3 py-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-indigo-500/40 text-indigo-300 text-xs font-bold flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" /> KYC VERIFIED ✓
-                </span>
+                {isKycApproved ? (
+                  <span className="px-3 py-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-indigo-500/40 text-indigo-300 text-xs font-bold flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" /> KYC VERIFIED ✓
+                  </span>
+                ) : (
+                  <span className="px-3 py-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-amber-500/40 text-amber-300 text-xs font-bold flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-amber-400" /> KYC PENDING ⏳
+                  </span>
+                )}
               </div>
 
               <div className="absolute bottom-4 left-6 right-6 flex items-end justify-between pointer-events-none">
@@ -371,12 +400,21 @@ export default function CompanionProfilePage() {
             </div>
 
             <div className="space-y-3">
-              <Link
-                href={`/booking/${companion.id}`}
-                className="w-full py-4 rounded-2xl gradient-bg-primary text-white font-extrabold text-sm hover:opacity-95 transition-all flex items-center justify-center gap-2 shadow-xl shadow-indigo-600/30"
-              >
-                Configure & Book Now <Sparkles className="w-4 h-4" />
-              </Link>
+              {isKycApproved ? (
+                <Link
+                  href={`/booking/${companion.id}`}
+                  className="w-full py-4 rounded-2xl gradient-bg-primary text-white font-extrabold text-sm hover:opacity-95 transition-all flex items-center justify-center gap-2 shadow-xl shadow-indigo-600/30"
+                >
+                  Configure & Book Now <Sparkles className="w-4 h-4" />
+                </Link>
+              ) : (
+                <button
+                  onClick={() => showToast('error', 'Service Booking Locked', 'This companion profile is awaiting KYC verification approval in the compliance queue.')}
+                  className="w-full py-4 rounded-2xl bg-slate-900 border border-amber-500/40 text-amber-300 font-bold text-xs flex items-center justify-center gap-2 shadow-lg cursor-not-allowed opacity-85 hover:bg-slate-800 transition-all"
+                >
+                  <Lock className="w-4 h-4 text-amber-400" /> Service Locked (KYC Pending)
+                </button>
+              )}
               <Link
                 href="/chat"
                 className="w-full py-3 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 font-bold text-xs hover:text-white flex items-center justify-center gap-2"

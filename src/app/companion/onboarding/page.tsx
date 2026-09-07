@@ -1238,6 +1238,7 @@ export default function CompanionOnboardingWizard() {
       const compId = `comp-${Date.now()}`;
       useKycStore.getState().addApplication({
         userId: compId,
+        applicantType: 'COMPANION',
         userName: companionPayload.fullName,
         userEmail: companionPayload.email,
         userPhone: companionPayload.phone,

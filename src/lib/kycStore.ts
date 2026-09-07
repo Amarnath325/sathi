@@ -2,15 +2,18 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { useCrudStore, DynamicCompanionItem } from './crudStore';
+import { useCrudStore } from './crudStore';
+import { useUserStore } from './userStore';
 
 export type PoliceBgvStatus = 'NOT_STARTED' | 'PENDING_POLICE' | 'POLICE_VERIFIED' | 'FAILED';
 export type SafetyTier = 'TIER_1_ID' | 'TIER_2_ADDRESS' | 'TIER_3_POLICE_ELITE';
 export type KycStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
+export type KycApplicantType = 'USER' | 'COMPANION';
 
 export interface KycApplicationRecord {
   id: string;
   userId: string;
+  applicantType: KycApplicantType; // 'USER' (Customer/Client) or 'COMPANION'
   userName: string;
   userEmail: string;
   userPhone: string;
@@ -63,7 +66,7 @@ interface KycStoreState {
   applications: KycApplicationRecord[];
   
   // Actions
-  addApplication: (item: Omit<KycApplicationRecord, 'id' | 'createdAt' | 'submittedAt'> & { id?: string }) => KycApplicationRecord;
+  addApplication: (item: Omit<KycApplicationRecord, 'id' | 'createdAt' | 'submittedAt'> & { id?: string; applicantType?: KycApplicantType }) => KycApplicationRecord;
   approveApplication: (id: string, remarks?: string, reviewerName?: string) => void;
   rejectApplication: (id: string, reason: string, remarks?: string, reviewerName?: string) => void;
   toggleBgvStatus: (id: string) => void;
@@ -80,9 +83,11 @@ export const useKycStore = create<KycStoreState>()(
       addApplication: (item) => {
         const id = item.id || `kyc-${Date.now()}`;
         const now = new Date().toISOString();
+        const applicantType: KycApplicantType = item.applicantType || (item.hourlyRate ? 'COMPANION' : 'USER');
         const newRecord: KycApplicationRecord = {
           ...item,
           id,
+          applicantType,
           submittedAt: (item as any).submittedAt || now,
           createdAt: now,
           status: item.status || 'PENDING',
@@ -110,7 +115,9 @@ export const useKycStore = create<KycStoreState>()(
         return newRecord;
       },
 
-      approveApplication: (id: string, remarks = 'Identity and biometric documents verified successfully. Approved for active platform companionship.', reviewerName = 'Super Admin') => {
+      approveApplication: (id: string, remarks?: string, reviewerName?: string) => {
+        const finalRemarks = remarks || 'Identity and biometric documents verified successfully. Approved for active platform eligibility.';
+        const finalReviewer = reviewerName || 'Super Admin';
         const now = new Date().toISOString();
         const targetApp = get().applications.find(a => a.id === id);
 
@@ -123,8 +130,8 @@ export const useKycStore = create<KycStoreState>()(
                 status: 'APPROVED',
                 rejectionReason: null,
                 reviewedAt: now,
-                reviewedBy: reviewerName,
-                reviewRemarks: remarks,
+                reviewedBy: finalReviewer,
+                reviewRemarks: finalRemarks,
                 safetyTier: updatedTier
               };
             }
@@ -132,78 +139,119 @@ export const useKycStore = create<KycStoreState>()(
           })
         }));
 
-        // Seamless Sync to Companion Management (useCrudStore)
-        if (targetApp) {
+        if (!targetApp) return;
+
+        // Sync USER KYC approval to useUserStore
+        if (targetApp.applicantType === 'USER') {
           try {
-            const crudStore = useCrudStore.getState();
-            const existingCompanion = crudStore.companions.find(
-              c => c.id === targetApp.userId || (targetApp.userEmail && c.email.toLowerCase() === targetApp.userEmail.toLowerCase())
+            const userStore = useUserStore.getState();
+            const existingUser = userStore.users.find(
+              u => u.id === targetApp.userId || (targetApp.userEmail && u.email.toLowerCase() === targetApp.userEmail.toLowerCase())
             );
 
-            if (existingCompanion) {
-              crudStore.updateCompanion(existingCompanion.id, {
+            if (existingUser) {
+              userStore.updateUser(existingUser.id, {
                 status: 'ACTIVE',
-                isActive: true,
-                kycStatus: 'APPROVED',
-                verificationBadge: true,
-                ratingAvg: existingCompanion.ratingAvg || 5.0,
-                aadhaarNumber: targetApp.documentNumber || existingCompanion.aadhaarNumber,
-                name: targetApp.userName || existingCompanion.name,
-                phone: targetApp.userPhone || existingCompanion.phone,
-                city: targetApp.userCity || existingCompanion.city,
-                country: targetApp.userCountry || existingCompanion.country,
-                state: targetApp.userState || existingCompanion.state,
-                pincode: targetApp.userPincode || existingCompanion.pincode,
-                age: targetApp.userAge || existingCompanion.age,
-                gender: targetApp.userGender || existingCompanion.gender,
-                avatar: targetApp.avatar || targetApp.selfieUrl || existingCompanion.avatar,
-                photos: targetApp.photos && targetApp.photos.length > 0 ? targetApp.photos : existingCompanion.photos,
-                categories: targetApp.categories || existingCompanion.categories,
-                skills: targetApp.skills || existingCompanion.skills,
-                languages: targetApp.languages || existingCompanion.languages,
-                hourlyRate: targetApp.hourlyRate || existingCompanion.hourlyRate,
-                dailyRate: targetApp.dailyRate || existingCompanion.dailyRate,
-                weeklyRate: targetApp.weeklyRate || existingCompanion.weeklyRate,
-                bio: targetApp.bio || existingCompanion.bio
+                isEmailVerified: true,
+                isPhoneVerified: true
               });
             } else {
-              crudStore.addCompanion({
+              userStore.addUser({
+                id: targetApp.userId,
                 name: targetApp.userName,
                 email: targetApp.userEmail,
                 phone: targetApp.userPhone,
+                role: 'CUSTOMER',
+                status: 'ACTIVE',
+                riskLevel: 'LOW',
+                riskScore: 0.02,
                 city: targetApp.userCity || 'Mumbai',
                 country: targetApp.userCountry || 'India',
-                state: targetApp.userState || '',
-                pincode: targetApp.userPincode || '',
-                age: targetApp.userAge || 25,
-                gender: targetApp.userGender || 'Female',
-                avatar: targetApp.avatar || targetApp.selfieUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
-                photos: targetApp.photos && targetApp.photos.length > 0 ? targetApp.photos : [targetApp.avatar || targetApp.selfieUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80'],
-                hourlyRate: targetApp.hourlyRate || 75,
-                dailyRate: targetApp.dailyRate || 350,
-                weeklyRate: targetApp.weeklyRate || 2000,
-                ratingAvg: 5.0,
-                ratingCount: 0,
-                completedBookings: 0,
-                status: 'ACTIVE',
-                category: targetApp.categories?.[0] || 'Event Companion',
-                categories: targetApp.categories || ['Event Companion'],
-                skills: targetApp.skills || ['Multilingual'],
-                languages: targetApp.languages || ['English', 'Hindi'],
-                bio: targetApp.bio || 'Verified Professional Companion',
-                createdSource: 'USER_REGISTERED',
-                aadhaarNumber: targetApp.documentNumber || '',
-                kycStatus: 'APPROVED',
-                verificationBadge: true
+                isEmailVerified: true,
+                isPhoneVerified: true,
+                walletBalance: 100,
+                avatar: targetApp.avatar || targetApp.selfieUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
+                bio: targetApp.bio || 'Verified platform customer account.'
               });
             }
-          } catch (syncErr) {
-            console.warn('Failed to sync approved companion to crudStore:', syncErr);
+          } catch (uSyncErr) {
+            console.warn('Failed to sync approved user to userStore:', uSyncErr);
           }
+          return;
+        }
+
+        // Sync COMPANION KYC approval to useCrudStore
+        try {
+          const crudStore = useCrudStore.getState();
+          const existingCompanion = crudStore.companions.find(
+            c => c.id === targetApp.userId || (targetApp.userEmail && c.email.toLowerCase() === targetApp.userEmail.toLowerCase())
+          );
+
+          if (existingCompanion) {
+            crudStore.updateCompanion(existingCompanion.id, {
+              status: 'ACTIVE',
+              isActive: true,
+              kycStatus: 'APPROVED',
+              verificationBadge: true,
+              ratingAvg: existingCompanion.ratingAvg || 5.0,
+              aadhaarNumber: targetApp.documentNumber || existingCompanion.aadhaarNumber,
+              name: targetApp.userName || existingCompanion.name,
+              phone: targetApp.userPhone || existingCompanion.phone,
+              city: targetApp.userCity || existingCompanion.city,
+              country: targetApp.userCountry || existingCompanion.country,
+              state: targetApp.userState || existingCompanion.state,
+              pincode: targetApp.userPincode || existingCompanion.pincode,
+              age: targetApp.userAge || existingCompanion.age,
+              gender: targetApp.userGender || existingCompanion.gender,
+              avatar: targetApp.avatar || targetApp.selfieUrl || existingCompanion.avatar,
+              photos: targetApp.photos && targetApp.photos.length > 0 ? targetApp.photos : existingCompanion.photos,
+              categories: targetApp.categories || existingCompanion.categories,
+              skills: targetApp.skills || existingCompanion.skills,
+              languages: targetApp.languages || existingCompanion.languages,
+              hourlyRate: targetApp.hourlyRate || existingCompanion.hourlyRate,
+              dailyRate: targetApp.dailyRate || existingCompanion.dailyRate,
+              weeklyRate: targetApp.weeklyRate || existingCompanion.weeklyRate,
+              bio: targetApp.bio || existingCompanion.bio
+            });
+          } else {
+            crudStore.addCompanion({
+              name: targetApp.userName,
+              email: targetApp.userEmail,
+              phone: targetApp.userPhone,
+              city: targetApp.userCity || 'Mumbai',
+              country: targetApp.userCountry || 'India',
+              state: targetApp.userState || '',
+              pincode: targetApp.userPincode || '',
+              age: targetApp.userAge || 25,
+              gender: targetApp.userGender || 'Female',
+              avatar: targetApp.avatar || targetApp.selfieUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
+              photos: targetApp.photos && targetApp.photos.length > 0 ? targetApp.photos : [targetApp.avatar || targetApp.selfieUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80'],
+              hourlyRate: targetApp.hourlyRate || 75,
+              dailyRate: targetApp.dailyRate || 350,
+              weeklyRate: targetApp.weeklyRate || 2000,
+              ratingAvg: 5.0,
+              ratingCount: 0,
+              completedBookings: 0,
+              status: 'ACTIVE',
+              category: targetApp.categories?.[0] || 'Event Companion',
+              categories: targetApp.categories || ['Event Companion'],
+              skills: targetApp.skills || ['Multilingual'],
+              languages: targetApp.languages || ['English', 'Hindi'],
+              bio: targetApp.bio || 'Verified Professional Companion',
+              createdSource: 'USER_REGISTERED',
+              aadhaarNumber: targetApp.documentNumber || '',
+              kycStatus: 'APPROVED',
+              verificationBadge: true
+            });
+          }
+        } catch (syncErr) {
+          console.warn('Failed to sync approved companion to crudStore:', syncErr);
         }
       },
 
-      rejectApplication: (id: string, reason: string, remarks = '', reviewerName = 'Super Admin') => {
+      rejectApplication: (id: string, reason: string, remarks?: string, reviewerName?: string) => {
+        const finalRemarks = remarks || `Application rejected: ${reason}`;
+        const finalReviewer = reviewerName || 'Super Admin';
         const now = new Date().toISOString();
         const targetApp = get().applications.find(a => a.id === id);
 
@@ -215,31 +263,47 @@ export const useKycStore = create<KycStoreState>()(
                 status: 'REJECTED',
                 rejectionReason: reason,
                 reviewedAt: now,
-                reviewedBy: reviewerName,
-                reviewRemarks: remarks || `Application rejected: ${reason}`
+                reviewedBy: finalReviewer,
+                reviewRemarks: finalRemarks
               };
             }
             return app;
           })
         }));
 
-        // Deactivate in Companion Management if present
+        // Deactivate in Companion or User store
         if (targetApp) {
-          try {
-            const crudStore = useCrudStore.getState();
-            const existingCompanion = crudStore.companions.find(
-              c => c.id === targetApp.userId || (targetApp.userEmail && c.email.toLowerCase() === targetApp.userEmail.toLowerCase())
-            );
-            if (existingCompanion) {
-              crudStore.updateCompanion(existingCompanion.id, {
-                status: 'INACTIVE',
-                isActive: false,
-                kycStatus: 'REJECTED',
-                verificationBadge: false
-              });
+          if (targetApp.applicantType === 'USER') {
+            try {
+              const userStore = useUserStore.getState();
+              const existingUser = userStore.users.find(
+                u => u.id === targetApp.userId || (targetApp.userEmail && u.email.toLowerCase() === targetApp.userEmail.toLowerCase())
+              );
+              if (existingUser) {
+                userStore.updateUser(existingUser.id, {
+                  status: 'RESTRICTED'
+                });
+              }
+            } catch (uErr) {
+              console.warn('Failed to sync rejection to userStore:', uErr);
             }
-          } catch (syncErr) {
-            console.warn('Failed to sync rejection to crudStore:', syncErr);
+          } else {
+            try {
+              const crudStore = useCrudStore.getState();
+              const existingCompanion = crudStore.companions.find(
+                c => c.id === targetApp.userId || (targetApp.userEmail && c.email.toLowerCase() === targetApp.userEmail.toLowerCase())
+              );
+              if (existingCompanion) {
+                crudStore.updateCompanion(existingCompanion.id, {
+                  status: 'INACTIVE',
+                  isActive: false,
+                  kycStatus: 'REJECTED',
+                  verificationBadge: false
+                });
+              }
+            } catch (syncErr) {
+              console.warn('Failed to sync rejection to crudStore:', syncErr);
+            }
           }
         }
       },

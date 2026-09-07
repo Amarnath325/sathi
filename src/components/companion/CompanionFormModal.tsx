@@ -353,6 +353,7 @@ export function CompanionFormModal({ isOpen, onClose, onSubmit, initialData }: P
     try {
       useKycStore.getState().addApplication({
         userId: companionId,
+        applicantType: 'COMPANION',
         userName: formData.name || 'New Companion',
         userEmail: formData.email || '',
         userPhone: formData.phone || '',
