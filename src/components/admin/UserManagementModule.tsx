@@ -48,7 +48,7 @@ import {
   LayoutGrid,
   List
 } from 'lucide-react';
-import { useCrudStore } from '@/lib/crudStore';
+import { useUserStore, DetailedUserRecord, UserRole, UserStatus, UserRiskLevel } from '@/lib/userStore';
 
 export type UserSubFilter = 
   | 'all' 
@@ -59,40 +59,26 @@ export type UserSubFilter =
   | 'suspended' 
   | 'banned';
 
-interface DetailedUserRecord {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  role: 'CUSTOMER' | 'VERIFIED_COMPANION' | 'ADMIN' | 'GUEST';
-  status: 'ACTIVE' | 'PENDING' | 'RESTRICTED' | 'SUSPENDED' | 'BANNED';
-  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-  riskScore: number;
-  city: string;
-  country: string;
-  joinedDate: string;
-  hourlyRate?: number;
-  ratingAvg?: number;
-  completedBookings?: number;
-  isEmailVerified: boolean;
-  isPhoneVerified: boolean;
-  walletBalance: number;
-  avatar: string;
-  bio?: string;
-}
-
 export function UserManagementModule() {
   const {
-    companions,
-    addCompanion,
-    updateCompanion,
-    permanentDeleteCompanion,
-    selectedIds,
-    toggleSelection,
-    selectAll,
-    clearSelection,
-    importCompanionsFromCSV
-  } = useCrudStore();
+    users,
+    addUser,
+    updateUser,
+    deleteUser,
+    setUserStatus,
+    setUserRole,
+    importUsersFromCSV,
+    fetchUsers,
+    clearAllUsers,
+    isLoading
+  } = useUserStore();
+
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const toggleSelection = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+  const selectAll = (ids: string[]) => setSelectedIds(ids);
+  const clearSelection = () => setSelectedIds([]);
 
   const [activeSubFilter, setActiveSubFilter] = useState<UserSubFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -106,6 +92,12 @@ export function UserManagementModule() {
 
   // Trash view toggle
   const [viewTrashBin, setViewTrashBin] = useState(false);
+  const [trashIds, setTrashIds] = useState<string[]>([]);
+
+  // Fetch real users from DB on mount
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   // Reset page number on filter/search change
   useEffect(() => {
@@ -139,12 +131,6 @@ export function UserManagementModule() {
   const [editStatus, setEditStatus] = useState<'ACTIVE' | 'PENDING' | 'RESTRICTED' | 'SUSPENDED' | 'BANNED'>('ACTIVE');
   const [editRate, setEditRate] = useState('75');
 
-  // Track status transitions in local UI state
-  const [suspendedIds, setSuspendedIds] = useState<string[]>([]);
-  const [restrictedIds, setRestrictedIds] = useState<string[]>([]);
-  const [bannedIds, setBannedIds] = useState<string[]>([]);
-  const [trashIds, setTrashIds] = useState<string[]>([]);
-
   const triggerToast = (msg: string) => {
     setNotification(msg);
     setTimeout(() => setNotification(null), 3500);
@@ -169,45 +155,8 @@ export function UserManagementModule() {
       .finally(() => setDrawerLoading(false));
   }, [viewingUser, drawerTab]);
 
-  // Convert Store Companions + Additional Users into unified user list
-  const allUserRecords: DetailedUserRecord[] = companions.map((c: any, index: number) => {
-    const isSuspended = suspendedIds.includes(c.id);
-    const isRestricted = restrictedIds.includes(c.id);
-    const isBanned = bannedIds.includes(c.id);
-
-    let status: DetailedUserRecord['status'] = 'ACTIVE';
-    if (isBanned) status = 'BANNED';
-    else if (isSuspended) status = 'SUSPENDED';
-    else if (isRestricted) status = 'RESTRICTED';
-    else if (index % 5 === 4) status = 'PENDING';
-
-    let role: DetailedUserRecord['role'] = (c.role as any) || 'VERIFIED_COMPANION';
-    if (index % 3 === 0) role = 'CUSTOMER';
-
-    let riskLevel: DetailedUserRecord['riskLevel'] = isRestricted ? 'HIGH' : isBanned ? 'CRITICAL' : 'LOW';
-
-    return {
-      id: c.id,
-      name: c.name,
-      email: c.email || `${c.name.toLowerCase().replace(/\s+/g, '.')}@example.com`,
-      phone: c.phone || '+1 (555) 234-8901',
-      role,
-      status,
-      riskLevel,
-      riskScore: riskLevel === 'CRITICAL' ? 0.95 : riskLevel === 'HIGH' ? 0.75 : 0.05,
-      city: c.city || 'New York',
-      country: c.country || 'USA',
-      joinedDate: '2026-01-15',
-      hourlyRate: c.hourlyRate || 75,
-      ratingAvg: c.ratingAvg || 4.9,
-      completedBookings: c.completedBookings || 34,
-      isEmailVerified: status !== 'PENDING',
-      isPhoneVerified: status !== 'PENDING',
-      walletBalance: 250 + index * 100,
-      avatar: c.avatar || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80`,
-      bio: c.bio || 'Professional account registered on Sathi Platform.'
-    };
-  });
+  // Real Dynamic Users list (no fabricated companion cloning)
+  const allUserRecords: DetailedUserRecord[] = users;
 
   // Filter based on Trash mode, Subfilter tab, Search, & Role
   const displayedUsers = allUserRecords.filter((u) => {
@@ -284,29 +233,21 @@ export function UserManagementModule() {
   };
 
   const handleToggleSuspend = (user: DetailedUserRecord) => {
-    if (suspendedIds.includes(user.id)) {
-      setSuspendedIds(suspendedIds.filter(id => id !== user.id));
-      handleActionCall('restore', user.id, `User ${user.name} unsuspended & restored!`);
-    } else {
-      setSuspendedIds([...suspendedIds, user.id]);
-      handleActionCall('suspend', user.id, `User ${user.name} suspended.`);
-    }
+    const nextStatus = user.status === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED';
+    setUserStatus(user.id, nextStatus);
+    triggerToast(`User ${user.name} is now ${nextStatus}.`);
   };
 
   const handleToggleBan = (user: DetailedUserRecord) => {
-    if (bannedIds.includes(user.id)) {
-      setBannedIds(bannedIds.filter(id => id !== user.id));
-      handleActionCall('restore', user.id, `Ban lifted for ${user.name}.`);
-    } else {
-      setBannedIds([...bannedIds, user.id]);
-      handleActionCall('ban', user.id, `PERMANENT BAN applied to ${user.name}.`);
-    }
+    const nextStatus = user.status === 'BANNED' ? 'ACTIVE' : 'BANNED';
+    setUserStatus(user.id, nextStatus);
+    triggerToast(nextStatus === 'BANNED' ? `PERMANENT BAN applied to ${user.name}.` : `Ban lifted for ${user.name}.`);
   };
 
   // Soft Delete handler
   const handleSoftDelete = (user: DetailedUserRecord) => {
-    setTrashIds([...trashIds, user.id]);
-    triggerToast(`Moved ${user.name} to Trash Bin.`);
+    deleteUser(user.id);
+    triggerToast(`Removed ${user.name} from directory.`);
   };
 
   // Restore from Trash handler
@@ -338,7 +279,7 @@ export function UserManagementModule() {
     const headers = ['ID', 'FullName', 'Email', 'Phone', 'Role', 'Status', 'City', 'Country', 'HourlyRate'];
     const lines = [headers.join(',')];
     displayedUsers.forEach(u => {
-      lines.push(`"${u.id}","${u.name}","${u.email}","${u.phone}","${u.role}","${u.status}","${u.city}","${u.country}","${u.hourlyRate || 75}"`);
+      lines.push(`"${u.id}","${u.name}","${u.email}","${u.phone}","${u.role}","${u.status}","${u.city}","${u.country}","${u.hourlyRate || 0}"`);
     });
     const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -365,7 +306,7 @@ export function UserManagementModule() {
       xmlTable += `<Cell><Data ss:Type="String">${u.status}</Data></Cell>`;
       xmlTable += `<Cell><Data ss:Type="String">${u.city}</Data></Cell>`;
       xmlTable += `<Cell><Data ss:Type="String">${u.country}</Data></Cell>`;
-      xmlTable += `<Cell><Data ss:Type="String">${u.hourlyRate || 75}</Data></Cell>`;
+      xmlTable += `<Cell><Data ss:Type="String">${u.hourlyRate || 0}</Data></Cell>`;
       xmlTable += `</Row>`;
     });
     xmlTable += `</Table></Worksheet></Workbook>`;
@@ -396,15 +337,16 @@ export function UserManagementModule() {
             return {
               name: cols[0]?.replace(/"/g, '') || `User ${idx + 1}`,
               email: cols[1]?.replace(/"/g, '') || `user${idx + 1}@example.com`,
+              phone: cols[2]?.replace(/"/g, '') || '+1 555-0100',
+              role: (cols[3]?.replace(/"/g, '') as UserRole) || 'CUSTOMER',
               city: cols[4]?.replace(/"/g, '') || 'New York',
               country: cols[5]?.replace(/"/g, '') || 'USA',
-              hourlyRate: Number(cols[6]) || 75,
-              age: 26,
+              hourlyRate: Number(cols[6]) || 0,
               status: 'ACTIVE' as const,
-              category: 'General'
+              riskLevel: 'LOW' as const
             };
           });
-          importCompanionsFromCSV(importedRows);
+          importUsersFromCSV(importedRows);
           triggerToast(`Successfully imported ${importedRows.length} user records from ${file.name}!`);
         }
       }
@@ -416,16 +358,22 @@ export function UserManagementModule() {
     e.preventDefault();
     if (!formName || !formEmail) return;
 
-    addCompanion({
+    addUser({
       name: formName,
       email: formEmail,
+      phone: formPhone || '+1 (555) 019-2834',
+      role: formRole,
+      status: 'ACTIVE',
+      riskLevel: 'LOW',
+      riskScore: 0.05,
       city: formCity || 'New York',
       country: formCountry || 'USA',
-      age: 26,
-      hourlyRate: Number(formRate) || 75,
-      ratingAvg: 5.0,
-      status: 'ACTIVE',
-      category: formRole === 'VERIFIED_COMPANION' ? 'Event Companion' : 'General'
+      hourlyRate: Number(formRate) || 0,
+      isEmailVerified: true,
+      isPhoneVerified: Boolean(formPhone),
+      walletBalance: 0,
+      avatar: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80`,
+      bio: 'Registered Platform User Account.'
     });
 
     triggerToast(`Created new user ${formName} (${formRole})!`);
@@ -442,39 +390,20 @@ export function UserManagementModule() {
     setEditEmail(user.email);
     setEditRole(user.role as any);
     setEditStatus(user.status);
-    setEditRate(String(user.hourlyRate || 75));
+    setEditRate(String(user.hourlyRate || 0));
   };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUser) return;
 
-    updateCompanion(editingUser.id, {
+    updateUser(editingUser.id, {
       name: editName,
       email: editEmail,
-      hourlyRate: Number(editRate) || 75
+      role: editRole,
+      status: editStatus,
+      hourlyRate: Number(editRate) || 0
     });
-
-    if (editStatus === 'SUSPENDED' && !suspendedIds.includes(editingUser.id)) {
-      setSuspendedIds([...suspendedIds, editingUser.id]);
-    } else if (editStatus === 'ACTIVE') {
-      setSuspendedIds(suspendedIds.filter(id => id !== editingUser.id));
-    }
-
-    try {
-      await fetch(`/api/admin/users/${editingUser.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fullName: editName,
-          email: editEmail,
-          role: editRole,
-          hourlyRate: editRate
-        })
-      });
-    } catch (err) {
-      // API fallback
-    }
 
     triggerToast(`Updated profile & permissions for ${editName}!`);
     setEditingUser(null);
@@ -799,12 +728,12 @@ export function UserManagementModule() {
                               <button
                                 onClick={() => handleToggleSuspend(user)}
                                 className={`h-6 px-2 py-0.5 rounded-md font-bold text-[10px] border cursor-pointer ${
-                                  suspendedIds.includes(user.id) || user.status === 'SUSPENDED'
+                                  user.status === 'SUSPENDED'
                                     ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                                     : 'bg-slate-950 text-slate-300 hover:text-white border-slate-800'
                                 }`}
                               >
-                                {suspendedIds.includes(user.id) || user.status === 'SUSPENDED' ? 'Unsuspend' : 'Suspend'}
+                                {user.status === 'SUSPENDED' ? 'Unsuspend' : 'Suspend'}
                               </button>
 
                               <button
