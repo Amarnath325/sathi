@@ -57,8 +57,10 @@ export const useUserStore = create<UserStoreState>()(
         try {
           const res = await fetch('/api/admin/users?limit=100');
           const data = await res.json();
-          if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-            const formatted: DetailedUserRecord[] = data.data.map((u: any) => ({
+          if (data.success && Array.isArray(data.data)) {
+            // Strictly exclude companion accounts from User store
+            const actualUsers = data.data.filter((u: any) => u.role !== 'COMPANION' && u.role !== 'VERIFIED_COMPANION');
+            const formatted: DetailedUserRecord[] = actualUsers.map((u: any) => ({
               id: u.id,
               name: u.fullName || 'Platform User',
               email: u.email || '',
@@ -202,7 +204,7 @@ export const useUserStore = create<UserStoreState>()(
       clearAllUsers: () => set({ users: [] })
     }),
     {
-      name: 'sathi_admin_users_live_v1'
+      name: 'sathi_admin_users_live_v2'
     }
   )
 );

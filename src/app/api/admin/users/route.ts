@@ -14,7 +14,13 @@ export async function GET(request: Request) {
     const skip = (page - 1) * limit;
 
     const where: any = {};
-    if (role && role !== 'ALL') where.role = role;
+    if (role && role !== 'ALL') {
+      where.role = role;
+    } else {
+      // Exclude companion accounts from User Management (Companions have their own module)
+      where.role = { notIn: ['COMPANION', 'VERIFIED_COMPANION'] };
+    }
+
     if (status && status !== 'ALL') {
       if (status === 'SUSPENDED' || status === 'BANNED') {
         where.accountFrozen = true;

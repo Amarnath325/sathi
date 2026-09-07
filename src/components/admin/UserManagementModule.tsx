@@ -53,7 +53,7 @@ import { useUserStore, DetailedUserRecord, UserRole, UserStatus, UserRiskLevel }
 export type UserSubFilter = 
   | 'all' 
   | 'customers' 
-  | 'companions' 
+  | 'admins' 
   | 'pending' 
   | 'restricted' 
   | 'suspended' 
@@ -155,8 +155,10 @@ export function UserManagementModule() {
       .finally(() => setDrawerLoading(false));
   }, [viewingUser, drawerTab]);
 
-  // Real Dynamic Users list (no fabricated companion cloning)
-  const allUserRecords: DetailedUserRecord[] = users;
+  // Real Dynamic Users list (Strictly excludes companion profiles)
+  const allUserRecords: DetailedUserRecord[] = users.filter(
+    u => (u.role as string) !== 'COMPANION' && (u.role as string) !== 'VERIFIED_COMPANION'
+  );
 
   // Filter based on Trash mode, Subfilter tab, Search, & Role
   const displayedUsers = allUserRecords.filter((u) => {
@@ -184,8 +186,8 @@ export function UserManagementModule() {
     switch (activeSubFilter) {
       case 'customers':
         return u.role === 'CUSTOMER';
-      case 'companions':
-        return u.role === 'VERIFIED_COMPANION';
+      case 'admins':
+        return u.role === 'ADMIN';
       case 'pending':
         return u.status === 'PENDING' || !u.isEmailVerified;
       case 'restricted':
@@ -207,11 +209,11 @@ export function UserManagementModule() {
   const startUserIndex = (currentPage - 1) * effectiveUserPageSize;
   const paginatedUsers = displayedUsers.slice(startUserIndex, startUserIndex + effectiveUserPageSize);
 
-  // Metric Counts
+  // Metric Counts (Only Users / Customers)
   const totalCount = allUserRecords.filter(u => !trashIds.includes(u.id)).length;
   const trashCount = trashIds.length;
   const customersCount = allUserRecords.filter(u => u.role === 'CUSTOMER' && !trashIds.includes(u.id)).length;
-  const companionsCount = allUserRecords.filter(u => u.role === 'VERIFIED_COMPANION' && !trashIds.includes(u.id)).length;
+  const adminsCount = allUserRecords.filter(u => u.role === 'ADMIN' && !trashIds.includes(u.id)).length;
   const pendingCount = allUserRecords.filter(u => u.status === 'PENDING' && !trashIds.includes(u.id)).length;
   const restrictedCount = allUserRecords.filter(u => (u.status === 'RESTRICTED' || u.riskLevel === 'HIGH') && !trashIds.includes(u.id)).length;
   const suspendedCount = allUserRecords.filter(u => u.status === 'SUSPENDED' && !trashIds.includes(u.id)).length;
@@ -430,7 +432,7 @@ export function UserManagementModule() {
         {[
           { id: 'all', label: 'All Users', count: totalCount },
           { id: 'customers', label: 'Customers', count: customersCount },
-          { id: 'companions', label: 'Companions', count: companionsCount },
+          { id: 'admins', label: 'Admins', count: adminsCount },
           { id: 'pending', label: 'Pending', count: pendingCount },
           { id: 'restricted', label: 'Restricted', count: restrictedCount },
           { id: 'suspended', label: 'Suspended', count: suspendedCount },

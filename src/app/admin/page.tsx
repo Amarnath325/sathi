@@ -92,6 +92,8 @@ import { SosAlertItem, IncidentReport, DisciplinaryAction, IncidentStatus } from
 
 import { UserManagementModule } from '@/components/admin/UserManagementModule';
 import { KycVerificationModule } from '@/components/admin/KycVerificationModule';
+import { useUserStore } from '@/lib/userStore';
+import { useKycStore } from '@/lib/kycStore';
 import { SmtpConfigModule } from '@/components/admin/SmtpConfigModule';
 import { EmailTemplateModule } from '@/components/admin/EmailTemplateModule';
 import { PageSizeOption, PaginationFooter } from '@/components/common/PaginationBar';
@@ -262,6 +264,14 @@ export default function AdminDashboardPage() {
     clearSelection,
     importCompanionsFromCSV
   } = useCrudStore();
+
+  const { users: userStoreUsers } = useUserStore();
+  const { applications: kycApplications } = useKycStore();
+
+  const actualUsersCount = userStoreUsers.filter(
+    u => (u.role as string) !== 'COMPANION' && (u.role as string) !== 'VERIFIED_COMPANION'
+  ).length;
+  const pendingKycCount = kycApplications.filter(a => a.status === 'PENDING').length;
 
   const { theme, toggleTheme } = useTheme();
 
@@ -719,9 +729,9 @@ export default function AdminDashboardPage() {
     {
       groupTitle: '👥 USER & COMPANION MANAGEMENT',
       items: [
-        { id: 'users', label: '👥 User Management', icon: Users, badge: `${companions.length}`, badgeColor: 'bg-indigo-500/20 text-indigo-300' },
-        { id: 'verification', label: '🪪 Verification & KYC', icon: UserCheck, badge: `${MOCK_KYC_QUEUE.length} Pending`, badgeColor: 'bg-amber-500/20 text-amber-300' },
-        { id: 'companions', label: '🤝 Companion Management', icon: ShieldCheck },
+        { id: 'users', label: '👥 User Management', icon: Users, badge: actualUsersCount > 0 ? `${actualUsersCount}` : undefined, badgeColor: 'bg-indigo-500/20 text-indigo-300' },
+        { id: 'verification', label: '🪪 Verification & KYC', icon: UserCheck, badge: `${pendingKycCount} Pending`, badgeColor: 'bg-amber-500/20 text-amber-300' },
+        { id: 'companions', label: '🤝 Companion Management', icon: ShieldCheck, badge: `${companions.length}`, badgeColor: 'bg-purple-500/20 text-purple-300' },
       ]
     },
     {
